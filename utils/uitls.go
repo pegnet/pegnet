@@ -1,0 +1,22 @@
+package utils
+
+import "strings"
+
+func PullValue(line string, howMany int) string {
+	i := 0
+	//fmt.Println(line)
+	var pos int
+	for i < howMany {
+		//find the end of the howmany-th tag
+		pos = strings.Index(line, ">")
+		line = line[pos+1:]
+		//fmt.Println(line)
+		i = i + 1
+	}
+	//fmt.Println("line:", line)
+	pos = strings.Index(line, "<")
+	//fmt.Println("POS:", pos)
+	line = line[0:pos]
+	//fmt.Println(line)
+	return line
+}
