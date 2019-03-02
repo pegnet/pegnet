@@ -1,6 +1,10 @@
-package structs
+package oprecord
 
-/*
+import (
+	"io/ioutil"
+	"net/http"
+)
+
 type OpenExchangeRates struct {
 	Disclaimer string                 `json:"disclaimer"`
 	License    string                 `json:"license"`
@@ -181,33 +185,16 @@ type OpenExchangeCurrencies struct {
 	ZMW float64
 	ZWL float64
 }
-*/
 
-type PegValues struct {
-	Pegnet     PegItems
-	USD        PegItems
-	EUR        PegItems
-	JPY        PegItems
-	GBP        PegItems
-	CAD        PegItems
-	CHF        PegItems
-	INR        PegItems
-	SGD        PegItems
-	CNY        PegItems
-	HKD        PegItems
-	XAU        PegItems
-	XAG        PegItems
-	XPD        PegItems
-	XPT        PegItems
-	XBT        PegItems
-	ETH        PegItems
-	LTC        PegItems
-	XBC        PegItems
-	FCT        PegItems
-	PriceBytes [160]byte
-}
+//   you will need to replace the values put into peg structure
+func CallOpenExchangeRates() ([]byte, error) {
+	resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=<INSERT API KEY HERE>")
+	if err != nil {
+		return nil, err
+	} else {
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		return body, err
+	}
 
-type PegItems struct {
-	Value int64
-	When  string
 }

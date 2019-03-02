@@ -1,4 +1,4 @@
-package structs
+package oprecord
 
 import (
 	"io/ioutil"

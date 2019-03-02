@@ -1,56 +1,72 @@
-package main
+package oprecord
 
 import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
-	"github.com/PegNet/OracleRecord/structs"
+	"github.com/pegnet/OracleRecord/common"
+	"github.com/pegnet/OracleRecord/utils"
 )
 
-var PointMultiple float64 = 100000000
-
-func main() {
-	var Peg structs.PegValues
-	Peg = PullPEGValues()
-	fmt.Println(Peg)
-	//add error handling for padding bytes
-	pBytes := FillPriceBytes(Peg)
-	copy(Peg.PriceBytes[0:], pBytes[:])
-	fmt.Println(Peg)
+type PegAssets struct {
+	PNT        PegItems
+	USD        PegItems
+	EUR        PegItems
+	JPY        PegItems
+	GBP        PegItems
+	CAD        PegItems
+	CHF        PegItems
+	INR        PegItems
+	SGD        PegItems
+	CNY        PegItems
+	HKD        PegItems
+	XAU        PegItems
+	XAG        PegItems
+	XPD        PegItems
+	XPT        PegItems
+	XBT        PegItems
+	ETH        PegItems
+	LTC        PegItems
+	XBC        PegItems
+	FCT        PegItems
+	PriceBytes [160]byte
 }
 
-func PullPEGValues() structs.PegValues {
-	var Peg structs.PegValues
-	Peg.USD.Value = int64(1 * PointMultiple)
+type PegItems struct {
+	Value int64
+	When  string
+}
+
+func PullPEGAssets() PegAssets {
+	var Peg PegAssets
+	Peg.USD.Value = int64(1 * common.PointMultiple)
 	// digital currencies
-	CoinCapResponseBytes, err := structs.CallCoinCap()
+	CoinCapResponseBytes, err := CallCoinCap()
 	//fmt.Println(string(CoinCapResponseBytes))
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		var CoinCapValues structs.CoinCapResponse
+		var CoinCapValues CoinCapResponse
 		err = json.Unmarshal(CoinCapResponseBytes, &CoinCapValues)
 		for _, currency := range CoinCapValues.Data {
 			//fmt.Println(currency.Symbol + "-" + currency.PriceUSD)
 			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
-				Peg.XBT.Value = FloatStringToInt(currency.PriceUSD)
+				Peg.XBT.Value = utils.FloatStringToInt(currency.PriceUSD)
 				Peg.XBT.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "ETH" {
-				Peg.ETH.Value = FloatStringToInt(currency.PriceUSD)
+				Peg.ETH.Value = utils.FloatStringToInt(currency.PriceUSD)
 				Peg.ETH.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "LTC" {
-				Peg.LTC.Value = FloatStringToInt(currency.PriceUSD)
+				Peg.LTC.Value = utils.FloatStringToInt(currency.PriceUSD)
 				Peg.LTC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
-				Peg.XBC.Value = FloatStringToInt(currency.PriceUSD)
+				Peg.XBC.Value = utils.FloatStringToInt(currency.PriceUSD)
 				Peg.XBC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "FCT" {
-				Peg.FCT.Value = FloatStringToInt(currency.PriceUSD)
+				Peg.FCT.Value = utils.FloatStringToInt(currency.PriceUSD)
 				Peg.FCT.When = string(CoinCapValues.Timestamp)
 			}
 		}
@@ -65,40 +81,40 @@ func PullPEGValues() structs.PegValues {
 
 	//	fmt.Println("API LAYER:")
 
-	APILayerBytes, err := structs.CallAPILayer()
+	APILayerBytes, err := CallAPILayer()
 	//fmt.Println(string(APILayerBytes))
 
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	} else {
-		var APILayerResponse structs.APILayerResponse
+		var APILayerResponse APILayerResponse
 		err = json.Unmarshal(APILayerBytes, &APILayerResponse)
 		//	fmt.Println(APILayerResponse)
 		//	fmt.Println("UDS-GBP")
 		//	fmt.Println(APILayerResponse.Quotes.USDGBP)
-		Peg.EUR.Value = int64(APILayerResponse.Quotes.USDEUR * PointMultiple)
+		Peg.EUR.Value = int64(APILayerResponse.Quotes.USDEUR * common.PointMultiple)
 		Peg.EUR.When = string(APILayerResponse.Timestamp)
-		Peg.JPY.Value = int64(APILayerResponse.Quotes.USDJPY * PointMultiple)
+		Peg.JPY.Value = int64(APILayerResponse.Quotes.USDJPY * common.PointMultiple)
 		Peg.JPY.When = string(APILayerResponse.Timestamp)
-		Peg.GBP.Value = int64(APILayerResponse.Quotes.USDGBP * PointMultiple)
+		Peg.GBP.Value = int64(APILayerResponse.Quotes.USDGBP * common.PointMultiple)
 		Peg.GBP.When = string(APILayerResponse.Timestamp)
-		Peg.CAD.Value = int64(APILayerResponse.Quotes.USDCAD * PointMultiple)
+		Peg.CAD.Value = int64(APILayerResponse.Quotes.USDCAD * common.PointMultiple)
 		Peg.CAD.When = string(APILayerResponse.Timestamp)
-		Peg.CHF.Value = int64(APILayerResponse.Quotes.USDCHF * PointMultiple)
+		Peg.CHF.Value = int64(APILayerResponse.Quotes.USDCHF * common.PointMultiple)
 		Peg.CHF.When = string(APILayerResponse.Timestamp)
-		Peg.INR.Value = int64(APILayerResponse.Quotes.USDINR * PointMultiple)
+		Peg.INR.Value = int64(APILayerResponse.Quotes.USDINR * common.PointMultiple)
 		Peg.INR.When = string(APILayerResponse.Timestamp)
-		Peg.SGD.Value = int64(APILayerResponse.Quotes.USDSGD * PointMultiple)
+		Peg.SGD.Value = int64(APILayerResponse.Quotes.USDSGD * common.PointMultiple)
 		Peg.SGD.When = string(APILayerResponse.Timestamp)
-		Peg.CNY.Value = int64(APILayerResponse.Quotes.USDCNY * PointMultiple)
+		Peg.CNY.Value = int64(APILayerResponse.Quotes.USDCNY * common.PointMultiple)
 		Peg.CNY.When = string(APILayerResponse.Timestamp)
-		Peg.HKD.Value = int64(APILayerResponse.Quotes.USDHKD * PointMultiple)
+		Peg.HKD.Value = int64(APILayerResponse.Quotes.USDHKD * common.PointMultiple)
 		Peg.HKD.When = string(APILayerResponse.Timestamp)
 
 	}
 
-	KitcoResponse, err := structs.CallKitcoWeb()
+	KitcoResponse, err := CallKitcoWeb()
 
 	if err != nil {
 		fmt.Println(err)
@@ -106,13 +122,13 @@ func PullPEGValues() structs.PegValues {
 	} else {
 
 		//fmt.Println("KitcoResponse:", KitcoResponse)
-		Peg.XAU.Value = FloatStringToInt(KitcoResponse.Silver.Bid)
+		Peg.XAU.Value = utils.FloatStringToInt(KitcoResponse.Silver.Bid)
 		Peg.XAU.When = KitcoResponse.Silver.Date
-		Peg.XAG.Value = FloatStringToInt(KitcoResponse.Gold.Bid)
+		Peg.XAG.Value = utils.FloatStringToInt(KitcoResponse.Gold.Bid)
 		Peg.XAG.When = KitcoResponse.Gold.Date
-		Peg.XPD.Value = FloatStringToInt(KitcoResponse.Palladium.Bid)
+		Peg.XPD.Value = utils.FloatStringToInt(KitcoResponse.Palladium.Bid)
 		Peg.XPD.When = KitcoResponse.Palladium.Date
-		Peg.XPT.Value = FloatStringToInt(KitcoResponse.Platinum.Bid)
+		Peg.XPT.Value = utils.FloatStringToInt(KitcoResponse.Platinum.Bid)
 		Peg.XPT.When = KitcoResponse.Platinum.Date
 
 	}
@@ -121,46 +137,13 @@ func PullPEGValues() structs.PegValues {
 
 }
 
-func FloatStringToInt(floatString string) int64 {
-	//fmt.Println(floatString)
-	if floatString == "-" {
-		return 0
-	}
-	if strings.TrimSpace(floatString) == "" {
-		return 0
-	}
-	floatValue, err := strconv.ParseFloat(floatString, 64)
-	if err != nil {
-		fmt.Println("ParseError:", floatString)
-		return 0
-	} else {
-		return int64(floatValue * PointMultiple)
-	}
-
-}
-
-/*   Not used right now.  structures are there if you want to use it
-//   you will need to replace the values put into peg structure
-func CallOpenExchangeRates() ([]byte, error) {
-	resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=<INSERT API KEY HERE>")
-	if err != nil {
-		return nil, err
-	} else {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		return body, err
-	}
-
-}
-*/
-
-func FillPriceBytes(peg structs.PegValues) []byte {
+func (peg *PegAssets) FillPriceBytes() {
 	byteVal := make([]byte, 160)
 	nextStart := 0
 	byteLength := 8
 	b := make([]byte, 8)
 
-	binary.BigEndian.PutUint64(b, uint64(peg.Pegnet.Value))
+	binary.BigEndian.PutUint64(b, uint64(peg.PNT.Value))
 	copy(byteVal[nextStart:nextStart+8], b[:])
 	nextStart = nextStart + byteLength
 	binary.BigEndian.PutUint64(b, uint64(peg.USD.Value))
@@ -220,5 +203,5 @@ func FillPriceBytes(peg structs.PegValues) []byte {
 	binary.BigEndian.PutUint64(b, uint64(peg.FCT.Value))
 	copy(byteVal[nextStart:nextStart+8], b[:])
 
-	return byteVal[:]
+	copy(peg.PriceBytes[0:], byteVal[:])
 }

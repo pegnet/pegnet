@@ -1,6 +1,12 @@
 package utils
 
-import "strings"
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/pegnet/OracleRecord/common"
+)
 
 func PullValue(line string, howMany int) string {
 	i := 0
@@ -19,4 +25,21 @@ func PullValue(line string, howMany int) string {
 	line = line[0:pos]
 	//fmt.Println(line)
 	return line
+}
+func FloatStringToInt(floatString string) int64 {
+	//fmt.Println(floatString)
+	if floatString == "-" {
+		return 0
+	}
+	if strings.TrimSpace(floatString) == "" {
+		return 0
+	}
+	floatValue, err := strconv.ParseFloat(floatString, 64)
+	if err != nil {
+		fmt.Println("ParseError:", floatString)
+		return 0
+	} else {
+		return int64(floatValue * common.PointMultiple)
+	}
+
 }
