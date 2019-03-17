@@ -185,8 +185,22 @@ type APILayerRecord struct {
 	USDZWL float64
 }
 
-func CallAPILayer() ([]byte, error) {
-	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=3be7716d8359f093e639ea9cb9dc7227")
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
+}
+
+const apikeyfile = "apikey.dat"
+
+func CallAPILayer() (opr []byte, err error) {
+	var apikey []byte
+	{
+		apikey, err = ioutil.ReadFile(apikeyfile)
+		check(err)
+	}
+
+	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + string(apikey))
 	if err != nil {
 		return nil, err
 	} else {
