@@ -7,9 +7,15 @@ import (
 
 	"errors"
 	"fmt"
+	"github.com/FactomProject/factom"
 )
 
 type OraclePriceRecord struct {
+	Difficulty         uint64            // not part of OPR -The difficulty of the given nonce
+	Grade              float64           // not part of OPR -The grade when OPR records are compared
+	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
+	OPRHash            [32]byte          // not part of OPR - the hash of the OPR record
+	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
 	ChainID            [32]byte
 	VersionEntryHash   [32]byte
 	WinningPreviousOPR [32]byte
@@ -36,6 +42,33 @@ type OraclePriceRecord struct {
 	LTC                [8]byte
 	XBC                [8]byte
 	FCT                [8]byte
+}
+
+func (opr *OraclePriceRecord) GetTokens() (tokens []float64) {
+	add := func(v [8]byte) {
+		tokens = append(tokens, float64(binary.BigEndian.Uint64(v[:])))
+	}
+	add(opr.PNT)
+	add(opr.USD)
+	add(opr.EUR)
+	add(opr.JPY)
+	add(opr.GBP)
+	add(opr.CAD)
+	add(opr.CHF)
+	add(opr.INR)
+	add(opr.SGD)
+	add(opr.CNY)
+	add(opr.HKD)
+	add(opr.XAU)
+	add(opr.XAG)
+	add(opr.XPD)
+	add(opr.XPT)
+	add(opr.XBT)
+	add(opr.ETH)
+	add(opr.LTC)
+	add(opr.XBC)
+	add(opr.FCT)
+	return
 }
 
 // String
