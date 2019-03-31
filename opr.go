@@ -13,6 +13,7 @@ import (
 )
 
 type OraclePriceRecord struct {
+	Config             *config.Config    // not part of OPR - The config of the miner using the record
 	Difficulty         uint64            // not part of OPR -The difficulty of the given nonce
 	Grade              float64           // not part of OPR -The grade when OPR records are compared
 	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
@@ -75,20 +76,39 @@ func (opr *OraclePriceRecord) GetTokens() (tokens []float64) {
 
 var lx *lxr.LXRHash
 
-func (opr *OraclePriceRecord) ComputeDifficulty() {
-	if lx == nil {
-		lx = new(lxr.LXRHash)
-		lx.Init()
-	}
-	no := []byte{}
-	no = append(no, opr.Nonce[:]...) // Get the nonce (32 bytes)
+func init() {
+	lx = new(lxr.LXRHash)
+	lx.Init()
+}
+
+func (opr *OraclePriceRecord) GetHash() []byte {
 	data, err := opr.MarshalBinary()
 	check(err)
-	oprHash := lx.Hash(data)    // get the hash of the opr (32 bytes)
-	no = append(no, oprHash...) // append the opr hash
-	h := lx.Hash(no)            // we hash the 64 resulting bytes.
+	oprHash := lx.Hash(data)
+	return oprHash
+}
 
+func (opr *OraclePriceRecord) GetNonceHash() []byte {
+	no := append([]byte{}, opr.Nonce[:]...)
+	oprHash := opr.GetHash()
+	no = append(no, oprHash...)
+	h := lx.Hash(no)
+	return h
+}
+
+func (opr *OraclePriceRecord) ComputeDifficulty() uint64 {
+	h := opr.GetNonceHash()
 	opr.Difficulty = lxr.Difficulty(h) // Go calculate the difficulty, and cache in the opr
+	return opr.Difficulty
+}
+
+func (opr *OraclePriceRecord) ShortString() string {
+
+	str := fmt.Sprintf("DID %6x Nonce %16x Difficulty %10d",
+		opr.FactomDigitalID[:6],
+		opr.Nonce[:16],
+		opr.Difficulty)
+	return str
 }
 
 // String
@@ -105,7 +125,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	}
 	opr.ComputeDifficulty()
 	print32("ChainID", opr.ChainID[:])
-	str = str + fmt.Sprintf("%32s %v\n","Difficulty",opr.Difficulty)
+	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	print32("VersionEntryHash", opr.VersionEntryHash[:])
 	print32("WinningPreviousOPR", opr.WinningPreviousOPR[:])
 	print32("CoinbasePNTAddress", opr.CoinbasePNTAddress[:])
@@ -232,7 +252,7 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 }
 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
-
+	opr.Config = c
 	//get asset values
 	var Peg PegAssets
 	Peg = PullPEGAssets(c)

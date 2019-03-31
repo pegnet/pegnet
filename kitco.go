@@ -42,7 +42,7 @@ func CallKitcoWeb() (KitcoData, error) {
 		strResp := string(body)
 		start := strings.Index(strResp, matchStart)
 		if start < 0 {
-			return kData,errors.New("No Response")
+			return kData, errors.New("No Response")
 		}
 		strResp = strResp[start:]
 		stop := strings.Index(strResp, matchStop)

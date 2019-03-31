@@ -9,8 +9,8 @@ import (
 	"github.com/pegnet/OracleRecord/common"
 	"github.com/pegnet/OracleRecord/utils"
 	"github.com/zpatrick/go-config"
-	"time"
 	"sync"
+	"time"
 )
 
 type PegAssets struct {
@@ -76,24 +76,24 @@ func (p *PegItems) Clone() PegItems {
 }
 
 var lastMutex sync.Mutex
-var lastAnswer PegAssets			//
-var lastTime int64					// In seconds
+var lastAnswer PegAssets //
+var lastTime int64       // In seconds
 
 func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	// Prevent pounding of external APIs
 	lastMutex.Lock()
 	now := time.Now().Unix()
-	delta := now-lastTime
-	if delta < 60 {
+	delta := now - lastTime
+	if delta < 50 {
 		pa := lastAnswer.Clone()
-		lastTime = now
 		lastMutex.Unlock()
 		return pa
 	}
 	lastMutex.Unlock()
 
-	fmt.Println("Make a call to get data. Seconds since last call:",delta)
+	lastTime = now
+	fmt.Println("Make a call to get data. Seconds since last call:", delta)
 	var Peg PegAssets
 	Peg.USD.Value = int64(1 * common.PointMultiple)
 	// digital currencies
@@ -192,7 +192,6 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastMutex.Unlock()
 	return Peg
 }
-
 
 func (peg *PegAssets) FillPriceBytes() {
 	byteVal := make([]byte, 160)
