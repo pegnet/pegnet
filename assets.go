@@ -9,6 +9,8 @@ import (
 	"github.com/pegnet/OracleRecord/common"
 	"github.com/pegnet/OracleRecord/utils"
 	"github.com/zpatrick/go-config"
+	"time"
+	"sync"
 )
 
 type PegAssets struct {
@@ -35,12 +37,63 @@ type PegAssets struct {
 	PriceBytes [160]byte
 }
 
+func (p *PegAssets) Clone() PegAssets {
+	np := new(PegAssets)
+	np.PNT = p.PNT.Clone()
+	np.USD = p.USD.Clone()
+	np.EUR = p.EUR.Clone()
+	np.JPY = p.JPY.Clone()
+	np.GBP = p.GBP.Clone()
+	np.CAD = p.CAD.Clone()
+	np.CHF = p.CHF.Clone()
+	np.INR = p.INR.Clone()
+	np.SGD = p.SGD.Clone()
+	np.CNY = p.CNY.Clone()
+	np.HKD = p.HKD.Clone()
+	np.XAU = p.XAU.Clone()
+	np.XAG = p.XAG.Clone()
+	np.XPD = p.XPD.Clone()
+	np.XPT = p.XPT.Clone()
+	np.XBT = p.XBT.Clone()
+	np.ETH = p.ETH.Clone()
+	np.LTC = p.LTC.Clone()
+	np.XBC = p.XBC.Clone()
+	np.FCT = p.FCT.Clone()
+	copy(np.PriceBytes[:], p.PriceBytes[:])
+	return *np
+}
+
 type PegItems struct {
 	Value int64
 	When  string
 }
 
-func PullPEGAssets(config *config.Config) PegAssets {
+func (p *PegItems) Clone() PegItems {
+	np := new(PegItems)
+	np.Value = p.Value
+	np.When = p.When
+	return *np
+}
+
+var lastMutex sync.Mutex
+var lastAnswer PegAssets			//
+var lastTime int64					// In seconds
+
+func PullPEGAssets(config *config.Config) (pa PegAssets) {
+
+	// Prevent pounding of external APIs
+	lastMutex.Lock()
+	now := time.Now().Unix()
+	delta := now-lastTime
+	if delta < 60 {
+		pa := lastAnswer.Clone()
+		lastTime = now
+		lastMutex.Unlock()
+		return pa
+	}
+	lastMutex.Unlock()
+
+	fmt.Println("Make a call to get data. Seconds since last call:",delta)
 	var Peg PegAssets
 	Peg.USD.Value = int64(1 * common.PointMultiple)
 	// digital currencies
@@ -134,9 +187,12 @@ func PullPEGAssets(config *config.Config) PegAssets {
 
 	}
 
+	lastMutex.Lock()
+	lastAnswer = Peg.Clone()
+	lastMutex.Unlock()
 	return Peg
-
 }
+
 
 func (peg *PegAssets) FillPriceBytes() {
 	byteVal := make([]byte, 160)

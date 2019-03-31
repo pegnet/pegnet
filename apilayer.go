@@ -1,9 +1,9 @@
 package oprecord
 
 import (
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
-	"github.com/zpatrick/go-config"
 )
 
 type APILayerResponse struct {
