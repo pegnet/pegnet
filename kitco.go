@@ -1,6 +1,7 @@
 package oprecord
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -40,6 +41,9 @@ func CallKitcoWeb() (KitcoData, error) {
 		matchStop := "</table>"
 		strResp := string(body)
 		start := strings.Index(strResp, matchStart)
+		if start < 0 {
+			return kData,errors.New("No Response")
+		}
 		strResp = strResp[start:]
 		stop := strings.Index(strResp, matchStop)
 		strResp = strResp[0 : stop+9]
