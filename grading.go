@@ -1,9 +1,5 @@
 package oprecord
 
-import (
-	"github.com/pegnet/LXR256"
-)
-
 // Compute the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	// Sum up all the prices
@@ -35,25 +31,16 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 
 // Given a list of OraclePriceRecord, figure out which 10 should be paid, and in what order
 func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
-	lx := lxr.LXRHash{}
-	lx.Init()
+
 	if len(list) <= 10 {
 		return nil, nil
 	}
 
 	// Calculate the difficult for each entry in the list of OraclePriceRecords.
 	for _, opr := range list {
-		// append the Nounce and OraclePriceRecord ==> no
-		no := []byte{}
-		no = append(no, opr.Nonce[:]...) // Get the nonce (32 bytes)
-		data, err := opr.MarshalBinary()
-		check(err)
-		oprHash := lx.Hash(data)    // get the hash of the opr (32 bytes)
-		no = append(no, oprHash...) // append the opr hash
-		h := lx.Hash(no)            // we hash the 64 resulting bytes.
-
-		opr.Difficulty = lxr.Difficulty(h) // Go calculate the difficulty, and cache in the opr
+		opr.ComputeDifficulty()
 	}
+
 	last := len(list)
 	// Throw away all the entries but the top 50 in difficulty
 	if len(list) > 50 {

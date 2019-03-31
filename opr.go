@@ -4,6 +4,7 @@ package oprecord
 
 import (
 	"encoding/binary"
+	"github.com/pegnet/LXR256"
 
 	"errors"
 	"fmt"
@@ -72,6 +73,24 @@ func (opr *OraclePriceRecord) GetTokens() (tokens []float64) {
 	return
 }
 
+var lx *lxr.LXRHash
+
+func (opr *OraclePriceRecord) ComputeDifficulty() {
+	if lx == nil {
+		lx = new(lxr.LXRHash)
+		lx.Init()
+	}
+	no := []byte{}
+	no = append(no, opr.Nonce[:]...) // Get the nonce (32 bytes)
+	data, err := opr.MarshalBinary()
+	check(err)
+	oprHash := lx.Hash(data)    // get the hash of the opr (32 bytes)
+	no = append(no, oprHash...) // append the opr hash
+	h := lx.Hash(no)            // we hash the 64 resulting bytes.
+
+	opr.Difficulty = lxr.Difficulty(h) // Go calculate the difficulty, and cache in the opr
+}
+
 // String
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
@@ -84,7 +103,9 @@ func (opr *OraclePriceRecord) String() (str string) {
 		}
 		str = str + fmt.Sprintf("%32s %x\n", label, value)
 	}
+	opr.ComputeDifficulty()
 	print32("ChainID", opr.ChainID[:])
+	str = str + fmt.Sprintf("%32s %v\n","Difficulty",opr.Difficulty)
 	print32("VersionEntryHash", opr.VersionEntryHash[:])
 	print32("WinningPreviousOPR", opr.WinningPreviousOPR[:])
 	print32("CoinbasePNTAddress", opr.CoinbasePNTAddress[:])
