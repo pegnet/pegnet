@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/FactomProject/factom"
+	"github.com/zpatrick/go-config"
 )
 
 type OraclePriceRecord struct {
@@ -209,11 +210,11 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-func (opr *OraclePriceRecord) GetOPRecord() {
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 
 	//get asset values
 	var Peg PegAssets
-	Peg = PullPEGAssets()
+	Peg = PullPEGAssets(c)
 	Peg.FillPriceBytes()
 
 	opr.SetPegValues(Peg)

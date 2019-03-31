@@ -3,6 +3,7 @@ package oprecord
 import (
 	"io/ioutil"
 	"net/http"
+	"github.com/zpatrick/go-config"
 )
 
 type APILayerResponse struct {
@@ -193,14 +194,14 @@ func check(e error) {
 
 const apikeyfile = "apikey.dat"
 
-func CallAPILayer() (opr []byte, err error) {
-	var apikey []byte
+func CallAPILayer(c *config.Config) (opr []byte, err error) {
+	var apikey string
 	{
-		apikey, err = ioutil.ReadFile(apikeyfile)
+		apikey, err = c.String("Oracle.APILayerKey")
 		check(err)
 	}
 
-	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + string(apikey))
+	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
 	if err != nil {
 		return nil, err
 	} else {

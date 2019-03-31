@@ -8,6 +8,7 @@ import (
 
 	"github.com/pegnet/OracleRecord/common"
 	"github.com/pegnet/OracleRecord/utils"
+	"github.com/zpatrick/go-config"
 )
 
 type PegAssets struct {
@@ -39,11 +40,11 @@ type PegItems struct {
 	When  string
 }
 
-func PullPEGAssets() PegAssets {
+func PullPEGAssets(config *config.Config) PegAssets {
 	var Peg PegAssets
 	Peg.USD.Value = int64(1 * common.PointMultiple)
 	// digital currencies
-	CoinCapResponseBytes, err := CallCoinCap()
+	CoinCapResponseBytes, err := CallCoinCap(config)
 	//fmt.Println(string(CoinCapResponseBytes))
 	if err != nil {
 		fmt.Println(err)
@@ -81,7 +82,7 @@ func PullPEGAssets() PegAssets {
 
 	//	fmt.Println("API LAYER:")
 
-	APILayerBytes, err := CallAPILayer()
+	APILayerBytes, err := CallAPILayer(config)
 	//fmt.Println(string(APILayerBytes))
 
 	if err != nil {
