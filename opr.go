@@ -19,6 +19,7 @@ type OraclePriceRecord struct {
 	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
 	OPRHash            [32]byte          // not part of OPR - the hash of the OPR record
 	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
+	Entry              *factom.Entry     // not part of OPR - Entry to record this record
 	ChainID            [32]byte
 	VersionEntryHash   [32]byte
 	WinningPreviousOPR [32]byte
@@ -104,8 +105,13 @@ func (opr *OraclePriceRecord) ComputeDifficulty() uint64 {
 
 func (opr *OraclePriceRecord) ShortString() string {
 
-	str := fmt.Sprintf("DID %6x Nonce %16x Difficulty %10d",
+	hash := []byte {0}
+	if opr.Entry != nil {
+		hash = opr.Entry.Hash()
+	}
+	str := fmt.Sprintf("DID %6x EntryHash %x Nonce %16x Difficulty %10d",
 		opr.FactomDigitalID[:6],
+		hash,
 		opr.Nonce[:16],
 		opr.Difficulty)
 	return str
@@ -333,4 +339,19 @@ func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
 	binary.BigEndian.PutUint64(b, uint64(assets.FCT.Value))
 	copy(opr.FCT[0:], b[:])
 
+}
+
+// GetEntry
+// Given a particular chain to write this entry, compute a proper entry
+// for this OraclePriceRecord
+func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
+	// An OPR record only has the nonce as an external ID
+	entryExtIDs := [][]byte{opr.Nonce[:]}
+	// The body Data is the marshal of the OPR
+	bodyData, err := opr.MarshalBinary()
+	check(err)
+	// Create the Entry struct
+	assetEntry := factom.Entry{ChainID: chainID, ExtIDs: entryExtIDs, Content: bodyData}
+	opr.Entry = &assetEntry
+	return opr.Entry
 }
