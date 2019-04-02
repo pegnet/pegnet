@@ -47,7 +47,12 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		// bubble sort because I am lazy.  Could be replaced with about anything
 		for j := 0; j < len(list)-1; j++ {
 			for k := 0; k < len(list)-j-1; k++ {
-				if list[k].Difficulty > list[k+1].Difficulty { // sort the largest difficulty to the end of the list
+				d1 := list[k].Difficulty
+				d2 := list[k+1].Difficulty
+				if d1 == 0 || d2 == 0 {
+					panic("Should not be here")
+				}
+				if d1 > d2 { // sort the largest difficulty to the end of the list
 					list[k], list[k+1] = list[k+1], list[k]
 				}
 			}

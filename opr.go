@@ -109,7 +109,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 	if opr.Entry != nil {
 		hash = opr.Entry.Hash()
 	}
-	str := fmt.Sprintf("DID %6x EntryHash %x Nonce %16x Difficulty %10d",
+	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d",
 		opr.FactomDigitalID[:6],
 		hash,
 		opr.Nonce[:16],
