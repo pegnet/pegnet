@@ -21,6 +21,7 @@ type OraclePriceRecord struct {
 	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
 	Entry              *factom.Entry     // not part of OPR - Entry to record this record
 	ChainID            [32]byte
+	Dbht               int32 // The Directory Block Height that this record is to contribute to.
 	VersionEntryHash   [32]byte
 	WinningPreviousOPR [32]byte
 	CoinbasePNTAddress [32]byte
@@ -105,15 +106,16 @@ func (opr *OraclePriceRecord) ComputeDifficulty() uint64 {
 
 func (opr *OraclePriceRecord) ShortString() string {
 
-	hash := []byte {0}
+	hash := []byte{0}
 	if opr.Entry != nil {
 		hash = opr.Entry.Hash()
 	}
-	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d",
+	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d Grade %20f",
 		opr.FactomDigitalID[:6],
 		hash,
 		opr.Nonce[:16],
-		opr.Difficulty)
+		opr.Difficulty,
+		opr.Grade)
 	return str
 }
 
@@ -132,6 +134,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	opr.ComputeDifficulty()
 	print32("ChainID", opr.ChainID[:])
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
+	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	print32("VersionEntryHash", opr.VersionEntryHash[:])
 	print32("WinningPreviousOPR", opr.WinningPreviousOPR[:])
 	print32("CoinbasePNTAddress", opr.CoinbasePNTAddress[:])
@@ -164,6 +167,7 @@ func (opr *OraclePriceRecord) MarshalBinary() ([]byte, error) {
 	record := []byte{}
 
 	record = append(record, opr.ChainID[:]...)
+	record = append(record, byte(opr.Dbht>>24), byte(opr.Dbht>>16), byte(opr.Dbht>>8), byte(opr.Dbht))
 	record = append(record, opr.VersionEntryHash[:]...)
 	record = append(record, opr.WinningPreviousOPR[:]...)
 	record = append(record, opr.CoinbasePNTAddress[:]...)
@@ -201,6 +205,8 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 	}()
 	copy(opr.ChainID[:], data[:32])
 	data = data[32:]
+	opr.Dbht = int32(data[0])<<24 + int32(data[1])<<24 + int32(data[2])<<24 + int32(data[3])
+	data = data[4:]
 	copy(opr.VersionEntryHash[:], data[:32])
 	data = data[32:]
 	copy(opr.WinningPreviousOPR[:], data[:32])

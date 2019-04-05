@@ -13,6 +13,8 @@ import (
 	"time"
 )
 
+const limit = 600 // Limit calls to get pricing to once every 10 minutes.
+
 type PegAssets struct {
 	PNT        PegItems
 	USD        PegItems
@@ -85,7 +87,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastMutex.Lock()
 	now := time.Now().Unix()
 	delta := now - lastTime
-	if delta < 50 {
+	if delta < limit {
 		pa := lastAnswer.Clone()
 		lastMutex.Unlock()
 		return pa

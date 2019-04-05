@@ -38,28 +38,31 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 
 	// Calculate the difficult for each entry in the list of OraclePriceRecords.
 	for _, opr := range list {
+		diff := opr.Difficulty
 		opr.ComputeDifficulty()
+		if opr.Difficulty != diff {
+			panic("Difficulty changed")
+		}
 	}
 
 	last := len(list)
 	// Throw away all the entries but the top 50 in difficulty
-	if len(list) > 50 {
-		// bubble sort because I am lazy.  Could be replaced with about anything
-		for j := 0; j < len(list)-1; j++ {
-			for k := 0; k < len(list)-j-1; k++ {
-				d1 := list[k].Difficulty
-				d2 := list[k+1].Difficulty
-				if d1 == 0 || d2 == 0 {
-					panic("Should not be here")
-				}
-				if d1 > d2 { // sort the largest difficulty to the end of the list
-					list[k], list[k+1] = list[k+1], list[k]
-				}
+	// bubble sort because I am lazy.  Could be replaced with about anything
+	for j := 0; j < len(list)-1; j++ {
+		for k := 0; k < len(list)-j-1; k++ {
+			d1 := list[k].Difficulty
+			d2 := list[k+1].Difficulty
+			if d1 == 0 || d2 == 0 {
+				panic("Should not be here")
+			}
+			if d1 > d2 { // sort the largest difficulty to the end of the list
+				list[k], list[k+1] = list[k+1], list[k]
 			}
 		}
-		last = 50 // truncate the list to the best 50
 	}
-
+	if len(list) > 50 {
+		last = 50
+	}
 	// Go through and throw away entries that are outside the average or on a tie, have the worst difficulty
 	// until we are only left with 10 entries to reward
 	for i := last; i >= 10; i-- {
