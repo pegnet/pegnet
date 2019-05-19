@@ -4,13 +4,23 @@ package oprecord
 
 import (
 	"encoding/binary"
+	"github.com/pegnet/LXR256"
 
 	"errors"
 	"fmt"
+	"github.com/FactomProject/factom"
+	"github.com/zpatrick/go-config"
 )
 
 type OraclePriceRecord struct {
+	Config             *config.Config    // not part of OPR - The config of the miner using the record
+	Difficulty         uint64            // not part of OPR -The difficulty of the given nonce
+	Grade              float64           // not part of OPR -The grade when OPR records are compared
+	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
+	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
+	Entry              *factom.Entry     // not part of OPR - Entry to record this record
 	ChainID            [32]byte
+	Dbht               int32 // The Directory Block Height that this record is to contribute to.
 	VersionEntryHash   [32]byte
 	WinningPreviousOPR [32]byte
 	CoinbasePNTAddress [32]byte
@@ -38,6 +48,76 @@ type OraclePriceRecord struct {
 	FCT                [8]byte
 }
 
+func (opr *OraclePriceRecord) GetTokens() (tokens []float64) {
+	add := func(v [8]byte) {
+		tokens = append(tokens, float64(binary.BigEndian.Uint64(v[:])))
+	}
+	add(opr.PNT)
+	add(opr.USD)
+	add(opr.EUR)
+	add(opr.JPY)
+	add(opr.GBP)
+	add(opr.CAD)
+	add(opr.CHF)
+	add(opr.INR)
+	add(opr.SGD)
+	add(opr.CNY)
+	add(opr.HKD)
+	add(opr.XAU)
+	add(opr.XAG)
+	add(opr.XPD)
+	add(opr.XPT)
+	add(opr.XBT)
+	add(opr.ETH)
+	add(opr.LTC)
+	add(opr.XBC)
+	add(opr.FCT)
+	return
+}
+
+var lx *lxr.LXRHash
+
+func init() {
+	lx = new(lxr.LXRHash)
+	lx.Init(0x123412341234, 10240000, 256, 5)
+}
+
+func (opr *OraclePriceRecord) GetHash() []byte {
+	data, err := opr.MarshalBinary()
+	check(err)
+	oprHash := lx.Hash(data)
+	return oprHash
+}
+
+func (opr *OraclePriceRecord) GetNonceHash() []byte {
+	no := append([]byte{}, opr.Nonce[:]...)
+	oprHash := opr.GetHash()
+	no = append(no, oprHash...)
+	h := lx.Hash(no)
+	return h
+}
+
+func (opr *OraclePriceRecord) ComputeDifficulty() uint64 {
+	h := opr.GetNonceHash()
+	opr.Difficulty = lxr.Difficulty(h) // Go calculate the difficulty, and cache in the opr
+	return opr.Difficulty
+}
+
+func (opr *OraclePriceRecord) ShortString() string {
+
+	hash := []byte{0}
+	if opr.Entry != nil {
+		hash = opr.Entry.Hash()
+	}
+	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d Grade %20f",
+		opr.FactomDigitalID[:6],
+		hash,
+		opr.Nonce[:16],
+		opr.Difficulty,
+		opr.Grade)
+	return str
+}
+
 // String
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
@@ -50,7 +130,10 @@ func (opr *OraclePriceRecord) String() (str string) {
 		}
 		str = str + fmt.Sprintf("%32s %x\n", label, value)
 	}
+	opr.ComputeDifficulty()
 	print32("ChainID", opr.ChainID[:])
+	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
+	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	print32("VersionEntryHash", opr.VersionEntryHash[:])
 	print32("WinningPreviousOPR", opr.WinningPreviousOPR[:])
 	print32("CoinbasePNTAddress", opr.CoinbasePNTAddress[:])
@@ -83,6 +166,7 @@ func (opr *OraclePriceRecord) MarshalBinary() ([]byte, error) {
 	record := []byte{}
 
 	record = append(record, opr.ChainID[:]...)
+	record = append(record, byte(opr.Dbht>>24), byte(opr.Dbht>>16), byte(opr.Dbht>>8), byte(opr.Dbht))
 	record = append(record, opr.VersionEntryHash[:]...)
 	record = append(record, opr.WinningPreviousOPR[:]...)
 	record = append(record, opr.CoinbasePNTAddress[:]...)
@@ -120,6 +204,8 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 	}()
 	copy(opr.ChainID[:], data[:32])
 	data = data[32:]
+	opr.Dbht = int32(data[0])<<24 + int32(data[1])<<24 + int32(data[2])<<24 + int32(data[3])
+	data = data[4:]
 	copy(opr.VersionEntryHash[:], data[:32])
 	data = data[32:]
 	copy(opr.WinningPreviousOPR[:], data[:32])
@@ -176,11 +262,11 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 	return
 }
 
-func (opr *OraclePriceRecord) GetOPRecord() {
-
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
+	opr.Config = c
 	//get asset values
 	var Peg PegAssets
-	Peg = PullPEGAssets()
+	Peg = PullPEGAssets(c)
 	Peg.FillPriceBytes()
 
 	opr.SetPegValues(Peg)
@@ -258,4 +344,19 @@ func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
 	binary.BigEndian.PutUint64(b, uint64(assets.FCT.Value))
 	copy(opr.FCT[0:], b[:])
 
+}
+
+// GetEntry
+// Given a particular chain to write this entry, compute a proper entry
+// for this OraclePriceRecord
+func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
+	// An OPR record only has the nonce as an external ID
+	entryExtIDs := [][]byte{opr.Nonce[:]}
+	// The body Data is the marshal of the OPR
+	bodyData, err := opr.MarshalBinary()
+	check(err)
+	// Create the Entry struct
+	assetEntry := factom.Entry{ChainID: chainID, ExtIDs: entryExtIDs, Content: bodyData}
+	opr.Entry = &assetEntry
+	return opr.Entry
 }

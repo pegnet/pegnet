@@ -1,8 +1,12 @@
 package oprecord
 
 import (
+	"fmt"
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"time"
 )
 
 type CoinCapResponse struct {
@@ -24,14 +28,20 @@ type CoinCapRecord struct {
 	VWAP24Hr          string `json:"vwap24Hr"`
 }
 
-func CallCoinCap() ([]byte, error) {
+func CallCoinCap(config *config.Config) ([]byte, error) {
+
 	resp, err := http.Get("http://api.coincap.io/v2/assets?limit=500")
-	if err != nil {
-		return nil, err
-	} else {
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		return body, err
+	for i := 0; i < 10; i++ {
+		if err != nil {
+			time.Sleep(time.Second)
+			fmt.Fprintf(os.Stderr, "Error %2d, retrying... %v\n", i+1, err)
+			resp, err = http.Get("http://api.coincap.io/v2/assets?limit=500")
+		} else {
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			return body, err
+		}
 	}
+	return nil, err
 
 }
