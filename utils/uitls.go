@@ -35,6 +35,29 @@ var PegAssetNames = []string{
 	"pFCT",
 }
 
+var TestPegAssetNames = []string{
+	"tPNT",
+	"tUSD",
+	"tEUR",
+	"tJPY",
+	"tGBP",
+	"tCAD",
+	"tCHF",
+	"tINR",
+	"tSGD",
+	"tCNY",
+	"tHKD",
+	"tXAU",
+	"tXAG",
+	"tXPD",
+	"tXPT",
+	"tXBT",
+	"tETH",
+	"tLTC",
+	"tXBC",
+	"tFCT",
+}
+
 func PullValue(line string, howMany int) string {
 	i := 0
 	//fmt.Println(line)
