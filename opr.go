@@ -79,7 +79,7 @@ var lx *lxr.LXRHash
 
 func init() {
 	lx = new(lxr.LXRHash)
-	lx.Init(0x123412341234, 10240000,256, 5)
+	lx.Init(0x123412341234, 10240000, 256, 5)
 }
 
 func (opr *OraclePriceRecord) GetHash() []byte {

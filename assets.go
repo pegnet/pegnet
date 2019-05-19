@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-const limit = 600 // Limit calls to get pricing to once every 10 minutes.
+const qlimit = 600 // Limit queries to once every 10 minutes (600 seconds)
 
 type PegAssets struct {
 	PNT        PegItems
@@ -85,14 +85,13 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	// Prevent pounding of external APIs
 	lastMutex.Lock()
+	defer lastMutex.Unlock()
 	now := time.Now().Unix()
 	delta := now - lastTime
-	if delta < limit {
+	if delta < qlimit && lastTime != 0 {
 		pa := lastAnswer.Clone()
-		lastMutex.Unlock()
 		return pa
 	}
-	lastMutex.Unlock()
 
 	lastTime = now
 	fmt.Println("Make a call to get data. Seconds since last call:", delta)
@@ -172,26 +171,31 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	KitcoResponse, err := CallKitcoWeb()
 
-	if err != nil {
-		fmt.Println(err)
-		//	os.Exit(1)
-	} else {
-
-		//fmt.Println("KitcoResponse:", KitcoResponse)
-		Peg.XAU.Value = utils.FloatStringToInt(KitcoResponse.Silver.Bid)
-		Peg.XAU.When = KitcoResponse.Silver.Date
-		Peg.XAG.Value = utils.FloatStringToInt(KitcoResponse.Gold.Bid)
-		Peg.XAG.When = KitcoResponse.Gold.Date
-		Peg.XPD.Value = utils.FloatStringToInt(KitcoResponse.Palladium.Bid)
-		Peg.XPD.When = KitcoResponse.Palladium.Date
-		Peg.XPT.Value = utils.FloatStringToInt(KitcoResponse.Platinum.Bid)
-		Peg.XPT.When = KitcoResponse.Platinum.Date
-
+	for i := 0; i < 10; i++ {
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error %d so retrying.  Error %v\n", i+1, err)
+			time.Sleep(time.Second)
+			KitcoResponse, err = CallKitcoWeb()
+		} else {
+			break //	os.Exit(1)
+		}
 	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error, using old data.\n")
+		pa := lastAnswer.Clone()
+		return pa
+	}
+	//fmt.Println("KitcoResponse:", KitcoResponse)
+	Peg.XAU.Value = utils.FloatStringToInt(KitcoResponse.Silver.Bid)
+	Peg.XAU.When = KitcoResponse.Silver.Date
+	Peg.XAG.Value = utils.FloatStringToInt(KitcoResponse.Gold.Bid)
+	Peg.XAG.When = KitcoResponse.Gold.Date
+	Peg.XPD.Value = utils.FloatStringToInt(KitcoResponse.Palladium.Bid)
+	Peg.XPD.When = KitcoResponse.Palladium.Date
+	Peg.XPT.Value = utils.FloatStringToInt(KitcoResponse.Platinum.Bid)
+	Peg.XPT.When = KitcoResponse.Platinum.Date
 
-	lastMutex.Lock()
 	lastAnswer = Peg.Clone()
-	lastMutex.Unlock()
 	return Peg
 }
 
