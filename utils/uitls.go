@@ -133,30 +133,30 @@ func ConvertRawAddrToPegT(prefix string, adr [32]byte) (string, error) {
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
 //
-func ConvertPegTAddrToRaw (adr string) (prefix string, rawAdr []byte, err error) {
+func ConvertPegTAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 	adrLen := len(adr)
-	if adrLen < 44 || len (adr)> 56 {
-		return "",nil,errors.New(
-			fmt.Sprintf("valid pegNet token addresses are 44 to 56 characters in length. len(adr)=%d ",adrLen))
+	if adrLen < 44 || len(adr) > 56 {
+		return "", nil, errors.New(
+			fmt.Sprintf("valid pegNet token addresses are 44 to 56 characters in length. len(adr)=%d ", adrLen))
 	}
 
 	prefix = adr[:4]
 	if !CheckPrefix(prefix) {
 		return "", nil, errors.New(prefix + " is not a valid PegNet prefix")
 	}
-	b58 := adr[4:adrLen-8]
+	b58 := adr[4 : adrLen-8]
 	raw := base58.Decode(b58)
-	if len(raw)==0 {
-		return "",nil,errors.New("invalid base58 encoding")
+	if len(raw) == 0 {
+		return "", nil, errors.New("invalid base58 encoding")
 	}
 	hash := sha256.Sum256([]byte(adr[:adrLen-8]))
 	hash = sha256.Sum256(hash[:])
 	chksum := hex.EncodeToString(hash[:4])
 	if chksum != adr[adrLen-8:] {
-		return "",nil,errors.New("checksum failure")
+		return "", nil, errors.New("checksum failure")
 	}
 
-	rawAdr = base58.Decode(adr[4:adrLen-8])
+	rawAdr = base58.Decode(adr[4 : adrLen-8])
 
 	return prefix, rawAdr, nil
 
@@ -165,6 +165,6 @@ func ConvertPegTAddrToRaw (adr string) (prefix string, rawAdr []byte, err error)
 // PegTAdrIsValid()
 // Check that the given human/wallet PegNet address is valid.
 func PegTAdrIsValid(adr string) error {
-	_,_, err := ConvertPegTAddrToRaw(adr)
+	_, _, err := ConvertPegTAddrToRaw(adr)
 	return err
 }
