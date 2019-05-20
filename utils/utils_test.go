@@ -2,6 +2,7 @@ package utils_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	. "github.com/pegnet/OracleRecord/utils"
@@ -9,11 +10,10 @@ import (
 )
 
 func TestConvertRawAddrToPegT(t *testing.T) {
-	var RawAddress = [32]byte{
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-		1, 2, 3, 4, 5, 6, 7, 8, 9, 0,
-		1, 2}
+	strAddr := "1624f2544a275dcf3f0c142c25ed0ef258851c1a7ff9605ea4fc40ddd1d178c7"
+	R2, _ := hex.DecodeString(strAddr)
+	var RawAddress [32]byte
+	copy(RawAddress[:], R2)
 
 	var HumanAdr string
 	var err error
@@ -41,6 +41,10 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 				RawAddress, raw))
 		}
 		return nil
+	}
+
+	if err := ConvertToHuman("tPNT"); err != nil {
+		t.Error(err)
 	}
 
 	if err := ConvertToHuman("pPNT"); err != nil {

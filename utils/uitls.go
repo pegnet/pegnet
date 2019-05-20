@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
@@ -97,6 +98,12 @@ func FloatStringToInt(floatString string) int64 {
 func CheckPrefix(name string) bool {
 	for _, v := range PegAssetNames {
 		if v == name {
+			return true
+		}
+	}
+	for _, v := range TestPegAssetNames {
+		if v == name {
+			fmt.Fprintf(os.Stderr, "Address is a TestNet Address")
 			return true
 		}
 	}

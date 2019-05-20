@@ -23,7 +23,7 @@ type OraclePriceRecord struct {
 	Dbht               int32 // The Directory Block Height that this record is to contribute to.
 	VersionEntryHash   [32]byte
 	WinningPreviousOPR [32]byte
-	CoinbasePNTAddress [32]byte
+	CoinbasePNTAddress [57]byte //CoinbasePNTAddress is kept as a 56 char string, null terminated
 	BlockReward        [8]byte
 	FactomDigitalID    [32]byte
 	PNT                [8]byte
@@ -130,13 +130,21 @@ func (opr *OraclePriceRecord) String() (str string) {
 		}
 		str = str + fmt.Sprintf("%32s %x\n", label, value)
 	}
+	var zero int
+	for i, b := range opr.CoinbasePNTAddress {
+		if b == 0 {
+			zero = i
+			break
+		}
+	}
+
 	opr.ComputeDifficulty()
 	print32("ChainID", opr.ChainID[:])
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	print32("VersionEntryHash", opr.VersionEntryHash[:])
 	print32("WinningPreviousOPR", opr.WinningPreviousOPR[:])
-	print32("CoinbasePNTAddress", opr.CoinbasePNTAddress[:])
+	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT Address", string(opr.CoinbasePNTAddress[:zero]))
 	print32("BlockReward", opr.BlockReward[:])
 	print32("FactomDigitalID", opr.FactomDigitalID[:])
 	print32("PNT", opr.PNT[:])
@@ -210,8 +218,8 @@ func (opr *OraclePriceRecord) UnmarshalBinary(data []byte) (err error) {
 	data = data[32:]
 	copy(opr.WinningPreviousOPR[:], data[:32])
 	data = data[32:]
-	copy(opr.CoinbasePNTAddress[:], data[:32])
-	data = data[32:]
+	copy(opr.CoinbasePNTAddress[:], data[:57])
+	data = data[57:]
 	copy(opr.BlockReward[:], data[:8])
 	data = data[8:]
 	copy(opr.FactomDigitalID[:], data[:32])
@@ -285,8 +293,12 @@ func (opr *OraclePriceRecord) SetWinningPreviousOPR(winning []byte) {
 	copy(opr.WinningPreviousOPR[0:], winning)
 }
 
-func (opr *OraclePriceRecord) SetCoinbasePNTAddress(coinbaseAddress []byte) {
-	copy(opr.CoinbasePNTAddress[0:], coinbaseAddress)
+func (opr *OraclePriceRecord) SetCoinbasePNTAddress(coinbaseAddress string) {
+	if len(coinbaseAddress) > len(opr.CoinbasePNTAddress) {
+		panic("Cannot have a coinbaseAddress as long as " + string(coinbaseAddress))
+	}
+	copy(opr.CoinbasePNTAddress[:], coinbaseAddress)
+	fmt.Println(string(opr.CoinbasePNTAddress[:]))
 }
 
 func (opr *OraclePriceRecord) SetBlockReward(blockreward uint64) {
