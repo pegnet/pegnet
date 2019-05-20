@@ -17,7 +17,6 @@ type OraclePriceRecord struct {
 	Difficulty         uint64            // not part of OPR -The difficulty of the given nonce
 	Grade              float64           // not part of OPR -The grade when OPR records are compared
 	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
-	OPRHash            [32]byte          // not part of OPR - the hash of the OPR record
 	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
 	Entry              *factom.Entry     // not part of OPR - Entry to record this record
 	ChainID            [32]byte
@@ -80,7 +79,7 @@ var lx *lxr.LXRHash
 
 func init() {
 	lx = new(lxr.LXRHash)
-	lx.Init()
+	lx.Init(0x123412341234, 10240000, 256, 5)
 }
 
 func (opr *OraclePriceRecord) GetHash() []byte {
