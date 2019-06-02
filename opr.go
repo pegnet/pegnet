@@ -3,29 +3,32 @@ package oprecord
 // These
 
 import (
-	"encoding/binary"
 	"github.com/pegnet/LXR256"
-
-	"errors"
 	"fmt"
 	"github.com/FactomProject/factom"
 	"github.com/zpatrick/go-config"
 	"encoding/json"
+	"github.com/FactomProject/btcutil/base58"
 )
 
 type OraclePriceRecord struct {
-	Config             *config.Config    // not part of OPR - The config of the miner using the record
-	Difficulty         uint64            // not part of OPR -The difficulty of the given nonce
-	Grade              float64           // not part of OPR -The grade when OPR records are compared
-	Nonce              [32]byte          // not part of OPR - nonce creacted by mining
-	EC                 *factom.ECAddress // not part of OPR - Entry Credit Address used by a miner
-	Entry              *factom.Entry     // not part of OPR - Entry to record this record
-	ChainID            [32]byte          `json:chainid`
-	Dbht               int32 			 `json:dbht` // The Directory Block Height that this record is to contribute to.
-	VersionEntryHash   [32]byte			 `json:version` // Entry hash for the PegNet version
-	WinningPreviousOPR [10][32]byte		 `json:winners` // Winning OPR entries in the previous block
-	CoinbasePNTAddress string			 `json:coinbase` // PNT Address to pay PNT
-	FactomDigitalID    [32]byte          `did` // Digital Identity of the miner
+	// These fields are not part of the OPR, but track values associated with the OPR.
+	Config     *config.Config    `json:"-"`//  The config of the miner using the record
+	Difficulty uint64            `json:"-"`// The difficulty of the given nonce
+	Grade      float64           `json:"-"`// The grade when OPR records are compared
+	Nonce      string            `json:"-"`// [base58] - nonce created by mining;
+	EC         *factom.ECAddress `json:"-"`// Entry Credit Address used by a miner
+	Entry      *factom.Entry     `json:"-"`// Entry to record this record
+
+	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
+	ChainID            string     `json:chainid`  // [base58]  Chain ID of the chain used by the Oracle Miners
+	Dbht               int32      `json:dbht`     //           The Directory Block Height of the OPR.
+	VersionEntryHash   string     `json:version`  // [base58]  Entry hash for the PegNet version
+	WinningPreviousOPR [10]string `json:winners`  // [base58]  Winning OPR entries in the previous block
+	CoinbasePNTAddress string     `json:coinbase` // [base58]  PNT Address to pay PNT
+	FactomDigitalID    []string   `did`           // [unicode] Digital Identity of the miner
+
+	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	PNT                float64
 	USD                float64
 	EUR                float64
@@ -49,17 +52,15 @@ type OraclePriceRecord struct {
 }
 
 type Token struct {
-	code string
+	code  string
 	value float64
 }
 
-var lx lxr.LXRHash
+var LX lxr.LXRHash
 
 func init() {
-	lx.Init(0x123412341234, 32, 256, 5)
+	LX.Init(0x123412341234, 20, 256, 5)
 }
-
-
 
 func (opr *OraclePriceRecord) GetTokens() []Token {
 	tokens := []Token{}
@@ -70,7 +71,7 @@ func (opr *OraclePriceRecord) GetTokens() []Token {
 func (opr *OraclePriceRecord) GetHash() []byte {
 	data, err := json.Marshal(opr)
 	check(err)
-	oprHash := lx.Hash(data)
+	oprHash := LX.Hash(data)
 	return oprHash
 }
 
@@ -78,7 +79,7 @@ func (opr *OraclePriceRecord) GetNonceHash() []byte {
 	no := append([]byte{}, opr.Nonce[:]...)
 	oprHash := opr.GetHash()
 	no = append(no, oprHash...)
-	h := lx.Hash(no)
+	h := LX.Hash(no)
 	return h
 }
 
@@ -107,45 +108,47 @@ func (opr *OraclePriceRecord) ShortString() string {
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
-	print32 := func(label string, value []byte) {
-		if len(value) == 8 {
-			v := binary.BigEndian.Uint64(value)
-			str = str + fmt.Sprintf("%32s %8d.%08d\n", label, v/100000000, v%100000000)
-			return
-		}
-		str = str + fmt.Sprintf("%32s %x\n", label, value)
-	}
 	opr.ComputeDifficulty()
-	print32("ChainID", opr.ChainID[:])
+	str = fmt.Sprintf("%s%32s %v\n", str, "ChainID", opr.ChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
-	print32("VersionEntryHash", opr.VersionEntryHash[:])
-	for _,v := range opr.WinningPreviousOPR {
-		print32("  WinningPreviousOPR", v[:])
+	str = fmt.Sprintf("%s%32s %v\n", str, "VersionEntryHash", opr.VersionEntryHash)
+	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
+	for i, v := range opr.WinningPreviousOPR {
+		str = fmt.Sprintf("%s%32s     %2d, %s\n", str, "", i+1, v)
 	}
-	str = str + fmt.Sprintf("%32s %v\n",opr.CoinbasePNTAddress)
-	print32("FactomDigitalID", opr.FactomDigitalID[:])
+	str = str + fmt.Sprintf("%32s %v\n", opr.CoinbasePNTAddress)
 
-	str = fmt.Sprintf("%s%32s %v\n",str,"PNT", opr.PNT)
-	str = fmt.Sprintf("%s%32s %v\n",str,"USD", opr.USD)
-	str = fmt.Sprintf("%s%32s %v\n",str,"EUR", opr.EUR)
-	str = fmt.Sprintf("%s%32s %v\n",str,"JPY", opr.JPY)
-	str = fmt.Sprintf("%s%32s %v\n",str,"GBP", opr.GBP)
-	str = fmt.Sprintf("%s%32s %v\n",str,"CAD", opr.CAD)
-	str = fmt.Sprintf("%s%32s %v\n",str,"CHF", opr.CHF)
-	str = fmt.Sprintf("%s%32s %v\n",str,"INR", opr.INR)
-	str = fmt.Sprintf("%s%32s %v\n",str,"SGD", opr.SGD)
-	str = fmt.Sprintf("%s%32s %v\n",str,"CNY", opr.CNY)
-	str = fmt.Sprintf("%s%32s %v\n",str,"HKD", opr.HKD)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XAU", opr.XAU)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XAG", opr.XAG)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XPD", opr.XPD)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XPT", opr.XPT)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XBT", opr.XBT)
-	str = fmt.Sprintf("%s%32s %v\n",str,"ETH", opr.ETH)
-	str = fmt.Sprintf("%s%32s %v\n",str,"LTC", opr.LTC)
-	str = fmt.Sprintf("%s%32s %v\n",str,"XBC", opr.XBC)
-	str = fmt.Sprintf("%s%32s %v\n",str,"FCT", opr.FCT)
+	// Make a display string out of the Digital Identity.
+	did := ""
+	for i, t := range opr.FactomDigitalID {
+		if i > 0 {
+			did = did + " --- "
+		}
+		did = did + t
+	}
+
+	str = fmt.Sprintf("%s%32s %v\n", str, "FactomDigitalID", did)
+	str = fmt.Sprintf("%s%32s %v\n", str, "PNT", opr.PNT)
+	str = fmt.Sprintf("%s%32s %v\n", str, "USD", opr.USD)
+	str = fmt.Sprintf("%s%32s %v\n", str, "EUR", opr.EUR)
+	str = fmt.Sprintf("%s%32s %v\n", str, "JPY", opr.JPY)
+	str = fmt.Sprintf("%s%32s %v\n", str, "GBP", opr.GBP)
+	str = fmt.Sprintf("%s%32s %v\n", str, "CAD", opr.CAD)
+	str = fmt.Sprintf("%s%32s %v\n", str, "CHF", opr.CHF)
+	str = fmt.Sprintf("%s%32s %v\n", str, "INR", opr.INR)
+	str = fmt.Sprintf("%s%32s %v\n", str, "SGD", opr.SGD)
+	str = fmt.Sprintf("%s%32s %v\n", str, "CNY", opr.CNY)
+	str = fmt.Sprintf("%s%32s %v\n", str, "HKD", opr.HKD)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XAU", opr.XAU)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XAG", opr.XAG)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XPD", opr.XPD)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XPT", opr.XPT)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XBT", opr.XBT)
+	str = fmt.Sprintf("%s%32s %v\n", str, "ETH", opr.ETH)
+	str = fmt.Sprintf("%s%32s %v\n", str, "LTC", opr.LTC)
+	str = fmt.Sprintf("%s%32s %v\n", str, "XBC", opr.XBC)
+	str = fmt.Sprintf("%s%32s %v\n", str, "FCT", opr.FCT)
 	return str
 }
 
@@ -160,50 +163,55 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 
 }
 
-func (opr *OraclePriceRecord) SetChainID(chainID []byte) {
-	copy(opr.ChainID[0:], chainID)
+// Set the chainID; assumes a base58 string
+func (opr *OraclePriceRecord) SetChainID(chainID string) {
+	opr.ChainID = chainID
 }
 
-func (opr *OraclePriceRecord) SetVersionEntryHash(versionEntryHash []byte) {
-	copy(opr.VersionEntryHash[0:], versionEntryHash)
+// Set the VersionEntryHash; assumes a base58 string
+func (opr *OraclePriceRecord) SetVersionEntryHash(versionEntryHash string) {
+	opr.VersionEntryHash = versionEntryHash
 }
 
-func (opr *OraclePriceRecord) SetWinningPreviousOPR(winning []byte) {
-	copy(opr.WinningPreviousOPR[0:], winning)
+// Sets one of the winning OPR records from the previous block.  Expects a base58 string
+func (opr *OraclePriceRecord) SetWinningPreviousOPR(index int, winning string) {
+	opr.WinningPreviousOPR[index] = winning
 }
 
-func (opr *OraclePriceRecord) SetCoinbasePNTAddress(coinbaseAddress []byte) {
-	copy(opr.CoinbasePNTAddress[0:], coinbaseAddress)
+// Sets the PNT Address in human/wallet format
+func (opr *OraclePriceRecord) SetCoinbasePNTAddress(coinbaseAddress string) {
+	opr.CoinbasePNTAddress = coinbaseAddress
 }
 
-func (opr *OraclePriceRecord) SetFactomDigitalID(factomDigitalID []byte) {
-	copy(opr.FactomDigitalID[0:], factomDigitalID)
+// Sets the DigitalID for the miner.  Expects the ExtIDs of the Identity chain.
+// Miner IDs are expected to be in unicode
+func (opr *OraclePriceRecord) SetFactomDigitalID(factomDigitalID []string) {
+	opr.FactomDigitalID = factomDigitalID
 
 }
 
 func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
-	b := make([]byte, 8)
 
 	opr.PNT = assets.PNT.Value
-	opr.USD =	assets.USD.Value
-	opr.EUR=assets.EUR.Value
-	opr.JPY=assets.JPY.Value
-	opr.GBP=assets.GBP.Value
-	opr.CAD=assets.CAD.Value
-	opr.CHF=assets.CHF.Value
-	opr.INR=assets.INR.Value
-	opr.SGD=assets.SGD.Value
-	opr.CNY=assets.CNY.Value
-	opr.HKD=assets.HKD.Value
-	opr.XAU=assets.XAU.Value
-	opr.XAG=assets.XAG.Value
-	opr.XPD=assets.XPD.Value
-	opr.XPT=assets.XPT.Value
-	opr.XBT=assets.XBT.Value
-	opr.ETH=assets.ETH.Value
-	opr.LTC=assets.LTC.Value
-	opr.XBC=assets.XBC.Value
-	opr.FCT=assets.FCT.Value
+	opr.USD = assets.USD.Value
+	opr.EUR = assets.EUR.Value
+	opr.JPY = assets.JPY.Value
+	opr.GBP = assets.GBP.Value
+	opr.CAD = assets.CAD.Value
+	opr.CHF = assets.CHF.Value
+	opr.INR = assets.INR.Value
+	opr.SGD = assets.SGD.Value
+	opr.CNY = assets.CNY.Value
+	opr.HKD = assets.HKD.Value
+	opr.XAU = assets.XAU.Value
+	opr.XAG = assets.XAG.Value
+	opr.XPD = assets.XPD.Value
+	opr.XPT = assets.XPT.Value
+	opr.XBT = assets.XBT.Value
+	opr.ETH = assets.ETH.Value
+	opr.LTC = assets.LTC.Value
+	opr.XBC = assets.XBC.Value
+	opr.FCT = assets.FCT.Value
 
 }
 
@@ -212,7 +220,9 @@ func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
 // for this OraclePriceRecord
 func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
 	// An OPR record only has the nonce as an external ID
-	entryExtIDs := [][]byte{opr.Nonce[:]}
+
+	bNonce := base58.Decode(opr.Nonce)
+	entryExtIDs := append([][]byte{}, bNonce)
 	// The body Data is the marshal of the OPR
 	bodyData, err := json.Marshal(opr)
 	check(err)

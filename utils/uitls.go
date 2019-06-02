@@ -2,14 +2,19 @@ package utils
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"github.com/FactomProject/btcutil/base58"
-	"github.com/pegnet/OracleRecord/common"
+)
+
+type NetworkType int
+
+const (
+	MAIN_NETWORK NetworkType = iota+1
+	TEST_NETWORK
 )
 
 var PegAssetNames = []string{
@@ -76,42 +81,36 @@ func PullValue(line string, howMany int) string {
 	//fmt.Println(line)
 	return line
 }
-func FloatStringToInt(floatString string) int64 {
-	//fmt.Println(floatString)
-	if floatString == "-" {
-		return 0
-	}
-	if strings.TrimSpace(floatString) == "" {
-		return 0
-	}
-	floatValue, err := strconv.ParseFloat(floatString, 64)
-	if err != nil {
-		fmt.Println("ParseError:", floatString)
-		return 0
-	} else {
-		return int64(floatValue * common.PointMultiple)
-	}
 
-}
-
-func CheckPrefix(name string) bool {
-	for _, v := range PegAssetNames {
-		if v == name {
-			return true
+// CheckPrefix()
+// Check the prefix for either network type.
+func CheckPrefix(network NetworkType, name string) bool {
+	if network == MAIN_NETWORK {
+		for _, v := range PegAssetNames {
+			if v == name {
+				return true
+			}
+		}
+	}else{
+		for _, v := range TestPegAssetNames {
+			if v == name {
+				return true
+			}
 		}
 	}
 	return false
+
 }
 
 // ConvertRawAddrToPegT()
 // Converts a raw RCD1 address into a wallet friendly address that can be used to
 // convert assets, check balances, and send tokens.  While the underlying private key can be
 // used to hold Factoids or any token in the PegNet, users need addresses that create a
-// barrier to mistakes that can lead to sending the wronge tokens to the wrong addresses
-func ConvertRawAddrToPegT(prefix string, adr [32]byte) (string, error) {
+// barrier to mistakes that can lead to sending the wrong tokens to the wrong addresses
+func ConvertRawAddrToPegT(network NetworkType, prefix string, adr [32]byte) (string, error) {
 
 	// Make sure the prefix is valid.
-	if !CheckPrefix(prefix) {
+	if !CheckPrefix(network, prefix) {
 		return "", errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
@@ -133,7 +132,7 @@ func ConvertRawAddrToPegT(prefix string, adr [32]byte) (string, error) {
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
 //
-func ConvertPegTAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
+func ConvertPegTAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr []byte, err error) {
 	adrLen := len(adr)
 	if adrLen < 44 || len(adr) > 56 {
 		return "", nil, errors.New(
@@ -141,7 +140,7 @@ func ConvertPegTAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) 
 	}
 
 	prefix = adr[:4]
-	if !CheckPrefix(prefix) {
+	if !CheckPrefix(network, prefix) {
 		return "", nil, errors.New(prefix + " is not a valid PegNet prefix")
 	}
 	b58 := adr[4 : adrLen-8]
@@ -164,7 +163,7 @@ func ConvertPegTAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) 
 
 // PegTAdrIsValid()
 // Check that the given human/wallet PegNet address is valid.
-func PegTAdrIsValid(adr string) error {
-	_, _, err := ConvertPegTAddrToRaw(adr)
+func PegTAdrIsValid(network NetworkType, adr string) error {
+	_, _, err := ConvertPegTAddrToRaw(network, adr)
 	return err
 }
