@@ -8,47 +8,56 @@ import (
 	"github.com/FactomProject/factom"
 	"github.com/zpatrick/go-config"
 	"encoding/json"
+	"time"
+	"errors"
+	"strings"
 	"github.com/FactomProject/btcutil/base58"
 )
 
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Config     *config.Config    `json:"-"`//  The config of the miner using the record
-	Difficulty uint64            `json:"-"`// The difficulty of the given nonce
-	Grade      float64           `json:"-"`// The grade when OPR records are compared
-	Nonce      string            `json:"-"`// [base58] - nonce created by mining;
-	EC         *factom.ECAddress `json:"-"`// Entry Credit Address used by a miner
-	Entry      *factom.Entry     `json:"-"`// Entry to record this record
+	Config     *config.Config    `json:"-"` //  The config of the miner using the record
+	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
+	Grade      float64           `json:"-"` // The grade when OPR records are compared
+	BestNonce  []byte            `json:"-"` // nonce created by mining;
+	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by mining)
+	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
+	Entry      *factom.Entry     `json:"-"` // Entry to record this record
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	ChainID            string     `json:chainid`  // [base58]  Chain ID of the chain used by the Oracle Miners
 	Dbht               int32      `json:dbht`     //           The Directory Block Height of the OPR.
-	VersionEntryHash   string     `json:version`  // [base58]  Entry hash for the PegNet version
 	WinningPreviousOPR [10]string `json:winners`  // [base58]  Winning OPR entries in the previous block
 	CoinbasePNTAddress string     `json:coinbase` // [base58]  PNT Address to pay PNT
 	FactomDigitalID    []string   `did`           // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
-	PNT                float64
-	USD                float64
-	EUR                float64
-	JPY                float64
-	GBP                float64
-	CAD                float64
-	CHF                float64
-	INR                float64
-	SGD                float64
-	CNY                float64
-	HKD                float64
-	XAU                float64
-	XAG                float64
-	XPD                float64
-	XPT                float64
-	XBT                float64
-	ETH                float64
-	LTC                float64
-	XBC                float64
-	FCT                float64
+	PNT float64
+	USD float64
+	EUR float64
+	JPY float64
+	GBP float64
+	CAD float64
+	CHF float64
+	INR float64
+	SGD float64
+	CNY float64
+	HKD float64
+	XAU float64
+	XAG float64
+	XPD float64
+	XPT float64
+	XBT float64
+	ETH float64
+	LTC float64
+	XBC float64
+	FCT float64
+}
+
+var LX lxr.LXRHash
+
+func init() {
+	LX.Init(0x123412341234, 25, 256, 5)
 }
 
 type Token struct {
@@ -56,15 +65,28 @@ type Token struct {
 	value float64
 }
 
-var LX lxr.LXRHash
-
-func init() {
-	LX.Init(0x123412341234, 20, 256, 5)
-}
-
-func (opr *OraclePriceRecord) GetTokens() []Token {
-	tokens := []Token{}
+func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 	tokens = append(tokens, Token{"PNT", opr.PNT})
+	tokens = append(tokens, Token{"PNT", opr.PNT})
+	tokens = append(tokens, Token{"USD", opr.USD})
+	tokens = append(tokens, Token{"EUR", opr.EUR})
+	tokens = append(tokens, Token{"JPY", opr.JPY})
+	tokens = append(tokens, Token{"GBP", opr.GBP})
+	tokens = append(tokens, Token{"CAD", opr.CAD})
+	tokens = append(tokens, Token{"CHF", opr.CHF})
+	tokens = append(tokens, Token{"INR", opr.INR})
+	tokens = append(tokens, Token{"SGD", opr.SGD})
+	tokens = append(tokens, Token{"CNY", opr.CNY})
+	tokens = append(tokens, Token{"HKD", opr.HKD})
+	tokens = append(tokens, Token{"XAU", opr.XAU})
+	tokens = append(tokens, Token{"XAG", opr.XAG})
+	tokens = append(tokens, Token{"XPD", opr.XPD})
+	tokens = append(tokens, Token{"XPT", opr.XPT})
+	tokens = append(tokens, Token{"XBT", opr.XBT})
+	tokens = append(tokens, Token{"ETH", opr.ETH})
+	tokens = append(tokens, Token{"LTC", opr.LTC})
+	tokens = append(tokens, Token{"XBC", opr.XBC})
+	tokens = append(tokens, Token{"FCT", opr.FCT})
 	return tokens
 }
 
@@ -75,18 +97,44 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	return oprHash
 }
 
-func (opr *OraclePriceRecord) GetNonceHash() []byte {
-	no := append([]byte{}, opr.Nonce[:]...)
-	oprHash := opr.GetHash()
-	no = append(no, oprHash...)
+// ComputeDifficulty()
+// Difficulty the high order 8 bytes of the hash( hash(OPR record) + nonce)
+func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce [] byte) (difficulty uint64) {
+	no := append(oprHash, nonce...)
 	h := LX.Hash(no)
-	return h
+	difficulty = 0
+	for i := uint64(0); i < 8; i++ {
+		difficulty = difficulty<<8 + uint64(h[i])
+	}
+	return difficulty
 }
 
-func (opr *OraclePriceRecord) ComputeDifficulty() uint64 {
-	h := opr.GetNonceHash()
-	opr.Difficulty = lxr.Difficulty(h) // Go calculate the difficulty, and cache in the opr
-	return opr.Difficulty
+// Mine()
+// Mine the OraclePriceRecord for a given number of seconds
+func (opr *OraclePriceRecord) Mine(verbose bool, timeLimit float64) {
+
+	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
+	t := []byte(time.Now().Format("10:10:10.0000000000"))
+	nonce := LX.Hash(append(opr.BestNonce,t...))
+	now:= time.Now().UnixNano()/1000000
+	for i:=0; time.Now().UnixNano()/1000000-now < int64(timeLimit*1000); i++ {
+		for j := 0; j < 1000; j++ {
+			for i:=0;i<8;i++{
+				nonce[i]++
+				if nonce[i]>0 {
+					break
+				}
+			}
+
+			diff := opr.ComputeDifficulty(opr.OPRHash, nonce)
+			if diff < opr.Difficulty || opr.Difficulty == 0 {
+				opr.Difficulty = diff
+				opr.BestNonce = append(opr.BestNonce[:0],nonce...)
+				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
+			}
+		}
+	}
 }
 
 func (opr *OraclePriceRecord) ShortString() string {
@@ -98,7 +146,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d Grade %20f",
 		opr.FactomDigitalID[:6],
 		hash,
-		opr.Nonce[:16],
+		opr.BestNonce,
 		opr.Difficulty,
 		opr.Grade)
 	return str
@@ -108,16 +156,15 @@ func (opr *OraclePriceRecord) ShortString() string {
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
-	opr.ComputeDifficulty()
 	str = fmt.Sprintf("%s%32s %v\n", str, "ChainID", opr.ChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
-	str = fmt.Sprintf("%s%32s %v\n", str, "VersionEntryHash", opr.VersionEntryHash)
 	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
 	for i, v := range opr.WinningPreviousOPR {
-		str = fmt.Sprintf("%s%32s     %2d, %s\n", str, "", i+1, v)
+		str = fmt.Sprintf("%s%32s %2d, %s\n", str, "", i+1, v)
 	}
-	str = str + fmt.Sprintf("%32s %v\n", opr.CoinbasePNTAddress)
+	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT",opr.CoinbasePNTAddress)
+
 
 	// Make a display string out of the Digital Identity.
 	did := ""
@@ -168,11 +215,6 @@ func (opr *OraclePriceRecord) SetChainID(chainID string) {
 	opr.ChainID = chainID
 }
 
-// Set the VersionEntryHash; assumes a base58 string
-func (opr *OraclePriceRecord) SetVersionEntryHash(versionEntryHash string) {
-	opr.VersionEntryHash = versionEntryHash
-}
-
 // Sets one of the winning OPR records from the previous block.  Expects a base58 string
 func (opr *OraclePriceRecord) SetWinningPreviousOPR(index int, winning string) {
 	opr.WinningPreviousOPR[index] = winning
@@ -221,8 +263,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
 func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
 	// An OPR record only has the nonce as an external ID
 
-	bNonce := base58.Decode(opr.Nonce)
-	entryExtIDs := append([][]byte{}, bNonce)
+	entryExtIDs := append([][]byte{}, opr.BestNonce)
 	// The body Data is the marshal of the OPR
 	bodyData, err := json.Marshal(opr)
 	check(err)
@@ -230,4 +271,55 @@ func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
 	assetEntry := factom.Entry{ChainID: chainID, ExtIDs: entryExtIDs, Content: bodyData}
 	opr.Entry = &assetEntry
 	return opr.Entry
+}
+
+
+func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, error) {
+	opr := new(OraclePriceRecord)
+
+	// Save the config object
+	opr.Config = c
+
+	// Get the Entry Credit Address that we need to write our OPR records.
+	if ecadrStr, err := c.String("Miner.ECAddress"); err != nil {
+		return nil, err
+	}else{
+		ecAdr, err := factom.FetchECAddress(ecadrStr)
+		if err != nil {
+			return nil, err
+		}
+		opr.EC = ecAdr
+	}
+
+	// Get the Identity Chain Specification
+	if 	chainID58, err := c.String("Miner.IdentityChain"); err != nil {
+		return nil, errors.New("config file has no Miner.IdentityChain specified")
+	}else{
+		fields := strings.Split(chainID58, ",")
+		if len(fields) == 1 && string(fields[0]) == "prototype" {
+			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
+		}
+		opr.FactomDigitalID=fields
+	}
+
+	// Get the protocol chain to be used for mining records
+	protocol, err1 := c.String("Miner.Protocol")
+	network, err2 := c.String("Miner.Network")
+	if err1 != nil {
+		return nil, errors.New("config file has no Miner.Protocol specified")
+	}
+	if err2 != nil {
+		return nil, errors.New("config file has no Miner.Network specified")
+	}
+	opr.ChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol,network}))
+
+	opr.Dbht = dbht
+
+	if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
+		return nil, errors.New("config file has no Coinbase PNT Address")
+	} else {
+		opr.CoinbasePNTAddress = str
+	}
+
+    return opr, nil
 }

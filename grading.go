@@ -36,15 +36,6 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		return nil, nil
 	}
 
-	// Calculate the difficult for each entry in the list of OraclePriceRecords.
-	for _, opr := range list {
-		diff := opr.Difficulty
-		opr.ComputeDifficulty()
-		if opr.Difficulty != diff {
-			panic("Difficulty changed")
-		}
-	}
-
 	last := len(list)
 	// Throw away all the entries but the top 50 in difficulty
 	// bubble sort because I am lazy.  Could be replaced with about anything

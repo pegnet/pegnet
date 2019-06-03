@@ -9,6 +9,7 @@ import (
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {
+	LX.Init(0x123412341234, 25, 256, 5)
 	opr := new(OraclePriceRecord)
 
 	opr.Difficulty = 1
@@ -16,7 +17,6 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
 	opr.ChainID =  base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
-	opr.VersionEntryHash = base58.Encode(LX.Hash([]byte("a version Entry Hash")))
 	opr.WinningPreviousOPR = [10]string {
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
 		base58.Encode(LX.Hash([]byte("winner number 2"))),

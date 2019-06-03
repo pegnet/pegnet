@@ -159,6 +159,8 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		//	fmt.Println(APILayerResponse)
 		//	fmt.Println("UDS-GBP")
 		//	fmt.Println(APILayerResponse.Quotes.USDGBP)
+		Peg.USD.Value = APILayerResponse.Quotes.USDUSD
+		Peg.USD.When = string(APILayerResponse.Timestamp)
 		Peg.EUR.Value = APILayerResponse.Quotes.USDEUR
 		Peg.EUR.When = string(APILayerResponse.Timestamp)
 		Peg.JPY.Value = APILayerResponse.Quotes.USDJPY

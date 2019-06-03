@@ -6,10 +6,14 @@ import (
 	"github.com/pegnet/OracleRecord"
 	"os/user"
 	"github.com/zpatrick/go-config"
+	"encoding/json"
+	"github.com/FactomProject/factom"
 )
 
 func main() {
-	var opr oprecord.OraclePriceRecord
+
+	factom.SetFactomdServer("localhost:8088")
+	factom.SetWalletServer("localhost:8089")
 
 	u, err := user.Current()
 	if err != nil {
@@ -30,8 +34,35 @@ func main() {
 		}
 	}
 
-	opr.GetOPRecord(Config)
-	fmt.Println(opr)
+	opr,err := oprecord.NewOpr(1,1000,Config)
+	if err != nil {
+		panic(err)
+	}
+
+	for i:=0;true;i++ {
+		opr.GetOPRecord(Config)
+		js,err := json.Marshal(opr)
+		if err != nil {
+			panic(err)
+		}
+		opr.OPRHash = oprecord.LX.Hash(js)
+
+		// Just pick a nonce and compute a difficulty
+		opr.BestNonce = oprecord.LX.Hash([]byte(fmt.Sprintf("junk %d",i)))
+		opr.Difficulty = opr.ComputeDifficulty(opr.OPRHash,opr.BestNonce)
+
+
+		fmt.Println(i)
+		if false {
+			opr.Mine(true,30)
+		}else {
+			for i := 0; i < 30; i++ {
+				opr.Mine(true, 1) // Mine for 5 seconds
+			}
+		}
+		fmt.Println(opr.String())
+
+	}
 }
 
 /*   Not used right now.  structures are there if you want to use it
