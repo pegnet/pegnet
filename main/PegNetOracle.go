@@ -53,13 +53,10 @@ func main() {
 
 
 		fmt.Println(i)
-		if false {
-			opr.Mine(true,30)
-		}else {
-			for i := 0; i < 30; i++ {
-				opr.Mine(true, 1) // Mine for 5 seconds
-			}
+		for i := 0; i < 300; i++ {
+			opr.Mine(true, .1) // Mine for 5 seconds
 		}
+
 		fmt.Println(opr.String())
 
 	}
