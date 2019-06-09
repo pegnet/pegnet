@@ -1,4 +1,11 @@
-package oprecord
+package opr
+
+import (
+	"github.com/zpatrick/go-config"
+	"github.com/FactomProject/factom"
+	"encoding/hex"
+	"encoding/json"
+)
 
 // Compute the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg [20]float64) {
@@ -83,4 +90,64 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	}
 	tobepaid = append(tobepaid, list[:10]...)
 	return tobepaid, list
+}
+
+var EntryBlocks [] *factom.EBlock
+var Entries map[string] *factom.Entry
+
+// Get the OPR Records at a given dbht
+func GetEntryBlocks () (config *config.Config){
+
+	var entryBlocks [] *factom.EBlock
+
+	p,err := config.String("Miner.Protocol")
+	check(err)
+	n,err := config.String("Miner.Network")
+	check(err)
+	opr := [][]byte{[]byte(p),[]byte(n),[]byte("Oracle Price Records")}
+	heb,err := factom.GetChainHead(hex.EncodeToString(factom.ComputeChainIDFromFields(opr)))
+	check(err)
+	eb,err := factom.GetEBlock(heb)
+	check(err)
+	elen := len(EntryBlocks)
+	for eb != nil && (elen==0 || eb.Header.DBHeight > EntryBlocks[elen-1].Header.DBHeight){
+		entryBlocks = append(entryBlocks, eb)
+		for _, ebentry := range eb.EntryList {
+			entry, err := factom.GetEntry(ebentry.EntryHash)
+			check(err)
+			Entries[ebentry.EntryHash]= entry
+		}
+	}
+	for i:= len(entryBlocks)-1;i>=0; i-- {
+		EntryBlocks = append(EntryBlocks,entryBlocks[i])
+	}
+	return
+}
+
+func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
+	eblen := len(EntryBlocks)
+	for i:=eblen-1; i>= 0; i++ {
+		if EntryBlocks[i].Header.DBHeight<int64(dbht) {
+			oprs := GetOPRs(EntryBlocks[i])
+			if oprs != nil {
+				return oprs
+			}
+		}
+	}
+	return nil
+}
+
+func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord){
+	for _, ebentry := range eblock.EntryList {
+		if Entries[ebentry.EntryHash] != nil {
+			opr := new(OraclePriceRecord)
+			err := json.Unmarshal(Entries[ebentry.EntryHash].Content,&opr)
+			if err != nil {							// If it doesn't unmarshal, then just ignore
+				delete(Entries, ebentry.EntryHash)  // could be trash someone put in our chain
+			}else{
+				oprs = append(oprs,opr)
+			}
+	  	}
+	}
+	return
 }

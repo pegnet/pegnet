@@ -1,4 +1,4 @@
-package oprecord
+package opr
 
 // These
 
@@ -12,6 +12,7 @@ import (
 	"github.com/zpatrick/go-config"
 	"strings"
 	"time"
+	"github.com/pegnet/OracleRecord/polling"
 )
 
 type OraclePriceRecord struct {
@@ -64,6 +65,12 @@ func init() {
 type Token struct {
 	code  string
 	value float64
+}
+
+func check(e error) {
+	if e != nil {
+		panic(e)
+	}
 }
 
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
@@ -152,8 +159,10 @@ miningloop:
 			if diff > opr.Difficulty {
 				opr.Difficulty = diff
 				opr.BestNonce = append(opr.BestNonce[:0], nonce...)
-				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
-					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
+				if verbose {
+					fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+						time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
+				}
 			}
 		}
 	}
@@ -223,8 +232,8 @@ func (opr *OraclePriceRecord) String() (str string) {
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	opr.Config = c
 	//get asset values
-	var Peg PegAssets
-	Peg = PullPEGAssets(c)
+	var Peg polling.PegAssets
+	Peg = polling.PullPEGAssets(c)
 	Peg.FillPriceBytes()
 
 	opr.SetPegValues(Peg)
@@ -253,7 +262,7 @@ func (opr *OraclePriceRecord) SetFactomDigitalID(factomDigitalID []string) {
 
 }
 
-func (opr *OraclePriceRecord) SetPegValues(assets PegAssets) {
+func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 
 	opr.PNT = assets.PNT.Value
 	opr.USD = assets.USD.Value

@@ -1,4 +1,4 @@
-package oprecord
+package opr
 
 import (
 	"github.com/zpatrick/go-config"
@@ -11,14 +11,16 @@ import (
 	"github.com/FactomProject/factom"
 )
 
-func OneMiner(config *config.Config, monitor *support.FactomdMonitor, miner int) {
+func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonitor, miner int) {
 	alert := monitor.GetAlert()
 	mining := false
 	var opr *OraclePriceRecord
 	var err error
 	for {
 		fds := <-alert
-		fmt.Println(fds.Dbht," ",fds.Minute)
+		if verbose {
+			fmt.Println(fds.Dbht, " ", fds.Minute)
+		}
 		switch fds.Minute {
 		case 1:
 			if !mining {
@@ -31,12 +33,14 @@ func OneMiner(config *config.Config, monitor *support.FactomdMonitor, miner int)
 					}
 					time.Sleep(time.Second)
 				}
-				go opr.Mine(int64(miner)+int64(fds.Dbht)+fds.Minute, true)
+				go opr.Mine(int64(miner)+int64(fds.Dbht)+fds.Minute, verbose)
 			}
 		case 9:
 			if mining {
 				opr.StopMining <- 0
-				fmt.Println(opr.String())
+				if verbose {
+					fmt.Println(opr.String())
+				}
 				mining = false
 
 				writeMiningRecord(opr)
