@@ -13,7 +13,7 @@ import (
 type NetworkType int
 
 const (
-	MAIN_NETWORK NetworkType = iota+1
+	MAIN_NETWORK NetworkType = iota + 1
 	TEST_NETWORK
 )
 
@@ -91,7 +91,7 @@ func CheckPrefix(network NetworkType, name string) bool {
 				return true
 			}
 		}
-	}else{
+	} else {
 		for _, v := range TestPegAssetNames {
 			if v == name {
 				return true

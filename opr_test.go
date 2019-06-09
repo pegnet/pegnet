@@ -1,11 +1,11 @@
 package oprecord_test
 
 import (
-"testing"
-	. "github.com/pegnet/OracleRecord"
-	"fmt"
 	"encoding/json"
+	"fmt"
 	"github.com/FactomProject/btcutil/base58"
+	. "github.com/pegnet/OracleRecord"
+	"testing"
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {
@@ -15,9 +15,9 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	opr.Difficulty = 1
 	opr.Grade = 1
 	opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
-	opr.ChainID =  base58.Encode(LX.Hash([]byte("a chainID")))
+	opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
-	opr.WinningPreviousOPR = [10]string {
+	opr.WinningPreviousOPR = [10]string{
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
 		base58.Encode(LX.Hash([]byte("winner number 2"))),
 		base58.Encode(LX.Hash([]byte("winner number 3"))),
@@ -30,7 +30,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 		base58.Encode(LX.Hash([]byte("winner number 10"))),
 	}
 	opr.CoinbasePNTAddress = "pPNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
-	opr.FactomDigitalID = []string {"miner","one"}
+	opr.FactomDigitalID = []string{"miner", "one"}
 	opr.PNT = 2
 	opr.USD = 20
 	opr.EUR = 200
@@ -55,9 +55,9 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	v, _ := json.Marshal(opr)
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := new(OraclePriceRecord)
-	json.Unmarshal(v,&opr2)
+	json.Unmarshal(v, &opr2)
 	v2, _ := json.Marshal(opr2)
-	fmt.Println("\n\n",string(v2))
+	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
 		t.Error("JSON is different")
 	}

@@ -7,34 +7,34 @@ import (
 	"os"
 
 	"github.com/zpatrick/go-config"
+	"strconv"
 	"sync"
 	"time"
-	"strconv"
 )
 
 const qlimit = 600 // Limit queries to once every 10 minutes (600 seconds)
 
 type PegAssets struct {
-	PNT        PegItems
-	USD        PegItems
-	EUR        PegItems
-	JPY        PegItems
-	GBP        PegItems
-	CAD        PegItems
-	CHF        PegItems
-	INR        PegItems
-	SGD        PegItems
-	CNY        PegItems
-	HKD        PegItems
-	XAU        PegItems
-	XAG        PegItems
-	XPD        PegItems
-	XPT        PegItems
-	XBT        PegItems
-	ETH        PegItems
-	LTC        PegItems
-	XBC        PegItems
-	FCT        PegItems
+	PNT PegItems
+	USD PegItems
+	EUR PegItems
+	JPY PegItems
+	GBP PegItems
+	CAD PegItems
+	CHF PegItems
+	INR PegItems
+	SGD PegItems
+	CNY PegItems
+	HKD PegItems
+	XAU PegItems
+	XAG PegItems
+	XPD PegItems
+	XPT PegItems
+	XBT PegItems
+	ETH PegItems
+	LTC PegItems
+	XBC PegItems
+	FCT PegItems
 }
 
 func (p *PegAssets) Clone() PegAssets {
@@ -199,13 +199,13 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		return pa
 	}
 	//fmt.Println("KitcoResponse:", KitcoResponse)
-	Peg.XAU.Value,err = strconv.ParseFloat(KitcoResponse.Silver.Bid,64)
+	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
 	Peg.XAU.When = KitcoResponse.Silver.Date
-	Peg.XAG.Value,err = strconv.ParseFloat(KitcoResponse.Gold.Bid,64)
+	Peg.XAG.Value, err = strconv.ParseFloat(KitcoResponse.Gold.Bid, 64)
 	Peg.XAG.When = KitcoResponse.Gold.Date
-	Peg.XPD.Value,err = strconv.ParseFloat(KitcoResponse.Palladium.Bid,64)
+	Peg.XPD.Value, err = strconv.ParseFloat(KitcoResponse.Palladium.Bid, 64)
 	Peg.XPD.When = KitcoResponse.Palladium.Date
-	Peg.XPT.Value,err = strconv.ParseFloat(KitcoResponse.Platinum.Bid,64)
+	Peg.XPT.Value, err = strconv.ParseFloat(KitcoResponse.Platinum.Bid, 64)
 	Peg.XPT.When = KitcoResponse.Platinum.Date
 
 	lastAnswer = Peg.Clone()

@@ -3,15 +3,15 @@ package oprecord
 // These
 
 import (
-	"github.com/pegnet/LXR256"
-	"fmt"
-	"github.com/FactomProject/factom"
-	"github.com/zpatrick/go-config"
 	"encoding/json"
-	"time"
 	"errors"
-	"strings"
+	"fmt"
 	"github.com/FactomProject/btcutil/base58"
+	"github.com/FactomProject/factom"
+	"github.com/pegnet/LXR256"
+	"github.com/zpatrick/go-config"
+	"strings"
+	"time"
 )
 
 type OraclePriceRecord struct {
@@ -99,7 +99,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 
 // ComputeDifficulty()
 // Difficulty the high order 8 bytes of the hash( hash(OPR record) + nonce)
-func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce [] byte) (difficulty uint64) {
+func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce []byte) (difficulty uint64) {
 	no := append(oprHash, nonce...)
 	h := LX.Hash(no)
 	difficulty = 0
@@ -115,21 +115,22 @@ func (opr *OraclePriceRecord) Mine(verbose bool, timeLimit float64) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	t := []byte(time.Now().Format("10:10:10.0000000000"))
-	nonce := LX.Hash(append(opr.BestNonce,t...))
-	now:= time.Now().UnixNano()/1000000
-	for i:=0; time.Now().UnixNano()/1000000-now < int64(timeLimit*1000); i++ {
+	nonce := LX.Hash(append(opr.BestNonce, t...))
+	now := time.Now().UnixNano() / 1000000
+	for i := 0; time.Now().UnixNano()/1000000-now < int64(timeLimit*1000); i++ {
 		for j := 0; j < 1000; j++ {
-			for i:=0;i<8;i++{
+			for i := 0; ; i++ {
 				nonce[i]++
-				if nonce[i]>0 {
+				if nonce[i] > 0 {
+					nonce[i+1] = 0
 					break
 				}
 			}
 
 			diff := opr.ComputeDifficulty(opr.OPRHash, nonce)
-			if diff < opr.Difficulty || opr.Difficulty == 0 {
+			if diff > opr.Difficulty {
 				opr.Difficulty = diff
-				opr.BestNonce = append(opr.BestNonce[:0],nonce...)
+				opr.BestNonce = append(opr.BestNonce[:0], nonce...)
 				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
 					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
 			}
@@ -163,8 +164,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	for i, v := range opr.WinningPreviousOPR {
 		str = fmt.Sprintf("%s%32s %2d, %s\n", str, "", i+1, v)
 	}
-	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT",opr.CoinbasePNTAddress)
-
+	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
 
 	// Make a display string out of the Digital Identity.
 	did := ""
@@ -273,7 +273,6 @@ func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
 	return opr.Entry
 }
 
-
 func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, error) {
 	opr := new(OraclePriceRecord)
 
@@ -283,7 +282,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	// Get the Entry Credit Address that we need to write our OPR records.
 	if ecadrStr, err := c.String("Miner.ECAddress"); err != nil {
 		return nil, err
-	}else{
+	} else {
 		ecAdr, err := factom.FetchECAddress(ecadrStr)
 		if err != nil {
 			return nil, err
@@ -292,14 +291,14 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	}
 
 	// Get the Identity Chain Specification
-	if 	chainID58, err := c.String("Miner.IdentityChain"); err != nil {
+	if chainID58, err := c.String("Miner.IdentityChain"); err != nil {
 		return nil, errors.New("config file has no Miner.IdentityChain specified")
-	}else{
+	} else {
 		fields := strings.Split(chainID58, ",")
 		if len(fields) == 1 && string(fields[0]) == "prototype" {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		opr.FactomDigitalID=fields
+		opr.FactomDigitalID = fields
 	}
 
 	// Get the protocol chain to be used for mining records
@@ -311,7 +310,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.ChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol,network}))
+	opr.ChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol, network}))
 
 	opr.Dbht = dbht
 
@@ -321,5 +320,5 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 		opr.CoinbasePNTAddress = str
 	}
 
-    return opr, nil
+	return opr, nil
 }

@@ -29,11 +29,11 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	}
 
 	ConvertToRaw := func() error {
-		pre, raw, err := ConvertPegTAddrToRaw(MAIN_NETWORK,HumanAdr)
+		pre, raw, err := ConvertPegTAddrToRaw(MAIN_NETWORK, HumanAdr)
 		if err != nil {
 			return err
 		}
-		if CheckPrefix(MAIN_NETWORK,pre) != true {
+		if CheckPrefix(MAIN_NETWORK, pre) != true {
 			return errors.New("The Prefix " + pre + " returned by ConvertTo Raw is invalid")
 		}
 		if bytes.Compare(raw, RawAddress[:]) != 0 {
@@ -56,7 +56,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pUSD"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -66,7 +66,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pEUR"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -80,7 +80,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pJPY"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -90,7 +90,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -100,7 +100,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pFCT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -129,7 +129,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -145,7 +145,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(MAIN_NETWORK,HumanAdr); err != nil {
+	if err := PegTAdrIsValid(MAIN_NETWORK, HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {

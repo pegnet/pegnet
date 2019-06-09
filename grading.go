@@ -23,8 +23,8 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
 	for i, v := range tokens {
-		d := v.value - avg[i] // compute the difference from the average
-		opr.Grade = opr.Grade + d*d*d*d    // the grade is the sum of the squares of the differences
+		d := v.value - avg[i]           // compute the difference from the average
+		opr.Grade = opr.Grade + d*d*d*d // the grade is the sum of the squares of the differences
 	}
 	return opr.Grade
 }
