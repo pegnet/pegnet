@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pegnet/OracleRecord/common"
-	"github.com/pegnet/OracleRecord/utils"
 	"github.com/zpatrick/go-config"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -16,27 +15,26 @@ import (
 const qlimit = 600 // Limit queries to once every 10 minutes (600 seconds)
 
 type PegAssets struct {
-	PNT        PegItems
-	USD        PegItems
-	EUR        PegItems
-	JPY        PegItems
-	GBP        PegItems
-	CAD        PegItems
-	CHF        PegItems
-	INR        PegItems
-	SGD        PegItems
-	CNY        PegItems
-	HKD        PegItems
-	XAU        PegItems
-	XAG        PegItems
-	XPD        PegItems
-	XPT        PegItems
-	XBT        PegItems
-	ETH        PegItems
-	LTC        PegItems
-	XBC        PegItems
-	FCT        PegItems
-	PriceBytes [160]byte
+	PNT PegItems
+	USD PegItems
+	EUR PegItems
+	JPY PegItems
+	GBP PegItems
+	CAD PegItems
+	CHF PegItems
+	INR PegItems
+	SGD PegItems
+	CNY PegItems
+	HKD PegItems
+	XAU PegItems
+	XAG PegItems
+	XPD PegItems
+	XPT PegItems
+	XBT PegItems
+	ETH PegItems
+	LTC PegItems
+	XBC PegItems
+	FCT PegItems
 }
 
 func (p *PegAssets) Clone() PegAssets {
@@ -61,12 +59,11 @@ func (p *PegAssets) Clone() PegAssets {
 	np.LTC = p.LTC.Clone()
 	np.XBC = p.XBC.Clone()
 	np.FCT = p.FCT.Clone()
-	copy(np.PriceBytes[:], p.PriceBytes[:])
 	return *np
 }
 
 type PegItems struct {
-	Value int64
+	Value float64
 	When  string
 }
 
@@ -96,7 +93,6 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastTime = now
 	fmt.Println("Make a call to get data. Seconds since last call:", delta)
 	var Peg PegAssets
-	Peg.USD.Value = int64(1 * common.PointMultiple)
 	// digital currencies
 	CoinCapResponseBytes, err := CallCoinCap(config)
 	//fmt.Println(string(CoinCapResponseBytes))
@@ -109,19 +105,34 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		for _, currency := range CoinCapValues.Data {
 			//fmt.Println(currency.Symbol + "-" + currency.PriceUSD)
 			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
-				Peg.XBT.Value = utils.FloatStringToInt(currency.PriceUSD)
+				Peg.XBT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				if err != nil {
+					continue
+				}
 				Peg.XBT.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "ETH" {
-				Peg.ETH.Value = utils.FloatStringToInt(currency.PriceUSD)
+				Peg.ETH.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				if err != nil {
+					continue
+				}
 				Peg.ETH.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "LTC" {
-				Peg.LTC.Value = utils.FloatStringToInt(currency.PriceUSD)
+				Peg.LTC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				if err != nil {
+					continue
+				}
 				Peg.LTC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
-				Peg.XBC.Value = utils.FloatStringToInt(currency.PriceUSD)
+				Peg.XBC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				if err != nil {
+					continue
+				}
 				Peg.XBC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "FCT" {
-				Peg.FCT.Value = utils.FloatStringToInt(currency.PriceUSD)
+				Peg.FCT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				if err != nil {
+					continue
+				}
 				Peg.FCT.When = string(CoinCapValues.Timestamp)
 			}
 		}
@@ -148,23 +159,25 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		//	fmt.Println(APILayerResponse)
 		//	fmt.Println("UDS-GBP")
 		//	fmt.Println(APILayerResponse.Quotes.USDGBP)
-		Peg.EUR.Value = int64(1 / APILayerResponse.Quotes.USDEUR * common.PointMultiple)
+		Peg.USD.Value = APILayerResponse.Quotes.USDUSD
+		Peg.USD.When = string(APILayerResponse.Timestamp)
+		Peg.EUR.Value = APILayerResponse.Quotes.USDEUR
 		Peg.EUR.When = string(APILayerResponse.Timestamp)
-		Peg.JPY.Value = int64(1 / APILayerResponse.Quotes.USDJPY * common.PointMultiple)
+		Peg.JPY.Value = APILayerResponse.Quotes.USDJPY
 		Peg.JPY.When = string(APILayerResponse.Timestamp)
-		Peg.GBP.Value = int64(1 / APILayerResponse.Quotes.USDGBP * common.PointMultiple)
+		Peg.GBP.Value = APILayerResponse.Quotes.USDGBP
 		Peg.GBP.When = string(APILayerResponse.Timestamp)
-		Peg.CAD.Value = int64(1 / APILayerResponse.Quotes.USDCAD * common.PointMultiple)
+		Peg.CAD.Value = APILayerResponse.Quotes.USDCAD
 		Peg.CAD.When = string(APILayerResponse.Timestamp)
-		Peg.CHF.Value = int64(1 / APILayerResponse.Quotes.USDCHF * common.PointMultiple)
+		Peg.CHF.Value = APILayerResponse.Quotes.USDCHF
 		Peg.CHF.When = string(APILayerResponse.Timestamp)
-		Peg.INR.Value = int64(1 / APILayerResponse.Quotes.USDINR * common.PointMultiple)
+		Peg.INR.Value = APILayerResponse.Quotes.USDINR
 		Peg.INR.When = string(APILayerResponse.Timestamp)
-		Peg.SGD.Value = int64(1 / APILayerResponse.Quotes.USDSGD * common.PointMultiple)
+		Peg.SGD.Value = APILayerResponse.Quotes.USDSGD
 		Peg.SGD.When = string(APILayerResponse.Timestamp)
-		Peg.CNY.Value = int64(1 / APILayerResponse.Quotes.USDCNY * common.PointMultiple)
+		Peg.CNY.Value = APILayerResponse.Quotes.USDCNY
 		Peg.CNY.When = string(APILayerResponse.Timestamp)
-		Peg.HKD.Value = int64(1 / APILayerResponse.Quotes.USDHKD * common.PointMultiple)
+		Peg.HKD.Value = APILayerResponse.Quotes.USDHKD
 		Peg.HKD.When = string(APILayerResponse.Timestamp)
 
 	}
@@ -186,13 +199,13 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		return pa
 	}
 	//fmt.Println("KitcoResponse:", KitcoResponse)
-	Peg.XAU.Value = utils.FloatStringToInt(KitcoResponse.Silver.Bid)
+	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
 	Peg.XAU.When = KitcoResponse.Silver.Date
-	Peg.XAG.Value = utils.FloatStringToInt(KitcoResponse.Gold.Bid)
+	Peg.XAG.Value, err = strconv.ParseFloat(KitcoResponse.Gold.Bid, 64)
 	Peg.XAG.When = KitcoResponse.Gold.Date
-	Peg.XPD.Value = utils.FloatStringToInt(KitcoResponse.Palladium.Bid)
+	Peg.XPD.Value, err = strconv.ParseFloat(KitcoResponse.Palladium.Bid, 64)
 	Peg.XPD.When = KitcoResponse.Palladium.Date
-	Peg.XPT.Value = utils.FloatStringToInt(KitcoResponse.Platinum.Bid)
+	Peg.XPT.Value, err = strconv.ParseFloat(KitcoResponse.Platinum.Bid, 64)
 	Peg.XPT.When = KitcoResponse.Platinum.Date
 
 	lastAnswer = Peg.Clone()
@@ -264,6 +277,4 @@ func (peg *PegAssets) FillPriceBytes() {
 	nextStart = nextStart + byteLength
 	binary.BigEndian.PutUint64(b, uint64(peg.FCT.Value))
 	copy(byteVal[nextStart:nextStart+8], b[:])
-
-	copy(peg.PriceBytes[0:], byteVal[:])
 }

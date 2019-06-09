@@ -6,7 +6,7 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	for _, opr := range list {
 		tokens := opr.GetTokens()
 		for i, price := range tokens {
-			avg[i] += float64(price)
+			avg[i] += price.value
 		}
 	}
 	// Then divide the prices by the number of OraclePriceRecord records.  Two steps is actually faster
@@ -23,8 +23,8 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
 	for i, v := range tokens {
-		d := float64(v)/100000000 - avg[i] // compute the difference from the average
-		opr.Grade = opr.Grade + d*d*d*d    // the grade is the sum of the squares of the differences
+		d := v.value - avg[i]           // compute the difference from the average
+		opr.Grade = opr.Grade + d*d*d*d // the grade is the sum of the squares of the differences
 	}
 	return opr.Grade
 }
@@ -34,15 +34,6 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 
 	if len(list) <= 10 {
 		return nil, nil
-	}
-
-	// Calculate the difficult for each entry in the list of OraclePriceRecords.
-	for _, opr := range list {
-		diff := opr.Difficulty
-		opr.ComputeDifficulty()
-		if opr.Difficulty != diff {
-			panic("Difficulty changed")
-		}
 	}
 
 	last := len(list)
