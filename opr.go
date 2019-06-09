@@ -23,13 +23,14 @@ type OraclePriceRecord struct {
 	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by mining)
 	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
 	Entry      *factom.Entry     `json:"-"` // Entry to record this record
+	StopMining chan int          `json:"-"` // Bool that stops mining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	ChainID            string     `json:chainid`  // [base58]  Chain ID of the chain used by the Oracle Miners
-	Dbht               int32      `json:dbht`     //           The Directory Block Height of the OPR.
-	WinningPreviousOPR [10]string `json:winners`  // [base58]  Winning OPR entries in the previous block
-	CoinbasePNTAddress string     `json:coinbase` // [base58]  PNT Address to pay PNT
-	FactomDigitalID    []string   `did`           // [unicode] Digital Identity of the miner
+	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
+	Dbht               int32      `json:dbht`       //           The Directory Block Height of the OPR.
+	WinningPreviousOPR [10]string `json:winners`    // [base58]  Winning OPR entries in the previous block
+	CoinbasePNTAddress string     `json:coinbase`   // [base58]  PNT Address to pay PNT
+	FactomDigitalID    []string   `did`             // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	PNT float64
@@ -111,18 +112,38 @@ func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce []byte) (d
 
 // Mine()
 // Mine the OraclePriceRecord for a given number of seconds
-func (opr *OraclePriceRecord) Mine(verbose bool, timeLimit float64) {
+func (opr *OraclePriceRecord) Mine(seed int64, verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	t := []byte(time.Now().Format("10:10:10.0000000000"))
 	nonce := LX.Hash(append(opr.BestNonce, t...))
-	now := time.Now().UnixNano() / 1000000
-	for i := 0; time.Now().UnixNano()/1000000-now < int64(timeLimit*1000); i++ {
-		for j := 0; j < 1000; j++ {
-			for i := 0; ; i++ {
-				nonce[i]++
-				if nonce[i] > 0 {
-					nonce[i+1] = 0
+	nonce = LX.Hash(append(nonce,
+		byte(seed), byte(seed>>8),byte(seed>>16),byte(seed>>24),
+		byte(seed>>32),byte(seed>>40),byte(seed>>48),byte(seed>>56)))
+
+	// Set the OPRHash of the content of the Oracle Record
+	js, err := json.Marshal(opr)
+	if err != nil {
+		panic(err)
+	}
+	opr.OPRHash = LX.Hash(js)
+
+	for i := 0;i<5;i++{
+		nonce[i]=0
+	}
+miningloop:
+	for {
+		select {
+		case <-opr.StopMining:
+			break miningloop
+
+		default:
+		}
+
+		for i := 0; i < 100; i++ {
+			for j := 0; ; j++ {
+				nonce[j]++
+				if nonce[j] > 0 {
 					break
 				}
 			}
@@ -157,7 +178,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
-	str = fmt.Sprintf("%s%32s %v\n", str, "ChainID", opr.ChainID)
+	str = fmt.Sprintf("%s%32s %v\n", str, "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
@@ -211,8 +232,8 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 }
 
 // Set the chainID; assumes a base58 string
-func (opr *OraclePriceRecord) SetChainID(chainID string) {
-	opr.ChainID = chainID
+func (opr *OraclePriceRecord) SetOPRChainID(chainID string) {
+	opr.OPRChainID = chainID
 }
 
 // Sets one of the winning OPR records from the previous block.  Expects a base58 string
@@ -276,6 +297,9 @@ func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
 func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, error) {
 	opr := new(OraclePriceRecord)
 
+	// create the channel to stop mining
+	opr.StopMining = make(chan int, 1)
+
 	// Save the config object
 	opr.Config = c
 
@@ -310,7 +334,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.ChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol, network}))
+	opr.OPRChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol, network}))
 
 	opr.Dbht = dbht
 

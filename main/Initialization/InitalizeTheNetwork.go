@@ -45,14 +45,14 @@ func main() {
 
 func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err error) {
 	fmt.Print("Looking to create the chain: ")
-	for i,n := range chainName {
+	for i, n := range chainName {
 		if i > 0 {
 			fmt.Print(" --- ")
 		}
 		fmt.Print(string(n))
 	}
 	fmt.Println()
-	chainID := factom.ComputeChainIDFromFields(chainName)         // Compute the chainID
+	chainID := factom.ComputeChainIDFromFields(chainName)          // Compute the chainID
 	chainExists := factom.ChainExists(hex.EncodeToString(chainID)) // Check if it exists
 	if chainExists {                                               // If the chain exists, we are done.
 		fmt.Println("Chain Exists!")
@@ -66,25 +66,25 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 		if i == 0 {
 			fmt.Println("Creating the Chain")
 		} else {
-			fmt.Println("Something went wrong.  Waiting 5 seconds to retry (",i*5,")")
+			fmt.Println("Something went wrong.  Waiting 5 seconds to retry (", i*5, ")")
 			time.Sleep(5 * time.Second)
 		}
-		if i==0 || err1 != nil {
+		if i == 0 || err1 != nil {
 			_, err1 = factom.CommitChain(newChain, ec_adr)
 		}
-		if i==0 || err2 == nil {
+		if i == 0 || err2 == nil {
 			txid, err2 = factom.RevealChain(newChain)
 		}
-		if err1 == nil && err2 == nil {	// Success?  Go to reveal!
+		if err1 == nil && err2 == nil { // Success?  Go to reveal!
 			break
 		}
 	}
 	if err1 != nil {
-		fmt.Println("Failed: ",err1.Error())
+		fmt.Println("Failed: ", err1.Error())
 		return "", err1
 	}
 	if err2 != nil {
-		fmt.Println("Failed: ",err2.Error())
+		fmt.Println("Failed: ", err2.Error())
 		return "", err2
 	}
 	fmt.Println("Success!")

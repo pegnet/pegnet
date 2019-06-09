@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pegnet/OracleRecord/utils"
+	"github.com/pegnet/OracleRecord/support"
 )
 
 type KitcoData struct {
@@ -63,86 +63,86 @@ func CallKitcoWeb() (KitcoData, error) {
 func ParseKitco(line string, kData KitcoData) KitcoData {
 
 	if strings.Index(line, "wsp-AU-date") > 0 {
-		kData.Gold.Date = utils.PullValue(line, 1)
+		kData.Gold.Date = support.PullValue(line, 1)
 		//		fmt.Println("kData.Gold.Date:", kData.Gold.Date)
 	} else if strings.Index(line, "wsp-AU-time") > 0 {
-		kData.Gold.Tm = utils.PullValue(line, 1)
+		kData.Gold.Tm = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AU-bid") > 0 {
-		kData.Gold.Bid = utils.PullValue(line, 1)
+		kData.Gold.Bid = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AU-ask") > 0 {
-		kData.Gold.Ask = utils.PullValue(line, 1)
+		kData.Gold.Ask = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AU-change") > 0 {
-		kData.Gold.Change = utils.PullValue(line, 2)
+		kData.Gold.Change = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-AU-change-percent") > 0 {
-		kData.Gold.PercentChange = utils.PullValue(line, 2)
+		kData.Gold.PercentChange = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-AU-low") > 0 {
-		kData.Gold.Low = utils.PullValue(line, 1)
+		kData.Gold.Low = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AU-high") > 0 {
-		kData.Gold.High = utils.PullValue(line, 1)
+		kData.Gold.High = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-date") > 0 {
-		kData.Silver.Date = utils.PullValue(line, 1)
+		kData.Silver.Date = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-time") > 0 {
-		kData.Silver.Tm = utils.PullValue(line, 1)
+		kData.Silver.Tm = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-bid") > 0 {
-		kData.Silver.Bid = utils.PullValue(line, 1)
+		kData.Silver.Bid = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-ask") > 0 {
-		kData.Silver.Ask = utils.PullValue(line, 1)
+		kData.Silver.Ask = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-change") > 0 {
-		kData.Silver.Change = utils.PullValue(line, 2)
+		kData.Silver.Change = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-AG-change-percent") > 0 {
-		kData.Silver.PercentChange = utils.PullValue(line, 2)
+		kData.Silver.PercentChange = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-AG-low") > 0 {
-		kData.Silver.Low = utils.PullValue(line, 1)
+		kData.Silver.Low = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-AG-high") > 0 {
-		kData.Silver.High = utils.PullValue(line, 1)
+		kData.Silver.High = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-date") > 0 {
-		kData.Platinum.Date = utils.PullValue(line, 1)
+		kData.Platinum.Date = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-time") > 0 {
-		kData.Platinum.Tm = utils.PullValue(line, 1)
+		kData.Platinum.Tm = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-bid") > 0 {
-		kData.Platinum.Bid = utils.PullValue(line, 1)
+		kData.Platinum.Bid = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-ask") > 0 {
-		kData.Platinum.Ask = utils.PullValue(line, 1)
+		kData.Platinum.Ask = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-change") > 0 {
-		kData.Platinum.Change = utils.PullValue(line, 2)
+		kData.Platinum.Change = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-PT-change-percent") > 0 {
-		kData.Platinum.PercentChange = utils.PullValue(line, 2)
+		kData.Platinum.PercentChange = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-PT-low") > 0 {
-		kData.Platinum.Low = utils.PullValue(line, 1)
+		kData.Platinum.Low = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PT-high") > 0 {
-		kData.Platinum.High = utils.PullValue(line, 1)
+		kData.Platinum.High = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-date") > 0 {
-		kData.Palladium.Date = utils.PullValue(line, 1)
+		kData.Palladium.Date = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-time") > 0 {
-		kData.Palladium.Tm = utils.PullValue(line, 1)
+		kData.Palladium.Tm = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-bid") > 0 {
-		kData.Palladium.Bid = utils.PullValue(line, 1)
+		kData.Palladium.Bid = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-ask") > 0 {
-		kData.Palladium.Ask = utils.PullValue(line, 1)
+		kData.Palladium.Ask = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-change") > 0 {
-		kData.Palladium.Change = utils.PullValue(line, 2)
+		kData.Palladium.Change = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-PD-change-percent") > 0 {
-		kData.Palladium.PercentChange = utils.PullValue(line, 2)
+		kData.Palladium.PercentChange = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-PD-low") > 0 {
-		kData.Palladium.Low = utils.PullValue(line, 1)
+		kData.Palladium.Low = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-PD-high") > 0 {
-		kData.Palladium.High = utils.PullValue(line, 1)
+		kData.Palladium.High = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-date") > 0 {
-		kData.Rhodium.Date = utils.PullValue(line, 1)
+		kData.Rhodium.Date = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-time") > 0 {
-		kData.Rhodium.Tm = utils.PullValue(line, 1)
+		kData.Rhodium.Tm = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-bid") > 0 {
-		kData.Rhodium.Bid = utils.PullValue(line, 1)
+		kData.Rhodium.Bid = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-ask") > 0 {
-		kData.Rhodium.Ask = utils.PullValue(line, 1)
+		kData.Rhodium.Ask = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-change") > 0 {
-		kData.Rhodium.Change = utils.PullValue(line, 2)
+		kData.Rhodium.Change = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-RH-change-percent") > 0 {
-		kData.Rhodium.PercentChange = utils.PullValue(line, 2)
+		kData.Rhodium.PercentChange = support.PullValue(line, 2)
 	} else if strings.Index(line, "wsp-RH-low") > 0 {
-		kData.Rhodium.Low = utils.PullValue(line, 1)
+		kData.Rhodium.Low = support.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-high") > 0 {
-		kData.Rhodium.High = utils.PullValue(line, 1)
+		kData.Rhodium.High = support.PullValue(line, 1)
 
 	}
 	return kData
