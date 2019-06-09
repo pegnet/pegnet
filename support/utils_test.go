@@ -1,11 +1,11 @@
-package utils_test
+package support_test
 
 import (
 	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	. "github.com/pegnet/OracleRecord/utils"
+	. "github.com/pegnet/OracleRecord/support"
 	"testing"
 )
 
