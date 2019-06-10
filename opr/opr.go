@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 	"github.com/pegnet/OracleRecord/polling"
+	"github.com/pegnet/OracleRecord/support"
 )
 
 type OraclePriceRecord struct {
@@ -75,7 +76,6 @@ func check(e error) {
 
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 	tokens = append(tokens, Token{"PNT", opr.PNT})
-	tokens = append(tokens, Token{"PNT", opr.PNT})
 	tokens = append(tokens, Token{"USD", opr.USD})
 	tokens = append(tokens, Token{"EUR", opr.EUR})
 	tokens = append(tokens, Token{"JPY", opr.JPY})
@@ -134,6 +134,10 @@ func (opr *OraclePriceRecord) Mine(seed int64, verbose bool) {
 		panic(err)
 	}
 	opr.OPRHash = LX.Hash(js)
+	if verbose {
+		fmt.Printf("OPRHash %x\n",opr.OPRHash)
+	}
+
 
 	for i := 0;i<5;i++{
 		nonce[i]=0
@@ -174,8 +178,17 @@ func (opr *OraclePriceRecord) ShortString() string {
 	if opr.Entry != nil {
 		hash = opr.Entry.Hash()
 	}
-	str := fmt.Sprintf("DID %6x EntryHash %70x Nonce %33x Difficulty %15d Grade %20f",
-		opr.FactomDigitalID[:6],
+
+	fdid := ""
+	for i,v := range opr.FactomDigitalID {
+		if i>0 {
+			fdid = fdid+" --- "
+		}
+		fdid = fdid + v
+	}
+
+	str := fmt.Sprintf("DID %30x EntryHash %30x Nonce %33x Difficulty %15d Grade %20f",
+		fdid,
 		hash,
 		opr.BestNonce,
 		opr.Difficulty,
@@ -343,7 +356,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.OPRChainID = base58.Encode(factom.ComputeChainIDFromStrings([]string{protocol, network}))
+	opr.OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 
 	opr.Dbht = dbht
 

@@ -29,6 +29,9 @@ func main() {
 
 	monitor := new(support.FactomdMonitor)
 	monitor.Start()
+	grader := new(opr.Grader)
+	go grader.Run(Config, monitor)
+
 	go opr.OneMiner(true,Config,monitor,1)
 	go opr.OneMiner(false,Config,monitor,2)
 	go opr.OneMiner(false,Config,monitor,3)

@@ -5,6 +5,8 @@ import (
 	"github.com/FactomProject/factom"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/pegnet/OracleRecord/support"
+	"fmt"
 )
 
 // Compute the average answer for the price of each token reported
@@ -51,9 +53,9 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 			d1 := list[k].Difficulty
 			d2 := list[k+1].Difficulty
 			if d1 == 0 || d2 == 0 {
-				panic("Should not be here")
+				//panic("Should not be here")
 			}
-			if d1 > d2 { // sort the largest difficulty to the end of the list
+			if d1 < d2 { // sort the smallest difficulty to the end of the list
 				list[k], list[k+1] = list[k+1], list[k]
 			}
 		}
@@ -77,7 +79,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 					list[k], list[k+1] = list[k+1], list[k] // sort first by the grade.
 					cont = true                             // any swap means we continue to loop
 				} else if list[k].Grade == list[k+1].Grade { // break ties with PoW.  Where data is being shared
-					if list[k].Difficulty > list[k+1].Difficulty { // we will have ties.
+					if list[k].Difficulty < list[k+1].Difficulty { // we will have ties.
 						//list[k], list[k+1] = list[k+1], list[k]
 						cont = true // any swap means we continue to loop
 					}
@@ -96,7 +98,11 @@ var EntryBlocks [] *factom.EBlock
 var Entries map[string] *factom.Entry
 
 // Get the OPR Records at a given dbht
-func GetEntryBlocks () (config *config.Config){
+func GetEntryBlocks (config *config.Config){
+
+	if Entries == nil {
+		Entries = make(map[string] *factom.Entry,100)
+	}
 
 	var entryBlocks [] *factom.EBlock
 
@@ -105,7 +111,7 @@ func GetEntryBlocks () (config *config.Config){
 	n,err := config.String("Miner.Network")
 	check(err)
 	opr := [][]byte{[]byte(p),[]byte(n),[]byte("Oracle Price Records")}
-	heb,err := factom.GetChainHead(hex.EncodeToString(factom.ComputeChainIDFromFields(opr)))
+	heb,err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
 	check(err)
 	eb,err := factom.GetEBlock(heb)
 	check(err)
@@ -115,8 +121,18 @@ func GetEntryBlocks () (config *config.Config){
 		for _, ebentry := range eb.EntryList {
 			entry, err := factom.GetEntry(ebentry.EntryHash)
 			check(err)
-			Entries[ebentry.EntryHash]= entry
+
+			// All OPRs have one and only 1 external ID
+			if len(entry.ExtIDs) == 1 {
+				Entries[ebentry.EntryHash] = entry
+			}
+
 		}
+		neb, err := factom.GetEBlock(eb.Header.PrevKeyMR)
+		if err != nil {
+			break
+		}
+		eb = neb
 	}
 	for i:= len(entryBlocks)-1;i>=0; i-- {
 		EntryBlocks = append(EntryBlocks,entryBlocks[i])
@@ -126,7 +142,7 @@ func GetEntryBlocks () (config *config.Config){
 
 func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	eblen := len(EntryBlocks)
-	for i:=eblen-1; i>= 0; i++ {
+	for i:=eblen-1; i>= 0; i-- {
 		if EntryBlocks[i].Header.DBHeight<int64(dbht) {
 			oprs := GetOPRs(EntryBlocks[i])
 			if oprs != nil {
@@ -141,7 +157,17 @@ func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord){
 	for _, ebentry := range eblock.EntryList {
 		if Entries[ebentry.EntryHash] != nil {
 			opr := new(OraclePriceRecord)
-			err := json.Unmarshal(Entries[ebentry.EntryHash].Content,&opr)
+
+			// Unmarshal the entry, and put the BestNonce back into the OPR
+			entry := Entries[ebentry.EntryHash]
+			err := json.Unmarshal(entry.Content,&opr)
+
+			opr.BestNonce = entry.ExtIDs[0]
+			oprHash := LX.Hash(entry.Content)
+			diff := opr.ComputeDifficulty(oprHash, opr.BestNonce)
+			opr.Difficulty = diff
+			fmt.Printf("Difficulty %x oprHash %x BestNonce %x\n",diff, oprHash, opr.BestNonce)
+
 			if err != nil {							// If it doesn't unmarshal, then just ignore
 				delete(Entries, ebentry.EntryHash)  // could be trash someone put in our chain
 			}else{

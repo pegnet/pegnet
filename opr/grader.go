@@ -1,0 +1,47 @@
+package opr
+
+import (
+	"fmt"
+	"github.com/pegnet/OracleRecord/support"
+	"github.com/zpatrick/go-config"
+)
+
+// We have one grader that evaluates the previous block of OPRs and determines who should be paid
+// This also informs the miners what records should be included in their OPR records
+type Grader struct {
+	 alerts []chan OPRs
+}
+
+// Alert from the grading service
+type OPRs struct {
+	toBePaid [] *OraclePriceRecord
+	allOPRs  [] *OraclePriceRecord
+}
+
+// Miners sign up to be alerted when the grades from the last block are ready
+func (g *Grader) GetAlert() chan OPRs {
+	alert := make(chan OPRs, 10)
+	g.alerts = append(g.alerts, alert)
+	return alert
+}
+
+func (g *Grader) Run(config *config.Config, monitor *support.FactomdMonitor) {
+	fdAlert := monitor.GetAlert()
+	for {
+		fds := <- fdAlert
+		if fds.Minute == 1 {
+			GetEntryBlocks(config)
+			oprs := GetPreviousOPRs(fds.Dbht)
+			tbp, all := GradeBlock(oprs)
+			for _, opr := range tbp {
+				fmt.Println(opr.ShortString())
+			}
+			fmt.Println()
+			for _, opr := range all {
+				fmt.Println(opr.ShortString())
+			}
+		}
+
+	}
+}
+

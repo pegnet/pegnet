@@ -167,3 +167,4 @@ func PegTAdrIsValid(network NetworkType, adr string) error {
 	_, _, err := ConvertPegTAddrToRaw(network, adr)
 	return err
 }
+
