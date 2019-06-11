@@ -1,12 +1,14 @@
 package opr
 
 import (
-	"github.com/zpatrick/go-config"
-	"github.com/FactomProject/factom"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/pegnet/OracleRecord/support"
 	"fmt"
+	"github.com/FactomProject/btcutil/base58"
+	"github.com/FactomProject/factom"
+	"github.com/pegnet/OracleRecord/support"
+	"github.com/zpatrick/go-config"
+	"sync"
 )
 
 // Compute the average answer for the price of each token reported
@@ -94,29 +96,31 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	return tobepaid, list
 }
 
-var EntryBlocks [] *factom.EBlock
-var Entries map[string] *factom.Entry
+var EntryBlocks []*factom.EBlock
+var Entries map[string]*factom.Entry
+var EBMutex sync.Mutex
 
 // Get the OPR Records at a given dbht
-func GetEntryBlocks (config *config.Config){
-
+func GetEntryBlocks(config *config.Config) {
+	EBMutex.Lock()
+	defer EBMutex.Unlock()
 	if Entries == nil {
-		Entries = make(map[string] *factom.Entry,100)
+		Entries = make(map[string]*factom.Entry, 100)
 	}
 
-	var entryBlocks [] *factom.EBlock
+	var entryBlocks []*factom.EBlock
 
-	p,err := config.String("Miner.Protocol")
+	p, err := config.String("Miner.Protocol")
 	check(err)
-	n,err := config.String("Miner.Network")
+	n, err := config.String("Miner.Network")
 	check(err)
-	opr := [][]byte{[]byte(p),[]byte(n),[]byte("Oracle Price Records")}
-	heb,err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
+	opr := [][]byte{[]byte(p), []byte(n), []byte("Oracle Price Records")}
+	heb, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
 	check(err)
-	eb,err := factom.GetEBlock(heb)
+	eb, err := factom.GetEBlock(heb)
 	check(err)
 	elen := len(EntryBlocks)
-	for eb != nil && (elen==0 || eb.Header.DBHeight > EntryBlocks[elen-1].Header.DBHeight){
+	for eb != nil && (elen == 0 || eb.Header.DBHeight > EntryBlocks[elen-1].Header.DBHeight) {
 		entryBlocks = append(entryBlocks, eb)
 		for _, ebentry := range eb.EntryList {
 			entry, err := factom.GetEntry(ebentry.EntryHash)
@@ -134,16 +138,19 @@ func GetEntryBlocks (config *config.Config){
 		}
 		eb = neb
 	}
-	for i:= len(entryBlocks)-1;i>=0; i-- {
-		EntryBlocks = append(EntryBlocks,entryBlocks[i])
+	for i := len(entryBlocks) - 1; i >= 0; i-- {
+		EntryBlocks = append(EntryBlocks, entryBlocks[i])
 	}
 	return
 }
 
 func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
+	EBMutex.Lock()
+	defer EBMutex.Unlock()
+
 	eblen := len(EntryBlocks)
-	for i:=eblen-1; i>= 0; i-- {
-		if EntryBlocks[i].Header.DBHeight<int64(dbht) {
+	for i := eblen - 1; i >= 0; i-- {
+		if EntryBlocks[i].Header.DBHeight < int64(dbht) {
 			oprs := GetOPRs(EntryBlocks[i])
 			if oprs != nil {
 				return oprs
@@ -153,27 +160,35 @@ func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	return nil
 }
 
-func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord){
+func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord) {
 	for _, ebentry := range eblock.EntryList {
 		if Entries[ebentry.EntryHash] != nil {
 			opr := new(OraclePriceRecord)
 
-			// Unmarshal the entry, and put the BestNonce back into the OPR
-			entry := Entries[ebentry.EntryHash]
-			err := json.Unmarshal(entry.Content,&opr)
-
-			opr.BestNonce = entry.ExtIDs[0]
-			oprHash := LX.Hash(entry.Content)
-			diff := opr.ComputeDifficulty(oprHash, opr.BestNonce)
-			opr.Difficulty = diff
-			fmt.Printf("Difficulty %x oprHash %x BestNonce %x\n",diff, oprHash, opr.BestNonce)
-
-			if err != nil {							// If it doesn't unmarshal, then just ignore
-				delete(Entries, ebentry.EntryHash)  // could be trash someone put in our chain
-			}else{
-				oprs = append(oprs,opr)
+			opr.Entry = Entries[ebentry.EntryHash]
+			if opr.Entry == nil {
+				continue
 			}
-	  	}
+			// Decode the EntryHash to its binary form.  If that doesn't work, this entry isn't good.
+			eh, err1 := hex.DecodeString(ebentry.EntryHash)
+			// Unmarshal the entry, and add to our list if it works.
+			err2 := json.Unmarshal(opr.Entry.Content, &opr)
+			if err1 != nil || err2 != nil { // If it doesn't unmarshal, then just ignore
+				delete(Entries, ebentry.EntryHash) // could be trash someone put in our chain
+				continue
+			}
+			oprs = append(oprs, opr)
+
+			// Compute the OPRHash here because we need it to compute difficulty
+			opr.OPRHash = LX.Hash(opr.Entry.Content)
+			// Keep the EntryHash with the entry because we need it to build the next OPR record
+			opr.EntryHash = base58.Encode(eh)
+
+			diff := opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
+			opr.Difficulty = diff
+			fmt.Printf("Difficulty %x oprHash %x BestNonce %x\n", diff, opr.OPRHash, opr.Entry.ExtIDs[0])
+
+		}
 	}
 	return
 }

@@ -9,18 +9,18 @@ import (
 // We have one grader that evaluates the previous block of OPRs and determines who should be paid
 // This also informs the miners what records should be included in their OPR records
 type Grader struct {
-	 alerts []chan OPRs
+	alerts []chan *OPRs
 }
 
 // Alert from the grading service
 type OPRs struct {
-	toBePaid [] *OraclePriceRecord
-	allOPRs  [] *OraclePriceRecord
+	ToBePaid []*OraclePriceRecord
+	AllOPRs  []*OraclePriceRecord
 }
 
 // Miners sign up to be alerted when the grades from the last block are ready
-func (g *Grader) GetAlert() chan OPRs {
-	alert := make(chan OPRs, 10)
+func (g *Grader) GetAlert() chan *OPRs {
+	alert := make(chan *OPRs, 10)
 	g.alerts = append(g.alerts, alert)
 	return alert
 }
@@ -28,7 +28,7 @@ func (g *Grader) GetAlert() chan OPRs {
 func (g *Grader) Run(config *config.Config, monitor *support.FactomdMonitor) {
 	fdAlert := monitor.GetAlert()
 	for {
-		fds := <- fdAlert
+		fds := <-fdAlert
 		if fds.Minute == 1 {
 			GetEntryBlocks(config)
 			oprs := GetPreviousOPRs(fds.Dbht)
@@ -40,8 +40,14 @@ func (g *Grader) Run(config *config.Config, monitor *support.FactomdMonitor) {
 			for _, opr := range all {
 				fmt.Println(opr.ShortString())
 			}
+			// Alert followers that we have graded the previous block
+			for _,a := range g.alerts {
+				var winners OPRs
+				winners.ToBePaid = tbp
+				winners.AllOPRs = all
+				a <- &winners
+			}
 		}
 
 	}
 }
-

@@ -2,26 +2,26 @@ package support
 
 import (
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/OracleRecord/common"
 	"math/rand"
 	"sync"
 	"time"
-	"github.com/pegnet/OracleRecord/common"
 )
 
 // FactomdMonitor
 // Running multiple Monitors is problematic and should be avoided if possible
 type FactomdMonitor struct {
-	root                    bool            // True if this is the root FactomMonitor
-	mutex                   sync.Mutex      // Protect multiple parties accessing monitor data
-	lastminute              int64           // Last minute we got
-	lastblock               int64           // Last block we got
-	polltime                int64           // How frequently do we poll
-	kill                    chan int        // Channel to kill polling.
-	response                chan int        // Respond when we have stopped
-	alerts                  []chan common.FDStatus // Channels to send minutes to
-	polls                   int64
-	info                    *factom.CurrentMinuteInfo
-	status                  string
+	root       bool                   // True if this is the root FactomMonitor
+	mutex      sync.Mutex             // Protect multiple parties accessing monitor data
+	lastminute int64                  // Last minute we got
+	lastblock  int64                  // Last block we got
+	polltime   int64                  // How frequently do we poll
+	kill       chan int               // Channel to kill polling.
+	response   chan int               // Respond when we have stopped
+	alerts     []chan common.FDStatus // Channels to send minutes to
+	polls      int64
+	info       *factom.CurrentMinuteInfo
+	status     string
 }
 
 func (f *FactomdMonitor) GetAlert() chan common.FDStatus {
@@ -71,7 +71,7 @@ func (f *FactomdMonitor) poll() {
 					dbht = f.info.DirectoryBlockHeight
 				}
 				// Do our poll
-				f.info,	err = factom.GetCurrentMinute()
+				f.info, err = factom.GetCurrentMinute()
 
 				f.mutex.Unlock()
 
@@ -79,7 +79,7 @@ func (f *FactomdMonitor) poll() {
 					time.Sleep(time.Duration(rand.Intn(50)+50) * time.Millisecond)
 					// Do our poll
 					f.mutex.Lock()
-					f.info,	err = factom.GetCurrentMinute()
+					f.info, err = factom.GetCurrentMinute()
 					f.mutex.Unlock()
 
 					if err == nil {

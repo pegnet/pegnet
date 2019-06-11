@@ -3,17 +3,18 @@ package opr
 // These
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/LXR256"
+	"github.com/pegnet/OracleRecord/polling"
+	"github.com/pegnet/OracleRecord/support"
 	"github.com/zpatrick/go-config"
 	"strings"
 	"time"
-	"github.com/pegnet/OracleRecord/polling"
-	"github.com/pegnet/OracleRecord/support"
 )
 
 type OraclePriceRecord struct {
@@ -21,10 +22,10 @@ type OraclePriceRecord struct {
 	Config     *config.Config    `json:"-"` //  The config of the miner using the record
 	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
 	Grade      float64           `json:"-"` // The grade when OPR records are compared
-	BestNonce  []byte            `json:"-"` // nonce created by mining;
 	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by mining)
 	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
 	Entry      *factom.Entry     `json:"-"` // Entry to record this record
+	EntryHash  string            `json:"-"` // Entry Hash is communicated here in base58
 	StopMining chan int          `json:"-"` // Bool that stops mining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
@@ -107,10 +108,14 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 
 // ComputeDifficulty()
 // Difficulty the high order 8 bytes of the hash( hash(OPR record) + nonce)
-func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce []byte) (difficulty uint64) {
-	no := append(oprHash, nonce...)
+func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64) {
+	no := append(opr.OPRHash, nonce...)
 	h := LX.Hash(no)
-	difficulty = 0
+
+	// The high eight bytes of the hash(hash(entry.Content) + nonce) is the difficulty.
+	// Because we don't have a difficulty bar, we can define difficulty as the greatest
+	// value, rather than the minimum value.  Our bar is the greatest difficulty found
+	// within a 10 minute period.  We compute difficulty as Big Endian.
 	for i := uint64(0); i < 8; i++ {
 		difficulty = difficulty<<8 + uint64(h[i])
 	}
@@ -119,78 +124,59 @@ func (opr *OraclePriceRecord) ComputeDifficulty(oprHash []byte, nonce []byte) (d
 
 // Mine()
 // Mine the OraclePriceRecord for a given number of seconds
-func (opr *OraclePriceRecord) Mine(seed int64, verbose bool) {
+func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
-	t := []byte(time.Now().Format("10:10:10.0000000000"))
-	nonce := LX.Hash(append(opr.BestNonce, t...))
-	nonce = LX.Hash(append(nonce,
-		byte(seed), byte(seed>>8),byte(seed>>16),byte(seed>>24),
-		byte(seed>>32),byte(seed>>40),byte(seed>>48),byte(seed>>56)))
-
-	// Set the OPRHash of the content of the Oracle Record
-	js, err := json.Marshal(opr)
-	if err != nil {
-		panic(err)
-	}
-	opr.OPRHash = LX.Hash(js)
+	nonce := support.RandomByteSliceOfLen(32)
 	if verbose {
-		fmt.Printf("OPRHash %x\n",opr.OPRHash)
+		fmt.Printf("OPRHash %x\n", opr.OPRHash)
 	}
 
-
-	for i := 0;i<5;i++{
-		nonce[i]=0
+	for i := 0; i < 5; i++ {
+		nonce[i] = 0
 	}
 miningloop:
-	for {
+	for i := 0; ; i++ {
 		select {
 		case <-opr.StopMining:
 			break miningloop
 
 		default:
 		}
+		k := 0
+		for j := i; j > 0; j = j >> 8 {
+			nonce[k] = byte(j)
+			k++
+		}
+		diff := opr.ComputeDifficulty(nonce)
 
-		for i := 0; i < 100; i++ {
-			for j := 0; ; j++ {
-				nonce[j]++
-				if nonce[j] > 0 {
-					break
-				}
-			}
-
-			diff := opr.ComputeDifficulty(opr.OPRHash, nonce)
-			if diff > opr.Difficulty {
-				opr.Difficulty = diff
-				opr.BestNonce = append(opr.BestNonce[:0], nonce...)
-				if verbose {
-					fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
-						time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
-				}
+		if diff > opr.Difficulty {
+			opr.Difficulty = diff
+			// Copy over the previous nonce
+			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
+			if verbose {
+				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
 			}
 		}
+
 	}
 }
 
 func (opr *OraclePriceRecord) ShortString() string {
 
-	hash := []byte{0}
-	if opr.Entry != nil {
-		hash = opr.Entry.Hash()
-	}
-
 	fdid := ""
-	for i,v := range opr.FactomDigitalID {
-		if i>0 {
-			fdid = fdid+" --- "
+	for i, v := range opr.FactomDigitalID {
+		if i > 0 {
+			fdid = fdid + " --- "
 		}
 		fdid = fdid + v
 	}
 
-	str := fmt.Sprintf("DID %30x EntryHash %30x Nonce %33x Difficulty %15d Grade %20f",
+	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
 		fdid,
-		hash,
-		opr.BestNonce,
+		opr.OPRHash,
+		opr.Entry.ExtIDs[0],
 		opr.Difficulty,
 		opr.Grade)
 	return str
@@ -248,9 +234,17 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	var Peg polling.PegAssets
 	Peg = polling.PullPEGAssets(c)
 	Peg.FillPriceBytes()
-
 	opr.SetPegValues(Peg)
 
+	var err error
+	opr.Entry = new(factom.Entry)
+	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
+	opr.Entry.ExtIDs = [][]byte{{}}
+	opr.Entry.Content, err = json.Marshal(opr)
+	if err != nil {
+		panic(err)
+	}
+	opr.OPRHash = LX.Hash(opr.Entry.Content)
 }
 
 // Set the chainID; assumes a base58 string
@@ -300,23 +294,11 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 
 }
 
-// GetEntry
-// Given a particular chain to write this entry, compute a proper entry
-// for this OraclePriceRecord
-func (opr *OraclePriceRecord) GetEntry(chainID string) *factom.Entry {
-	// An OPR record only has the nonce as an external ID
-
-	entryExtIDs := append([][]byte{}, opr.BestNonce)
-	// The body Data is the marshal of the OPR
-	bodyData, err := json.Marshal(opr)
-	check(err)
-	// Create the Entry struct
-	assetEntry := factom.Entry{ChainID: chainID, ExtIDs: entryExtIDs, Content: bodyData}
-	opr.Entry = &assetEntry
-	return opr.Entry
-}
-
-func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, error) {
+// NewOpr()
+// collects all the information unique to this miner and its configuration, and also
+// goes and gets the oracle data.  Also collects the winners from the prior block and
+// puts their entry hashes (base58) into this OPR
+func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := new(OraclePriceRecord)
 
 	// create the channel to stop mining
@@ -345,6 +327,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
 		opr.FactomDigitalID = fields
+
 	}
 
 	// Get the protocol chain to be used for mining records
@@ -365,6 +348,13 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config) (*OraclePriceRecord, 
 	} else {
 		opr.CoinbasePNTAddress = str
 	}
+
+	winners := <-alert
+	for i, w := range winners.ToBePaid {
+		opr.WinningPreviousOPR[i] = w.EntryHash
+	}
+
+	opr.GetOPRecord(c)
 
 	return opr, nil
 }

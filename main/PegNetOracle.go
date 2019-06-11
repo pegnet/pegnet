@@ -5,7 +5,7 @@ import (
 
 	"encoding/json"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord"
+	opr2 "github.com/pegnet/OracleRecord/opr"
 	"github.com/zpatrick/go-config"
 	"os/user"
 )
@@ -34,7 +34,7 @@ func main() {
 		}
 	}
 
-	opr, err := oprecord.NewOpr(1, 1000, Config)
+	opr, err := opr2.NewOpr(1, 1000, Config)
 	if err != nil {
 		panic(err)
 	}
@@ -45,15 +45,14 @@ func main() {
 		if err != nil {
 			panic(err)
 		}
-		opr.OPRHash = oprecord.LX.Hash(js)
+		opr.OPRHash = opr2.LX.Hash(js)
 
 		// Just pick a nonce and compute a difficulty
-		opr.BestNonce = oprecord.LX.Hash([]byte(fmt.Sprintf("junk %d", i)))
-		opr.Difficulty = opr.ComputeDifficulty(opr.OPRHash, opr.BestNonce)
+		opr.Difficulty = opr.ComputeDifficulty()
 
 		fmt.Println(i)
 		for i := 0; i < 300; i++ {
-			opr.Mine(true, .1) // Mine for 5 seconds
+			opr.Mine(3453262626, true) // Mine for 5 seconds
 		}
 
 		fmt.Println(opr.String())

@@ -29,6 +29,3 @@ func ComputeChainIDFromStrings(fields []string) []byte {
 	}
 	return ComputeChainIDFromFields(binary)
 }
-
-
-
