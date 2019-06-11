@@ -3,7 +3,6 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/OracleRecord/support"
@@ -186,7 +185,6 @@ func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord) {
 
 			diff := opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
 			opr.Difficulty = diff
-			fmt.Printf("Difficulty %x oprHash %x BestNonce %x\n", diff, opr.OPRHash, opr.Entry.ExtIDs[0])
 
 		}
 	}

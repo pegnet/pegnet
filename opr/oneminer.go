@@ -29,6 +29,12 @@ func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonit
 			if mining {
 				opr.StopMining <- 0
 				if verbose {
+					data, ok := opr.Entry.MarshalBinary()
+					if ok != nil {
+						panic(fmt.Sprint("Can't json marshal the opr: ", ok))
+					}
+					fmt.Println("opr len(entry)= "+
+						"", len(data))
 					fmt.Println(opr.String())
 				}
 				mining = false
