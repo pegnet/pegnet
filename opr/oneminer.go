@@ -23,7 +23,7 @@ func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonit
 			if !mining {
 				mining = true
 				opr, _ = NewOpr(miner, fds.Dbht, config, gAlert)
-				go opr.Mine( verbose)
+				go opr.Mine(verbose)
 			}
 		case 9:
 			if mining {

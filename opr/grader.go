@@ -41,7 +41,7 @@ func (g *Grader) Run(config *config.Config, monitor *support.FactomdMonitor) {
 				fmt.Println(opr.ShortString())
 			}
 			// Alert followers that we have graded the previous block
-			for _,a := range g.alerts {
+			for _, a := range g.alerts {
 				var winners OPRs
 				winners.ToBePaid = tbp
 				winners.AllOPRs = all

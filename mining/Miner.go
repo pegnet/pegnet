@@ -32,8 +32,8 @@ func main() {
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 
-	for i:=1;i<=15;i++ {
+	for i := 1; i <= 15; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
 	}
-	opr.OneMiner(true,Config,monitor,grader,16)
+	opr.OneMiner(true, Config, monitor, grader, 16)
 }
