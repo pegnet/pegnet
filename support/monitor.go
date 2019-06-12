@@ -2,35 +2,26 @@ package support
 
 import (
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/OracleRecord/common"
 	"math/rand"
 	"sync"
 	"time"
-	"github.com/pegnet/OracleRecord/common"
 )
 
 // FactomdMonitor
 // Running multiple Monitors is problematic and should be avoided if possible
 type FactomdMonitor struct {
-	root                    bool            // True if this is the root FactomMonitor
-	mutex                   sync.Mutex      // Protect multiple parties accessing monitor data
-	lastminute              int64           // Last minute we got
-	lastblock               int64           // Last block we got
-	polltime                int64           // How frequently do we poll
-	kill                    chan int        // Channel to kill polling.
-	response                chan int        // Respond when we have stopped
-	alerts                  []chan common.FDStatus // Channels to send minutes to
-	polls                   int64
-	leaderheight            int64
-	directoryblockheight    int64
-	minute                  int64
-	currentblockstarttime   int64
-	currentminutestarttime  int64
-	currenttime             int64
-	directoryblockinseconds int64
-	stalldetected           bool
-	faulttimeout            int64
-	roundtimeout            int64
-	status                  string
+	root       bool                   // True if this is the root FactomMonitor
+	mutex      sync.Mutex             // Protect multiple parties accessing monitor data
+	lastminute int64                  // Last minute we got
+	lastblock  int64                  // Last block we got
+	polltime   int64                  // How frequently do we poll
+	kill       chan int               // Channel to kill polling.
+	response   chan int               // Respond when we have stopped
+	alerts     []chan common.FDStatus // Channels to send minutes to
+	polls      int64
+	info       *factom.CurrentMinuteInfo
+	status     string
 }
 
 func (f *FactomdMonitor) GetAlert() chan common.FDStatus {
@@ -47,14 +38,14 @@ func (f *FactomdMonitor) GetAlert() chan common.FDStatus {
 func (f *FactomdMonitor) GetBlockTime() int64 {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	return f.directoryblockinseconds
+	return f.info.DirectoryBlockInSeconds
 }
 
 // Returns the highest saved block
 func (f *FactomdMonitor) GetHighestSavedDBlock() int64 {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	return f.directoryblockheight
+	return f.info.DirectoryBlockHeight
 }
 
 // poll
@@ -75,20 +66,12 @@ func (f *FactomdMonitor) poll() {
 			}
 
 			for {
-
-				dbht := int64(0)
+				var dbht int64
+				if f.info != nil {
+					dbht = f.info.DirectoryBlockHeight
+				}
 				// Do our poll
-				f.leaderheight,
-					dbht,
-					f.minute,
-					f.currentblockstarttime,
-					f.currentminutestarttime,
-					f.currenttime,
-					f.directoryblockinseconds,
-					f.stalldetected,
-					f.faulttimeout,
-					f.roundtimeout,
-					err = factom.GetCurrentMinute()
+				f.info, err = factom.GetCurrentMinute()
 
 				f.mutex.Unlock()
 
@@ -96,17 +79,7 @@ func (f *FactomdMonitor) poll() {
 					time.Sleep(time.Duration(rand.Intn(50)+50) * time.Millisecond)
 					// Do our poll
 					f.mutex.Lock()
-					f.leaderheight,
-						dbht,
-						f.minute,
-						f.currentblockstarttime,
-						f.currentminutestarttime,
-						f.currenttime,
-						f.directoryblockinseconds,
-						f.stalldetected,
-						f.faulttimeout,
-						f.roundtimeout,
-						err = factom.GetCurrentMinute()
+					f.info, err = factom.GetCurrentMinute()
 					f.mutex.Unlock()
 
 					if err == nil {
@@ -114,10 +87,10 @@ func (f *FactomdMonitor) poll() {
 					}
 				}
 				f.mutex.Lock()
-				if dbht < f.directoryblockheight { // Keep looking if the dbht hasn't progressed forward
+				if dbht < f.info.DirectoryBlockHeight { // Keep looking if the dbht hasn't progressed forward
 					continue // Mostly this happens when the factomd node is rebooted.
 				}
-				f.directoryblockheight = dbht
+				f.info.DirectoryBlockHeight = dbht
 				break
 			}
 
@@ -132,9 +105,9 @@ func (f *FactomdMonitor) poll() {
 				break
 			}
 			// If we got a different block time, consider that good and break
-			if f.minute != f.lastminute || f.directoryblockheight != f.lastblock {
-				f.lastminute = f.minute
-				f.lastblock = f.directoryblockheight
+			if f.info.Minute != f.lastminute || f.info.DirectoryBlockHeight != f.lastblock {
+				f.lastminute = f.info.Minute
+				f.lastblock = f.info.DirectoryBlockHeight
 				break
 			}
 
@@ -147,8 +120,8 @@ func (f *FactomdMonitor) poll() {
 		for _, alert := range f.alerts {
 			if cap(alert) > len(alert) {
 				var fds common.FDStatus
-				fds.Dbht = int32(f.directoryblockheight)
-				fds.Minute = f.minute
+				fds.Dbht = int32(f.info.DirectoryBlockHeight)
+				fds.Minute = f.info.Minute
 				alert <- fds
 			}
 		}

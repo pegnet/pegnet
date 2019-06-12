@@ -1,4 +1,4 @@
-package oprecord
+package polling
 
 import (
 	"fmt"

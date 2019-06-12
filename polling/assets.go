@@ -1,4 +1,4 @@
-package oprecord
+package polling
 
 import (
 	"encoding/binary"
@@ -78,6 +78,10 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
+func Round(v float64) float64 {
+	return float64(int64(v*10000)) / 10000
+}
+
 func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	// Prevent pounding of external APIs
@@ -106,30 +110,35 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 			//fmt.Println(currency.Symbol + "-" + currency.PriceUSD)
 			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
 				Peg.XBT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				Peg.XBT.Value = Round(Peg.XBT.Value)
 				if err != nil {
 					continue
 				}
 				Peg.XBT.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "ETH" {
 				Peg.ETH.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				Peg.ETH.Value = Round(Peg.ETH.Value)
 				if err != nil {
 					continue
 				}
 				Peg.ETH.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "LTC" {
 				Peg.LTC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				Peg.LTC.Value = Round(Peg.LTC.Value)
 				if err != nil {
 					continue
 				}
 				Peg.LTC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
 				Peg.XBC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				Peg.XBC.Value = Round(Peg.XBC.Value)
 				if err != nil {
 					continue
 				}
 				Peg.XBC.When = string(CoinCapValues.Timestamp)
 			} else if currency.Symbol == "FCT" {
 				Peg.FCT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
+				Peg.FCT.Value = Round(Peg.FCT.Value)
 				if err != nil {
 					continue
 				}
@@ -156,28 +165,26 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	} else {
 		var APILayerResponse APILayerResponse
 		err = json.Unmarshal(APILayerBytes, &APILayerResponse)
-		//	fmt.Println(APILayerResponse)
-		//	fmt.Println("UDS-GBP")
-		//	fmt.Println(APILayerResponse.Quotes.USDGBP)
-		Peg.USD.Value = APILayerResponse.Quotes.USDUSD
+
+		Peg.USD.Value = Round(APILayerResponse.Quotes.USDUSD)
 		Peg.USD.When = string(APILayerResponse.Timestamp)
-		Peg.EUR.Value = APILayerResponse.Quotes.USDEUR
+		Peg.EUR.Value = Round(APILayerResponse.Quotes.USDEUR)
 		Peg.EUR.When = string(APILayerResponse.Timestamp)
-		Peg.JPY.Value = APILayerResponse.Quotes.USDJPY
+		Peg.JPY.Value = Round(APILayerResponse.Quotes.USDJPY)
 		Peg.JPY.When = string(APILayerResponse.Timestamp)
-		Peg.GBP.Value = APILayerResponse.Quotes.USDGBP
+		Peg.GBP.Value = Round(APILayerResponse.Quotes.USDGBP)
 		Peg.GBP.When = string(APILayerResponse.Timestamp)
-		Peg.CAD.Value = APILayerResponse.Quotes.USDCAD
+		Peg.CAD.Value = Round(APILayerResponse.Quotes.USDCAD)
 		Peg.CAD.When = string(APILayerResponse.Timestamp)
-		Peg.CHF.Value = APILayerResponse.Quotes.USDCHF
+		Peg.CHF.Value = Round(APILayerResponse.Quotes.USDCHF)
 		Peg.CHF.When = string(APILayerResponse.Timestamp)
-		Peg.INR.Value = APILayerResponse.Quotes.USDINR
+		Peg.INR.Value = Round(APILayerResponse.Quotes.USDINR)
 		Peg.INR.When = string(APILayerResponse.Timestamp)
-		Peg.SGD.Value = APILayerResponse.Quotes.USDSGD
+		Peg.SGD.Value = Round(APILayerResponse.Quotes.USDSGD)
 		Peg.SGD.When = string(APILayerResponse.Timestamp)
-		Peg.CNY.Value = APILayerResponse.Quotes.USDCNY
+		Peg.CNY.Value = Round(APILayerResponse.Quotes.USDCNY)
 		Peg.CNY.When = string(APILayerResponse.Timestamp)
-		Peg.HKD.Value = APILayerResponse.Quotes.USDHKD
+		Peg.HKD.Value = Round(APILayerResponse.Quotes.USDHKD)
 		Peg.HKD.When = string(APILayerResponse.Timestamp)
 
 	}

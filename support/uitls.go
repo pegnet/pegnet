@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
@@ -166,4 +167,18 @@ func ConvertPegTAddrToRaw(network NetworkType, adr string) (prefix string, rawAd
 func PegTAdrIsValid(network NetworkType, adr string) error {
 	_, _, err := ConvertPegTAddrToRaw(network, adr)
 	return err
+}
+
+// RandomByteSliceOfLen()
+// Returns a random set of bytes of a given length
+func RandomByteSliceOfLen(sliceLen int) []byte {
+	if sliceLen <= 0 {
+		return nil
+	}
+	answer := make([]byte, sliceLen)
+	_, err := rand.Read(answer)
+	if err != nil {
+		return nil
+	}
+	return answer
 }

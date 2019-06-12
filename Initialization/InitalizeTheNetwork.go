@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/OracleRecord/support"
 	"github.com/zpatrick/go-config"
 	"os/user"
 	"time"
@@ -52,7 +53,7 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 		fmt.Print(string(n))
 	}
 	fmt.Println()
-	chainID := factom.ComputeChainIDFromFields(chainName)          // Compute the chainID
+	chainID := support.ComputeChainIDFromFields(chainName)         // Compute the chainID
 	chainExists := factom.ChainExists(hex.EncodeToString(chainID)) // Check if it exists
 	if chainExists {                                               // If the chain exists, we are done.
 		fmt.Println("Chain Exists!")

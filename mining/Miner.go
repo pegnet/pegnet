@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/pegnet/OracleRecord/support"
-	"github.com/pegnet/OracleRecord"
-	"github.com/FactomProject/factom"
-	"os/user"
 	"fmt"
+	"github.com/FactomProject/factom"
+	"github.com/pegnet/OracleRecord/opr"
+	"github.com/pegnet/OracleRecord/support"
 	"github.com/zpatrick/go-config"
+	"os/user"
 )
 
 // Run a set of miners, as a network debugging aid
@@ -29,19 +29,11 @@ func main() {
 
 	monitor := new(support.FactomdMonitor)
 	monitor.Start()
-	go oprecord.OneMiner(Config,monitor,1)
-	go oprecord.OneMiner(Config,monitor,2)
-	go oprecord.OneMiner(Config,monitor,3)
-	go oprecord.OneMiner(Config,monitor,4)
-	go oprecord.OneMiner(Config,monitor,5)
-	go oprecord.OneMiner(Config,monitor,6)
-	go oprecord.OneMiner(Config,monitor,7)
-	go oprecord.OneMiner(Config,monitor,8)
-	go oprecord.OneMiner(Config,monitor,9)
-	go oprecord.OneMiner(Config,monitor,10)
-	go oprecord.OneMiner(Config,monitor,11)
-	go oprecord.OneMiner(Config,monitor,12)
-	go oprecord.OneMiner(Config,monitor,13)
-	go oprecord.OneMiner(Config,monitor,14)
-	oprecord.OneMiner(Config,monitor,15)
+	grader := new(opr.Grader)
+	go grader.Run(Config, monitor)
+
+	for i := 1; i <= 15; i++ {
+		go opr.OneMiner(false, Config, monitor, grader, i)
+	}
+	opr.OneMiner(true, Config, monitor, grader, 16)
 }

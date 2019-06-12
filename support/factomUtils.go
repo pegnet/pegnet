@@ -1,6 +1,8 @@
 package support
 
-import "crypto/sha256"
+import (
+	"crypto/sha256"
+)
 
 //ComputeChainIDFromFields
 // Takes the binary fields that define a chainID and hashes

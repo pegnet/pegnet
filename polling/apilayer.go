@@ -1,4 +1,4 @@
-package oprecord
+package polling
 
 import (
 	"github.com/zpatrick/go-config"

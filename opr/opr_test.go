@@ -1,4 +1,4 @@
-package oprecord_test
+package opr
 
 import (
 	"encoding/json"
