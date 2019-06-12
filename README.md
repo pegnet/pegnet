@@ -5,7 +5,7 @@ So I started 13 miners on the PegNet TestNet.
 
 We need to add some verification code to the miners, and a few other details, but otherwise anyone can mine on the TestNet. To do so, do these 10 things:
 
-0.0 On Linux or on a virtual machine using Linux
+*Assumes Linux or use of a virtual machine running Linux*
 
 1. Clone the OracleRecord repository https://github.com/pegnet/OracleRecord
 
