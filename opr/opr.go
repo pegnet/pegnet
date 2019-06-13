@@ -228,25 +228,6 @@ func (opr *OraclePriceRecord) String() (str string) {
 	return str
 }
 
-func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
-	opr.Config = c
-	//get asset values
-	var Peg polling.PegAssets
-	Peg = polling.PullPEGAssets(c)
-	Peg.FillPriceBytes()
-	opr.SetPegValues(Peg)
-
-	var err error
-	opr.Entry = new(factom.Entry)
-	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	opr.Entry.ExtIDs = [][]byte{{}}
-	opr.Entry.Content, err = json.Marshal(opr)
-	if err != nil {
-		panic(err)
-	}
-	opr.OPRHash = LX.Hash(opr.Entry.Content)
-}
-
 // Set the chainID; assumes a base58 string
 func (opr *OraclePriceRecord) SetOPRChainID(chainID string) {
 	opr.OPRChainID = chainID
@@ -357,4 +338,23 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	opr.GetOPRecord(c)
 
 	return opr, nil
+}
+
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
+	opr.Config = c
+	//get asset values
+	var Peg polling.PegAssets
+	Peg = polling.PullPEGAssets(c)
+	Peg.FillPriceBytes()
+	opr.SetPegValues(Peg)
+
+	var err error
+	opr.Entry = new(factom.Entry)
+	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
+	opr.Entry.ExtIDs = [][]byte{{}}
+	opr.Entry.Content, err = json.Marshal(opr)
+	if err != nil {
+		panic(err)
+	}
+	opr.OPRHash = LX.Hash(opr.Entry.Content)
 }

@@ -6,6 +6,7 @@ import (
 	"github.com/pegnet/OracleRecord/opr"
 	"github.com/pegnet/OracleRecord/support"
 	"github.com/zpatrick/go-config"
+	"os"
 	"os/user"
 )
 
@@ -32,7 +33,18 @@ func main() {
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 
-	for i := 1; i <= 15; i++ {
+	numMiners, err := Config.Int("Miner.NumberOfMiners")
+	if err != nil {
+		panic(err)
+	}
+	if numMiners > 50 {
+		fmt.Fprintln(os.Stderr, "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
+		numMiners = 50
+	}
+
+	fmt.Println("Mining with ", numMiners, " miner(s).")
+
+	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
 	}
 	opr.OneMiner(true, Config, monitor, grader, 16)
