@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-const qlimit = 600 // Limit queries to once every 10 minutes (600 seconds)
+const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
 
 type PegAssets struct {
 	PNT PegItems

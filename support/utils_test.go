@@ -10,10 +10,17 @@ import (
 )
 
 func TestConvertRawAddrToPegT(t *testing.T) {
-	strAddr := "1624f2544a275dcf3f0c142c25ed0ef258851c1a7ff9605ea4fc40ddd1d178c7"
-	R2, _ := hex.DecodeString(strAddr)
-	var RawAddress [32]byte
-	copy(RawAddress[:], R2)
+
+	var RawAddress [32] byte
+	setAdr := func (str string){
+		adr,err := hex.DecodeString(str)
+		if err != nil {
+			panic(err)
+		}
+		copy(RawAddress[:],adr)
+	}
+
+	setAdr("000102030405060708090001020304050607080900010203040506070809AABB")
 
 	var HumanAdr string
 	var err error
@@ -41,10 +48,6 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 				RawAddress, raw))
 		}
 		return nil
-	}
-
-	if err := ConvertToHuman("tPNT"); err != nil {
-		t.Error(err)
 	}
 
 	if err := ConvertToHuman("pPNT"); err != nil {
@@ -124,12 +127,8 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		t.Error(err)
 	}
 
-	RawAddress = [32]byte{
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0,
-	}
+	setAdr("2222222222222222222222222222222222222222222222222222222222222222")
+
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
@@ -140,12 +139,8 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		t.Error(err)
 	}
 
-	RawAddress = [32]byte{
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF,
-	}
+	setAdr("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
