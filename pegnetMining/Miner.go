@@ -32,7 +32,11 @@ func main() {
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 
-	for i := 1; i <= 15; i++ {
+	numMiners, err := Config.Int("Miner.NumberOfMiners")
+	if err != nil || numMiners<1 || numMiners > 50{
+		panic(fmt.Sprintf("Number of miners %d not specified or out of range by the config file: numMiners %v",err))
+	}
+	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
 	}
 	opr.OneMiner(true, Config, monitor, grader, 16)

@@ -22,11 +22,11 @@ type OraclePriceRecord struct {
 	Config     *config.Config    `json:"-"` //  The config of the miner using the record
 	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
 	Grade      float64           `json:"-"` // The grade when OPR records are compared
-	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by mining)
+	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by pegnetMining)
 	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
 	Entry      *factom.Entry     `json:"-"` // Entry to record this record
 	EntryHash  string            `json:"-"` // Entry Hash is communicated here in base58
-	StopMining chan int          `json:"-"` // Bool that stops mining this OPR
+	StopMining chan int          `json:"-"` // Bool that stops pegnetMining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
@@ -228,24 +228,6 @@ func (opr *OraclePriceRecord) String() (str string) {
 	return str
 }
 
-func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
-	opr.Config = c
-	//get asset values
-	var Peg polling.PegAssets
-	Peg = polling.PullPEGAssets(c)
-	Peg.FillPriceBytes()
-	opr.SetPegValues(Peg)
-
-	var err error
-	opr.Entry = new(factom.Entry)
-	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	opr.Entry.ExtIDs = [][]byte{{}}
-	opr.Entry.Content, err = json.Marshal(opr)
-	if err != nil {
-		panic(err)
-	}
-	opr.OPRHash = LX.Hash(opr.Entry.Content)
-}
 
 // Set the chainID; assumes a base58 string
 func (opr *OraclePriceRecord) SetOPRChainID(chainID string) {
@@ -301,7 +283,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := new(OraclePriceRecord)
 
-	// create the channel to stop mining
+	// create the channel to stop pegnetMining
 	opr.StopMining = make(chan int, 1)
 
 	// Save the config object
@@ -330,7 +312,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 
 	}
 
-	// Get the protocol chain to be used for mining records
+	// Get the protocol chain to be used for pegnetMining records
 	protocol, err1 := c.String("Miner.Protocol")
 	network, err2 := c.String("Miner.Network")
 	if err1 != nil {
@@ -357,4 +339,23 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	opr.GetOPRecord(c)
 
 	return opr, nil
+}
+
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
+	opr.Config = c
+	//get asset values
+	var Peg polling.PegAssets
+	Peg = polling.PullPEGAssets(c)
+	Peg.FillPriceBytes()
+	opr.SetPegValues(Peg)
+
+	var err error
+	opr.Entry = new(factom.Entry)
+	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
+	opr.Entry.ExtIDs = [][]byte{{}}
+	opr.Entry.Content, err = json.Marshal(opr)
+	if err != nil {
+		panic(err)
+	}
+	opr.OPRHash = LX.Hash(opr.Entry.Content)
 }
