@@ -149,7 +149,7 @@ func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 
 	eblen := len(EntryBlocks)
 	for i := eblen - 1; i >= 0; i-- {
-		if EntryBlocks[i].Header.DBHeight < int64(dbht) {
+		if EntryBlocks[i].Header.DBHeight <= int64(dbht) {
 			oprs := GetOPRs(EntryBlocks[i])
 			if oprs != nil {
 				return oprs
@@ -187,6 +187,9 @@ func GetOPRs(eblock *factom.EBlock) (oprs []*OraclePriceRecord) {
 			opr.Difficulty = diff
 
 		}
+	}
+	if len(oprs)<10 {
+		return nil
 	}
 	return
 }

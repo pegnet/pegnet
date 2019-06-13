@@ -13,6 +13,7 @@ func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonit
 
 	mining := false
 	var opr *OraclePriceRecord
+	var err error
 	for {
 		fds := <-alert
 		if verbose {
@@ -22,7 +23,10 @@ func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonit
 		case 1:
 			if !mining {
 				mining = true
-				opr, _ = NewOpr(miner, fds.Dbht, config, gAlert)
+				opr, err = NewOpr(miner, fds.Dbht, config, gAlert)
+				if err != nil {
+					panic(fmt.Sprintf("Error creating an OPR.  Likely a config file issue: %v\n",err))
+				}
 				go opr.Mine(verbose)
 			}
 		case 9:
