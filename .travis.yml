@@ -1,0 +1,52 @@
+language: go
+
+# Use latest go version
+go:
+- 1.x
+
+# GO111MODULE will force Go modules
+# This will be unnecessary when Go 1.13 lands.
+matrix:
+  include:
+  - os: linux
+    env:
+    - GO111MODULE=on
+
+# Modifies go get flags
+# Can be removed when factom@v1-rollup is merged into master 
+install: true
+
+# Get gox cross-compilation library
+# Move into pegnetMining folder for build
+before_install:
+  - go get github.com/mitchellh/gox
+  - cd pegnetMining
+
+
+# Get specific factom branch
+script: 
+  - go get github.com/FactomProject/factom@v1-rollup
+
+# No spam
+notifications:
+  email: false
+
+# Build with gox
+before_deploy:
+  - gox -os="linux darwin windows freebsd" -arch="amd64"
+  - gox -osarch="linux/arm"
+
+# Build and deploy for any tagged commit.
+deploy:
+  provider: releases
+  api_key:
+    secure: jpHAPdm3tkLtbEDiCkdZ4+GeDcx2LCyIXoUtqreNy7wQeTzbHQdj6vdo5oYEHzf/0w7wMUv1tq8jMN6i/5qn5Y2cBrI5VCAzK+qeN8r8AiD+T2StDaoX+3jJhanmWz9Lsw73KdHvws+J8j5V806/CTg+7IhFUs8nFZxFhP8FY5nD9TzuH2aZ2DeEJo3wzKTs/+Q/Rrl57jdeQVNnpiE0Uh4CU8TrKyq+lGngeIQlNR/3Uz6iTueHKY6km2rz5TmNhygFdiVuDSrq7khpYuNF1yOo47K+LS9wHb7QcBcJ4+toAM/TdzYuAaL3Jt3RnaR+QGZsGUHdm8K90/4CYqMMYBqNRDKryE6mb+ggFB7HJIX3D6qWLW8aCvB45Wft90FP/rQmRtFicLPqRj4d82L7dA5264YzyEPZo1Cfl+h7PEOu9jRSirpxIZGliU4oGBn7bqXsFoPY7IiBneI0avZRPE0oleibCO29EgC9fcnMywE2aaUjVQBv/QSy1WbQIN1QFwOJ0LYDmfI4NX1rK6kR+wDtwJSqa8E1ugEo/Vn+lQRVRzJ/wmDuJuSO/wQRbJ5pz35H4r3gQvOQoU4buCAMYDOYhmhoSx75xDKlaYTOk4R9ddAg9aKU4jvsVJfKmnp4BD8bOODEipeiNMZgIRZolA7EaU8Kw7IB+JCHwgUiVg4=
+  file:
+    - pegnetMining_windows_amd64.exe
+    - pegnetMining_darwin_amd64
+    - pegnetMining_linux_amd64
+    - pegnetMining_linux_arm
+    - pegnetMining_freebsd_amd64
+  skip_cleanup: true
+  on:
+    tags: true
