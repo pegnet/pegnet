@@ -304,9 +304,15 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		return nil, errors.New("config file has no Miner.IdentityChain specified")
 	} else {
 		fields := strings.Split(chainID58, ",")
-		if len(fields) == 1 && string(fields[0]) == "prototype" {
-			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
+		fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
+		for i,v := range fields {
+			if i > 0 {
+				fmt.Print (" --- ")
+			}
+			fmt.Print(v)
 		}
+		fmt.Println()
+
 		opr.FactomDigitalID = fields
 
 	}
