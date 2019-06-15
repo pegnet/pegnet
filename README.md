@@ -1,5 +1,3 @@
-[![Build Status](https://travis-ci.org/MitchellBerry/OracleRecord.svg?branch=master)](https://travis-ci.org/MitchellBerry/OracleRecord)
-
 # OracleRecord
 This is now the main repository for mining for the PegNet
 
