@@ -14,7 +14,8 @@ import (
 type NetworkType int
 
 const (
-	MAIN_NETWORK NetworkType = iota + 1
+	INVALID	NetworkType = iota + 1
+	MAIN_NETWORK
 	TEST_NETWORK
 )
 

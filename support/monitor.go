@@ -82,7 +82,7 @@ func (f *FactomdMonitor) poll() {
 					f.info, err = factom.GetCurrentMinute()
 					f.mutex.Unlock()
 
-					if err == nil {
+					if f.info != nil && err == nil {
 						break
 					}
 				}
