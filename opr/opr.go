@@ -86,7 +86,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		return false
 	}
 
-	if len(OPRChainID)==0 {
+	if len(OPRChainID) == 0 {
 		OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 	}
 
@@ -100,11 +100,11 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		ntype = support.MAIN_NETWORK
 	case "TestNet":
 		ntype = support.TEST_NETWORK
-	default :
+	default:
 		return false
 	}
 
-	pre,_,err :=support.ConvertPegTAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	pre, _, err := support.ConvertPegTAddrToRaw(ntype, opr.CoinbasePNTAddress)
 	if err != nil || pre != "tPNT" {
 		return false
 	}
@@ -344,9 +344,9 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		for i,v := range fields {
+		for i, v := range fields {
 			if i > 0 {
-				fmt.Print (" --- ")
+				fmt.Print(" --- ")
 			}
 			fmt.Print(v)
 		}

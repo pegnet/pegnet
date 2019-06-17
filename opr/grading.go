@@ -74,7 +74,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		// bubble sort the worst grade to the end of the list. Note that this is nearly sorted data, so
 		// a bubble sort with a short circuit is pretty darn good sort.
 		for j := 0; j < i-1; j++ {
-			cont := false // If we can get through a pass with no swaps, we are done.
+			cont := false                // If we can get through a pass with no swaps, we are done.
 			for k := 0; k < i-j-1; k++ { // yes, yes I know we can get 2 or 3 x better speed playing with indexes
 				if list[k].Grade > list[k+1].Grade { // bit it is tricky.  This is good enough.
 					list[k], list[k+1] = list[k+1], list[k] // sort first by the grade.
@@ -122,11 +122,11 @@ func GetEntryBlocks(config *config.Config) {
 	// Because we go from the head of the chain backwards to collect them, they have to be
 	// collected before I can then validate them forward from the highest valid OPR block
 	// I have found.
-	var oprblocks [] *OPRBlock
+	var oprblocks []*OPRBlock
 	// For each entryblock in the Oracle Price Records chain
 	// Get all the valid OPRs and put them in  a new OPRBlock structure
 	for eb != nil && (len(OPRBlocks) == 0 ||
-		eb.Header.DBHeight >  OPRBlocks[len(OPRBlocks)-1].Dbht) {
+		eb.Header.DBHeight > OPRBlocks[len(OPRBlocks)-1].Dbht) {
 
 		// Go through the Entry Block and collect all the valid OPR records
 		if len(eb.EntryList) > 10 {
@@ -189,7 +189,7 @@ func GetEntryBlocks(config *config.Config) {
 	for i := len(oprblocks) - 1; i >= 0; i-- { // Okay, go through these backwards
 		prevOPRBlock := GetPreviousOPRs(int32(oprblocks[i].Dbht)) // Get the previous OPRBlock
 		var validOPRs []*OraclePriceRecord                        // Collect the valid OPRPriceRecords here
-		for _, opr := range oprblocks[i].OPRs { // Go through this block
+		for _, opr := range oprblocks[i].OPRs {                   // Go through this block
 			for j, eh := range opr.WinningPreviousOPR { // Make sure the winning records are valid
 				if (prevOPRBlock == nil && eh != "") ||
 					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinningPreviousOPR[j]) {
@@ -222,5 +222,3 @@ func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	}
 	return nil
 }
-
-
