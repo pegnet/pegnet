@@ -10,14 +10,14 @@ import (
 )
 
 func TestBurn(t *testing.T) {
-	fctAdd := "FA2ooooTESToooo1oooo1oooo1oooo1oooo1oooo1oooo1oooo1o"
-	raw := ConvertFCTUserStrToAddress(fctAdd)
+	ecAdd := "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1oooo1oo"
+	raw := ConvertFctECUserStrToAddress(ecAdd)
 	raw2, _ := hex.DecodeString(raw)
-	burn := ConvertFctAddressToUser(raw2)
-	fmt.Printf("Suggested Address %s\n", fctAdd)
+	burn := ConvertECAddressToUser(raw2)
+	fmt.Printf("Suggested Address %s\n", ecAdd)
 	fmt.Printf("Raw Address       %s\n", raw)
 	fmt.Printf("Suggested+csum    %s\n", burn)
-	raw = ConvertFCTUserStrToAddress(burn)
+	raw = ConvertFctECUserStrToAddress(burn)
 	fmt.Printf("Back again        %s\n", raw)
 }
 

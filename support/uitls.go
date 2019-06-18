@@ -201,11 +201,29 @@ func ConvertFctAddressToUser(addr []byte) string {
 	return base58.Encode(userd)
 }
 
+//  Convert Factoid and Entry Credit addresses to their more user
+//  friendly and human readable formats.
+//
+//  Creates the binary form.  Just needs the conversion to base58
+//  for display.
+func ConvertECAddressToUser(addr []byte) string {
+	dat := make([]byte, 0, 64)
+	dat = append(dat, 0x59, 0x2a)
+	dat = append(dat, addr...)
+	hash := sha256.Sum256(dat)
+	sha256d := sha256.Sum256(hash[:])
+	userd := []byte{0x59, 0x2a}
+	userd = append(userd, addr...)
+	userd = append(userd, sha256d[:4]...)
+	return base58.Encode(userd)
+}
+
+
 // Convert a User facing Factoid or Entry Credit address
 // or their Private Key representations
 // to the regular form.  Note validation must be done
 // separately!
-func ConvertFCTUserStrToAddress(userFAddr string) string {
+func ConvertFctECUserStrToAddress(userFAddr string) string {
 	v := base58.Decode(userFAddr)
 	return hex.EncodeToString(v[2:34])
 }
