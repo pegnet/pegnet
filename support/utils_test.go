@@ -9,15 +9,27 @@ import (
 	"testing"
 )
 
+func TestBurn(t *testing.T) {
+	ecAdd := "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1oooo1oo"
+	raw := ConvertFctECUserStrToAddress(ecAdd)
+	raw2, _ := hex.DecodeString(raw)
+	burn := ConvertECAddressToUser(raw2)
+	fmt.Printf("Suggested Address %s\n", ecAdd)
+	fmt.Printf("Raw Address       %s\n", raw)
+	fmt.Printf("Suggested+csum    %s\n", burn)
+	raw = ConvertFctECUserStrToAddress(burn)
+	fmt.Printf("Back again        %s\n", raw)
+}
+
 func TestConvertRawAddrToPegT(t *testing.T) {
 
-	var RawAddress [32] byte
-	setAdr := func (str string){
-		adr,err := hex.DecodeString(str)
+	var RawAddress [32]byte
+	setAdr := func(str string) {
+		adr, err := hex.DecodeString(str)
 		if err != nil {
 			panic(err)
 		}
-		copy(RawAddress[:],adr)
+		copy(RawAddress[:], adr)
 	}
 
 	setAdr("000102030405060708090001020304050607080900010203040506070809AABB")

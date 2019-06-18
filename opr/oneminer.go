@@ -25,7 +25,7 @@ func OneMiner(verbose bool, config *config.Config, monitor *support.FactomdMonit
 				mining = true
 				opr, err = NewOpr(miner, fds.Dbht, config, gAlert)
 				if err != nil {
-					panic(fmt.Sprintf("Error creating an OPR.  Likely a config file issue: %v\n",err))
+					panic(fmt.Sprintf("Error creating an OPR.  Likely a config file issue: %v\n", err))
 				}
 				go opr.Mine(verbose)
 			}

@@ -59,9 +59,10 @@ type OraclePriceRecord struct {
 }
 
 var LX lxr.LXRHash
+var OPRChainID string
 
 func init() {
-	LX.Init(0x123412341234, 25, 256, 5)
+	LX.Init(0xfafaececfafaecec, 25, 256, 5)
 }
 
 type Token struct {
@@ -73,6 +74,64 @@ func check(e error) {
 	if e != nil {
 		panic(e)
 	}
+}
+
+// This function cannot validate the winners of the previous block, but it can do some sanity
+// checking of the structure and values of the OPR record.
+func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
+
+	protocol, err1 := c.String("Miner.Protocol")
+	network, err2 := c.String("Miner.Network")
+	if err1 != nil || err2 != nil {
+		return false
+	}
+
+	if len(OPRChainID) == 0 {
+		OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	}
+
+	if opr.OPRChainID != OPRChainID {
+		return false
+	}
+
+	ntype := support.INVALID
+	switch network {
+	case "MainNet":
+		ntype = support.MAIN_NETWORK
+	case "TestNet":
+		ntype = support.TEST_NETWORK
+	default:
+		return false
+	}
+
+	pre, _, err := support.ConvertPegTAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	if err != nil || pre != "tPNT" {
+		return false
+	}
+
+	if opr.USD == 0 ||
+		opr.EUR == 0 ||
+		opr.JPY == 0 ||
+		opr.GBP == 0 ||
+		opr.CAD == 0 ||
+		opr.CHF == 0 ||
+		opr.INR == 0 ||
+		opr.SGD == 0 ||
+		opr.CNY == 0 ||
+		opr.HKD == 0 ||
+		opr.XAU == 0 ||
+		opr.XAG == 0 ||
+		opr.XPD == 0 ||
+		opr.XPT == 0 ||
+		opr.XBT == 0 ||
+		opr.ETH == 0 ||
+		opr.LTC == 0 ||
+		opr.XBC == 0 ||
+		opr.FCT == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
@@ -228,28 +287,6 @@ func (opr *OraclePriceRecord) String() (str string) {
 	return str
 }
 
-// Set the chainID; assumes a base58 string
-func (opr *OraclePriceRecord) SetOPRChainID(chainID string) {
-	opr.OPRChainID = chainID
-}
-
-// Sets one of the winning OPR records from the previous block.  Expects a base58 string
-func (opr *OraclePriceRecord) SetWinningPreviousOPR(index int, winning string) {
-	opr.WinningPreviousOPR[index] = winning
-}
-
-// Sets the PNT Address in human/wallet format
-func (opr *OraclePriceRecord) SetCoinbasePNTAddress(coinbaseAddress string) {
-	opr.CoinbasePNTAddress = coinbaseAddress
-}
-
-// Sets the DigitalID for the miner.  Expects the ExtIDs of the Identity chain.
-// Miner IDs are expected to be in unicode
-func (opr *OraclePriceRecord) SetFactomDigitalID(factomDigitalID []string) {
-	opr.FactomDigitalID = factomDigitalID
-
-}
-
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 
 	opr.PNT = assets.PNT.Value
@@ -304,9 +341,17 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		return nil, errors.New("config file has no Miner.IdentityChain specified")
 	} else {
 		fields := strings.Split(chainID58, ",")
-		if len(fields) == 1 && string(fields[0]) == "prototype" {
+		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
+		for i, v := range fields {
+			if i > 0 {
+				fmt.Print(" --- ")
+			}
+			fmt.Print(v)
+		}
+		fmt.Println()
+
 		opr.FactomDigitalID = fields
 
 	}
