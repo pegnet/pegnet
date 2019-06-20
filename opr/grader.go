@@ -1,7 +1,7 @@
 package opr
 
 import (
-	"github.com/pegnet/OracleRecord/support"
+	"github.com/pegnet/PegNet/support"
 	"github.com/zpatrick/go-config"
 )
 
