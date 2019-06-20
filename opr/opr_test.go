@@ -1,4 +1,4 @@
-package opr
+package opr_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/FactomProject/btcutil/base58"
-	. "github.com/pegnet/Pegnet"
+	. "github.com/pegnet/PegNet/opr"
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {
@@ -15,8 +15,8 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 
 	opr.Difficulty = 1
 	opr.Grade = 1
-	opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
-	opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
+	//opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
+	//opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
 	opr.WinningPreviousOPR = [10]string{
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
