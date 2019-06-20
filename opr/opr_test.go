@@ -3,9 +3,10 @@ package opr
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/FactomProject/btcutil/base58"
-	. "github.com/pegnet/OracleRecord"
 	"testing"
+
+	"github.com/FactomProject/btcutil/base58"
+	. "github.com/pegnet/Pegnet"
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {
