@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord/support"
+	"github.com/pegnet/PegNet/support"
 	"github.com/zpatrick/go-config"
 	"sync"
 )

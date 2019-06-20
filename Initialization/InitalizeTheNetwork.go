@@ -4,7 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord/support"
+	"github.com/pegnet/PegNet/support"
 	"github.com/zpatrick/go-config"
 	"os/user"
 	"time"
