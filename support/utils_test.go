@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	. "github.com/pegnet/PegNet/support"
+	. "github.com/pegnet/pegnet/support"
 	"testing"
 )
 
