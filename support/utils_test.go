@@ -51,6 +51,14 @@ func TestConvertFctToPegAssets(t *testing.T) {
 			t.Fatal("Round trip failed with tPNT")
 		}
 		fmt.Printf("%x\n",raw2)
+
+		assets , err:= ConvertUserFctToUserPegNetAssets(fct)
+		if err != nil {
+			t.Fatal(fa," ",err)
+		}
+		for _,asset := range assets {
+			fmt.Println(asset)
+		}
 	}
 }
 
