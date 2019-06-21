@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/FactomProject/btcutil/base58"
-	. "github.com/pegnet/PegNet/opr"
+	. "github.com/pegnet/pegnet/opr"
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {

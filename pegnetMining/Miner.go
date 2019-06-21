@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/PegNet/opr"
-	"github.com/pegnet/PegNet/support"
+	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
 	"os"
 	"os/user"
