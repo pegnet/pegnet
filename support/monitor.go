@@ -2,7 +2,7 @@ package support
 
 import (
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord/common"
+	"github.com/pegnet/pegnet/common"
 	"math/rand"
 	"sync"
 	"time"

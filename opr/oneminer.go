@@ -3,7 +3,7 @@ package opr
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord/support"
+	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
 )
 

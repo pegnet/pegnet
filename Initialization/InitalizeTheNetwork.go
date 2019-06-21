@@ -3,11 +3,12 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/FactomProject/factom"
-	"github.com/pegnet/OracleRecord/support"
-	"github.com/zpatrick/go-config"
 	"os/user"
 	"time"
+
+	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/support"
+	config "github.com/zpatrick/go-config"
 )
 
 func main() {
