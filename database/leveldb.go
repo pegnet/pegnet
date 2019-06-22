@@ -3,7 +3,7 @@
 
 package database
 
-import(
+import (
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -11,7 +11,7 @@ var _ = leveldb.OpenFile
 
 type Ldb struct {
 	Pathname string
-	DB *leveldb.DB
+	DB       *leveldb.DB
 }
 
 // BuildKey()
@@ -24,15 +24,15 @@ func BuildKey(bucket Bucket, key []byte) (bkey []byte) {
 		if bucket == 0 {
 			return bkey
 		}
-		bucket = bucket>>8
+		bucket = bucket >> 8
 	}
-	bkey = append(bkey,key...)
+	bkey = append(bkey, key...)
 	return
 }
 
 // Open()
 // Open the database.  The path to the database is int he Ldb struct.
-func (db *Ldb)Open() (err error) {
+func (db *Ldb) Open() (err error) {
 	db.DB, err = leveldb.OpenFile(db.Pathname, nil)
 	return nil
 }
@@ -40,7 +40,7 @@ func (db *Ldb)Open() (err error) {
 // Close()
 // Close the database if it has not yet been closed.  We know this by
 // checking that the DB field isn't nil.
-func (db *Ldb)Close() (err error) {
+func (db *Ldb) Close() (err error) {
 	if db.DB != nil {
 		db.DB.Close()
 	}
@@ -48,11 +48,10 @@ func (db *Ldb)Close() (err error) {
 	return nil
 }
 
+func (db *Ldb) Put(bucket Bucket, key []byte, Value []byte) error {
+	bkey := BuildKey(bucket, key)
 
-func (db *Ldb) Put(bucket Bucket, key []byte, Value[]byte) error{
-	bkey := BuildKey(bucket,key)
-
-	err := db.DB.Put(bkey, Value,nil)
+	err := db.DB.Put(bkey, Value, nil)
 	if err != nil {
 		return err
 	}
@@ -60,10 +59,10 @@ func (db *Ldb) Put(bucket Bucket, key []byte, Value[]byte) error{
 	return nil
 }
 
-func (db *Ldb) Get(bucket Bucket, key []byte) ([]byte, error){
-	bkey := BuildKey(bucket,key)
+func (db *Ldb) Get(bucket Bucket, key []byte) ([]byte, error) {
+	bkey := BuildKey(bucket, key)
 
-	value, err := db.DB.Get(bkey,nil)
+	value, err := db.DB.Get(bkey, nil)
 	if err != nil {
 		return err
 	}
@@ -71,18 +70,16 @@ func (db *Ldb) Get(bucket Bucket, key []byte) ([]byte, error){
 	return value, nil
 }
 
-func (db *Ldb) Delete(bucket Bucket, key[]byte) error {
-	bkey := BuildKey(bucket,key)
+func (db *Ldb) Delete(bucket Bucket, key []byte) error {
+	bkey := BuildKey(bucket, key)
 
-	err := db.DB.Delete(bkey,nil)
+	err := db.DB.Delete(bkey, nil)
 	if err != nil {
 		return err
 	}
 
 	return nil
 }
-
-
 
 //// Get()
 //// Get a value from a particular bucket
