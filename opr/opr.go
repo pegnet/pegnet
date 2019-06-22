@@ -104,7 +104,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		return false
 	}
 
-	pre, _, err := support.ConvertPegTAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	pre, _, err := support.ConvertPegAddrToRaw(ntype, opr.CoinbasePNTAddress)
 	if err != nil || pre != "tPNT" {
 		return false
 	}
