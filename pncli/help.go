@@ -7,18 +7,19 @@ import (
 	"strings"
 )
 
-func Help() {
+var _ = func() (n int) {
+	Init()
 	me := Command{
 		Name:      "help",
 		ShortHelp: "Returns a list of commands, or pncli help <cmd> returns long help on a command.",
 		LongHelp:  "Returns a list of commands, or pncli help <cmd> returns long help on a command.",
 		Execute: func() {
 			// If we only have "help", print a list of short help for all commands
-			if len(os.Args) >= 2 {
+			if len(os.Args) > 2 {
 				cmd := commands[os.Args[2]]
 				if cmd != nil {
-					println(cmd.Name)
-					println(cmd.LongHelp)
+					fmt.Println("\n", cmd.Name, " ", cmd.Parms)
+					fmt.Println("\n",cmd.LongHelp)
 					return
 				}
 			}
@@ -35,4 +36,5 @@ func Help() {
 		},
 	}
 	commands[strings.ToLower(me.Name)] = &me
-}
+	return
+}()

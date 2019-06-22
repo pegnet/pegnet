@@ -3,10 +3,13 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/support"
+	"sort"
 	"strings"
 )
 
-func NewAddress() {
+var _ = func() (n int) {
+	Init()
 	me := Command{
 		Name:      "newaddress",
 		ShortHelp: "creates a new FCT address in your wallet, and provides the list of all asset addresses.",
@@ -23,11 +26,24 @@ func NewAddress() {
 			fa, err := factom.GenerateFactoidAddress()
 			if err != nil {
 				fmt.Println(err)
-			} else {
-				fmt.Println(fa.String())
+				return
 			}
-
+			fmt.Print(fa.String(), "\n\n")
+			assets, err := support.ConvertUserFctToUserPegNetAssets(fa.String())
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+			sort.Strings(assets)
+			for _, s := range assets {
+				if strings.Contains(s, "PNT_") {
+					fmt.Println("  *", s[1:4], " ", s)
+				} else {
+					fmt.Println("   ", s[1:4], " ", s)
+				}
+			}
 		},
 	}
 	commands[strings.ToLower(me.Name)] = &me
-}
+	return
+}()

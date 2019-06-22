@@ -6,10 +6,10 @@ import (
 
 var commands map[string]*Command
 
-func init() {
-	commands = make(map[string]*Command)
-	Help()
-	NewAddress()
+func Init() {
+	if commands == nil {
+		commands = make(map[string]*Command)
+	}
 }
 
 // Simple CLI executes commands to do things like convert FCT addresses to PNT addresses,
