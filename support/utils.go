@@ -43,6 +43,14 @@ var AssetNames = []string{
 	"FCT",
 }
 
+var (
+	fcPubPrefix = []byte{0x5f, 0xb1}
+	fcSecPrefix = []byte{0x64, 0x78}
+	ecPubPrefix = []byte{0x59, 0x2a}
+	ecSecPrefix = []byte{0x5d, 0xb6}
+)
+
+
 var PegAssetNames []string
 
 var TestPegAssetNames []string
@@ -105,7 +113,7 @@ func ConvertRawAddrToPeg(network NetworkType, prefix string, adr []byte) (string
 		return "", errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
-	h := sha256.Sum256([]byte(append([]byte(prefix),adr...)))
+	h := sha256.Sum256([]byte(append(append([]byte(prefix),'_'),adr...)))
 	hash := sha256.Sum256(h[:])
 
 	// Append the prefix to the base 58 representation of the raw address
@@ -118,7 +126,7 @@ func ConvertRawAddrToPeg(network NetworkType, prefix string, adr []byte) (string
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
 //
-func ConvertPegTAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr []byte, err error) {
+func ConvertPegAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr []byte, err error) {
 	adrLen := len(adr)
 	if adrLen < 42 || len(adr) > 56 {
 		return "", nil, errors.New(
@@ -138,7 +146,7 @@ func ConvertPegTAddrToRaw(network NetworkType, adr string) (prefix string, rawAd
 	rawAdr = raw[:len(raw)-4]
 	chksum := raw[len(raw)-4:]
 
-	hash := sha256.Sum256(append([]byte(prefix), rawAdr...))
+	hash := sha256.Sum256(append(append([]byte(prefix), '_'),rawAdr...))
 	hash = sha256.Sum256(hash[:])
 	if bytes.Compare(hash[:4], chksum)!=0 {
 		return "", nil, errors.New("checksum failure")
@@ -151,7 +159,7 @@ func ConvertPegTAddrToRaw(network NetworkType, adr string) (prefix string, rawAd
 // PegTAdrIsValid()
 // Check that the given human/wallet PegNet address is valid.
 func PegTAdrIsValid(network NetworkType, adr string) error {
-	_, _, err := ConvertPegTAddrToRaw(network, adr)
+	_, _, err := ConvertPegAddrToRaw(network, adr)
 	return err
 }
 
@@ -208,9 +216,17 @@ func ConvertECAddressToUser(addr []byte) string {
 // or their Private Key representations
 // to the regular form.  Note validation must be done
 // separately!
-func ConvertFctECUserStrToAddress(userFAddr string) string {
+func ConvertUserStrFctEcToAddress(userFAddr string) (string,error) {
 	v := base58.Decode(userFAddr)
-	return hex.EncodeToString(v[2:34])
+	switch  {
+	case bytes.Compare(v[:2],fcPubPrefix)==0:
+	case bytes.Compare(v[:2],fcSecPrefix)==0:
+	case bytes.Compare(v[:2],ecPubPrefix)==0:
+	case bytes.Compare(v[:2],ecSecPrefix)==0:
+	default:
+		return "", errors.New("unknown prefix")
+	}
+	return hex.EncodeToString(v[2:34]),nil
 }
 
 

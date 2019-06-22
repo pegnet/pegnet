@@ -7,7 +7,7 @@ This is a work in progress.  The TestNet is certain to reset the actual rewards 
 
 *Assumes Linux or use of a virtual machine running Linux*
 
-1. Clone the OracleRecord repository https://github.com/pegnet/PegNet
+1. Clone the OracleRecord repository https://github.com/pegnet/pegnet
 
 2. Copy the defaultconfig.ini file from the OracleRecord repository to ~/.pegnet directory
 

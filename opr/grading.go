@@ -7,7 +7,7 @@ import (
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/PegNet/support"
+	"github.com/pegnet/pegnet/support"
 	config "github.com/zpatrick/go-config"
 )
 

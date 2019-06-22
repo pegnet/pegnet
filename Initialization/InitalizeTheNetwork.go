@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/PegNet/support"
+	"github.com/pegnet/pegnet/support"
 	config "github.com/zpatrick/go-config"
 )
 

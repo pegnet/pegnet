@@ -1,4 +1,4 @@
-module github.com/pegnet/PegNet
+module github.com/pegnet/pegnet
 
 go 1.12
 
@@ -42,9 +42,6 @@ require (
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pegnet/LXR256 v0.0.0-20190615184635-c05cc0ee7381
-	github.com/pegnet/OracleRecord v0.0.2 // indirect
-	github.com/pegnet/Pegnet v0.0.2
-	github.com/pegnet/pegnet v0.0.2
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect

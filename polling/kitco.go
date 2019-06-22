@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/pegnet/PegNet/support"
+	"github.com/pegnet/pegnet/support"
 )
 
 type KitcoData struct {
