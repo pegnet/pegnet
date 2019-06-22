@@ -36,6 +36,7 @@ require (
 	github.com/dustin/go-humanize v1.0.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ini/ini v1.42.0 // indirect
+	github.com/golang/snappy v0.0.1 // indirect
 	github.com/hashicorp/go-plugin v1.0.1 // indirect
 	github.com/howeyc/fsnotify v0.9.0 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
@@ -45,8 +46,14 @@ require (
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2 // indirect
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
+	github.com/syndtr/goleveldb v1.0.0
 	github.com/zpatrick/go-config v0.0.0-20190509173111-460869022dbd
-	golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443 // indirect
+	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
+	golang.org/x/sys v0.0.0-20190621203818-d432491b9138 // indirect
+	golang.org/x/text v0.3.2 // indirect
+	golang.org/x/tools v0.0.0-20190621195816-6e04913cbbac // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect

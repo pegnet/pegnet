@@ -1,3 +1,5 @@
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package opr
 
 import (
@@ -114,7 +116,7 @@ func GetEntryBlocks(config *config.Config) {
 	n, err := config.String("Miner.Network")
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte("Oracle Price Records")}
-	heb, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
+	heb, _, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
 	check(err)
 	eb, err := factom.GetEBlock(heb)
 	check(err)
