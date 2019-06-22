@@ -9,57 +9,57 @@ import (
 	"testing"
 )
 
-//func TestConvertFctToPegAssets(t *testing.T) {
-//
-//	// Create a function that takes a string address, and makes sure we can run it back
-//	// and forth through address conversions without a failure.
-//	checkAdr := func(FctAddress string) {
-//		rawFct := ConvertFctECUserStrToAddress(FctAddress)
-//
-//		addrs,err := ConvertUserFctToUserPegNetAssets(FctAddress)
-//		if err != nil {
-//			t.Error(err)
-//		}
-//		fmt.Println("FCT Address:\n", FctAddress)
-//		fmt.Printf("FCT Raw:\n%x\n",rawFct)
-//		for i, adr := range addrs {
-//			if i&1 == 0 {
-//				println()
-//			}
-//			fmt.Println(adr)
-//			raw := ConvertPegTAddrToRaw()
-//		}
-//	}
-//
-//	checkAdr( "FA2L6Vng4jBMbbDZtYLsxKQbAAin4Rxg2CgvnyzXrwENSK1t2QUx")
-//
-//
-//
-//	adr,_ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
-//
-//	fct := ConvertFctAddressToUser(adr)
-//	addrs,err = ConvertUserFctToUserPegNetAssets(fct)
-//	fmt.Println("FCT Address:\n",FctAddress)
-//	for i,adr := range addrs {
-//		if i & 1 == 0 {
-//			println()
-//		}
-//		fmt.Println(adr)
-//	}
-//
-//	adr,_ = hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
-//
-//	fct = ConvertFctAddressToUser(adr)
-//	addrs,err = ConvertUserFctToUserPegNetAssets(fct)
-//	fmt.Println("FCT Address:\n",FctAddress)
-//	for i,adr := range addrs {
-//		if i & 1 == 0 {
-//			println()
-//		}
-//		fmt.Println(adr)
-//	}
-//
-//}
+func TestConvertFctToPegAssets(t *testing.T) {
+
+	// Create a function that takes a string address, and makes sure we can run it back
+	// and forth through address conversions without a failure.
+	checkAdr := func(fctRaw []byte) {
+		fct := fct
+
+		addrs,err := ConvertUserFctToUserPegNetAssets(FctAddress)
+		if err != nil {
+			t.Error(err)
+		}
+		fmt.Println("FCT Address:\n", FctAddress)
+		fmt.Printf("FCT Raw:\n%x\n",rawFct)
+		for i, adr := range addrs {
+			if i&1 == 0 {
+				println()
+			}
+			fmt.Println(adr)
+			raw := ConvertPegTAddrToRaw()
+		}
+	}
+
+	checkAdr( "FA2L6Vng4jBMbbDZtYLsxKQbAAin4Rxg2CgvnyzXrwENSK1t2QUx")
+
+
+
+	adr,_ := hex.DecodeString("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
+
+	fct := ConvertFctAddressToUser(adr)
+	addrs,err = ConvertUserFctToUserPegNetAssets(fct)
+	fmt.Println("FCT Address:\n",FctAddress)
+	for i,adr := range addrs {
+		if i & 1 == 0 {
+			println()
+		}
+		fmt.Println(adr)
+	}
+
+	adr,_ = hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000000")
+
+	fct = ConvertFctAddressToUser(adr)
+	addrs,err = ConvertUserFctToUserPegNetAssets(fct)
+	fmt.Println("FCT Address:\n",FctAddress)
+	for i,adr := range addrs {
+		if i & 1 == 0 {
+			println()
+		}
+		fmt.Println(adr)
+	}
+
+}
 
 
 func TestBurnECAddress(t *testing.T) {

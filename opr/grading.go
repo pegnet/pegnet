@@ -3,11 +3,12 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"sync"
+
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/PegNet/support"
-	"github.com/zpatrick/go-config"
-	"sync"
+	config "github.com/zpatrick/go-config"
 )
 
 // Compute the average answer for the price of each token reported
