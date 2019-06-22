@@ -16,3 +16,6 @@
 
 # Goland
 .idea/*
+
+# VSCode
+.vscode/*
