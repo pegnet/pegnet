@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/opr"
@@ -8,7 +9,6 @@ import (
 	"github.com/zpatrick/go-config"
 	"os"
 	"os/user"
-	"flag"
 )
 
 // Run a set of miners, as a network debugging aid
