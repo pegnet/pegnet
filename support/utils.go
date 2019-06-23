@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"github.com/FactomProject/btcutil/base58"
-	"bytes"
 )
 
 type NetworkType int
@@ -50,13 +50,12 @@ var (
 	ecSecPrefix = []byte{0x5d, 0xb6}
 )
 
-
 var PegAssetNames []string
 
 var TestPegAssetNames []string
 
 func init() {
-	for _,asset := range AssetNames {
+	for _, asset := range AssetNames {
 		PegAssetNames = append(PegAssetNames, "p"+asset)
 		TestPegAssetNames = append(TestPegAssetNames, "t"+asset)
 	}
@@ -113,11 +112,11 @@ func ConvertRawAddrToPeg(network NetworkType, prefix string, adr []byte) (string
 		return "", errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
-	h := sha256.Sum256([]byte(append(append([]byte(prefix),'_'),adr...)))
+	h := sha256.Sum256([]byte(append(append([]byte(prefix), '_'), adr...)))
 	hash := sha256.Sum256(h[:])
 
 	// Append the prefix to the base 58 representation of the raw address
-	b58 := prefix +"_" + base58.Encode( append(adr, hash[:4]...))
+	b58 := prefix + "_" + base58.Encode(append(adr, hash[:4]...))
 
 	return b58, nil
 }
@@ -146,9 +145,9 @@ func ConvertPegAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr
 	rawAdr = raw[:len(raw)-4]
 	chksum := raw[len(raw)-4:]
 
-	hash := sha256.Sum256(append(append([]byte(prefix), '_'),rawAdr...))
+	hash := sha256.Sum256(append(append([]byte(prefix), '_'), rawAdr...))
 	hash = sha256.Sum256(hash[:])
-	if bytes.Compare(hash[:4], chksum)!=0 {
+	if bytes.Compare(hash[:4], chksum) != 0 {
 		return "", nil, errors.New("checksum failure")
 	}
 
@@ -211,30 +210,28 @@ func ConvertECAddressToUser(addr []byte) string {
 	return base58.Encode(userd)
 }
 
-
 // Convert a User facing Factoid or Entry Credit address
 // or their Private Key representations
 // to the regular form.  Note validation must be done
 // separately!
-func ConvertUserStrFctEcToAddress(userFAddr string) (string,error) {
+func ConvertUserStrFctEcToAddress(userFAddr string) (string, error) {
 	v := base58.Decode(userFAddr)
-	switch  {
-	case bytes.Compare(v[:2],fcPubPrefix)==0:
-	case bytes.Compare(v[:2],fcSecPrefix)==0:
-	case bytes.Compare(v[:2],ecPubPrefix)==0:
-	case bytes.Compare(v[:2],ecSecPrefix)==0:
+	switch {
+	case bytes.Compare(v[:2], fcPubPrefix) == 0:
+	case bytes.Compare(v[:2], fcSecPrefix) == 0:
+	case bytes.Compare(v[:2], ecPubPrefix) == 0:
+	case bytes.Compare(v[:2], ecSecPrefix) == 0:
 	default:
 		return "", errors.New("unknown prefix")
 	}
-	return hex.EncodeToString(v[2:34]),nil
+	return hex.EncodeToString(v[2:34]), nil
 }
-
 
 // Convert a User facing FCT address to all of its PegNet
 // asset token User facing forms.
-func ConvertUserFctToUserPegNetAssets(userFctAddr string)(assets[]string, err error){
+func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err error) {
 	raw := base58.Decode(userFctAddr)[2:34]
-	cvt :=func(network NetworkType, asset string) (passet string) {
+	cvt := func(network NetworkType, asset string) (passet string) {
 		passet, err = ConvertRawAddrToPeg(network, asset, raw)
 		if err != nil {
 			panic(err)

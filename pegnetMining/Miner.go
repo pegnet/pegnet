@@ -5,6 +5,7 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/database"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
@@ -22,13 +23,21 @@ func main() {
 		panic(err)
 	}
 	userPath := u.HomeDir
-	configfile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
+	baseConfigurationPath := fmt.Sprintf("%s/.%s", userPath, "pegnet")
+	ok := database.CreateDirectory(baseConfigurationPath)
+	if !ok {
+		panic("the configuration directory for the PegNet doesn't exist, and cannot be created.")
+	}
+	configfile := fmt.Sprintf("%s/defaultconfig.ini", baseConfigurationPath)
 	iniFile := config.NewINIFile(configfile)
 	Config := config.NewConfig([]config.Provider{iniFile})
 	_, err = Config.String("Miner.Protocol")
 	if err != nil {
 		panic("Failed to open the config file for this miner, and couldn't load the default file either")
 	}
+
+	// Initialize the database
+	database.Init(baseConfigurationPath, Config)
 
 	monitor := new(support.FactomdMonitor)
 	monitor.Start()
@@ -40,7 +49,7 @@ func main() {
 		panic(err)
 	}
 	if numMiners > 50 {
-		fmt.Fprintln(os.Stderr, "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
+		_, _ = fmt.Fprintln(os.Stderr, "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
 		numMiners = 50
 	}
 

@@ -5,15 +5,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/FactomProject/factoid"
 	. "github.com/pegnet/pegnet/support"
 	"testing"
-	"github.com/FactomProject/factoid"
 )
-
 
 func TestConvertFctToPegAssets(t *testing.T) {
 
-	fctAddrs := []string  {
+	fctAddrs := []string{
 		"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
 		"0000000000000000000000000000000000000000000000000000000000000000",
 		"1235134346267276876846779695807808006ababababababababdfdfdfeeeeF",
@@ -21,51 +20,50 @@ func TestConvertFctToPegAssets(t *testing.T) {
 		"1234651367286539567abababefefefefefefef6228365940abcdefedededede",
 	}
 
-	for _,fa := range fctAddrs {
-		fmt.Println("\n",fa)
-		raw,err := hex.DecodeString(fa)
+	for _, fa := range fctAddrs {
+		fmt.Println("\n", fa)
+		raw, err := hex.DecodeString(fa)
 		if err != nil {
-			t.Fatal(fa," ",err)
+			t.Fatal(fa, " ", err)
 		}
 		fct := ConvertFctAddressToUser(raw)
 		fmt.Println(fct)
 		raw = factoid.ConvertUserStrToAddress(fct)
-		fmt.Printf("%x\n",raw)
-		pnt,err := ConvertRawAddrToPeg(MAIN_NETWORK,"pPNT",raw)
+		fmt.Printf("%x\n", raw)
+		pnt, err := ConvertRawAddrToPeg(MAIN_NETWORK, "pPNT", raw)
 		if err != nil {
-			t.Fatal(fa," ",err)
+			t.Fatal(fa, " ", err)
 		}
 		fmt.Println(pnt)
-		pre,raw2,err := ConvertPegAddrToRaw(MAIN_NETWORK,pnt)
-		if pre != "pPNT" || bytes.Compare(raw,raw2)!=0 || err != nil {
+		pre, raw2, err := ConvertPegAddrToRaw(MAIN_NETWORK, pnt)
+		if pre != "pPNT" || bytes.Compare(raw, raw2) != 0 || err != nil {
 			t.Fatal("Round trip failed with pPNT")
 		}
-		fmt.Printf("%x\n",raw2)
-		tpnt,err := ConvertRawAddrToPeg(TEST_NETWORK,"tPNT",raw)
+		fmt.Printf("%x\n", raw2)
+		tpnt, err := ConvertRawAddrToPeg(TEST_NETWORK, "tPNT", raw)
 		if err != nil {
-			t.Fatal(fa," ",err)
+			t.Fatal(fa, " ", err)
 		}
 		fmt.Println(tpnt)
-		pre,raw2,err = ConvertPegAddrToRaw(TEST_NETWORK,tpnt)
-		if pre != "tPNT" || bytes.Compare(raw,raw2)!=0 || err != nil {
+		pre, raw2, err = ConvertPegAddrToRaw(TEST_NETWORK, tpnt)
+		if pre != "tPNT" || bytes.Compare(raw, raw2) != 0 || err != nil {
 			t.Fatal("Round trip failed with tPNT")
 		}
-		fmt.Printf("%x\n",raw2)
+		fmt.Printf("%x\n", raw2)
 
-		assets , err:= ConvertUserFctToUserPegNetAssets(fct)
+		assets, err := ConvertUserFctToUserPegNetAssets(fct)
 		if err != nil {
-			t.Fatal(fa," ",err)
+			t.Fatal(fa, " ", err)
 		}
-		for _,asset := range assets {
+		for _, asset := range assets {
 			fmt.Println(asset)
 		}
 	}
 }
 
-
 func TestBurnECAddress(t *testing.T) {
 	ecAdd := "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1oooo1oo"
-	raw,err := ConvertUserStrFctEcToAddress(ecAdd)
+	raw, err := ConvertUserStrFctEcToAddress(ecAdd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -74,7 +72,7 @@ func TestBurnECAddress(t *testing.T) {
 	fmt.Printf("Suggested Address %s\n", ecAdd)
 	fmt.Printf("Raw Address       %s\n", raw)
 	fmt.Printf("Suggested+csum    %s\n", burn)
-	raw,err = ConvertUserStrFctEcToAddress(burn)
+	raw, err = ConvertUserStrFctEcToAddress(burn)
 	if err != nil {
 		t.Fatal(err)
 	}

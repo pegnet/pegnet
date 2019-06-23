@@ -29,11 +29,11 @@ type OraclePriceRecord struct {
 	StopMining chan int          `json:"-"` // Bool that stops pegnetMining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
-	Dbht               int32      `json:dbht`       //           The Directory Block Height of the OPR.
-	WinningPreviousOPR [10]string `json:winners`    // [base58]  Winning OPR entries in the previous block
-	CoinbasePNTAddress string     `json:coinbase`   // [base58]  PNT Address to pay PNT
-	FactomDigitalID    []string   `did`             // [unicode] Digital Identity of the miner
+	OPRChainID         string     `json:"oprchainid"` // [base58]  Chain ID of the chain used by the Oracle Miners
+	Dbht               int32      `json:"dbht"`       //           The Directory Block Height of the OPR.
+	WinningPreviousOPR [10]string `json:"winners"`    // [base58]  Winning OPR entries in the previous block
+	CoinbasePNTAddress string     `json:"coinbase"`   // [base58]  PNT Address to pay PNT
+	FactomDigitalID    []string   `json:"did"`        // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	PNT float64

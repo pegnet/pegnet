@@ -5,6 +5,7 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/pegnet/pegnet/database"
 	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -103,13 +104,8 @@ type OPRBlock struct {
 	Dbht int64
 }
 
-var OPRBlocks []*OPRBlock
-var EBMutex sync.Mutex
-
 // Get the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
-	EBMutex.Lock()
-	defer EBMutex.Unlock()
 
 	p, err := config.String("Miner.Protocol")
 	check(err)
@@ -128,52 +124,62 @@ func GetEntryBlocks(config *config.Config) {
 	var oprblocks []*OPRBlock
 	// For each entryblock in the Oracle Price Records chain
 	// Get all the valid OPRs and put them in  a new OPRBlock structure
-	for eb != nil && (len(OPRBlocks) == 0 ||
-		eb.Header.DBHeight > OPRBlocks[len(OPRBlocks)-1].Dbht) {
-
-		// Go through the Entry Block and collect all the valid OPR records
-		if len(eb.EntryList) > 10 {
-			oprblk := new(OPRBlock)
-			oprblk.Dbht = eb.Header.DBHeight
-			for _, ebentry := range eb.EntryList {
-				entry, err := factom.GetEntry(ebentry.EntryHash)
-				check(err)
-
-				// Do some quick collecting of data and checks of the entry.
-				// Can only have one ExtID which must be the nonce for the entry
-				if len(entry.ExtIDs) != 1 || len(entry.ExtIDs[0]) != 32 {
-					continue // keep looking if the entry has more than one extid or it isn't 32 bytes
-				}
-
-				// Okay, it looks sort of okay.  Lets unmarshal the JSON
-				opr := new(OraclePriceRecord)
-				if err := json.Unmarshal(entry.Content, opr); err != nil {
-					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
-				}
-
-				// Run some basic checks on the values.  If they don't check out, then ignore the entry
-				if !opr.Validate(config) {
-					continue
-				}
-
-				// Looking good.  Go ahead and compute the OPRHash
-				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
-				opr.Entry = entry                    // Compute the Entry Hash
-				eh, err := hex.DecodeString(ebentry.EntryHash)
-				if err != nil {
-					continue
-				}
-				opr.EntryHash = base58.Encode(eh) // Encode to base58
-
-				// Okay, mostly good.  Add to our candidate list
-				oprblk.OPRs = append(oprblk.OPRs, opr)
-
-			}
-			// If we have 10 canidates, then lets add them up.
-			if len(oprblk.OPRs) >= 10 {
-				oprblocks = append(oprblocks, oprblk)
-			}
+	iter := database.DB.Iterate(database.BUCKET_VALID_EB)
+	last := iter.Last()
+	var lasteb []byte
+	var ldbht int64 // last dbht
+	if last {
+		lasteb = iter.Value()
+		var leb factom.EBlock
+		err := json.Unmarshal(lasteb, &leb)
+		if err != nil {
+			panic(err)
 		}
+		ldbht = leb.Header.DBHeight
+	}
+	for (eb != nil && last) || eb.Header.DBHeight > ldbht {
+		// Go through the Entry Block and collect all the valid OPR records
+		oprblk := new(OPRBlock)
+		oprblk.Dbht = eb.Header.DBHeight
+		for _, ebentry := range eb.EntryList {
+			entry, err := factom.GetEntry(ebentry.EntryHash)
+			check(err)
+
+			// Do some quick collecting of data and checks of the entry.
+			// Can only have one ExtID which must be the nonce for the entry
+			if len(entry.ExtIDs) != 1 || len(entry.ExtIDs[0]) != 32 {
+				continue // keep looking if the entry has more than one extid or it isn't 32 bytes
+			}
+
+			// Okay, it looks sort of okay.  Lets unmarshal the JSON
+			opr := new(OraclePriceRecord)
+			if err := json.Unmarshal(entry.Content, opr); err != nil {
+				continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
+			}
+
+			// Run some basic checks on the values.  If they don't check out, then ignore the entry
+			if !opr.Validate(config) {
+				continue
+			}
+
+			// Looking good.  Go ahead and compute the OPRHash
+			opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
+			opr.Entry = entry                    // Compute the Entry Hash
+			eh, err := hex.DecodeString(ebentry.EntryHash)
+			if err != nil {
+				continue
+			}
+			opr.EntryHash = base58.Encode(eh) // Encode to base58
+
+			// Okay, mostly good.  Add to our candidate list
+			oprblk.OPRs = append(oprblk.OPRs, opr)
+
+		}
+		// If we have 10 canidates, then lets add them up.
+		if len(oprblk.OPRs) >= 10 {
+			oprblocks = append(oprblocks, oprblk)
+		}
+
 		// At this point, the oprblk has all the valid OPRs. Make sure we have enough.
 		// sorted list of winners.
 
@@ -205,8 +211,9 @@ func GetEntryBlocks(config *config.Config) {
 		if len(validOPRs) < 10 { // Make sure we have at least 10 valid OPRs,
 			continue // and leave if we don't.
 		}
-		winners, _ := GradeBlock(validOPRs)
+		winners, all := GradeBlock(validOPRs)
 		oprblocks[i].OPRs = winners
+		err = database.DB.Put(database.BUCKET_VALID_EB, eb)
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 	}
 

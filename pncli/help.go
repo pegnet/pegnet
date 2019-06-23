@@ -19,7 +19,7 @@ var _ = func() (n int) {
 				cmd := commands[os.Args[2]]
 				if cmd != nil {
 					fmt.Println("\n", cmd.Name, " ", cmd.Parms)
-					fmt.Println("\n",cmd.LongHelp)
+					fmt.Println("\n", cmd.LongHelp)
 					return
 				}
 			}
