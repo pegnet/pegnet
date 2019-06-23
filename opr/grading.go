@@ -114,7 +114,7 @@ func GetEntryBlocks(config *config.Config) {
 	n, err := config.String("Miner.Network")
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte("Oracle Price Records")}
-	heb, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
+	heb, _, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
 	check(err)
 	eb, err := factom.GetEBlock(heb)
 	check(err)
