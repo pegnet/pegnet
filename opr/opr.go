@@ -1,6 +1,6 @@
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package opr
-
-// These
 
 import (
 	"encoding/hex"
@@ -104,7 +104,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		return false
 	}
 
-	pre, _, err := support.ConvertPegTAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	pre, _, err := support.ConvertPegAddrToRaw(ntype, opr.CoinbasePNTAddress)
 	if err != nil || pre != "tPNT" {
 		return false
 	}
