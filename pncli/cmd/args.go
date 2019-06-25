@@ -7,7 +7,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
+//
 // Custom arg validation methods
+//
 // TODO: Add context? https://golang.org/pkg/context/
 
 // CombineCobraArgs allows the combination of multiple PositionalArgs
@@ -66,4 +68,18 @@ func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
 		return nil
 	}
 	return fmt.Errorf("%s is not a valid FCT address", arg)
+}
+
+// Custom Completion args
+
+func ValidOwnedFCTAddresses() []string {
+	fas, _, err := factom.FetchAddresses()
+	if err != nil {
+		return []string{}
+	}
+	strs := []string{}
+	for _, fa := range fas {
+		strs = append(strs, fa.String())
+	}
+	return strs
 }

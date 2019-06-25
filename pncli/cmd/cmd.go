@@ -20,20 +20,15 @@ func init() {
 }
 
 var getEncoding = &cobra.Command{
-	Use:   "getencoding <fct address> [encoding]",
-	Short: "Takes a FCT address and returns an asset encoding (or all encodings) for that FCT address",
+	Use:     "getencoding <fct address> [encoding]",
+	Short:   "Takes a FCT address and returns an asset encoding (or all encodings) for that FCT address",
+	Example: "pncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
+	// TODO: Verify this functionality.
+	ValidArgs: ValidOwnedFCTAddresses(),
 	Long: "" +
 		"All Pegnet assets are controlled by the same private key as a FCT address. You can specify\n" +
 		"an asset, and this command will give you the encoding for that asset.  If you specify 'all',\n" +
-		"or you don't specify an asset, you will get all assets." +
-		"\n" +
-		"Examples:\n" +
-		"\n" +
-		"    pncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\n" +
-		"\n" +
-		"or\n" +
-		"\n" +
-		"    pncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all\n",
+		"or you don't specify an asset, you will get all assets.",
 	// TODO: Check the encoding is a valid option
 	Args: CombineCobraArgs(cobra.RangeArgs(1, 2), CustomArgOrderValidationBuilder(false, ArgValidatorFCTAddress, ArgValidatorExists)),
 	Run: func(cmd *cobra.Command, args []string) {

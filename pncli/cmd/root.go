@@ -19,6 +19,10 @@ var (
 )
 
 func init() {
+	// TODO: Review how this completion works
+	//		The autotab stuff doesn't update automatically
+	rootCmd.AddCommand(completionCmd)
+
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'debug', 'info', 'warn', 'error', or 'fatal'")
 	rootCmd.PersistentFlags().StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
 	rootCmd.PersistentFlags().StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
@@ -61,4 +65,16 @@ func initLogger() {
 	case "fatal":
 		log.SetLevel(log.FatalLevel)
 	}
+}
+
+// https://github.com/spf13/cobra/blob/master/bash_completions.md
+// completionCmd represents the completion command
+var completionCmd = &cobra.Command{
+	Use:   "completion",
+	Short: "Generates bash completion scripts",
+	Long: `Generates bash completion scripts. You can store something like this in your bashrc: \n` +
+		`pncli completion > /tmp/ntc && source /tmp/ntc`,
+	Run: func(cmd *cobra.Command, args []string) {
+		rootCmd.GenBashCompletion(os.Stdout)
+	},
 }
