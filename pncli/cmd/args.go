@@ -2,8 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
+	//"github.com/pegnet/pegnet/support"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/support"
 	"github.com/spf13/cobra"
 )
 
@@ -61,7 +65,7 @@ func ArgValidatorExists(cmd *cobra.Command, arg string) error {
 
 // ArgValidatorFCTAddress checks for FCT address
 func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
-	if arg[:2] != "FA" {
+	if len(arg) > 2 && arg[:2] != "FA" {
 		return fmt.Errorf("FCT addresses start with FA")
 	}
 	if factom.IsValidAddress(arg) {
@@ -70,12 +74,33 @@ func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
 	return fmt.Errorf("%s is not a valid FCT address", arg)
 }
 
+// ArgValidatorAssetAndAll checks for valid asset or 'all'
+func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
+	list := append([]string{"all"}, support.AssetNames...)
+	for _, an := range list {
+		if strings.ToLower(arg) == strings.ToLower(an) {
+			return nil
+		}
+	}
+	return fmt.Errorf("Not a valid asset. Options include: %v", list)
+}
+
+// ArgValidatorAsset checks for valid asset
+func ArgValidatorAsset(cmd *cobra.Command, arg string) error {
+	for _, an := range support.AssetNames {
+		if strings.ToLower(arg) == strings.ToLower(an) {
+			return nil
+		}
+	}
+	return fmt.Errorf("Not a valid asset. Assets include: %v", support.AssetNames)
+}
+
 // Custom Completion args
 
 func ValidOwnedFCTAddresses() []string {
 	fas, _, err := factom.FetchAddresses()
 	if err != nil {
-		return []string{}
+		return []string{""}
 	}
 	strs := []string{}
 	for _, fa := range fas {

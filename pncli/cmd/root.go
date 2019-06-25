@@ -31,10 +31,10 @@ func init() {
 	cobra.OnInitialize(initLogger, initFactomdLocs)
 }
 
+// The cli enter point
 var rootCmd = &cobra.Command{
 	Use:   "pncli",
 	Short: "pncli is the cli tool to interact with the pegnet daemon",
-	Long:  "pncli is the cli tool to interact with the pegnet daemon",
 	Run: func(cmd *cobra.Command, args []string) {
 		cmd.Help()
 	},
@@ -71,10 +71,11 @@ func initLogger() {
 // completionCmd represents the completion command
 var completionCmd = &cobra.Command{
 	Use:   "completion",
-	Short: "Generates bash completion scripts",
-	Long: `Generates bash completion scripts. You can store something like this in your bashrc: \n` +
-		`pncli completion > /tmp/ntc && source /tmp/ntc`,
+	Short: "!EXPERIMENTAL! Generates bash completion scripts.",
+	Long: `!EXPERIMENTAL! Generates bash completion scripts. You can store something like this in your bashrc: 
+pncli completion > /tmp/ntc && source /tmp/ntc`,
 	Run: func(cmd *cobra.Command, args []string) {
+		addGetEncodingCommands()
 		rootCmd.GenBashCompletion(os.Stdout)
 	},
 }

@@ -25,12 +25,13 @@ var getEncoding = &cobra.Command{
 	Example: "pncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
 	// TODO: Verify this functionality.
 	ValidArgs: ValidOwnedFCTAddresses(),
+
 	Long: "" +
 		"All Pegnet assets are controlled by the same private key as a FCT address. You can specify\n" +
 		"an asset, and this command will give you the encoding for that asset.  If you specify 'all',\n" +
 		"or you don't specify an asset, you will get all assets.",
 	// TODO: Check the encoding is a valid option
-	Args: CombineCobraArgs(cobra.RangeArgs(1, 2), CustomArgOrderValidationBuilder(false, ArgValidatorFCTAddress, ArgValidatorExists)),
+	Args: CombineCobraArgs(cobra.RangeArgs(1, 2), CustomArgOrderValidationBuilder(false, ArgValidatorFCTAddress, ArgValidatorAssetAndAll)),
 	Run: func(cmd *cobra.Command, args []string) {
 		asset := "all"
 		if len(args) == 2 {
@@ -53,6 +54,13 @@ var getEncoding = &cobra.Command{
 			}
 		}
 	},
+}
+
+// addGetEncodingCommands adds commands so the autocomplete can fill in the second param
+func addGetEncodingCommands() {
+	for _, ass := range append([]string{"all"}, support.AssetNames...) {
+		getEncoding.AddCommand(&cobra.Command{Use: strings.ToLower(ass), Run: func(cmd *cobra.Command, args []string) {}})
+	}
 }
 
 var newAddress = &cobra.Command{
