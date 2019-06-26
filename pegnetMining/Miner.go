@@ -3,6 +3,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/opr"
@@ -39,6 +40,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// If miners flag is set use that value otherwise default to the config setting
+	flag.IntVar(&numMiners, "m", numMiners, "Number of miners to run")
+	flag.Parse()
+
 	if numMiners > 50 {
 		fmt.Fprintln(os.Stderr, "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
 		numMiners = 50
@@ -49,5 +55,5 @@ func main() {
 	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
 	}
-	opr.OneMiner(true, Config, monitor, grader, 16)
+	opr.OneMiner(true, Config, monitor, grader, numMiners)
 }
