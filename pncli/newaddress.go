@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/support"
+	"github.com/pegnet/pegnet/common"
 	"sort"
 	"strings"
 )
@@ -29,7 +29,7 @@ var _ = func() (n int) {
 				return
 			}
 			fmt.Print(fa.String(), "\n\n")
-			assets, err := support.ConvertUserFctToUserPegNetAssets(fa.String())
+			assets, err := common.ConvertUserFctToUserPegNetAssets(fa.String())
 			if err != nil {
 				fmt.Println(err)
 				return

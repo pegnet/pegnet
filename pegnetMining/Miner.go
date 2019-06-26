@@ -5,8 +5,8 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
 	"os"
 	"os/user"
@@ -30,7 +30,7 @@ func main() {
 		panic("Failed to open the config file for this miner, and couldn't load the default file either")
 	}
 
-	monitor := new(support.FactomdMonitor)
+	monitor := new(common.FactomdMonitor)
 	monitor.Start()
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)

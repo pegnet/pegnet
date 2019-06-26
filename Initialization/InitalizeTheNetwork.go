@@ -5,12 +5,12 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/pegnet/pegnet/common"
 	"os/user"
 	"time"
 
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/support"
-	config "github.com/zpatrick/go-config"
+	"github.com/zpatrick/go-config"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 		fmt.Print(string(n))
 	}
 	fmt.Println()
-	chainID := support.ComputeChainIDFromFields(chainName)         // Compute the chainID
+	chainID := common.ComputeChainIDFromFields(chainName)          // Compute the chainID
 	chainExists := factom.ChainExists(hex.EncodeToString(chainID)) // Check if it exists
 	if chainExists {                                               // If the chain exists, we are done.
 		fmt.Println("Chain Exists!")

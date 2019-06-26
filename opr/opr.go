@@ -9,9 +9,10 @@ import (
 	"fmt"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
+	"github.com/dustin/go-humanize"
 	"github.com/pegnet/LXR256"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
-	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
 	"strings"
 	"time"
@@ -22,16 +23,15 @@ type OraclePriceRecord struct {
 	Config     *config.Config    `json:"-"` //  The config of the miner using the record
 	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
 	Grade      float64           `json:"-"` // The grade when OPR records are compared
-	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by pegnetMining)
+	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by PegNet Mining)
 	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
 	Entry      *factom.Entry     `json:"-"` // Entry to record this record
-	EntryHash  string            `json:"-"` // Entry Hash is communicated here in base58
-	StopMining chan int          `json:"-"` // Bool that stops pegnetMining this OPR
+	StopMining chan int          `json:"-"` // Bool that stops PegNet Mining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
 	Dbht               int32      `json:dbht`       //           The Directory Block Height of the OPR.
-	WinningPreviousOPR [10]string `json:winners`    // [base58]  Winning OPR entries in the previous block
+	WinPreviousOPR     [10]string `json:winners`    // First 8 bytes of the Entry Hashes of the previous winners
 	CoinbasePNTAddress string     `json:coinbase`   // [base58]  PNT Address to pay PNT
 	FactomDigitalID    []string   `did`             // [unicode] Digital Identity of the miner
 
@@ -87,24 +87,14 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	if len(OPRChainID) == 0 {
-		OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 	}
 
 	if opr.OPRChainID != OPRChainID {
 		return false
 	}
 
-	ntype := support.INVALID
-	switch network {
-	case "MainNet":
-		ntype = support.MAIN_NETWORK
-	case "TestNet":
-		ntype = support.TEST_NETWORK
-	default:
-		return false
-	}
-
-	pre, _, err := support.ConvertPegAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	pre, _, err := common.ConvertPegAddrToRaw(opr.CoinbasePNTAddress)
 	if err != nil || pre != "tPNT" {
 		return false
 	}
@@ -186,7 +176,7 @@ func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64
 func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
-	nonce := support.RandomByteSliceOfLen(32)
+	nonce := common.RandomByteSliceOfLen(32)
 	if verbose {
 		fmt.Printf("OPRHash %x\n", opr.OPRHash)
 	}
@@ -249,7 +239,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
-	for i, v := range opr.WinningPreviousOPR {
+	for i, v := range opr.WinPreviousOPR {
 		str = fmt.Sprintf("%s%32s %2d, %s\n", str, "", i+1, v)
 	}
 	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
@@ -284,6 +274,28 @@ func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%s%32s %v\n", str, "LTC", opr.LTC)
 	str = fmt.Sprintf("%s%32s %v\n", str, "XBC", opr.XBC)
 	str = fmt.Sprintf("%s%32s %v\n", str, "FCT", opr.FCT)
+
+	str = fmt.Sprintf("\nWinners\n\n")
+
+	pwin := GetPreviousOPRs(opr.Dbht - 1)
+	for i, v := range opr.WinPreviousOPR {
+		fid := ""
+		for j, field := range pwin[i].FactomDigitalID {
+			if j > 0 {
+				fid = fid + "---"
+			}
+			fid = fid + field
+		}
+		balance := GetBalance(pwin[i].CoinbasePNTAddress)
+		hbal := humanize.Comma(balance)
+		str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
+			v,
+			pwin[i].Entry.Hash()[:8],
+			fid,
+			pwin[i].
+				CoinbasePNTAddress, hbal)
+	}
+
 	return str
 }
 
@@ -365,19 +377,39 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 
 	opr.Dbht = dbht
 
-	if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
-		return nil, errors.New("config file has no Coinbase PNT Address")
+	// If this is a test network, then give multiple miners their own tPNT address
+	// because that is way more useful debugging than giving all miners the same
+	// PNT address.  Otherwise, give all miners the same PNT address because most
+	// users really doing mining will mostly be happen sending rewards to a single
+	// address.
+	if network == "TestNet" && minerNumber != 0 {
+		fct := common.DebugFCTaddresses[minerNumber][1]
+		sraw, err := common.ConvertUserStrFctEcToAddress(fct)
+		if err != nil {
+			return nil, err
+		}
+		raw, err := hex.DecodeString(sraw)
+		if err != nil {
+			return nil, err
+		}
+		opr.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", raw)
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		opr.CoinbasePNTAddress = str
+		if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
+			return nil, errors.New("config file has no Coinbase PNT Address")
+		} else {
+			opr.CoinbasePNTAddress = str
+		}
 	}
-
 	winners := <-alert
 	for i, w := range winners.ToBePaid {
-		opr.WinningPreviousOPR[i] = w.EntryHash
+		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
 	}
 
 	opr.GetOPRecord(c)

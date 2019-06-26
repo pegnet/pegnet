@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/pegnet/pegnet/support"
+	"github.com/pegnet/pegnet/common"
 	"os"
 	"sort"
 	"strings"
@@ -37,7 +37,7 @@ var _ = func() (n int) {
 			default:
 				asset = strings.ToLower(os.Args[2])
 			}
-			assets, err := support.ConvertUserFctToUserPegNetAssets(os.Args[2])
+			assets, err := common.ConvertUserFctToUserPegNetAssets(os.Args[2])
 			if err != nil {
 				fmt.Println("Must provide a valid FCT public key")
 				return
