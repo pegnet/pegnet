@@ -8,7 +8,7 @@ import (
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
-  "os"
+	"os"
 	"os/user"
 )
 

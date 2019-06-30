@@ -177,7 +177,7 @@ func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64
 func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
-	nonce := []byte{0,0}
+	nonce := []byte{0, 0}
 	if verbose {
 		fmt.Printf("OPRHash %x\n", opr.OPRHash)
 	}
@@ -191,8 +191,8 @@ miningloop:
 		default:
 		}
 		nonce = nonce[:0]
-		for j := i; j > 0 ; j = j >> 8 {
-			nonce = append(nonce,byte(j))
+		for j := i; j > 0; j = j >> 8 {
+			nonce = append(nonce, byte(j))
 		}
 		diff := opr.ComputeDifficulty(nonce)
 

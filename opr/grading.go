@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"sync"
 
-	"github.com/pegnet/pegnet/common"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
 
