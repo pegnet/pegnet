@@ -8,7 +8,6 @@ import (
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
-	"os"
 	"os/user"
 )
 
@@ -30,8 +29,9 @@ func main() {
 		panic("Failed to open the config file for this miner, and couldn't load the default file either")
 	}
 
-	// Initialize the database
-	database.Init(baseConfigurationPath, Config)
+	common.DoLogging = true
+	common.InitLogs(Config)
+
 
 	monitor := new(common.FactomdMonitor)
 	monitor.Start()
@@ -43,11 +43,11 @@ func main() {
 		panic(err)
 	}
 	if numMiners > 50 {
-		_, _ = fmt.Fprintln(os.Stderr, "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
+		common.Logf("notice", "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
 		numMiners = 50
 	}
 
-	fmt.Println("Mining with ", numMiners, " miner(s).")
+	common.Logf("notice", "Mining with %d miner(s)", numMiners)
 
 	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)

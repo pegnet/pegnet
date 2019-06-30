@@ -13,7 +13,6 @@ import (
 	"github.com/pegnet/LXR256"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
-	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
 	"strings"
 	"time"
@@ -73,6 +72,7 @@ type Token struct {
 
 func check(e error) {
 	if e != nil {
+		common.Logf("error", "An error has been encountered: %v", e)
 		panic(e)
 	}
 }
@@ -178,9 +178,7 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	nonce := []byte{0, 0}
-	if verbose {
-		fmt.Printf("OPRHash %x\n", opr.OPRHash)
-	}
+	common.Logf("OPR", "OPRHash %x\n", opr.OPRHash)
 
 miningloop:
 	for i := 0; ; i++ {
@@ -200,10 +198,8 @@ miningloop:
 			opr.Difficulty = diff
 			// Copy over the previous nonce
 			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
-			if verbose {
-				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
-					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
-			}
+			common.Logf("OPR", "%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+				time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
 		}
 
 	}
@@ -361,8 +357,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		for _, v := range fields[1:] {
 			fid = fid + " --- " + v
 		}
-		fmt.Println(fid)
-
+		common.Logf("NewOPR", "NewOPR miner %s", fid)
 		opr.FactomDigitalID = fields
 
 	}
@@ -406,7 +401,6 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 			opr.CoinbasePNTAddress = str
 		}
 	}
-
 	winners := <-alert
 	for i, w := range winners.ToBePaid {
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])

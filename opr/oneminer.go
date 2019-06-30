@@ -18,9 +18,7 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 	var err error
 	for {
 		fds := <-alert
-		if verbose {
-			fmt.Println(fds.Dbht, " ", fds.Minute)
-		}
+		common.Logf("miner", "Alert: miner%02d dbht %d minute %d", miner, fds.Dbht, fds.Minute)
 		switch fds.Minute {
 		case 1:
 			if !mining {
@@ -34,15 +32,17 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 		case 9:
 			if mining {
 				opr.StopMining <- 0
-				if verbose {
+
+				common.Do(func() {
 					data, ok := opr.Entry.MarshalBinary()
 					if ok != nil {
 						panic(fmt.Sprint("Can't json marshal the opr: ", ok))
 					}
-					fmt.Println("opr len(entry)= "+
-						"", len(data))
-					fmt.Println(opr.String())
-				}
+					ostr := opr.String()
+					common.Logf("miner", "OPR:        miner%02d entrySize %d", miner, len(data))
+					common.Logf("miner", "OPR Record: miner%02d %s", ostr)
+				})
+
 				mining = false
 
 				writeMiningRecord(opr)

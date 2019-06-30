@@ -1,4 +1,4 @@
-package support
+package common
 
 import (
 	"fmt"
@@ -10,44 +10,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/FactomProject/btcutil/base58"
-)
-
-type NetworkType int
-
-const (
-	INVALID NetworkType = iota + 1
-	MAIN_NETWORK
-	TEST_NETWORK
-)
-
-var AssetNames = []string{
-	"PNT",
-	"USD",
-	"EUR",
-	"JPY",
-	"GBP",
-	"CAD",
-	"CHF",
-	"INR",
-	"SGD",
-	"CNY",
-	"HKD",
-	"XAU",
-	"XAG",
-	"XPD",
-	"XPT",
-	"XBT",
-	"ETH",
-	"LTC",
-	"XBC",
-	"FCT",
-}
-
-var (
-	fcPubPrefix = []byte{0x5f, 0xb1}
-	fcSecPrefix = []byte{0x64, 0x78}
-	ecPubPrefix = []byte{0x59, 0x2a}
-	ecSecPrefix = []byte{0x5d, 0xb6}
 )
 
 var PegAssetNames []string
@@ -82,18 +44,15 @@ func PullValue(line string, howMany int) string {
 
 // CheckPrefix()
 // Check the prefix for either network type.
-func CheckPrefix(network NetworkType, name string) bool {
-	if network == MAIN_NETWORK {
-		for _, v := range PegAssetNames {
-			if v == name {
-				return true
-			}
+func CheckPrefix(name string) bool {
+	for _, v := range PegAssetNames {
+		if v == name {
+			return true
 		}
-	} else {
-		for _, v := range TestPegAssetNames {
-			if v == name {
-				return true
-			}
+	}
+	for _, v := range TestPegAssetNames {
+		if v == name {
+			return true
 		}
 	}
 	return false
@@ -105,10 +64,10 @@ func CheckPrefix(network NetworkType, name string) bool {
 // convert assets, check balances, and send tokens.  While the underlying private key can be
 // used to hold Factoids or any token in the PegNet, users need addresses that create a
 // barrier to mistakes that can lead to sending the wrong tokens to the wrong addresses
-func ConvertRawAddrToPeg(network NetworkType, prefix string, adr []byte) (string, error) {
+func ConvertRawAddrToPeg(prefix string, adr []byte) (string, error) {
 
 	// Make sure the prefix is valid.
-	if !CheckPrefix(network, prefix) {
+	if !CheckPrefix(prefix) {
 		return "", errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
@@ -125,7 +84,7 @@ func ConvertRawAddrToPeg(network NetworkType, prefix string, adr []byte) (string
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
 //
-func ConvertPegAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr []byte, err error) {
+func ConvertPegAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 	adrLen := len(adr)
 	if adrLen < 42 || len(adr) > 56 {
 		return "", nil, errors.New(
@@ -133,7 +92,7 @@ func ConvertPegAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr
 	}
 
 	prefix = adr[:4]
-	if !CheckPrefix(network, prefix) {
+	if !CheckPrefix(prefix) {
 		return "", nil, errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
@@ -157,8 +116,8 @@ func ConvertPegAddrToRaw(network NetworkType, adr string) (prefix string, rawAdr
 
 // PegTAdrIsValid()
 // Check that the given human/wallet PegNet address is valid.
-func PegTAdrIsValid(network NetworkType, adr string) error {
-	_, _, err := ConvertPegAddrToRaw(network, adr)
+func PegTAdrIsValid(adr string) error {
+	_, _, err := ConvertPegAddrToRaw(adr)
 	return err
 }
 
@@ -231,8 +190,8 @@ func ConvertUserStrFctEcToAddress(userFAddr string) (string, error) {
 // asset token User facing forms.
 func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err error) {
 	raw := base58.Decode(userFctAddr)[2:34]
-	cvt := func(network NetworkType, asset string) (passet string) {
-		passet, err = ConvertRawAddrToPeg(network, asset, raw)
+	cvt := func(asset string) (passet string) {
+		passet, err = ConvertRawAddrToPeg(asset, raw)
 		if err != nil {
 			panic(err)
 		}
@@ -240,8 +199,8 @@ func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err 
 	}
 
 	for _, asset := range AssetNames {
-		assets = append(assets, cvt(MAIN_NETWORK, "p"+asset))
-		assets = append(assets, cvt(TEST_NETWORK, "t"+asset))
+		assets = append(assets, cvt("p"+asset))
+		assets = append(assets, cvt("t"+asset))
 	}
 
 	return assets, nil
