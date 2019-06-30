@@ -1,10 +1,9 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-package support
+package common
 
 import (
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/common"
 	"math/rand"
 	"sync"
 	"time"
@@ -13,23 +12,23 @@ import (
 // FactomdMonitor
 // Running multiple Monitors is problematic and should be avoided if possible
 type FactomdMonitor struct {
-	root       bool                   // True if this is the root FactomMonitor
-	mutex      sync.Mutex             // Protect multiple parties accessing monitor data
-	lastminute int64                  // Last minute we got
-	lastblock  int64                  // Last block we got
-	polltime   int64                  // How frequently do we poll
-	kill       chan int               // Channel to kill polling.
-	response   chan int               // Respond when we have stopped
-	alerts     []chan common.FDStatus // Channels to send minutes to
+	root       bool            // True if this is the root FactomMonitor
+	mutex      sync.Mutex      // Protect multiple parties accessing monitor data
+	lastminute int64           // Last minute we got
+	lastblock  int64           // Last block we got
+	polltime   int64           // How frequently do we poll
+	kill       chan int        // Channel to kill polling.
+	response   chan int        // Respond when we have stopped
+	alerts     []chan FDStatus // Channels to send minutes to
 	polls      int64
 	info       *factom.CurrentMinuteInfo
 	status     string
 }
 
-func (f *FactomdMonitor) GetAlert() chan common.FDStatus {
+func (f *FactomdMonitor) GetAlert() chan FDStatus {
 	f.mutex.Lock()
 	defer f.mutex.Unlock()
-	alert := make(chan common.FDStatus, 10)
+	alert := make(chan FDStatus, 10)
 	f.alerts = append(f.alerts, alert)
 	return alert
 }
@@ -121,7 +120,7 @@ func (f *FactomdMonitor) poll() {
 		// send alerts to all interested parties
 		for _, alert := range f.alerts {
 			if cap(alert) > len(alert) {
-				var fds common.FDStatus
+				var fds FDStatus
 				fds.Dbht = int32(f.info.DirectoryBlockHeight)
 				fds.Minute = f.info.Minute
 				alert <- fds
@@ -138,7 +137,7 @@ func (f *FactomdMonitor) Start() {
 	f.mutex.Lock()
 	if f.kill == nil {
 		f.response = make(chan int, 1)
-		f.alerts = []chan common.FDStatus{}
+		f.alerts = []chan FDStatus{}
 		f.kill = make(chan int, 1)
 		factom.SetFactomdServer("localhost:8088")
 		factom.SetWalletServer("localhost:8089")

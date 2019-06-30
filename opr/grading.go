@@ -5,12 +5,12 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/dustin/go-humanize"
 	"sync"
 
-	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/support"
-	config "github.com/zpatrick/go-config"
+	"github.com/pegnet/pegnet/common"
+	"github.com/zpatrick/go-config"
 )
 
 // Compute the average answer for the price of each token reported
@@ -48,6 +48,26 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	if len(list) < 10 {
 		return nil, nil
 	}
+
+	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
+	// the version with the highest difficulty.  There is no advantage to use some other
+	// miner's identity, because if you do, you have to beat that miner to get any reward.
+	// If you don't use some other miner's identity, you only have to place in the top 10
+	// to be rewarded.
+	IDs := make(map[string]*OraclePriceRecord)
+	var nlist []*OraclePriceRecord
+	for _, v := range list {
+		id := factom.ChainIDFromStrings(v.FactomDigitalID)
+		last := IDs[id]
+		if last != nil {
+			if v.Difficulty < last.Difficulty {
+				continue
+			}
+		}
+		IDs[id] = v
+		nlist = append(nlist, v)
+	}
+	list = nlist
 
 	last := len(list)
 	// Throw away all the entries but the top 50 in difficulty
@@ -116,7 +136,7 @@ func GetEntryBlocks(config *config.Config) {
 	n, err := config.String("Miner.Network")
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte("Oracle Price Records")}
-	heb, _, err := factom.GetChainHead(hex.EncodeToString(support.ComputeChainIDFromFields(opr)))
+	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
 	check(err)
 	eb, err := factom.GetEBlock(heb)
 	check(err)
@@ -141,8 +161,8 @@ func GetEntryBlocks(config *config.Config) {
 
 				// Do some quick collecting of data and checks of the entry.
 				// Can only have one ExtID which must be the nonce for the entry
-				if len(entry.ExtIDs) != 1 || len(entry.ExtIDs[0]) != 32 {
-					continue // keep looking if the entry has more than one extid or it isn't 32 bytes
+				if len(entry.ExtIDs) != 1 {
+					continue // keep looking if the entry has more than one extid
 				}
 
 				// Okay, it looks sort of okay.  Lets unmarshal the JSON
@@ -155,15 +175,11 @@ func GetEntryBlocks(config *config.Config) {
 				if !opr.Validate(config) {
 					continue
 				}
+				// Keep this entry
+				opr.Entry = entry
 
 				// Looking good.  Go ahead and compute the OPRHash
 				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
-				opr.Entry = entry                    // Compute the Entry Hash
-				eh, err := hex.DecodeString(ebentry.EntryHash)
-				if err != nil {
-					continue
-				}
-				opr.EntryHash = base58.Encode(eh) // Encode to base58
 
 				// Okay, mostly good.  Add to our candidate list
 				oprblk.OPRs = append(oprblk.OPRs, opr)
@@ -184,18 +200,18 @@ func GetEntryBlocks(config *config.Config) {
 		eb = neb
 	}
 
-	// Take the reverse ordered oprblocks, from last to first.  Validate all the winners are
-	// the right winners.  Replace the generally correct OPR list in the oprblock with the
+	// Take the reverse ordered opr blocks, from last to first.  Validate all the winners are
+	// the right winners.  Replace the generally correct OPR list in the opr block with the
 	// list of winners.  These should be the winners of the next block, which lucky enough is
 	// the next block we are going to process.
-	// Ignore oprblocks that don't get 10 winners.
+	// Ignore opr blocks that don't get 10 winners.
 	for i := len(oprblocks) - 1; i >= 0; i-- { // Okay, go through these backwards
 		prevOPRBlock := GetPreviousOPRs(int32(oprblocks[i].Dbht)) // Get the previous OPRBlock
 		var validOPRs []*OraclePriceRecord                        // Collect the valid OPRPriceRecords here
 		for _, opr := range oprblocks[i].OPRs {                   // Go through this block
-			for j, eh := range opr.WinningPreviousOPR { // Make sure the winning records are valid
+			for j, eh := range opr.WinPreviousOPR { // Make sure the winning records are valid
 				if (prevOPRBlock == nil && eh != "") ||
-					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinningPreviousOPR[j]) {
+					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinPreviousOPR[j]) {
 					continue
 				}
 				opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
@@ -208,6 +224,41 @@ func GetEntryBlocks(config *config.Config) {
 		winners, _ := GradeBlock(validOPRs)
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
+
+		common.Logf("NewOPR","Added a new valid block in the OPR chain at directory block height %s",
+			humanize.Comma(oprblocks[i].Dbht))
+
+		// Update the balances for each winner
+		for i, win := range winners {
+			switch i {
+			// The Big Winner
+			case 0:
+				err := AddToBalance(win.CoinbasePNTAddress, 800)
+				if err != nil {
+					panic(err)
+				}
+			// Second Place
+			case 1:
+				err := AddToBalance(win.CoinbasePNTAddress, 600)
+				if err != nil {
+					panic(err)
+				}
+			default:
+				err := AddToBalance(win.CoinbasePNTAddress, 450)
+				if err != nil {
+					panic(err)
+				}
+			}
+			fid := win.FactomDigitalID[0]
+			for _,f := range win.FactomDigitalID[1:]{
+				fid = fid + " --- " + f
+			}
+			common.Logf("NewOPR","%16x %40s %-60s=%10s",
+				win.Entry.Hash()[:8],
+				fid,
+				win.CoinbasePNTAddress,
+				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
+		}
 	}
 
 	return
