@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
+	"github.com/dustin/go-humanize"
 	"github.com/pegnet/LXR256"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
@@ -22,18 +24,17 @@ type OraclePriceRecord struct {
 	Config     *config.Config    `json:"-"` //  The config of the miner using the record
 	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
 	Grade      float64           `json:"-"` // The grade when OPR records are compared
-	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by pegnetMining)
+	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by PegNet Mining)
 	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
 	Entry      *factom.Entry     `json:"-"` // Entry to record this record
-	EntryHash  string            `json:"-"` // Entry Hash is communicated here in base58
-	StopMining chan int          `json:"-"` // Bool that stops pegnetMining this OPR
+	StopMining chan int          `json:"-"` // Bool that stops PegNet Mining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	OPRChainID         string     `json:"oprchainid"` // [base58]  Chain ID of the chain used by the Oracle Miners
-	Dbht               int32      `json:"dbht"`       //           The Directory Block Height of the OPR.
-	WinningPreviousOPR [10]string `json:"winners"`    // [base58]  Winning OPR entries in the previous block
-	CoinbasePNTAddress string     `json:"coinbase"`   // [base58]  PNT Address to pay PNT
-	FactomDigitalID    []string   `json:"did"`        // [unicode] Digital Identity of the miner
+	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
+	Dbht               int32      `json:dbht`       //           The Directory Block Height of the OPR.
+	WinPreviousOPR     [10]string `json:winners`    // First 8 bytes of the Entry Hashes of the previous winners
+	CoinbasePNTAddress string     `json:coinbase`   // [base58]  PNT Address to pay PNT
+	FactomDigitalID    []string   `did`             // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	PNT float64
@@ -87,24 +88,14 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	if len(OPRChainID) == 0 {
-		OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 	}
 
 	if opr.OPRChainID != OPRChainID {
 		return false
 	}
 
-	ntype := support.INVALID
-	switch network {
-	case "MainNet":
-		ntype = support.MAIN_NETWORK
-	case "TestNet":
-		ntype = support.TEST_NETWORK
-	default:
-		return false
-	}
-
-	pre, _, err := support.ConvertPegAddrToRaw(ntype, opr.CoinbasePNTAddress)
+	pre, _, err := common.ConvertPegAddrToRaw(opr.CoinbasePNTAddress)
 	if err != nil || pre != "tPNT" {
 		return false
 	}
@@ -241,12 +232,12 @@ func (opr *OraclePriceRecord) ShortString() string {
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
-	str = fmt.Sprintf("%s%32s %v\n", str, "OPRChainID", opr.OPRChainID)
+	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
-	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
-	for i, v := range opr.WinningPreviousOPR {
-		str = fmt.Sprintf("%s%32s %2d, %s\n", str, "", i+1, v)
+	str = str + fmt.Sprintf("%32s %v\n", "WinningPreviousOPRs", "")
+	for i, v := range opr.WinPreviousOPR {
+		str = str + fmt.Sprintf("%32s %2d, %s\n", "", i+1, v)
 	}
 	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
 
@@ -259,27 +250,53 @@ func (opr *OraclePriceRecord) String() (str string) {
 		did = did + t
 	}
 
-	str = fmt.Sprintf("%s%32s %v\n", str, "FactomDigitalID", did)
-	str = fmt.Sprintf("%s%32s %v\n", str, "PNT", opr.PNT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "USD", opr.USD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "EUR", opr.EUR)
-	str = fmt.Sprintf("%s%32s %v\n", str, "JPY", opr.JPY)
-	str = fmt.Sprintf("%s%32s %v\n", str, "GBP", opr.GBP)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CAD", opr.CAD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CHF", opr.CHF)
-	str = fmt.Sprintf("%s%32s %v\n", str, "INR", opr.INR)
-	str = fmt.Sprintf("%s%32s %v\n", str, "SGD", opr.SGD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CNY", opr.CNY)
-	str = fmt.Sprintf("%s%32s %v\n", str, "HKD", opr.HKD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XAU", opr.XAU)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XAG", opr.XAG)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XPD", opr.XPD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XPT", opr.XPT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XBT", opr.XBT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "ETH", opr.ETH)
-	str = fmt.Sprintf("%s%32s %v\n", str, "LTC", opr.LTC)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XBC", opr.XBC)
-	str = fmt.Sprintf("%s%32s %v\n", str, "FCT", opr.FCT)
+	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", did)
+	str = str + fmt.Sprintf("%32s %v\n", "PNT", opr.PNT)
+	str = str + fmt.Sprintf("%32s %v\n", "USD", opr.USD)
+	str = str + fmt.Sprintf("%32s %v\n", "EUR", opr.EUR)
+	str = str + fmt.Sprintf("%32s %v\n", "JPY", opr.JPY)
+	str = str + fmt.Sprintf("%32s %v\n", "GBP", opr.GBP)
+	str = str + fmt.Sprintf("%32s %v\n", "CAD", opr.CAD)
+	str = str + fmt.Sprintf("%32s %v\n", "CHF", opr.CHF)
+	str = str + fmt.Sprintf("%32s %v\n", "INR", opr.INR)
+	str = str + fmt.Sprintf("%32s %v\n", "SGD", opr.SGD)
+	str = str + fmt.Sprintf("%32s %v\n", "CNY", opr.CNY)
+	str = str + fmt.Sprintf("%32s %v\n", "HKD", opr.HKD)
+	str = str + fmt.Sprintf("%32s %v\n", "XAU", opr.XAU)
+	str = str + fmt.Sprintf("%32s %v\n", "XAG", opr.XAG)
+	str = str + fmt.Sprintf("%32s %v\n", "XPD", opr.XPD)
+	str = str + fmt.Sprintf("%32s %v\n", "XPT", opr.XPT)
+	str = str + fmt.Sprintf("%32s %v\n", "XBT", opr.XBT)
+	str = str + fmt.Sprintf("%32s %v\n", "ETH", opr.ETH)
+	str = str + fmt.Sprintf("%32s %v\n", "LTC", opr.LTC)
+	str = str + fmt.Sprintf("%32s %v\n", "XBC", opr.XBC)
+	str = str + fmt.Sprintf("%32s %v\n", "FCT", opr.FCT)
+
+	str = str + fmt.Sprintf("\nWinners\n\n")
+
+	pwin := GetPreviousOPRs(opr.Dbht - 1)
+
+	// If there were previous winners, we need to make sure this miner is running
+	// the software to detect them, and that we agree with their conclusions.
+	if pwin != nil {
+		for i, v := range opr.WinPreviousOPR {
+			fid := ""
+			for j, field := range pwin[i].FactomDigitalID {
+				if j > 0 {
+					fid = fid + "---"
+				}
+				fid = fid + field
+			}
+			balance := GetBalance(pwin[i].CoinbasePNTAddress)
+			hbal := humanize.Comma(balance)
+			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
+				v,
+				pwin[i].Entry.Hash()[:8],
+				fid,
+				pwin[i].
+					CoinbasePNTAddress, hbal)
+		}
+	}
 	return str
 }
 
@@ -340,13 +357,11 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		for i, v := range fields {
-			if i > 0 {
-				fmt.Print(" --- ")
-			}
-			fmt.Print(v)
+		fid := fields[0]
+		for _, v := range fields[1:] {
+			fid = fid + " --- " + v
 		}
-		fmt.Println()
+		fmt.Println(fid)
 
 		opr.FactomDigitalID = fields
 
@@ -361,19 +376,40 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.OPRChainID = base58.Encode(support.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
 
 	opr.Dbht = dbht
 
-	if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
-		return nil, errors.New("config file has no Coinbase PNT Address")
+	// If this is a test network, then give multiple miners their own tPNT address
+	// because that is way more useful debugging than giving all miners the same
+	// PNT address.  Otherwise, give all miners the same PNT address because most
+	// users really doing mining will mostly be happen sending rewards to a single
+	// address.
+	if network == "TestNet" && minerNumber != 0 {
+		fct := common.DebugFCTaddresses[minerNumber][1]
+		sraw, err := common.ConvertUserStrFctEcToAddress(fct)
+		if err != nil {
+			return nil, err
+		}
+		raw, err := hex.DecodeString(sraw)
+		if err != nil {
+			return nil, err
+		}
+		opr.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", raw)
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		opr.CoinbasePNTAddress = str
+		if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
+			return nil, errors.New("config file has no Coinbase PNT Address")
+		} else {
+			opr.CoinbasePNTAddress = str
+		}
 	}
 
 	winners := <-alert
 	for i, w := range winners.ToBePaid {
-		opr.WinningPreviousOPR[i] = w.EntryHash
+		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
 	}
 
 	opr.GetOPRecord(c)

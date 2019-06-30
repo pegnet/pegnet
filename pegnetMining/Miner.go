@@ -5,11 +5,10 @@ package main
 import (
 	"fmt"
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/database"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/pegnet/pegnet/support"
 	"github.com/zpatrick/go-config"
-	"os"
+  "os"
 	"os/user"
 )
 
@@ -23,12 +22,7 @@ func main() {
 		panic(err)
 	}
 	userPath := u.HomeDir
-	baseConfigurationPath := fmt.Sprintf("%s/.%s", userPath, "pegnet")
-	ok := database.CreateDirectory(baseConfigurationPath)
-	if !ok {
-		panic("the configuration directory for the PegNet doesn't exist, and cannot be created.")
-	}
-	configfile := fmt.Sprintf("%s/defaultconfig.ini", baseConfigurationPath)
+	configfile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
 	iniFile := config.NewINIFile(configfile)
 	Config := config.NewConfig([]config.Provider{iniFile})
 	_, err = Config.String("Miner.Protocol")
@@ -39,7 +33,7 @@ func main() {
 	// Initialize the database
 	database.Init(baseConfigurationPath, Config)
 
-	monitor := new(support.FactomdMonitor)
+	monitor := new(common.FactomdMonitor)
 	monitor.Start()
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
