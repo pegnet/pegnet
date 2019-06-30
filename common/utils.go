@@ -116,7 +116,7 @@ func ConvertPegAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 
 // PegTAdrIsValid()
 // Check that the given human/wallet PegNet address is valid.
-func PegTAdrIsValid(network NetworkType, adr string) error {
+func PegTAdrIsValid(adr string) error {
 	_, _, err := ConvertPegAddrToRaw(adr)
 	return err
 }
@@ -191,7 +191,7 @@ func ConvertUserStrFctEcToAddress(userFAddr string) (string, error) {
 func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err error) {
 	raw := base58.Decode(userFctAddr)[2:34]
 	cvt := func(asset string) (passet string) {
-		passet, err = ConvertRawAddrToPeg( asset, raw)
+		passet, err = ConvertRawAddrToPeg(asset, raw)
 		if err != nil {
 			panic(err)
 		}
@@ -199,8 +199,8 @@ func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err 
 	}
 
 	for _, asset := range AssetNames {
-		assets = append(assets, cvt( "p"+asset))
-		assets = append(assets, cvt( "t"+asset))
+		assets = append(assets, cvt("p"+asset))
+		assets = append(assets, cvt("t"+asset))
 	}
 
 	return assets, nil

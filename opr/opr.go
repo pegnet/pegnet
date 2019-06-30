@@ -72,6 +72,7 @@ type Token struct {
 
 func check(e error) {
 	if e != nil {
+		common.Logf("error", "An error has been encountered: %v", e)
 		panic(e)
 	}
 }
@@ -177,9 +178,7 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	nonce := common.RandomByteSliceOfLen(32)
-	if verbose {
-		fmt.Printf("OPRHash %x\n", opr.OPRHash)
-	}
+	common.Logf("OPR", "OPRHash %x\n", opr.OPRHash)
 
 	for i := 0; i < 5; i++ {
 		nonce[i] = 0
@@ -203,10 +202,8 @@ miningloop:
 			opr.Difficulty = diff
 			// Copy over the previous nonce
 			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
-			if verbose {
-				fmt.Printf("%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
-					time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
-			}
+			common.Logf("OPR", "%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+				time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
 		}
 
 	}
@@ -235,12 +232,12 @@ func (opr *OraclePriceRecord) ShortString() string {
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
-	str = fmt.Sprintf("%s%32s %v\n", str, "OPRChainID", opr.OPRChainID)
+	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
-	str = fmt.Sprintf("%s%32s %v\n", str, "WinningPreviousOPRs", "")
+	str = str + fmt.Sprintf("%32s %v\n", "WinningPreviousOPRs", "")
 	for i, v := range opr.WinPreviousOPR {
-		str = fmt.Sprintf("%s%32s %2d, %s\n", str, "", i+1, v)
+		str = str + fmt.Sprintf("%32s %2d, %s\n", "", i+1, v)
 	}
 	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
 
@@ -253,49 +250,53 @@ func (opr *OraclePriceRecord) String() (str string) {
 		did = did + t
 	}
 
-	str = fmt.Sprintf("%s%32s %v\n", str, "FactomDigitalID", did)
-	str = fmt.Sprintf("%s%32s %v\n", str, "PNT", opr.PNT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "USD", opr.USD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "EUR", opr.EUR)
-	str = fmt.Sprintf("%s%32s %v\n", str, "JPY", opr.JPY)
-	str = fmt.Sprintf("%s%32s %v\n", str, "GBP", opr.GBP)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CAD", opr.CAD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CHF", opr.CHF)
-	str = fmt.Sprintf("%s%32s %v\n", str, "INR", opr.INR)
-	str = fmt.Sprintf("%s%32s %v\n", str, "SGD", opr.SGD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "CNY", opr.CNY)
-	str = fmt.Sprintf("%s%32s %v\n", str, "HKD", opr.HKD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XAU", opr.XAU)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XAG", opr.XAG)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XPD", opr.XPD)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XPT", opr.XPT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XBT", opr.XBT)
-	str = fmt.Sprintf("%s%32s %v\n", str, "ETH", opr.ETH)
-	str = fmt.Sprintf("%s%32s %v\n", str, "LTC", opr.LTC)
-	str = fmt.Sprintf("%s%32s %v\n", str, "XBC", opr.XBC)
-	str = fmt.Sprintf("%s%32s %v\n", str, "FCT", opr.FCT)
+	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", did)
+	str = str + fmt.Sprintf("%32s %v\n", "PNT", opr.PNT)
+	str = str + fmt.Sprintf("%32s %v\n", "USD", opr.USD)
+	str = str + fmt.Sprintf("%32s %v\n", "EUR", opr.EUR)
+	str = str + fmt.Sprintf("%32s %v\n", "JPY", opr.JPY)
+	str = str + fmt.Sprintf("%32s %v\n", "GBP", opr.GBP)
+	str = str + fmt.Sprintf("%32s %v\n", "CAD", opr.CAD)
+	str = str + fmt.Sprintf("%32s %v\n", "CHF", opr.CHF)
+	str = str + fmt.Sprintf("%32s %v\n", "INR", opr.INR)
+	str = str + fmt.Sprintf("%32s %v\n", "SGD", opr.SGD)
+	str = str + fmt.Sprintf("%32s %v\n", "CNY", opr.CNY)
+	str = str + fmt.Sprintf("%32s %v\n", "HKD", opr.HKD)
+	str = str + fmt.Sprintf("%32s %v\n", "XAU", opr.XAU)
+	str = str + fmt.Sprintf("%32s %v\n", "XAG", opr.XAG)
+	str = str + fmt.Sprintf("%32s %v\n", "XPD", opr.XPD)
+	str = str + fmt.Sprintf("%32s %v\n", "XPT", opr.XPT)
+	str = str + fmt.Sprintf("%32s %v\n", "XBT", opr.XBT)
+	str = str + fmt.Sprintf("%32s %v\n", "ETH", opr.ETH)
+	str = str + fmt.Sprintf("%32s %v\n", "LTC", opr.LTC)
+	str = str + fmt.Sprintf("%32s %v\n", "XBC", opr.XBC)
+	str = str + fmt.Sprintf("%32s %v\n", "FCT", opr.FCT)
 
-	str = fmt.Sprintf("\nWinners\n\n")
+	str = str + fmt.Sprintf("\nWinners\n\n")
 
 	pwin := GetPreviousOPRs(opr.Dbht - 1)
-	for i, v := range opr.WinPreviousOPR {
-		fid := ""
-		for j, field := range pwin[i].FactomDigitalID {
-			if j > 0 {
-				fid = fid + "---"
-			}
-			fid = fid + field
-		}
-		balance := GetBalance(pwin[i].CoinbasePNTAddress)
-		hbal := humanize.Comma(balance)
-		str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
-			v,
-			pwin[i].Entry.Hash()[:8],
-			fid,
-			pwin[i].
-				CoinbasePNTAddress, hbal)
-	}
 
+	// If there were previous winners, we need to make sure this miner is running
+	// the software to detect them, and that we agree with their conclusions.
+	if pwin != nil {
+		for i, v := range opr.WinPreviousOPR {
+			fid := ""
+			for j, field := range pwin[i].FactomDigitalID {
+				if j > 0 {
+					fid = fid + "---"
+				}
+				fid = fid + field
+			}
+			balance := GetBalance(pwin[i].CoinbasePNTAddress)
+			hbal := humanize.Comma(balance)
+			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
+				v,
+				pwin[i].Entry.Hash()[:8],
+				fid,
+				pwin[i].
+					CoinbasePNTAddress, hbal)
+		}
+	}
 	return str
 }
 
@@ -356,14 +357,11 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		for i, v := range fields {
-			if i > 0 {
-				fmt.Print(" --- ")
-			}
-			fmt.Print(v)
+		fid := fields[0]
+		for _, v := range fields[1:] {
+			fid = fid + " --- " + v
 		}
-		fmt.Println()
-
+		common.Logf("NewOPR", "NewOPR miner %s", fid)
 		opr.FactomDigitalID = fields
 
 	}

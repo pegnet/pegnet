@@ -39,6 +39,7 @@ func AddToBalance(address string, value int64) (err error) {
 		return fmt.Errorf("result would be less than zero %d-%d", prev, -value)
 	}
 	Balances[prefix][adr] = prev + value
+	common.Logf("balanceChanged", "AddToBalance %s %s %x %d", address, prefix, adr, prev+value)
 	return
 }
 
