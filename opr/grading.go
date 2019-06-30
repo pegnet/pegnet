@@ -20,8 +20,8 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	// Sum up all the prices
 	for _, opr := range list {
 		tokens := opr.GetTokens()
-		for i, price := range tokens {
-			avg[i] += price.value
+		for i, token := range tokens {
+			avg[i] += token.value
 		}
 	}
 	// Then divide the prices by the number of OraclePriceRecord records.  Two steps is actually faster
@@ -29,7 +29,7 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	// for every asset * number of OraclePriceRecords)
 	numList := float64(len(list))
 	for i := range avg {
-		avg[i] = avg[i] / numList / 100000000
+		avg[i] = avg[i] / numList 
 	}
 	return
 }
@@ -51,6 +51,35 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		return nil, nil
 	}
 
+	list = RemoveDuplicateMiningIDs(list)
+
+	// Make sure we have the difficulty calculated for all items in the list.
+	for _, v := range list {
+		v.Difficulty = v.ComputeDifficulty(v.Entry.ExtIDs[0])
+	}
+
+	// Throw away all the entries but the top 50 on pure difficulty alone.
+	// Note that we are sorting in descending order.
+	sort.Slice(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+
+	if len(list) > 50 {
+		list = list[:50]
+	}
+	for i := len(list); i >= 10; i-- {
+		avg := Avg(list[:i])
+		for j := 0; j < i; j++ {
+			CalculateGrade(avg, list[j])
+		}
+		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.Slice(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade > list[j].Grade })
+	}
+	tobepaid = append(tobepaid, list[:10]...)
+
+	return tobepaid, list
+}
+
+func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) []*OraclePriceRecord {
 	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
 	// the version with the highest difficulty.  There is no advantage to use some other
 	// miner's identity, because if you do, you have to beat that miner to get any reward.
@@ -69,20 +98,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		IDs[id] = v
 		nlist = append(nlist, v)
 	}
-	list = nlist
-
-	// Throw away all the entries but the top 50 in difficulty
-	// Note that we are sorting in descending order.
-	sort.Slice(list,func(i,j int)bool{return list[i].Difficulty>list[j].Difficulty})
-
-	if len(list) > 50 {
-		list = list[:50]
-	}
-	sort.SliceStable(list, func(i,j int)bool{return list[i].Grade>list[j].Grade})
-
-	tobepaid = append(tobepaid, list[:10]...)
-
-	return tobepaid, list
+	return nlist
 }
 
 type OPRBlock struct {
