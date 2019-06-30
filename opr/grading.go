@@ -254,7 +254,7 @@ func GetEntryBlocks(config *config.Config) {
 			for _,f := range win.FactomDigitalID[1:]{
 				fid = fid + " --- " + f
 			}
-			results = results + fmt.Sprintf("%16x %40s %-60s=%10s",
+			results = results + fmt.Sprintf("%16x %40s %-60s=%10s\n",
 				win.Entry.Hash()[:8],
 				fid,
 				win.CoinbasePNTAddress,

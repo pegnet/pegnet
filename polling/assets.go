@@ -3,7 +3,6 @@
 package polling
 
 import (
-	"encoding/binary"
 	"encoding/json"
 	"github.com/pegnet/pegnet/common"
 	"os"
@@ -208,69 +207,3 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	return Peg
 }
 
-func (peg *PegAssets) FillPriceBytes() {
-	byteVal := make([]byte, 160)
-	nextStart := 0
-	byteLength := 8
-	b := make([]byte, 8)
-
-	binary.BigEndian.PutUint64(b, uint64(peg.PNT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.USD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.EUR.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.JPY.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.GBP.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CAD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CHF.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.INR.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.SGD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CNY.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.HKD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XAU.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XAG.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XPD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XPT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XBT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.ETH.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.LTC.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XBC.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.FCT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-}
