@@ -16,19 +16,22 @@ import (
 
 // Compute the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg [20]float64) {
+
 	// Sum up all the prices
 	for _, opr := range list {
 		tokens := opr.GetTokens()
-		for i, price := range tokens {
-			avg[i] += price.value
+		for i, token := range tokens {
+			avg[i] += token.value
 		}
 	}
 	// Then divide the prices by the number of OraclePriceRecord records.  Two steps is actually faster
 	// than doing everything in one loop (one divide for every asset rather than one divide
-	// for every asset * number of OraclePriceRecords)
+	// for every asset * number of OraclePriceRecords)  There is also a little bit of a precision advantage
+	// with the two loops (fewer divisions usually does help with precision) but that isn't likely to be
+	// interesting here.
 	numList := float64(len(list))
 	for i := range avg {
-		avg[i] = avg[i] / numList / 100000000
+		avg[i] = avg[i] / numList
 	}
 	return
 }
