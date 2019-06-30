@@ -9,6 +9,7 @@ vendor
 *.idea
 *.dat
 *.orig
+*.txt
 
 # Test binary, build with `go test -c`
 *.test
