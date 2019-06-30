@@ -37,9 +37,6 @@ func Logf(Catagory string, format string, a ...interface{}) {
 	if !DoLogging {
 		return
 	}
-	if len(a) == 0 {
-		return
-	}
 	elapse := time.Now().UnixNano() - start
 	ts := humanize.Comma(elapse)
 	data := fmt.Sprintf(format, a...)
