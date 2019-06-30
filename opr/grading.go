@@ -5,6 +5,7 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/dustin/go-humanize"
 	"sync"
 
@@ -227,7 +228,7 @@ func GetEntryBlocks(config *config.Config) {
 
 		common.Logf("NewOPR","Added a new valid block in the OPR chain at directory block height %s",
 			humanize.Comma(oprblocks[i].Dbht))
-
+		results := ""
 		// Update the balances for each winner
 		for i, win := range winners {
 			switch i {
@@ -253,12 +254,13 @@ func GetEntryBlocks(config *config.Config) {
 			for _,f := range win.FactomDigitalID[1:]{
 				fid = fid + " --- " + f
 			}
-			common.Logf("NewOPR","%16x %40s %-60s=%10s",
+			results = results + fmt.Sprintf("%16x %40s %-60s=%10s",
 				win.Entry.Hash()[:8],
 				fid,
 				win.CoinbasePNTAddress,
 				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
 		}
+		common.Logf("NewOPR",results)
 	}
 
 	return

@@ -178,7 +178,7 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	nonce := []byte{0, 0}
-	common.Logf("OPR", "OPRHash %x\n", opr.OPRHash)
+	common.Logf("OPR", "OPRHash %x", opr.OPRHash)
 
 miningloop:
 	for i := 0; ; i++ {
@@ -198,7 +198,7 @@ miningloop:
 			opr.Difficulty = diff
 			// Copy over the previous nonce
 			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
-			common.Logf("OPR", "%15v OPR Difficulty %016x on opr hash: %x nonce: %x\n",
+			common.Logf("OPR", "%15v OPR Difficulty %016x on opr hash: %x nonce: %x",
 				time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
 		}
 
@@ -227,7 +227,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 // String
 // Returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
-	str = fmt.Sprintf("%14sField%14sValue\n", "", "")
+	str = fmt.Sprintf("Nonce %x\n", opr.Entry.ExtIDs[0])
 	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)

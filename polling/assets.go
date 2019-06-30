@@ -183,7 +183,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	for i := 0; i < 10; i++ {
 		if err != nil {
-			common.Logf("error", "Error %d so retrying.  Error %v\n", i+1, err)
+			common.Logf("error", "Error %d so retrying.  Error %v", i+1, err)
 			time.Sleep(time.Second)
 			KitcoResponse, err = CallKitcoWeb()
 		} else {
@@ -191,7 +191,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		}
 	}
 	if err != nil {
-		common.Logf("error", "Error, using old data.\n")
+		common.Logf("error", "Error, using old data.")
 		pa := lastAnswer.Clone()
 		return pa
 	}

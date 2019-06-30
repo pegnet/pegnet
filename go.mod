@@ -32,7 +32,7 @@ require (
 	github.com/btcsuitereleases/btcutil v0.0.0-20150612230727-f2b1058a8255 // indirect
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/codegangsta/cli v1.20.0 // indirect
-	github.com/dustin/go-humanize v1.0.0 // indirect
+	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ini/ini v1.42.0 // indirect
 	github.com/golang/snappy v0.0.1 // indirect
