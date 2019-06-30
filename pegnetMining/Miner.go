@@ -32,7 +32,6 @@ func main() {
 	common.DoLogging = true
 	common.InitLogs(Config)
 
-
 	monitor := new(common.FactomdMonitor)
 	monitor.Start()
 	grader := new(opr.Grader)
