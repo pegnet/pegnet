@@ -253,7 +253,8 @@ func GetEntryBlocks(config *config.Config) {
 			for _,f := range win.FactomDigitalID[1:]{
 				fid = fid + " --- " + f
 			}
-			common.Logf("NewOPR","%40s %-60s=%10s",
+			common.Logf("NewOPR","%16x %40s %-60s=%10s",
+				win.Entry.Hash()[:8],
 				fid,
 				win.CoinbasePNTAddress,
 				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
