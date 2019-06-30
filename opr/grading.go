@@ -5,6 +5,7 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"github.com/dustin/go-humanize"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -224,6 +225,9 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
+		common.Logf("NewOPR","Added a new valid block in the OPR chain at directory block height %s",
+			humanize.Comma(oprblocks[i].Dbht))
+
 		// Update the balances for each winner
 		for i, win := range winners {
 			switch i {
@@ -245,6 +249,15 @@ func GetEntryBlocks(config *config.Config) {
 					panic(err)
 				}
 			}
+			fid := win.FactomDigitalID[0]
+			for _,f := range win.FactomDigitalID[1:]{
+				fid = fid + " --- " + f
+			}
+			common.Logf("NewOPR","%16x %40s %-60s=%10s",
+				win.Entry.Hash()[:8],
+				fid,
+				win.CoinbasePNTAddress,
+				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
 		}
 	}
 

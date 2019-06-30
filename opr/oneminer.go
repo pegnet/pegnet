@@ -39,8 +39,8 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 						panic(fmt.Sprint("Can't json marshal the opr: ", ok))
 					}
 					ostr := opr.String()
-					common.Logf("miner", "OPR:        miner%02d entrySize %d", miner, len(data))
-					common.Logf("miner", "OPR Record: miner%02d %s", ostr)
+					common.Logf("OPR-Rec", "OPR:        miner%02d entrySize %d", miner, len(data))
+					common.Logf("OPR-Rec", "OPR Record: miner%02d %s", miner, ostr)
 				})
 
 				mining = false

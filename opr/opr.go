@@ -357,7 +357,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		for _, v := range fields[1:] {
 			fid = fid + " --- " + v
 		}
-		common.Logf("NewOPR", "NewOPR miner %s", fid)
+		common.Logf("OPR", "New OPR miner %s", fid)
 		opr.FactomDigitalID = fields
 
 	}
