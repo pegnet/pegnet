@@ -416,7 +416,6 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	//get asset values
 	var Peg polling.PegAssets
 	Peg = polling.PullPEGAssets(c)
-	Peg.FillPriceBytes()
 	opr.SetPegValues(Peg)
 
 	var err error

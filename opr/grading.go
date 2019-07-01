@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dustin/go-humanize"
-	"sort"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -17,6 +16,7 @@ import (
 
 // Compute the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg [20]float64) {
+
 	// Sum up all the prices
 	for _, opr := range list {
 		tokens := opr.GetTokens()
@@ -26,10 +26,12 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	}
 	// Then divide the prices by the number of OraclePriceRecord records.  Two steps is actually faster
 	// than doing everything in one loop (one divide for every asset rather than one divide
-	// for every asset * number of OraclePriceRecords)
+	// for every asset * number of OraclePriceRecords)  There is also a little bit of a precision advantage
+	// with the two loops (fewer divisions usually does help with precision) but that isn't likely to be
+	// interesting here.
 	numList := float64(len(list))
 	for i := range avg {
-		avg[i] = avg[i] / numList 
+		avg[i] = avg[i] / numList
 	}
 	return
 }
@@ -236,7 +238,7 @@ func GetEntryBlocks(config *config.Config) {
 			for _,f := range win.FactomDigitalID[1:]{
 				fid = fid + "-" + f
 			}
-			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %20d %35s %-60s=%10s\n",
+			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
 				win.Entry.Hash()[:8],
 				win.Grade,
 				win.Difficulty,
