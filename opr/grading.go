@@ -257,8 +257,10 @@ func GetEntryBlocks(config *config.Config) {
 			for _,f := range win.FactomDigitalID[1:]{
 				fid = fid + " --- " + f
 			}
-			results = results + fmt.Sprintf("%16x %40s %-60s=%10s\n",
+			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
 				win.Entry.Hash()[:8],
+				win.Grade,
+				win.Difficulty,
 				fid,
 				win.CoinbasePNTAddress,
 				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
