@@ -6,9 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/pegnet/pegnet/support"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +36,7 @@ var getEncoding = &cobra.Command{
 		if len(args) == 2 {
 			asset = strings.ToLower(args[1])
 		}
-		assets, err := support.ConvertUserFctToUserPegNetAssets(os.Args[2])
+		assets, err := common.ConvertUserFctToUserPegNetAssets(os.Args[2])
 		if err != nil {
 			// TODO: Verify this error message?
 			fmt.Println("Must provide a valid FCT public key")
@@ -58,7 +57,7 @@ var getEncoding = &cobra.Command{
 
 // addGetEncodingCommands adds commands so the autocomplete can fill in the second param
 func addGetEncodingCommands() {
-	for _, ass := range append([]string{"all"}, support.AssetNames...) {
+	for _, ass := range append([]string{"all"}, common.AssetNames...) {
 		getEncoding.AddCommand(&cobra.Command{Use: strings.ToLower(ass), Run: func(cmd *cobra.Command, args []string) {}})
 	}
 }
@@ -77,7 +76,7 @@ var newAddress = &cobra.Command{
 			return
 		}
 		fmt.Print(fa.String(), "\n\n")
-		assets, err := support.ConvertUserFctToUserPegNetAssets(fa.String())
+		assets, err := common.ConvertUserFctToUserPegNetAssets(fa.String())
 		if err != nil {
 			fmt.Println(err)
 			return
