@@ -1,11 +1,10 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
-// Licensed under the MIT License. See LICENSE file in the project root for full
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package polling
 
 import (
-	"encoding/binary"
 	"encoding/json"
-	"fmt"
+	"github.com/pegnet/pegnet/common"
 	"os"
 
 	"github.com/zpatrick/go-config"
@@ -97,19 +96,17 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}
 
 	lastTime = now
-	fmt.Println("Make a call to get data. Seconds since last call:", delta)
+	common.Logf("PullPEGAssets", "Make a call to get data. Seconds since last call:", delta)
 	var Peg PegAssets
 	// digital currencies
 	CoinCapResponseBytes, err := CallCoinCap(config)
-	//fmt.Println(string(CoinCapResponseBytes))
 	if err != nil {
-		fmt.Println(err)
+		common.Logf("error", "Error accessing CallCoinCap %v", err)
 		os.Exit(1)
 	} else {
 		var CoinCapValues CoinCapResponse
 		err = json.Unmarshal(CoinCapResponseBytes, &CoinCapValues)
 		for _, currency := range CoinCapValues.Data {
-			//fmt.Println(currency.Symbol + "-" + currency.PriceUSD)
 			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
 				Peg.XBT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
 				Peg.XBT.Value = Round(Peg.XBT.Value)
@@ -149,20 +146,10 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		}
 	}
 
-	//fiat option 1.  terms uf use seem tighter
-	// has fiat and digital
-	// https://currencylayer.com/product  <-- pricing
-	// $10 a month will let you pull 10,000 but it is updated once an hour
-	// $40 a month is 100,000 updated every 10 minutes.
-	// 20% discount for annual payment
-
-	//	fmt.Println("API LAYER:")
-
 	APILayerBytes, err := CallAPILayer(config)
-	//fmt.Println(string(APILayerBytes))
 
 	if err != nil {
-		fmt.Println(err)
+		common.Logf("error", "Error accessing CallAPILayer(): %v", err)
 		os.Exit(1)
 	} else {
 		var APILayerResponse APILayerResponse
@@ -195,7 +182,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	for i := 0; i < 10; i++ {
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error %d so retrying.  Error %v\n", i+1, err)
+			common.Logf("error", "Error %d so retrying.  Error %v", i+1, err)
 			time.Sleep(time.Second)
 			KitcoResponse, err = CallKitcoWeb()
 		} else {
@@ -203,11 +190,10 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		}
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error, using old data.\n")
+		common.Logf("error", "Error, using old data.")
 		pa := lastAnswer.Clone()
 		return pa
 	}
-	//fmt.Println("KitcoResponse:", KitcoResponse)
 	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
 	Peg.XAU.When = KitcoResponse.Silver.Date
 	Peg.XAG.Value, err = strconv.ParseFloat(KitcoResponse.Gold.Bid, 64)
@@ -221,69 +207,3 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	return Peg
 }
 
-func (peg *PegAssets) FillPriceBytes() {
-	byteVal := make([]byte, 160)
-	nextStart := 0
-	byteLength := 8
-	b := make([]byte, 8)
-
-	binary.BigEndian.PutUint64(b, uint64(peg.PNT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.USD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.EUR.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.JPY.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.GBP.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CAD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CHF.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.INR.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.SGD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.CNY.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.HKD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XAU.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XAG.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XPD.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XPT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XBT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.ETH.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.LTC.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.XBC.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-	nextStart = nextStart + byteLength
-	binary.BigEndian.PutUint64(b, uint64(peg.FCT.Value))
-	copy(byteVal[nextStart:nextStart+8], b[:])
-}

@@ -1,9 +1,9 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
-// Licensed under the MIT License. See LICENSE file in the project root for full
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package opr
 
 import (
-	"github.com/pegnet/pegnet/support"
+	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
 
@@ -26,7 +26,7 @@ func (g *Grader) GetAlert() chan *OPRs {
 	return alert
 }
 
-func (g *Grader) Run(config *config.Config, monitor *support.FactomdMonitor) {
+func (g *Grader) Run(config *config.Config, monitor *common.FactomdMonitor) {
 	fdAlert := monitor.GetAlert()
 	for {
 		fds := <-fdAlert

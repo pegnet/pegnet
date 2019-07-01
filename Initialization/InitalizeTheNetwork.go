@@ -1,16 +1,16 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
-// Licensed under the MIT License. See LICENSE file in the project root for full
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package main
 
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/pegnet/pegnet/common"
 	"os/user"
 	"time"
 
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/support"
-	config "github.com/zpatrick/go-config"
+	"github.com/zpatrick/go-config"
 )
 
 func main() {
@@ -34,8 +34,7 @@ func main() {
 	sECAdr, err := Config.String("Miner.ECAddress")
 	ecAdr, err := factom.FetchECAddress(sECAdr)
 	if err != nil {
-		fmt.Println("Failed to initialize EC Address")
-		fmt.Println(err.Error())
+		common.Logf("OPR", "Failed to initialize EC Address %v ", err)
 		return
 	}
 	_ = ecAdr
@@ -49,17 +48,16 @@ func main() {
 
 func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err error) {
 	fmt.Print("Looking to create the chain: ")
-	for i, n := range chainName {
-		if i > 0 {
-			fmt.Print(" --- ")
-		}
-		fmt.Print(string(n))
+	cn := string(chainName[0])
+	for i, n := range chainName[1:] {
+		cn = cn + " --- " + string(n)
 	}
-	fmt.Println()
-	chainID := support.ComputeChainIDFromFields(chainName)         // Compute the chainID
+	common.Logf("CreateChain", "Chain Name %s", cn)
+
+	chainID := common.ComputeChainIDFromFields(chainName)          // Compute the chainID
 	chainExists := factom.ChainExists(hex.EncodeToString(chainID)) // Check if it exists
 	if chainExists {                                               // If the chain exists, we are done.
-		fmt.Println("Chain Exists!")
+		common.Logf("CreateChain", "Chain Exists!")
 		return
 	}
 
@@ -68,9 +66,9 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 	var err1, err2 error
 	for i := 0; i < 1000; i++ {
 		if i == 0 {
-			fmt.Println("Creating the Chain")
+			common.Logf("CreateChain", "Creating the Chain")
 		} else {
-			fmt.Println("Something went wrong.  Waiting 5 seconds to retry (", i*5, ")")
+			common.Logf("CreateChain", "Something went wrong.  Waiting 5 seconds to retry (%d)", i*5)
 			time.Sleep(5 * time.Second)
 		}
 		if i == 0 || err1 != nil {
@@ -84,13 +82,12 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 		}
 	}
 	if err1 != nil {
-		fmt.Println("Failed: ", err1.Error())
+		common.Logf("error", "CreateChain Failed: %v", err1)
 		return "", err1
 	}
 	if err2 != nil {
-		fmt.Println("Failed: ", err2.Error())
+		common.Logf("error", "CreateChain Failed: %v", err2)
 		return "", err2
 	}
-	fmt.Println("Success!")
 	return txid, nil
 }
