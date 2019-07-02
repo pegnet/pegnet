@@ -40,7 +40,7 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 // Given the average answers across a set of tokens, grade the opr
 func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
-    opr.Grade = 0
+	opr.Grade = 0
 	for i, v := range tokens {
 		d := v.value - avg[i]           // compute the difference from the average
 		opr.Grade = opr.Grade + d*d*d*d // the grade is the sum of the squares of the differences
@@ -75,7 +75,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 			CalculateGrade(avg, list[j])
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.Slice(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
 		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade < list[j].Grade })
 	}
 	tobepaid = append(tobepaid, list[:10]...)
@@ -83,14 +83,13 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	return tobepaid, list
 }
 
-func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) []*OraclePriceRecord {
+func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (rlist []*OraclePriceRecord) {
 	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
 	// the version with the highest difficulty.  There is no advantage to use some other
 	// miner's identity, because if you do, you have to beat that miner to get any reward.
 	// If you don't use some other miner's identity, you only have to place in the top 10
 	// to be rewarded.
 	IDs := make(map[string]*OraclePriceRecord)
-	var nlist []*OraclePriceRecord
 	for _, v := range list {
 		id := factom.ChainIDFromStrings(v.FactomDigitalID)
 		last := IDs[id]
@@ -100,9 +99,11 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) []*OraclePriceRecord {
 			}
 		}
 		IDs[id] = v
-		nlist = append(nlist, v)
 	}
-	return nlist
+	for _, v := range IDs {
+		rlist = append(rlist, v)
+	}
+	return rlist
 }
 
 type OPRBlock struct {
@@ -212,7 +213,7 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		common.Logf("NewOPR","Added a new valid block in the OPR chain at directory block height %s",
+		common.Logf("NewOPR", "Added a new valid block in the OPR chain at directory block height %s",
 			humanize.Comma(oprblocks[i].Dbht))
 		results := ""
 		// Update the balances for each winner
@@ -237,7 +238,7 @@ func GetEntryBlocks(config *config.Config) {
 				}
 			}
 			fid := win.FactomDigitalID[0]
-			for _,f := range win.FactomDigitalID[1:]{
+			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
 			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
@@ -248,7 +249,7 @@ func GetEntryBlocks(config *config.Config) {
 				win.CoinbasePNTAddress,
 				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
 		}
-		common.Logf("NewOPR",results)
+		common.Logf("NewOPR", results)
 	}
 
 	return

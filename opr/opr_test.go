@@ -20,7 +20,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	//opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
 	//opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
-	opr.WinningPreviousOPR = [10]string{
+	opr.WinPreviousOPR = [10]string{
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
 		base58.Encode(LX.Hash([]byte("winner number 2"))),
 		base58.Encode(LX.Hash([]byte("winner number 3"))),

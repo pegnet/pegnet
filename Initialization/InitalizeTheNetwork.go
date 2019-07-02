@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/pegnet/pegnet/common"
 	"os/user"
+	"strings"
 	"time"
 
 	"github.com/FactomProject/factom"
@@ -48,11 +49,8 @@ func main() {
 
 func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err error) {
 	fmt.Print("Looking to create the chain: ")
-	cn := string(chainName[0])
-	for i, n := range chainName[1:] {
-		cn = cn + " --- " + string(n)
-	}
-	common.Logf("CreateChain", "Chain Name %s", cn)
+
+	common.Logf("CreateChain", "Chain Name %s", strings.Join(chainName, "-"))
 
 	chainID := common.ComputeChainIDFromFields(chainName)          // Compute the chainID
 	chainExists := factom.ChainExists(hex.EncodeToString(chainID)) // Check if it exists
