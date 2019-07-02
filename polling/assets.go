@@ -5,6 +5,7 @@ package polling
 import (
 	"encoding/json"
 	"github.com/pegnet/pegnet/common"
+	"math/rand"
 	"os"
 
 	"github.com/zpatrick/go-config"
@@ -38,28 +39,28 @@ type PegAssets struct {
 	FCT PegItems
 }
 
-func (p *PegAssets) Clone() PegAssets {
+func (p *PegAssets) Clone(randomize float64) PegAssets {
 	np := new(PegAssets)
-	np.PNT = p.PNT.Clone()
-	np.USD = p.USD.Clone()
-	np.EUR = p.EUR.Clone()
-	np.JPY = p.JPY.Clone()
-	np.GBP = p.GBP.Clone()
-	np.CAD = p.CAD.Clone()
-	np.CHF = p.CHF.Clone()
-	np.INR = p.INR.Clone()
-	np.SGD = p.SGD.Clone()
-	np.CNY = p.CNY.Clone()
-	np.HKD = p.HKD.Clone()
-	np.XAU = p.XAU.Clone()
-	np.XAG = p.XAG.Clone()
-	np.XPD = p.XPD.Clone()
-	np.XPT = p.XPT.Clone()
-	np.XBT = p.XBT.Clone()
-	np.ETH = p.ETH.Clone()
-	np.LTC = p.LTC.Clone()
-	np.XBC = p.XBC.Clone()
-	np.FCT = p.FCT.Clone()
+	np.PNT = p.PNT.Clone(randomize)
+	np.USD = p.USD.Clone(randomize)
+	np.EUR = p.EUR.Clone(randomize)
+	np.JPY = p.JPY.Clone(randomize)
+	np.GBP = p.GBP.Clone(randomize)
+	np.CAD = p.CAD.Clone(randomize)
+	np.CHF = p.CHF.Clone(randomize)
+	np.INR = p.INR.Clone(randomize)
+	np.SGD = p.SGD.Clone(randomize)
+	np.CNY = p.CNY.Clone(randomize)
+	np.HKD = p.HKD.Clone(randomize)
+	np.XAU = p.XAU.Clone(randomize)
+	np.XAG = p.XAG.Clone(randomize)
+	np.XPD = p.XPD.Clone(randomize)
+	np.XPT = p.XPT.Clone(randomize)
+	np.XBT = p.XBT.Clone(randomize)
+	np.ETH = p.ETH.Clone(randomize)
+	np.LTC = p.LTC.Clone(randomize)
+	np.XBC = p.XBC.Clone(randomize)
+	np.FCT = p.FCT.Clone(randomize)
 	return *np
 }
 
@@ -68,9 +69,9 @@ type PegItems struct {
 	When  string
 }
 
-func (p *PegItems) Clone() PegItems {
+func (p *PegItems) Clone(randomize float64) PegItems {
 	np := new(PegItems)
-	np.Value = p.Value
+	np.Value = p.Value + p.Value*(randomize*rand.Float64()) - (randomize*rand.Float64())
 	np.When = p.When
 	return *np
 }
@@ -90,8 +91,18 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	defer lastMutex.Unlock()
 	now := time.Now().Unix()
 	delta := now - lastTime
+
+	// For testing, you can specify a randomization of the values returned by the oracles.
+	// If the value specified isn't reasonable, then randomize is zero, and the values returned
+	// are not changed.
+	randomize, err := config.Float("Debug.Randomize")
+	if err != nil && lastTime==0 {
+		common.Logf("error","the config file doesn't have a valid Randomize value. %v",err)
+		randomize = 0
+	}
+
 	if delta < qlimit && lastTime != 0 {
-		pa := lastAnswer.Clone()
+		pa := lastAnswer.Clone(randomize)
 		return pa
 	}
 
@@ -191,7 +202,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}
 	if err != nil {
 		common.Logf("error", "Error, using old data.")
-		pa := lastAnswer.Clone()
+		pa := lastAnswer.Clone(randomize)
 		return pa
 	}
 	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
@@ -203,7 +214,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	Peg.XPT.Value, err = strconv.ParseFloat(KitcoResponse.Platinum.Bid, 64)
 	Peg.XPT.When = KitcoResponse.Platinum.Date
 
-	lastAnswer = Peg.Clone()
-	return Peg
+	lastAnswer = Peg
+	
+	return Peg.Clone(randomize)
 }
-
