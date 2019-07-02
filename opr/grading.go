@@ -6,8 +6,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/dustin/go-humanize"
+	"sort"
+	"strings"
 	"sync"
+
+	"github.com/dustin/go-humanize"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -81,24 +84,31 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	return tobepaid, list
 }
 
+// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
+// The entry with higher difficulty is kept.
+// Two passes are used to avoid slice deletion logic
 func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) []*OraclePriceRecord {
-	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
-	// the version with the highest difficulty.  There is no advantage to use some other
-	// miner's identity, because if you do, you have to beat that miner to get any reward.
-	// If you don't use some other miner's identity, you only have to place in the top 10
-	// to be rewarded.
-	IDs := make(map[string]*OraclePriceRecord)
-	var nlist []*OraclePriceRecord
-	for _, v := range list {
-		id := factom.ChainIDFromStrings(v.FactomDigitalID)
-		last := IDs[id]
-		if last != nil {
-			if v.Difficulty < last.Difficulty {
-				continue
+	// miner id => slice index of highest difficulty entry
+	highest := make(map[string]int)
+
+	for i, v := range list {
+		id := fmt.Sprintf("%d+%s", len(v.FactomDigitalID), strings.Join(v.FactomDigitalID, "-"))
+
+		if dupe, ok := highest[id]; ok {
+			if v.Difficulty > list[dupe].Difficulty { // equal difficulties = first come first serve
+				highest[id] = i
 			}
+		} else {
+			highest[id] = i
 		}
-		IDs[id] = v
-		nlist = append(nlist, v)
+	}
+
+	nlist := make([]*OraclePriceRecord, 0)
+	for i, v := range list {
+		id := fmt.Sprintf("%d+%s", len(v.FactomDigitalID), strings.Join(v.FactomDigitalID, "-"))
+		if valid, ok := highest[id]; ok && i == valid {
+			nlist = append(nlist, v)
+		}
 	}
 	return nlist
 }
@@ -210,7 +220,7 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		common.Logf("NewOPR","Added a new valid block in the OPR chain at directory block height %s",
+		common.Logf("NewOPR", "Added a new valid block in the OPR chain at directory block height %s",
 			humanize.Comma(oprblocks[i].Dbht))
 		results := ""
 		// Update the balances for each winner
@@ -235,7 +245,7 @@ func GetEntryBlocks(config *config.Config) {
 				}
 			}
 			fid := win.FactomDigitalID[0]
-			for _,f := range win.FactomDigitalID[1:]{
+			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
 			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
@@ -246,7 +256,7 @@ func GetEntryBlocks(config *config.Config) {
 				win.CoinbasePNTAddress,
 				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
 		}
-		common.Logf("NewOPR",results)
+		common.Logf("NewOPR", results)
 	}
 
 	return
