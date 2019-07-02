@@ -206,4 +206,3 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastAnswer = Peg.Clone()
 	return Peg
 }
-

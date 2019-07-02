@@ -20,8 +20,6 @@ github.com/FactomProject/factoid v0.3.4 h1:uC0161wd2IHYFBTduUQvW4ivHLj+De12c/QsV
 github.com/FactomProject/factoid v0.3.4/go.mod h1:ExOuHMC672nR0h9b+jaTiW9ilQeWQOap4OXixzW359M=
 github.com/FactomProject/factom v0.0.0-20190617201959-b9c573abee92 h1:x6/a6VZOeeEzAmCwnfR494RbkLa+q1dI2ZllEkCklqE=
 github.com/FactomProject/factom v0.0.0-20190617201959-b9c573abee92/go.mod h1:V1V8mWqOI72JBpGj/aPQZEmhDepdykxyhVRH5GxbP4E=
-github.com/FactomProject/factom v0.3.5 h1:uctL4QSVLhjyPux4YUPnGd+bxRES2iuIWX25PdWNAD0=
-github.com/FactomProject/factom v0.3.5/go.mod h1:V1V8mWqOI72JBpGj/aPQZEmhDepdykxyhVRH5GxbP4E=
 github.com/FactomProject/factomd v6.3.2+incompatible h1:Xw/neWF8IGiZhazvIVXnIUO6u7NYeJBoItx3mTHqA+I=
 github.com/FactomProject/factomd v6.3.2+incompatible/go.mod h1:zeNvpIESaAp0bQSQ7U0c9tWzsklqMd5vGHLGCe3Bs3M=
 github.com/FactomProject/fastsha256 v0.2.1 h1:ICfr2Lw5Ucy785GfJSjLLG9X1mZA6dsy/xgARlZ+brs=
