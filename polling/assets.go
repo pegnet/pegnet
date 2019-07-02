@@ -71,7 +71,7 @@ type PegItems struct {
 
 func (p *PegItems) Clone(randomize float64) PegItems {
 	np := new(PegItems)
-	np.Value = p.Value + p.Value*(randomize*rand.Float64()) - (randomize*rand.Float64())
+	np.Value = p.Value + p.Value*(randomize/2*rand.Float64()) - p.Value*(randomize/2*rand.Float64())
 	np.When = p.When
 	return *np
 }
@@ -215,6 +215,6 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	Peg.XPT.When = KitcoResponse.Platinum.Date
 
 	lastAnswer = Peg
-	
+
 	return Peg.Clone(randomize)
 }
