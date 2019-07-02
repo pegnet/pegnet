@@ -52,11 +52,11 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 // Given a list of OraclePriceRecord, figure out which 10 should be paid, and in what order
 func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
 
+	list = RemoveDuplicateMiningIDs(list)
+
 	if len(list) < 10 {
 		return nil, nil
 	}
-
-	list = RemoveDuplicateMiningIDs(list)
 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
