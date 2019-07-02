@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"sort"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -49,11 +50,11 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 // Given a list of OraclePriceRecord, figure out which 10 should be paid, and in what order
 func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
 
+	list = RemoveDuplicateMiningIDs(list)
+
 	if len(list) < 10 {
 		return nil, nil
 	}
-
-	list = RemoveDuplicateMiningIDs(list)
 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
@@ -74,7 +75,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
 		sort.Slice(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
-		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade > list[j].Grade })
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade < list[j].Grade })
 	}
 	tobepaid = append(tobepaid, list[:10]...)
 
