@@ -92,7 +92,7 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	highest := make(map[string]int)
 
 	for i, v := range list {
-		id :=  strings.Join(v.FactomDigitalID, "-")
+		id := strings.Join(v.FactomDigitalID, "-")
 
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
