@@ -54,7 +54,7 @@ func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err
 	}
 
 	cn := string(chainName[0])
-	for _,field := range chainName[:1]{
+	for _,field := range chainName[1:]{
 		cn =cn+"-"+string(field)
 	}
 	common.Logf("CreateChain", "Chain Name %s", cn)
