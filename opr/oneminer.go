@@ -3,7 +3,9 @@
 package opr
 
 import (
+	"errors"
 	"fmt"
+	"github.com/cenkalti/backoff"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
@@ -52,17 +54,19 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 }
 
 func writeMiningRecord(opr *OraclePriceRecord) {
-
-	var err1, err2 error
-	for i := 0; i < 100; i++ {
-		if i == 0 || err1 != nil {
-			_, err1 = factom.CommitEntry(opr.Entry, opr.EC)
-		}
-		if i == 0 || err2 != nil {
-			_, err2 = factom.RevealEntry(opr.Entry)
-		}
+	operation := func() error {
+		var err1, err2 error
+		_, err1 = factom.CommitEntry(opr.Entry, opr.EC)
+		_, err2 = factom.RevealEntry(opr.Entry)
 		if err1 == nil && err2 == nil {
-			break
+			return nil
 		}
+		return errors.New("unable to commit Entry to factom")
+	}
+
+	err := backoff.Retry(operation, common.PegExponentialBackOff())
+	if err != nil {
+		// Handle error.
+		return
 	}
 }

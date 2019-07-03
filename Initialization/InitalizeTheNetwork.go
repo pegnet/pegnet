@@ -25,6 +25,10 @@ func main() {
 	configfile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
 	iniFile := config.NewINIFile(configfile)
 	Config := config.NewConfig([]config.Provider{iniFile})
+
+	// Init Logs
+	common.InitLogs(Config)
+
 	protocol, err := Config.String("Miner.Protocol")
 	if err != nil {
 		panic(err)
