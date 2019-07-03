@@ -48,7 +48,7 @@ func main() {
 	flag.Parse()
 
 	if numMiners > 50 {
-		common.Logf("notice", "Miner Limit is 50.  Config file specified too many Miners: ", numMiners, ".  Using 50")
+		common.Logf("notice", "Miner Limit is 50.  Config file specified too many Miners: %d, using 50 ", numMiners)
 		numMiners = 50
 	}
 

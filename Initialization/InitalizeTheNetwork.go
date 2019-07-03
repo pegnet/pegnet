@@ -48,9 +48,14 @@ func main() {
 
 func CreateChain(ec_adr *factom.ECAddress, chainName [][]byte) (txid string, err error) {
 	fmt.Print("Looking to create the chain: ")
+
+	if len(chainName) == 0 {
+		panic("We need a chain name to create a chain")
+	}
+
 	cn := string(chainName[0])
-	for i, n := range chainName[1:] {
-		cn = cn + " --- " + string(n)
+	for _, field := range chainName[1:] {
+		cn = cn + "-" + string(field)
 	}
 	common.Logf("CreateChain", "Chain Name %s", cn)
 

@@ -10,7 +10,7 @@ import (
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	"github.com/pegnet/LXR256"
+	"github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	"github.com/zpatrick/go-config"
@@ -207,13 +207,7 @@ miningloop:
 
 func (opr *OraclePriceRecord) ShortString() string {
 
-	fdid := ""
-	for i, v := range opr.FactomDigitalID {
-		if i > 0 {
-			fdid = fdid + " --- "
-		}
-		fdid = fdid + v
-	}
+	fdid := strings.Join(opr.FactomDigitalID, "-")
 
 	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
 		fdid,
@@ -238,15 +232,8 @@ func (opr *OraclePriceRecord) String() (str string) {
 	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
 
 	// Make a display string out of the Digital Identity.
-	did := ""
-	for i, t := range opr.FactomDigitalID {
-		if i > 0 {
-			did = did + " --- "
-		}
-		did = did + t
-	}
 
-	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", did)
+	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", strings.Join(opr.FactomDigitalID, "-"))
 	str = str + fmt.Sprintf("%32s %v\n", "PNT", opr.PNT)
 	str = str + fmt.Sprintf("%32s %v\n", "USD", opr.USD)
 	str = str + fmt.Sprintf("%32s %v\n", "EUR", opr.EUR)
@@ -353,11 +340,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		fid := fields[0]
-		for _, v := range fields[1:] {
-			fid = fid + " --- " + v
-		}
-		common.Logf("OPR", "New OPR miner %s", fid)
+		common.Logf("OPR", "New OPR miner %s", strings.Join(fields, "-"))
 		opr.FactomDigitalID = fields
 
 	}

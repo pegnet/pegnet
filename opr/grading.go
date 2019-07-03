@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/dustin/go-humanize"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -50,77 +52,62 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 // Given a list of OraclePriceRecord, figure out which 10 should be paid, and in what order
 func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
 
+	list = RemoveDuplicateMiningIDs(list)
+
 	if len(list) < 10 {
 		return nil, nil
 	}
 
-	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
-	// the version with the highest difficulty.  There is no advantage to use some other
-	// miner's identity, because if you do, you have to beat that miner to get any reward.
-	// If you don't use some other miner's identity, you only have to place in the top 10
-	// to be rewarded.
-	IDs := make(map[string]*OraclePriceRecord)
-	var nlist []*OraclePriceRecord
+	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
-		id := factom.ChainIDFromStrings(v.FactomDigitalID)
-		last := IDs[id]
-		if last != nil {
-			if v.Difficulty < last.Difficulty {
-				continue
-			}
-		}
-		IDs[id] = v
-		nlist = append(nlist, v)
+		v.Difficulty = v.ComputeDifficulty(v.Entry.ExtIDs[0])
 	}
-	list = nlist
 
-	last := len(list)
-	// Throw away all the entries but the top 50 in difficulty
-	// bubble sort because I am lazy.  Could be replaced with about anything
-	for j := 0; j < len(list)-1; j++ {
-		for k := 0; k < len(list)-j-1; k++ {
-			d1 := list[k].Difficulty
-			d2 := list[k+1].Difficulty
-			if d1 == 0 || d2 == 0 {
-				//panic("Should not be here")
-			}
-			if d1 < d2 { // sort the smallest difficulty to the end of the list
-				list[k], list[k+1] = list[k+1], list[k]
-			}
-		}
-	}
+	// Throw away all the entries but the top 50 on pure difficulty alone.
+	// Note that we are sorting in descending order.
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+
 	if len(list) > 50 {
-		last = 50
+		list = list[:50]
 	}
-	// Go through and throw away entries that are outside the average or on a tie, have the worst difficulty
-	// until we are only left with 10 entries to reward
-	for i := last; i >= 10; i-- {
+	for i := len(list); i >= 10; i-- {
 		avg := Avg(list[:i])
 		for j := 0; j < i; j++ {
 			CalculateGrade(avg, list[j])
 		}
-		// bubble sort the worst grade to the end of the list. Note that this is nearly sorted data, so
-		// a bubble sort with a short circuit is pretty darn good sort.
-		for j := 0; j < i-1; j++ {
-			cont := false                // If we can get through a pass with no swaps, we are done.
-			for k := 0; k < i-j-1; k++ { // yes, yes I know we can get 2 or 3 x better speed playing with indexes
-				if list[k].Grade > list[k+1].Grade { // bit it is tricky.  This is good enough.
-					list[k], list[k+1] = list[k+1], list[k] // sort first by the grade.
-					cont = true                             // any swap means we continue to loop
-				} else if list[k].Grade == list[k+1].Grade { // break ties with PoW.  Where data is being shared
-					if list[k].Difficulty < list[k+1].Difficulty { // we will have ties.
-						//list[k], list[k+1] = list[k+1], list[k]
-						cont = true // any swap means we continue to loop
-					}
-				}
-			}
-			if !cont { // If we made a pass without any swaps, we are done.
-				break
-			}
-		}
+		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade < list[j].Grade })
 	}
 	tobepaid = append(tobepaid, list[:10]...)
+
 	return tobepaid, list
+}
+
+// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
+// The entry with higher difficulty is kept.
+// Two passes are used to avoid slice deletion logic
+func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRecord) {
+	// miner id => slice index of highest difficulty entry
+	highest := make(map[string]int)
+
+	for i, v := range list {
+		id := strings.Join(v.FactomDigitalID, "-")
+
+		if dupe, ok := highest[id]; ok { // look for duplicates
+			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
+				continue
+			}
+		}
+		// Either the first record found for the identity,or a more difficult record... keep it
+		highest[id] = i
+
+	}
+	// Take all the best records, stick them in the list and return.
+	for _, idx := range highest {
+		nlist = append(nlist, list[idx])
+	}
+	return nlist
 }
 
 type OPRBlock struct {
@@ -256,7 +243,7 @@ func GetEntryBlocks(config *config.Config) {
 			}
 			fid := win.FactomDigitalID[0]
 			for _, f := range win.FactomDigitalID[1:] {
-				fid = fid + " --- " + f
+				fid = fid + "-" + f
 			}
 			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
 				win.Entry.Hash()[:8],

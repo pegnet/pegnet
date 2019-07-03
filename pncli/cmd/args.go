@@ -2,12 +2,10 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pegnet/pegnet/common"
 	"strings"
 
-	//"github.com/pegnet/pegnet/support"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
 )
 
