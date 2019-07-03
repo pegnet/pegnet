@@ -4,12 +4,111 @@ package opr
 
 import (
 	"fmt"
-	"math"
+	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/FactomProject/factom"
 )
+
+// "dupe opr". hijacks OPRChainID to store the full name to use while testing
+// the ID is the first character of the name
+func dopr(name string, difficulty uint64) *OraclePriceRecord {
+	//split := strings.Split("name", "")
+	o := new(OraclePriceRecord)
+	o.FactomDigitalID = []string{string(name[0])}
+	o.Difficulty = difficulty
+	o.OPRChainID = name
+	return o
+}
+
+func dupeCheck(got []*OraclePriceRecord, want []string) error {
+	if len(got) != len(want) {
+		return fmt.Errorf("results are not the same length, got = %d, want = %d", len(got), len(want))
+	}
+
+	for i, o := range got {
+		if o.OPRChainID != want[i] {
+			return fmt.Errorf("wrong entry at position %d. got = %s, want = %s", i, o.OPRChainID, want[i])
+		}
+	}
+
+	return nil
+}
+
+func TestRemoveDuplicateMiningIDs(t *testing.T) {
+	// dopr() uses the FIRST CHARACTER as id, and the full name as identifier
+	// eg "a1" and "a2" are duplicate entries
+	type args []*OraclePriceRecord
+	tests := []struct {
+		name string
+		args args
+		want []string
+	}{
+		{"middle test, keep last", args{dopr("a1", 1), dopr("b1", 50), dopr("a2", 2)}, []string{"a2", "b1"}},
+		{"no input", nil, []string{}},
+		{"empty input", args{}, []string{}},
+		{"one input", args{dopr("a1", 1)}, []string{"a1"}},
+		{"two normal inputs", args{dopr("a1", 1), dopr("b1", 1)}, []string{"a1", "b1"}},
+		{"dupe, equal copy", args{dopr("a1", 1), dopr("a2", 1)}, []string{"a1"}},
+		{"dupe, higher copy", args{dopr("a1", 1), dopr("a2", 2)}, []string{"a2"}},
+		{"dupe, lower copy", args{dopr("a1", 2), dopr("a2", 1)}, []string{"a1"}},
+		{"many dupes", args{dopr("a1", 2), dopr("a2", 1), dopr("a3", 5), dopr("a4", 0)}, []string{"a3"}},
+		{"mixed 1", args{dopr("b1", 50), dopr("a1", 2), dopr("a2", 1)}, []string{"a1", "b1"}},
+		{"middle test, keep first", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1)}, []string{"a1", "b1"}},
+		{"two dupes", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1), dopr("b2", 100)}, []string{"a1", "b2"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := RemoveDuplicateMiningIDs(tt.args)
+			sort.Slice(got, func(i,j int)bool{ return got[i].FactomDigitalID[0][0] < got[j].FactomDigitalID[0][0]})
+			if err := dupeCheck(got, tt.want); err != nil {
+				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
+			}
+		})
+	}
+}
+
+func BenchmarkSprintVsHash(b *testing.B) {
+	words := strings.Split("Lorem ipsum dolor sit amet consectetur adipiscing elit Nullam aliquam lacinia ipsum eu blandit Nullam varius ut libero ut vulputate Maecenas id purus quis ligula molestie eleifend Duis maximus neque vitae tempor blandit Praesent commodo orci quis magna imperdiet pulvinar Morbi eget eleifend lectus Nunc eget ligula eu velit faucibus suscipit in non tellus Maecenas nec dictum neque Sed a diam et nisi tincidunt ullamcorper sit amet sit amet sapien Suspendisse ut sollicitudin justo Phasellus tincidunt mauris a dapibus ultrices elit est tincidunt libero nec dictum dui elit id magna Praesent ac magna commodo molestie neque ac imperdiet ipsum Cras sapien felis iaculis porttitor consectetur vel blandit malesuada metus", " ")
+
+	store := make(map[int][][]string)
+	gen := func(n int) [][]string {
+		if existing, ok := store[n]; ok {
+			return existing
+		}
+		random := make([][]string, n)
+		for i := range random {
+			random[i] = make([]string, 0)
+
+			count := 1 + rand.Intn(4) // between 1 and 5 entries for a typical id
+			for c := 0; c < count; c++ {
+				random[i] = append(random[i], words[rand.Intn(len(words))])
+			}
+		}
+		store[n] = random
+		return random
+	}
+
+	b.Run("Sprint ID", func(b *testing.B) {
+		b.StopTimer()
+		random := gen(b.N)
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_ = fmt.Sprintf("%d+%s", len(random[i]), strings.Join(random[i], "-"))
+		}
+	})
+	b.Run("Sha256 ID", func(b *testing.B) {
+		b.StopTimer()
+		random := gen(b.N)
+		b.StartTimer()
+		for i := 0; i < b.N; i++ {
+			_ = factom.ChainIDFromStrings(random[i])
+		}
+	})
+}
 
 type gradeTest struct {
 	name   string
@@ -24,9 +123,27 @@ func uniqID() string {
 	return strconv.Itoa(id)
 }
 
+var difficulty []*OraclePriceRecord
+
+func init() {
+	// create difficulties that are in order and indexed in an array so I can assign them and compare
+	// them in the tests.
+	for i:=0;i<100; i++ {
+		opr := new(OraclePriceRecord)
+		opr.Entry = new(factom.Entry)
+		opr.Entry.ExtIDs = [][]byte{{byte(i)}}
+		opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry",i))
+		opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
+		difficulty = append(difficulty,opr)
+	}
+	sort.Slice(difficulty,func(i,j int)bool{
+		return difficulty[i].Difficulty<difficulty[j].Difficulty
+	})
+}
+
+
 func genOPR(entry gradeEntry) *OraclePriceRecord {
 	opr := new(OraclePriceRecord)
-	opr.Difficulty = entry.difficulty
 	opr.FactomDigitalID = []string{entry.id}
 	opr.PNT = entry.data
 	opr.USD = entry.data
@@ -48,6 +165,7 @@ func genOPR(entry gradeEntry) *OraclePriceRecord {
 	opr.LTC = entry.data
 	opr.XBC = entry.data
 	opr.FCT = entry.data
+
 	return opr
 }
 
@@ -77,7 +195,14 @@ func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest)
 	}
 	gt.args = make([]*OraclePriceRecord, 0)
 	for _, e := range entries {
-		gt.args = append(gt.args, genOPR(e))
+
+		diff := e.difficulty
+		en := genOPR(e)
+
+		en.Entry = difficulty[diff].Entry
+		en.Difficulty = en.Difficulty
+
+		gt.args = append(gt.args, en)
 	}
 	gt.sorted = results
 	return
@@ -147,6 +272,7 @@ func prettyPrint(a []*OraclePriceRecord) {
 	fmt.Println()
 }
 
+
 func TestGradeBlock(t *testing.T) {
 	r1, r2 := GradeBlock(nil)
 	if r1 != nil || r2 != nil {
@@ -207,7 +333,7 @@ func TestGradeBlock(t *testing.T) {
 		}, []string{"11", "10", "9", "8", "7", "6", "4", "3", "2", "1", "5"}),
 		genTest("stable order 2 items", []gradeEntry{
 			e1(1, 1.00), // same difficulty
-			e1(1, 1.00),
+			e1(2, 1.00),
 			e1(3, 1.00),
 			e1(4, 1.00),
 			e1(5, 1.00),
@@ -216,8 +342,8 @@ func TestGradeBlock(t *testing.T) {
 			e1(8, 1.00),
 			e1(9, 1.00),
 			e1(10, 1.00), //                         stable order
-		}, []string{"10", "9", "8", "7", "6", "5", "4", "3", "1", "2"}),
-		genTest("stable order 3 items", []gradeEntry{
+		}, []string{"10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}),
+/*		genTest("stable order 3 items", []gradeEntry{
 			e1(1, 1.00), // same difficulty
 			e1(1, 1.00),
 			e1(1, 1.00),
@@ -243,27 +369,27 @@ func TestGradeBlock(t *testing.T) {
 		}, []string{"10", "9", "8", "7", "6", "5", "4", "3", "2", "1"}),
 		genTest("reordered input (stable)", []gradeEntry{
 			e2(1, 1.00, "1"),
-			e2(1, 1.00, "3"),
-			e2(1, 1.00, "9"),
-			e2(1, 1.00, "4"),
-			e2(1, 1.00, "6"),
-			e2(1, 1.00, "2"),
-			e2(1, 1.00, "5"),
-			e2(1, 1.00, "7"),
-			e2(1, 1.00, "10"),
-			e2(1, 1.00, "8"),
+			e2(2, 1.00, "3"),
+			e2(3, 1.00, "9"),
+			e2(4, 1.00, "4"),
+			e2(5, 1.00, "6"),
+			e2(6, 1.00, "2"),
+			e2(7, 1.00, "5"),
+			e2(8, 1.00, "7"),
+			e2(9, 1.00, "10"),
+			e2(10, 1.00, "8"),
 		}, []string{"1", "3", "9", "4", "6", "2", "5", "7", "10", "8"}),
 		genTest("same difficulty, diff results (10)", []gradeEntry{
-			e1(1, 5.00), // avg = 3.3
-			e1(1, 4.00),
+			e1(2, 5.00), // avg = 3.3
+			e1(7, 4.00),
 			e1(1, 3.00),
-			e1(1, 2.00),
-			e1(1, 1.00),
-			e1(1, 3.00),
-			e1(1, 4.00),
-			e1(1, 5.00),
-			e1(1, 6.00),
-			e1(1, 7.00),
+			e1(3, 2.00),
+			e1(6, 1.00),
+			e1(8, 3.00),
+			e1(4, 4.00),
+			e1(9, 5.00),
+			e1(5, 6.00),
+			e1(10, 7.00),
 		}, []string{"2", "7", "1", "3", "6", "8", "4", "9", "5", "10"}),
 		genTest("same difficulty, strong outlier (10)", []gradeEntry{
 			e1(1, 5.00), // avg = 3.3
@@ -396,16 +522,16 @@ func TestGradeBlock(t *testing.T) {
 			e1(0, 1.00),
 		}, []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}),
 		genTest("max difficulty", []gradeEntry{
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
-			e1(18446744073709551615, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
+			e1(19, 1.00),
 		}, []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}),
 		genTest("max float64", []gradeEntry{
 			e1(1, 1.00),
@@ -443,6 +569,8 @@ func TestGradeBlock(t *testing.T) {
 			e1(1, 1.00),
 			e1(1, 1.00),
 		}, []string{"2", "3", "4", "5", "6", "7", "8", "9", "10", "1"}),
+
+ */
 	}
 
 	for _, tt := range tests {

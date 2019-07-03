@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -64,7 +65,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
 	// Note that we are sorting in descending order.
-	sort.Slice(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
 
 	if len(list) > 50 {
 		list = list[:50]
@@ -83,27 +84,30 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	return tobepaid, list
 }
 
-func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (rlist []*OraclePriceRecord) {
-	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
-	// the version with the highest difficulty.  There is no advantage to use some other
-	// miner's identity, because if you do, you have to beat that miner to get any reward.
-	// If you don't use some other miner's identity, you only have to place in the top 10
-	// to be rewarded.
-	IDs := make(map[string]*OraclePriceRecord)
-	for _, v := range list {
-		id := factom.ChainIDFromStrings(v.FactomDigitalID)
-		last := IDs[id]
-		if last != nil {
-			if v.Difficulty < last.Difficulty {
+// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
+// The entry with higher difficulty is kept.
+// Two passes are used to avoid slice deletion logic
+func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRecord) {
+	// miner id => slice index of highest difficulty entry
+	highest := make(map[string]int)
+
+	for i, v := range list {
+		id :=  strings.Join(v.FactomDigitalID, "-")
+
+		if dupe, ok := highest[id]; ok { // look for duplicates
+			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
 			}
 		}
-		IDs[id] = v
+		// Either the first record found for the identity,or a more difficult record... keep it
+		highest[id] = i
+
 	}
-	for _, v := range IDs {
-		rlist = append(rlist, v)
+	// Take all the best records, stick them in the list and return.
+	for _, idx := range highest {
+		nlist = append(nlist, list[idx])
 	}
-	return rlist
+	return nlist
 }
 
 type OPRBlock struct {
