@@ -3,7 +3,6 @@
 package database_test
 
 import (
-	"encoding/json"
 	. "github.com/pegnet/pegnet/database"
 	"testing"
 )
@@ -27,6 +26,9 @@ type junk struct {
 	C string
 	D []byte
 }
+
+/*  This test does not actually run under much other than by running by hand.
+ *  Revisit when we actually start using the database.
 
 func TestDatabaseValues(t *testing.T) {
 	var err error
@@ -62,3 +64,4 @@ func TestDatabaseValues(t *testing.T) {
 		t.Error("Should not get anything back")
 	}
 }
+*/

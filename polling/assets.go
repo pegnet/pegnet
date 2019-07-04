@@ -107,7 +107,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}
 
 	lastTime = now
-	common.Logf("PullPEGAssets", "Make a call to get data. Seconds since last call:", delta)
+	common.Logf("PullPEGAssets", "Make a call to get data. Seconds since last call: %d", delta)
 	var Peg PegAssets
 	// digital currencies
 	CoinCapResponseBytes, err := CallCoinCap(config)

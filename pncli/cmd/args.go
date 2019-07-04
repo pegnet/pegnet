@@ -4,10 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	//"github.com/pegnet/pegnet/support"
-
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/support"
+	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
 )
 
@@ -76,7 +74,7 @@ func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
 
 // ArgValidatorAssetAndAll checks for valid asset or 'all'
 func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
-	list := append([]string{"all"}, support.AssetNames...)
+	list := append([]string{"all"}, common.AssetNames...)
 	for _, an := range list {
 		if strings.ToLower(arg) == strings.ToLower(an) {
 			return nil
@@ -87,12 +85,12 @@ func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
 
 // ArgValidatorAsset checks for valid asset
 func ArgValidatorAsset(cmd *cobra.Command, arg string) error {
-	for _, an := range support.AssetNames {
+	for _, an := range common.AssetNames {
 		if strings.ToLower(arg) == strings.ToLower(an) {
 			return nil
 		}
 	}
-	return fmt.Errorf("Not a valid asset. Assets include: %v", support.AssetNames)
+	return fmt.Errorf("Not a valid asset. Assets include: %v", common.AssetNames)
 }
 
 // Custom Completion args

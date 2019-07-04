@@ -13,7 +13,7 @@ require (
 	github.com/FactomProject/ed25519 v0.0.0-20150814230546-38002c4fe7b6 // indirect
 	github.com/FactomProject/factoid v0.3.4
 	github.com/FactomProject/factom v0.0.0-20190617201959-b9c573abee92
-	github.com/FactomProject/factomd v6.3.2+incompatible
+	github.com/FactomProject/factomd v6.3.2+incompatible // indirect
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
 	github.com/FactomProject/go-bip32 v0.3.5 // indirect
@@ -30,6 +30,7 @@ require (
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/btcsuitereleases/btcutil v0.0.0-20150612230727-f2b1058a8255 // indirect
+	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/codegangsta/cli v1.20.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
@@ -41,7 +42,6 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
-	github.com/pegnet/LXR256 v0.0.0-20190615184635-c05cc0ee7381
 	github.com/pegnet/LXRHash v0.0.0-20190701014124-2218ebac7160
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2

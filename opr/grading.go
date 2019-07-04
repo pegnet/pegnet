@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/dustin/go-humanize"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -72,7 +73,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
 	// Note that we are sorting in descending order.
-	sort.Slice(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+	sort.SliceStable(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
 
 	if len(list) > 50 {
 		list = list[:50]
@@ -83,7 +84,7 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 			CalculateGrade(avg, list[j])
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.Slice(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
+		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
 		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade < list[j].Grade })
 	}
 	tobepaid = append(tobepaid, list[:10]...)
@@ -91,24 +92,28 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	return tobepaid, list
 }
 
-func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) []*OraclePriceRecord {
-	// Filter duplicate Miner Identities.  If we find any duplicates, we just use
-	// the version with the highest difficulty.  There is no advantage to use some other
-	// miner's identity, because if you do, you have to beat that miner to get any reward.
-	// If you don't use some other miner's identity, you only have to place in the top 10
-	// to be rewarded.
-	IDs := make(map[string]*OraclePriceRecord)
-	var nlist []*OraclePriceRecord
-	for _, v := range list {
-		id := factom.ChainIDFromStrings(v.FactomDigitalID)
-		last := IDs[id]
-		if last != nil {
-			if v.Difficulty < last.Difficulty {
+// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
+// The entry with higher difficulty is kept.
+// Two passes are used to avoid slice deletion logic
+func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRecord) {
+	// miner id => slice index of highest difficulty entry
+	highest := make(map[string]int)
+
+	for i, v := range list {
+		id := strings.Join(v.FactomDigitalID, "-")
+
+		if dupe, ok := highest[id]; ok { // look for duplicates
+			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
 			}
 		}
-		IDs[id] = v
-		nlist = append(nlist, v)
+		// Either the first record found for the identity,or a more difficult record... keep it
+		highest[id] = i
+
+	}
+	// Take all the best records, stick them in the list and return.
+	for _, idx := range highest {
+		nlist = append(nlist, list[idx])
 	}
 	return nlist
 }
@@ -245,10 +250,10 @@ func GetEntryBlocks(config *config.Config) {
 				}
 			}
 			fid := win.FactomDigitalID[0]
-			for _,f := range win.FactomDigitalID[1:]{
+			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
-			results = results + fmt.Sprintf("%16x grade %20.15f difficulty %16x %35s %-60s=%10s\n",
+			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
 				win.Entry.Hash()[:8],
 				win.Grade,
 				win.Difficulty,
