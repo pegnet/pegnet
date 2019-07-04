@@ -67,6 +67,7 @@ func writeMiningRecord(opr *OraclePriceRecord) {
 	err := backoff.Retry(operation, common.PegExponentialBackOff())
 	if err != nil {
 		// Handle error.
+		common.Logf("miner", "writeMiningRecord Error: %s", err)
 		return
 	}
 }

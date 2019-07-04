@@ -10,7 +10,7 @@ const (
 	DefaultInitialInterval     = 500 * time.Millisecond
 	DefaultRandomizationFactor = 0.5
 	DefaultMultiplier          = 1.5
-	DefaultMaxInterval         = 60 * time.Second
+	DefaultMaxInterval         = 2 * time.Second
 	DefaultMaxElapsedTime      = 10 * time.Second  // max 10 seconds
 )
 
