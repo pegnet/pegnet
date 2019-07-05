@@ -136,7 +136,7 @@ func CreateChain(ecAddress *factom.ECAddress, chainName [][]byte) (chainID strin
 		if i == 0 || revealErr == nil {
 			txID, revealErr = factom.RevealChain(newChain)
 		}
-		
+
 		if commitErr == nil && revealErr == nil {
 			break
 		} else {

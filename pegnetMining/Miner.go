@@ -5,38 +5,51 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os/user"
+	"strings"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"os/user"
 )
+
+const MaxMiners = 50
+
+var (
+	// Global Flags
+	LogLevel        string // Logrus global log level
+	FactomdLocation string
+	WalletdLocation string
+	ECAddressString string
+)
+
+func init() {
+	flag.StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'debug', 'info', 'warn', 'error', or 'fatal'")
+	flag.StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
+	flag.StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
+	flag.StringVar(&ECAddressString, "ec", "", "EC Address to use in place of the one specified in PegNet config file")
+}
 
 // Run a set of miners, as a network debugging aid
 func main() {
-	factom.SetFactomdServer("localhost:8088")
-	factom.SetWalletServer("localhost:8089")
-
 	u, err := user.Current()
 	if err != nil {
 		panic(err)
 	}
 	userPath := u.HomeDir
-	configfile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
-	iniFile := config.NewINIFile(configfile)
+	configFile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
+	iniFile := config.NewINIFile(configFile)
 	Config := config.NewConfig([]config.Provider{iniFile})
 	_, err = Config.String("Miner.Protocol")
 	if err != nil {
 		panic("Failed to open the config file for this miner, and couldn't load the default file either")
 	}
 
+	// TODO: remove common.Log usage once fully switched to logrus
 	common.DoLogging = true
 	common.InitLogs(Config)
-
-	monitor := new(common.FactomdMonitor)
-	monitor.Start()
-	grader := new(opr.Grader)
-	go grader.Run(Config, monitor)
 
 	numMiners, err := Config.Int("Miner.NumberOfMiners")
 	if err != nil {
@@ -47,12 +60,38 @@ func main() {
 	flag.IntVar(&numMiners, "m", numMiners, "Number of miners to run")
 	flag.Parse()
 
-	if numMiners > 50 {
-		common.Logf("notice", "Miner Limit is 50.  Config file specified too many Miners: %d, using 50 ", numMiners)
-		numMiners = 50
+	factom.SetFactomdServer(FactomdLocation)
+	factom.SetWalletServer(WalletdLocation)
+
+	switch strings.ToLower(LogLevel) {
+	case "debug":
+		log.SetLevel(log.DebugLevel)
+	case "info":
+		log.SetLevel(log.InfoLevel)
+	case "warn":
+		log.SetLevel(log.WarnLevel)
+	case "error":
+		log.SetLevel(log.ErrorLevel)
+	case "fatal":
+		log.SetLevel(log.FatalLevel)
 	}
 
-	common.Logf("notice", "Mining with %d miner(s)", numMiners)
+	monitor := new(common.FactomdMonitor)
+	monitor.Start()
+	grader := new(opr.Grader)
+	go grader.Run(Config, monitor)
+
+	// Start mining
+	if numMiners > MaxMiners {
+		log.WithFields(log.Fields{
+			"attempted": numMiners,
+			"limit":     MaxMiners,
+		}).Warn("Too many miners specified, defaulting to limit")
+		numMiners = MaxMiners
+	}
+	log.WithFields(log.Fields{
+		"miner_count": numMiners,
+	}).Info("Starting to mine")
 
 	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
