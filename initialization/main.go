@@ -62,6 +62,8 @@ func main() {
 	factom.SetWalletServer(WalletdLocation)
 
 	switch strings.ToLower(LogLevel) {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 	case "info":

@@ -36,7 +36,7 @@ func init() {
 func main() {
 	u, err := user.Current()
 	if err != nil {
-		panic(err)
+		log.WithError(err).Fatal("Failed to read current user's name")
 	}
 	userPath := u.HomeDir
 	configFile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
@@ -44,16 +44,11 @@ func main() {
 	Config := config.NewConfig([]config.Provider{iniFile})
 	_, err = Config.String("Miner.Protocol")
 	if err != nil {
-		panic("Failed to open the config file for this miner, and couldn't load the default file either")
+		log.WithError(err).Fatal("Failed to open config file or load the default file")
 	}
-
-	// TODO: remove common.Log usage once fully switched to logrus
-	common.DoLogging = true
-	common.InitLogs(Config)
-
 	numMiners, err := Config.Int("Miner.NumberOfMiners")
 	if err != nil {
-		panic(err)
+		log.WithError(err).Fatal("Failed to read number of miners")
 	}
 
 	// If miners flag is set use that value otherwise default to the config setting
@@ -64,6 +59,8 @@ func main() {
 	factom.SetWalletServer(WalletdLocation)
 
 	switch strings.ToLower(LogLevel) {
+	case "trace":
+		log.SetLevel(log.TraceLevel)
 	case "debug":
 		log.SetLevel(log.DebugLevel)
 	case "info":
