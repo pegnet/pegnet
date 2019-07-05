@@ -130,8 +130,15 @@ func CreateChain(ecAddress *factom.ECAddress, chainName [][]byte) (chainID strin
 	newChain := factom.NewChain(&entry)
 	var commitErr, revealErr error
 	for i := 0; i < 1000; i++ {
-		if i == 0 {
-			common.Logf("CreateChain", "Creating the Chain")
+		if i == 0 || commitErr != nil {
+			_, commitErr = factom.CommitChain(newChain, ecAddress)
+		}
+		if i == 0 || revealErr == nil {
+			txID, revealErr = factom.RevealChain(newChain)
+		}
+		
+		if commitErr == nil && revealErr == nil {
+			break
 		} else {
 			log.WithFields(log.Fields{
 				"iteration":    i,
@@ -140,15 +147,6 @@ func CreateChain(ecAddress *factom.ECAddress, chainName [][]byte) (chainID strin
 				"reveal_error": revealErr,
 			}).Debug("Failed to create chain. Retrying in 5 seconds")
 			time.Sleep(5 * time.Second)
-		}
-		if i == 0 || commitErr != nil {
-			_, commitErr = factom.CommitChain(newChain, ecAddress)
-		}
-		if i == 0 || revealErr == nil {
-			txID, revealErr = factom.RevealChain(newChain)
-		}
-		if commitErr == nil && revealErr == nil {
-			break
 		}
 	}
 	if commitErr != nil {
