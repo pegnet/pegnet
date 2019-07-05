@@ -4,13 +4,15 @@ language: go
 go:
 - 1.x
 
+os: 
+  - linux
+  - osx
+  - windows
+
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
-matrix:
-  include:
-  - os: linux
-    env:
-    - GO111MODULE=on
+env:
+  - GO111MODULE=on
 
 # Modifies go get flags
 # Can be removed when factom@v1-rollup is merged into master 
@@ -21,11 +23,6 @@ install: true
 before_install:
   - go get github.com/mitchellh/gox
   - cd pegnetMining
-
-
-# Get specific factom branch
-script: 
-  - go get github.com/FactomProject/factom@v1-rollup
 
 # No spam
 notifications:
