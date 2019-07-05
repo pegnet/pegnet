@@ -1,8 +1,8 @@
 package common
 
 import (
-	"time"
 	"github.com/cenkalti/backoff"
+	"time"
 )
 
 // Default values for PegExponentialBackOff.
@@ -11,7 +11,7 @@ const (
 	DefaultRandomizationFactor = 0.5
 	DefaultMultiplier          = 1.5
 	DefaultMaxInterval         = 2 * time.Second
-	DefaultMaxElapsedTime      = 10 * time.Second  // max 10 seconds
+	DefaultMaxElapsedTime      = 10 * time.Second // max 10 seconds
 )
 
 // PegExponentialBackOff creates an instance of ExponentialBackOff

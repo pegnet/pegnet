@@ -1,9 +1,12 @@
 package opr
 
 import (
+	"encoding/hex"
 	"errors"
 	"fmt"
+
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 )
 
 var Balances map[string]map[[32]byte]int64
@@ -30,16 +33,24 @@ func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
 // subtract from a balance.  An error is returned if the value would drive the balance
 // negative.  Or if the string doesn't represent a valid token
 func AddToBalance(address string, value int64) (err error) {
-	prefix, adr, err := ConvertAddress(address)
+	prefix, addressBytes, err := ConvertAddress(address)
 	if err != nil {
 		return errors.New("address not properly formed")
 	}
-	prev := Balances[prefix][adr]
+	prev := Balances[prefix][addressBytes]
 	if prev+value < 0 {
 		return fmt.Errorf("result would be less than zero %d-%d", prev, -value)
 	}
-	Balances[prefix][adr] = prev + value
-	common.Logf("balanceChanged", "AddToBalance %s %s %x %d", address, prefix, adr, prev+value)
+	Balances[prefix][addressBytes] = prev + value
+
+	log.WithFields(log.Fields{
+		"address":       address,
+		"prefix":        prefix,
+		"address_bytes": hex.EncodeToString(addressBytes[:]),
+		"prev_balance":  prev,
+		"value":         value,
+		"new_balance":   prev + value,
+	}).Debug("Add to balance")
 	return
 }
 

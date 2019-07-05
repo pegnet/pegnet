@@ -4,11 +4,13 @@ package opr
 
 import (
 	"errors"
-	"fmt"
-	"github.com/cenkalti/backoff"
+
 	"github.com/FactomProject/factom"
+	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
+	"strings"
 )
 
 func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonitor, grader *Grader, miner int) {
@@ -20,15 +22,22 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 	var err error
 	for {
 		fds := <-alert
-		common.Logf("miner", "Alert: miner%02d dbht %d minute %d", miner, fds.Dbht, fds.Minute)
+		log.WithFields(log.Fields{
+			"miner":  miner,
+			"height": fds.Dbht,
+			"minute": fds.Minute,
+		}).Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
 			if !mining {
 				mining = true
 				opr, err = NewOpr(miner, fds.Dbht, config, gAlert)
 				if err != nil {
-					panic(fmt.Sprintf("Error creating an OPR.  Likely a config file issue: %v\n", err))
+					log.WithError(err).Fatal("Error creating an OPR.  Likely a config file issue")
 				}
+				log.WithFields(log.Fields{
+					"did": strings.Join(opr.FactomDigitalID, "-"),
+				}).Info("New OPR miner")
 				go opr.Mine(verbose)
 			}
 		case 9:
@@ -38,11 +47,12 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonito
 				common.Do(func() {
 					data, ok := opr.Entry.MarshalBinary()
 					if ok != nil {
-						panic(fmt.Sprint("Can't json marshal the opr: ", ok))
+						log.Fatal("Failed to marshal OPR Entry")
 					}
-					ostr := opr.String()
-					common.Logf("OPR-Rec", "OPR:        miner%02d entrySize %d", miner, len(data))
-					common.Logf("OPR-Rec", "OPR Record: miner%02d %s", miner, ostr)
+					recordFields := opr.LogFieldsShort()
+					recordFields["miner"] = miner
+					recordFields["entry_size"] = len(data)
+					log.WithFields(recordFields).Info("Created OPR Entry")
 				})
 
 				mining = false
@@ -66,8 +76,8 @@ func writeMiningRecord(opr *OraclePriceRecord) {
 
 	err := backoff.Retry(operation, common.PegExponentialBackOff())
 	if err != nil {
-		// Handle error.
-		common.Logf("miner", "writeMiningRecord Error: %s", err)
+		// TODO: Handle error in retry
+		log.WithError(err).Error("Failed to write mining record")
 		return
 	}
 }
