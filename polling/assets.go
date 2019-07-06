@@ -4,13 +4,12 @@ package polling
 
 import (
 	"encoding/json"
+	"fmt"
 	"math/rand"
-	"os"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -207,8 +206,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}
 	if err != nil {
 		log.WithError(err).Fatal("Error, using old data.")
-		pa := lastAnswer.Clone()
-		return pa
+		return 
 	}
 	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
 	Peg.XAU.When = KitcoResponse.Silver.Date
