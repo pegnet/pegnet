@@ -5,7 +5,6 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"github.com/dustin/go-humanize"
 	"sort"
 	"strings"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
@@ -225,9 +225,10 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		common.Logf("NewOPR", "Added a new valid block in the OPR chain at directory block height %s",
-			humanize.Comma(oprblocks[i].Dbht))
-		results := ""
+		log.WithFields(log.Fields{
+			"height": humanize.Comma(oprblocks[i].Dbht),
+		}).Info("Added new valid block to OPR Chain")
+
 		// Update the balances for each winner
 		for i, win := range winners {
 			switch i {
@@ -235,35 +236,35 @@ func GetEntryBlocks(config *config.Config) {
 			case 0:
 				err := AddToBalance(win.CoinbasePNTAddress, 800)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			// Second Place
 			case 1:
 				err := AddToBalance(win.CoinbasePNTAddress, 600)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			default:
 				err := AddToBalance(win.CoinbasePNTAddress, 450)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			}
 			fid := win.FactomDigitalID[0]
 			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
-			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
-				win.Entry.Hash()[:8],
-				win.Grade,
-				win.Difficulty,
-				fid,
-				win.CoinbasePNTAddress,
-				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
+			log.WithFields(log.Fields{
+				"place":      i,
+				"fid":        fid,
+				"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
+				"grade":      win.Grade,
+				"difficulty": win.Difficulty,
+				"address":    win.CoinbasePNTAddress,
+				"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
+			}).Info("New OPR Winner")
 		}
-		common.Logf("NewOPR", results)
 	}
-
 	return
 }
 

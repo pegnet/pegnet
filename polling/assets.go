@@ -4,14 +4,15 @@ package polling
 
 import (
 	"encoding/json"
-	"github.com/pegnet/pegnet/common"
 	"math/rand"
 	"os"
-
-	"github.com/zpatrick/go-config"
 	"strconv"
 	"sync"
 	"time"
+
+	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
@@ -97,9 +98,8 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	// If the value specified isn't reasonable, then randomize is zero, and the values returned
 	// are not changed.
 	randomize, err := config.Float("Debug.Randomize")
-	if err != nil && lastTime==0 {
-		common.Logf("error","the config file doesn't have a valid Randomize value. %v",err)
-		randomize = 0
+	if err != nil && lastTime == 0 {
+		log.WithError(err).Fatal(fmt.Sprintf("the config file doesn't have a valid Randomize value. %v", err))
 	}
 
 	if delta < qlimit && lastTime != 0 {
@@ -108,13 +108,15 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}
 
 	lastTime = now
-	common.Logf("PullPEGAssets", "Make a call to get data. Seconds since last call: %d", delta)
+	log.WithFields(log.Fields{
+		"delta_time": delta,
+	}).Debug("Pulling PEG Asset data")
+
 	var Peg PegAssets
 	// digital currencies
 	CoinCapResponseBytes, err := CallCoinCap(config)
 	if err != nil {
-		common.Logf("error", "Error accessing CallCoinCap %v", err)
-		os.Exit(1)
+		log.WithError(err).Fatal("Failed to access CoinCap")
 	} else {
 		var CoinCapValues CoinCapResponse
 		err = json.Unmarshal(CoinCapResponseBytes, &CoinCapValues)
@@ -161,8 +163,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	APILayerBytes, err := CallAPILayer(config)
 
 	if err != nil {
-		common.Logf("error", "Error accessing CallAPILayer(): %v", err)
-		os.Exit(1)
+		log.WithError(err).Fatal("Failed to access APILayer")
 	} else {
 		var APILayerResponse APILayerResponse
 		err = json.Unmarshal(APILayerBytes, &APILayerResponse)
@@ -194,7 +195,10 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	for i := 0; i < 10; i++ {
 		if err != nil {
-			common.Logf("error", "Error %d so retrying.  Error %v", i+1, err)
+			log.WithFields(log.Fields{
+				"error":     err,
+				"iteration": i + 1,
+			}).Fatal("Failed to access Kitco, retrying...")
 			time.Sleep(time.Second)
 			KitcoResponse, err = CallKitcoWeb()
 		} else {
@@ -202,8 +206,8 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		}
 	}
 	if err != nil {
-		common.Logf("error", "Error, using old data.")
-		pa := lastAnswer.Clone(randomize)
+		log.WithError(err).Fatal("Error, using old data.")
+		pa := lastAnswer.Clone()
 		return pa
 	}
 	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)

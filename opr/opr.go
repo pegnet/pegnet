@@ -7,15 +7,16 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
 	"github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 	"strings"
-	"time"
 )
 
 type OraclePriceRecord struct {
@@ -72,8 +73,7 @@ type Token struct {
 
 func check(e error) {
 	if e != nil {
-		common.Logf("error", "An error has been encountered: %v", e)
-		panic(e)
+		log.WithError(e).Fatal("An error in OPR was encountered")
 	}
 }
 
@@ -178,7 +178,7 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
 	nonce := []byte{0, 0}
-	common.Logf("OPR", "OPRHash %x", opr.OPRHash)
+	log.WithFields(log.Fields{"opr_hash": hex.EncodeToString(opr.OPRHash)}).Debug("Started mining")
 
 miningloop:
 	for i := 0; ; i++ {
@@ -198,8 +198,11 @@ miningloop:
 			opr.Difficulty = diff
 			// Copy over the previous nonce
 			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
-			common.Logf("OPR", "%15v OPR Difficulty %016x on opr hash: %x nonce: %x",
-				time.Now().Format("15:04:05.000"), diff, opr.OPRHash, nonce)
+			log.WithFields(log.Fields{
+				"opr_hash":   hex.EncodeToString(opr.OPRHash),
+				"difficulty": fmt.Sprintf("%016x", diff),
+				"nonce":      hex.EncodeToString(nonce),
+			}).Trace("Mined OPR")
 		}
 
 	}
@@ -283,6 +286,17 @@ func (opr *OraclePriceRecord) String() (str string) {
 	return str
 }
 
+func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
+	did := strings.Join(opr.FactomDigitalID, "-")
+	return log.Fields{
+		"did":        did,
+		"opr_hash":   hex.EncodeToString(opr.OPRHash),
+		"nonce":      hex.EncodeToString(opr.Entry.ExtIDs[0]),
+		"difficulty": opr.Difficulty,
+		"grade":      opr.Grade,
+	}
+}
+
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 
 	opr.PNT = assets.PNT.Value
@@ -340,9 +354,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 		if minerNumber > 0 {
 			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
 		}
-		common.Logf("OPR", "New OPR miner %s", strings.Join(fields, "-"))
 		opr.FactomDigitalID = fields
-
 	}
 
 	// Get the protocol chain to be used for pegnetMining records
