@@ -1,12 +1,15 @@
+package opr
+
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-package opr
 
 import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+
+	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
@@ -16,9 +19,9 @@ import (
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"strings"
 )
 
+// OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
 	Config     *config.Config    `json:"-"` //  The config of the miner using the record
@@ -30,11 +33,11 @@ type OraclePriceRecord struct {
 	StopMining chan int          `json:"-"` // Bool that stops PegNet Mining this OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	OPRChainID         string     `json:oprchainid` // [base58]  Chain ID of the chain used by the Oracle Miners
-	Dbht               int32      `json:dbht`       //           The Directory Block Height of the OPR.
-	WinPreviousOPR     [10]string `json:winners`    // First 8 bytes of the Entry Hashes of the previous winners
-	CoinbasePNTAddress string     `json:coinbase`   // [base58]  PNT Address to pay PNT
-	FactomDigitalID    []string   `did`             // [unicode] Digital Identity of the miner
+	OPRChainID         string     `json:"oprchainid"`      // [base58]  Chain ID of the chain used by the Oracle Miners
+	Dbht               int32      `json:"dbht"`            //           The Directory Block Height of the OPR.
+	WinPreviousOPR     [10]string `json:"winners"`         // First 8 bytes of the Entry Hashes of the previous winners
+	CoinbasePNTAddress string     `json:"coinbase"`        // [base58]  PNT Address to pay PNT
+	FactomDigitalID    []string   `json:"FactomDigitalID"` // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	PNT float64
@@ -59,13 +62,17 @@ type OraclePriceRecord struct {
 	FCT float64
 }
 
+// LX holds an instance of lxrhash
 var LX lxr.LXRHash
+
+// OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
 
 func init() {
 	LX.Init(0xfafaececfafaecec, 25, 256, 5)
 }
 
+// Token is a combination of currency code and value
 type Token struct {
 	code  string
 	value float64
@@ -77,8 +84,8 @@ func check(e error) {
 	}
 }
 
-// This function cannot validate the winners of the previous block, but it can do some sanity
-// checking of the structure and values of the OPR record.
+// Validate performs sanity checks of the structure and values of the OPR.
+// It does not validate the winners of the previous block.
 func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 
 	protocol, err1 := c.String("Miner.Protocol")
@@ -125,6 +132,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	return true
 }
 
+// GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 	tokens = append(tokens, Token{"PNT", opr.PNT})
 	tokens = append(tokens, Token{"USD", opr.USD})
@@ -149,6 +157,7 @@ func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 	return tokens
 }
 
+// GetHash returns the LXHash over the OPR's json representation
 func (opr *OraclePriceRecord) GetHash() []byte {
 	data, err := json.Marshal(opr)
 	check(err)
@@ -156,8 +165,9 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	return oprHash
 }
 
-// ComputeDifficulty()
-// Difficulty the high order 8 bytes of the hash( hash(OPR record) + nonce)
+// ComputeDifficulty gets the difficulty by taking the hash of the OPRHash
+// appended by the nonce. The difficulty is the highest 8 bytes of the hash
+// taken as uint64 in Big Endian
 func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64) {
 	no := append(opr.OPRHash, nonce...)
 	h := LX.Hash(no)
@@ -172,8 +182,9 @@ func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64
 	return difficulty
 }
 
-// Mine()
-// Mine the OraclePriceRecord for a given number of seconds
+// Mine calculates difficulties with varying nonces, keeping track of the
+// highest difficulty achieved in the Difficulty and ExtID[0] fields
+// Stops when a signal is received on the StopMining channel.
 func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
@@ -208,6 +219,7 @@ miningloop:
 	}
 }
 
+// ShortString returns a human readable string with select data
 func (opr *OraclePriceRecord) ShortString() string {
 
 	fdid := strings.Join(opr.FactomDigitalID, "-")
@@ -221,8 +233,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 	return str
 }
 
-// String
-// Returns a human readable string for the Oracle Record
+// String returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("Nonce %x\n", opr.Entry.ExtIDs[0])
 	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
@@ -286,6 +297,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	return str
 }
 
+// LogFieldsShort returns a set of common fields to be included in logrus
 func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 	did := strings.Join(opr.FactomDigitalID, "-")
 	return log.Fields{
@@ -297,8 +309,8 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 	}
 }
 
+// SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-
 	opr.PNT = assets.PNT.Value
 	opr.USD = assets.USD.Value
 	opr.EUR = assets.EUR.Value
@@ -319,11 +331,9 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 	opr.LTC = assets.LTC.Value
 	opr.XBC = assets.XBC.Value
 	opr.FCT = assets.FCT.Value
-
 }
 
-// NewOpr()
-// collects all the information unique to this miner and its configuration, and also
+// NewOpr collects all the information unique to this miner and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
 func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
@@ -406,6 +416,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	return opr, nil
 }
 
+// GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	opr.Config = c
 	//get asset values

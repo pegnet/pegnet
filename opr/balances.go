@@ -9,6 +9,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Balances holds the non-zero balances for every address for every token in a
+// two dimensional map:
+// assetname => { RCD-hash => balance }
 var Balances map[string]map[[32]byte]int64
 
 func init() {
@@ -19,6 +22,7 @@ func init() {
 	}
 }
 
+// ConvertAddress takes a human-readable address and extracts the prefix and RCD hash
 func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
 	prefix, adr2, err := common.ConvertPegAddrToRaw(address)
 	if err != nil {
@@ -28,7 +32,7 @@ func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
 	return
 }
 
-// AddToBalance()
+// AddToBalance adds the given value to the human-readable address
 // Note that add to balance takes a signed update, so this can be used to add to or
 // subtract from a balance.  An error is returned if the value would drive the balance
 // negative.  Or if the string doesn't represent a valid token
@@ -54,8 +58,8 @@ func AddToBalance(address string, value int64) (err error) {
 	return
 }
 
-// GetBalance()
-// Returns the balance for a PegNet asset.  If the address is invalid, a -1 is returned
+// GetBalance returns the balance for a PegNet asset.
+// If the address is invalid, a -1 is returned
 func GetBalance(address string) (balance int64) {
 	prefix, adr, err := ConvertAddress(address)
 	if err != nil {
