@@ -199,7 +199,7 @@ func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest)
 		en := genOPR(e)
 
 		en.Entry = difficulty[diff].Entry
-		en.Difficulty = en.Difficulty
+		en.Difficulty = e.difficulty
 
 		gt.args = append(gt.args, en)
 	}

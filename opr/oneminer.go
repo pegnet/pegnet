@@ -1,18 +1,22 @@
+package opr
+
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-package opr
 
 import (
 	"errors"
+	"strings"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"strings"
 )
 
+// OneMiner starts a single mining goroutine that listens to the monitor.
+// Starts on minute 1 and writes data at minute 9
+// Terminates after writing data.
 func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonitor, grader *Grader, miner int) {
 	alert := monitor.GetAlert()
 	gAlert := grader.GetAlert()
