@@ -73,8 +73,7 @@ func main() {
 		log.SetLevel(log.FatalLevel)
 	}
 
-	monitor := new(common.FactomdMonitor)
-	monitor.Start()
+	monitor := common.GetMonitor()
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 
