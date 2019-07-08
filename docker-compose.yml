@@ -33,7 +33,7 @@ services:
     build: .
     volumes:
       - .:/go/src/github.com/pegnet/pegnet
-      - ./defaultconfig.ini:/root/.pegnet/defaultconfig.ini:ro
+      - ./myconfig.ini:/root/.pegnet/defaultconfig.ini:ro
 
 volumes:
   factomd_volume: 

@@ -9,9 +9,19 @@ To be able to run PegNet you must have Docker and docker-compose, docker version
 - factom-cli installed in your host.
 
 ## Initial Steps
-From wherever you have cloned this repo, run
+From wherever you have cloned this repo
 
-`docker-compose up`
+- Create your config file from `defaultconfig.ini` using
+
+```bash
+cp defaultconfig.ini myconfig.ini
+```
+
+- After you have copied and setup your config file, run
+
+```bash
+docker-compose up
+```
 
 docker-compose will create and run 3 services:
 - factomd (factomd_container)
@@ -23,7 +33,9 @@ You should have factomd and walletd running at this point.
 ## Initial Funding
 Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run
 
-`./Initialization/fundEC.sh`
+```bash
+./Initialization/fundEC.sh
+```
 
 This will fund the EC address *(requires factom-cli)*
 
@@ -31,12 +43,16 @@ This will fund the EC address *(requires factom-cli)*
 
 Make sure the chains are created, run
 
-`docker-compose run --rm pegnet go run Initialization/InitalizeTheNetwork.go`
+```bash
+docker-compose run --rm pegnet go run Initialization/InitalizeTheNetwork.go
+```
 
 # Running the PegNet
 Now that we have everything setup, run
 
-`docker-compose run --rm pegnet go run pegnetMining/Miner.go`
+```bash
+docker-compose run --rm pegnet go run pegnetMining/Miner.go -log debug
+```
 
 # Other usefull commands
 - run `docker-compose up -d` (running in deamon mode)
