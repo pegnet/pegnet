@@ -10,10 +10,6 @@ import (
 	"github.com/FactomProject/factom"
 )
 
-// Timeout is the amount of time the Factomd endpoint can be unreachable
-// before shutting down.
-// This allows restarting the endpoint or short network outages.
-var Timeout = time.Second * 90
 var monitor *Monitor
 var once sync.Once
 
@@ -30,7 +26,8 @@ func GetMonitor() *Monitor {
 
 // Monitor polls a factomd node and sends alerts whenever the block height or minute changes
 type Monitor struct {
-	polls int64
+	polls   int64
+	timeout time.Duration
 
 	listenerMutex sync.Mutex
 	listeners     []chan MonitorEvent // Channels to send minutes to
@@ -64,9 +61,16 @@ func (f *Monitor) ErrorListener() <-chan error {
 	return listener
 }
 
+// SetTimeout sets a new timeout duration.
+// If the monitor is unable to connect to the factomd node within the duration,
+// an error is sent to all error listeners.
+func (f *Monitor) SetTimeout(timeout time.Duration) {
+	f.timeout = timeout
+}
+
 // waitForNextHeight polls the node every second until a new height is reached.
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
-	end := time.Now().Add(Timeout)
+	end := time.Now().Add(f.timeout)
 	for {
 		f.polls++
 		info, err := factom.GetCurrentMinute()
