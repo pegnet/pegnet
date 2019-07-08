@@ -74,6 +74,13 @@ func main() {
 	}
 
 	monitor := common.GetMonitor()
+
+	go func() {
+		errListener := monitor.ErrorListener()
+		err := <-errListener
+		panic("Monitor threw error: " + err.Error())
+	}()
+
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 

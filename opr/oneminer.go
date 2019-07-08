@@ -5,16 +5,17 @@ package opr
 import (
 	"errors"
 
+	"strings"
+
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"strings"
 )
 
-func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonitor, grader *Grader, miner int) {
-	alert := monitor.GetAlert()
+func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grader *Grader, miner int) {
+	alert := monitor.Listener()
 	gAlert := grader.GetAlert()
 
 	mining := false
