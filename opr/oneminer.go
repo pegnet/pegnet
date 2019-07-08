@@ -5,7 +5,6 @@ package opr
 
 import (
 	"errors"
-
 	"strings"
 
 	"github.com/FactomProject/factom"

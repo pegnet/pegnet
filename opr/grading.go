@@ -10,9 +10,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/dustin/go-humanize"
-
 	"github.com/FactomProject/factom"
+	"github.com/dustin/go-humanize"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"

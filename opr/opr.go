@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-
 	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
