@@ -19,10 +19,8 @@ env:
 install: true
 
 # Get gox cross-compilation library
-# Move into pegnetMining folder for build
 before_install:
   - go get github.com/mitchellh/gox
-  - cd pegnetMining
 
 # No spam
 notifications:
@@ -39,11 +37,11 @@ deploy:
   api_key:
     secure: GP0CQAkZcce40nXUFxd+KsXucDuxUSvyS9ZzXj10k1A8iuqUuVB7lVZ4yxT5jnbdDiXicerF0mLAE3fj0lNYXJc1WrU7VTGGjQL8aDYdTjD0tDkT8U0WipmpnYKR6sH8GbHqiPWGPhyYGLVs5ZL976qpLxE1MY3F/MHIaELq3g9WKg/CVI0rtN8paaLAuMIE8JAEBkeUJ7V0fIpLfIv7nYPzblm9YYvXdCniynuSOOJCDpEsiVC6L+s+o6UdRBGCxQYfcKWFsr4FQR2/xdrcR4cO/4j4BKZIXZfmbQSS1wQ+ZhGBlJnoEZzLlJWWud6XwjfLKk23QF5nCanPTKOq90J5tSx0DHJplkBJPNKvlTJLFLhxSdREq8XTGNW48Bl0tmeqFjPNZbtR9NOeed4mf+DO6vz4VmCuHmpSx2rXP0Ldy1G4mrNnN1hjp6bzR+nyFHi+KOcwd8wgxsJsoR3+dsRAkDJxpt74rb1+kZKPSnAx9H9IW4Yj1cZ/FT8Vup89Aw02Kt67ZIr5EIZvlkdLzzanAwmckhXYU6hux4LlPOnbpWfkyO2eEJAl125M4hk/tUDSj9ILqps7quMKOB6VIqwAFCBRaKZ1Bn2pHoWnGv4PFJfxuklbF8Ivm1EGFVEOLqBHO8taJgmahz4lbF84lvr7uPcOEZeiXlWsdAeKOMk=
   file:
-    - pegnetMining_windows_amd64.exe
-    - pegnetMining_darwin_amd64
-    - pegnetMining_linux_amd64
-    - pegnetMining_linux_arm
-    - pegnetMining_freebsd_amd64
+    - pegnet_windows_amd64.exe
+    - pegnet_darwin_amd64
+    - pegnet_linux_amd64
+    - pegnet_linux_arm
+    - pegnet_freebsd_amd64
   skip_cleanup: true
   on:
     tags: true
