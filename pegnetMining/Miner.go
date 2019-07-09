@@ -5,8 +5,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"net/http"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/server"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
 	"os/user"
@@ -53,6 +55,9 @@ func main() {
 	}
 
 	common.Logf("notice", "Mining with %d miner(s)", numMiners)
+
+	http.Handle("/", server.RequestHandler{})
+	go http.ListenAndServe(":8099", nil)
 
 	for i := 1; i < numMiners; i++ {
 		go opr.OneMiner(false, Config, monitor, grader, i)
