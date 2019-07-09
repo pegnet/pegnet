@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/FactomProject/factom"
+	"github.com/cenkalti/backoff"
 )
 
 var monitor *Monitor
@@ -68,31 +69,48 @@ func (f *Monitor) SetTimeout(timeout time.Duration) {
 	f.timeout = timeout
 }
 
+// getMinute queries the factomd api using exponential backoff.
+func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = time.Millisecond * 100
+	bo.MaxElapsedTime = f.timeout
+	bo.MaxInterval = time.Second * 10
+	bo.Reset()
+
+	var info *factom.CurrentMinuteInfo
+	var err error
+	retry := func() error {
+		info, err = factom.GetCurrentMinute()
+		return err
+	}
+
+	fail := backoff.Retry(retry, bo)
+	if fail != nil {
+		return nil, fail
+	}
+	return info, err
+}
+
 // waitForNextHeight polls the node every second until a new height is reached.
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
-	end := time.Now().Add(f.timeout)
 	for {
 		f.polls++
-		info, err := factom.GetCurrentMinute()
+		info, err := f.getMinute()
 
-		if err == nil {
-			if info.DirectoryBlockHeight > current.DirectoryBlockHeight {
-				return *info, nil
-			}
-
-			if info.DirectoryBlockHeight == current.DirectoryBlockHeight && current.Minute != info.Minute {
-				return *info, nil
-			}
-
-			// the API has a lower height than the one we've seen
-			time.Sleep(time.Second)
-			continue
-		}
-
-		if end.Before(time.Now()) {
+		if err != nil {
 			return factom.CurrentMinuteInfo{}, err
 		}
-		time.Sleep(time.Millisecond * 100)
+
+		if info.DirectoryBlockHeight > current.DirectoryBlockHeight {
+			return *info, nil
+		}
+
+		if info.DirectoryBlockHeight == current.DirectoryBlockHeight && current.Minute != info.Minute {
+			return *info, nil
+		}
+
+		// the API has a lower height than the one we've seen
+		time.Sleep(time.Second)
 	}
 }
 
