@@ -34,7 +34,7 @@ You should have factomd and walletd running at this point.
 Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run
 
 ```bash
-./Initialization/fundEC.sh
+./initialization/fundEC.sh
 ```
 
 This will fund the EC address *(requires factom-cli)*
@@ -44,7 +44,7 @@ This will fund the EC address *(requires factom-cli)*
 Make sure the chains are created, run
 
 ```bash
-docker-compose run --rm pegnet go run Initialization/InitalizeTheNetwork.go
+docker-compose run --rm pegnet go run initialization/main.go
 ```
 
 # Running the PegNet

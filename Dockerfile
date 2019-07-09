@@ -21,4 +21,6 @@ ENV GO111MODULE=on
 RUN mkdir -p /root/.pegnet/
 COPY defaultconfig.ini /root/.pegnet/defaultconfig.ini
 
-RUN go run Initialization/InitalizeTheNetwork.go
+RUN go get
+RUN go build initialization/main.go
+RUN go build pegnetMining/Miner.go

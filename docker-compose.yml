@@ -6,7 +6,7 @@ services:
     container_name: factomd_container
     image: factominc/factomd:latest
     entrypoint: /go/bin/factomd
-    command: '--count=5 --net=alot+ --blktime=15 --faulttimeout=20000 --enablenet=false --network=LOCAL --startdelay=2'
+    command: '--network=LOCAL --blktime=15'
     ports:
       - "8110:8110"
       - "8109:8109"
