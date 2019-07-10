@@ -7,8 +7,6 @@ import (
 	"errors"
 	"strings"
 
-	"strings"
-
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"

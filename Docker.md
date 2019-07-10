@@ -47,11 +47,18 @@ Make sure the chains are created, run
 docker-compose run --rm pegnet go run initialization/main.go
 ```
 
-# Running the PegNet
-Now that we have everything setup, run
+# Running a PegNet node
+Now that we have everything setup, we can run a basic validator node:
 
 ```bash
-docker-compose run --rm pegnet go run pegnetMining/Miner.go -log debug
+docker-compose run --rm pegnet go run main.go --log=debug
+```
+
+# Running a PegNet node with miners
+Or a node with a set number of miners:
+
+```bash
+docker-compose run --rm pegnet go run main.go --log=debug --miners=4
 ```
 
 # Other usefull commands

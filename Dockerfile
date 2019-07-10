@@ -23,4 +23,4 @@ COPY defaultconfig.ini /root/.pegnet/defaultconfig.ini
 
 RUN go get
 RUN go build initialization/main.go
-RUN go build pegnetMining/Miner.go
+RUN go build main.go
