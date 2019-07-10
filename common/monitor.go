@@ -27,7 +27,6 @@ func GetMonitor() *Monitor {
 
 // Monitor polls a factomd node and sends alerts whenever the block height or minute changes
 type Monitor struct {
-	polls   int64
 	timeout time.Duration
 
 	listenerMutex sync.Mutex
@@ -43,7 +42,7 @@ type MonitorEvent struct {
 }
 
 // Listener spawns a new listening channel that will receive updates of height or minute changes
-func (f *Monitor) Listener() <-chan MonitorEvent {
+func (f *Monitor) NewListener() <-chan MonitorEvent {
 	f.listenerMutex.Lock()
 	defer f.listenerMutex.Unlock()
 
@@ -53,7 +52,7 @@ func (f *Monitor) Listener() <-chan MonitorEvent {
 }
 
 // ErrorListener spawns a new listening channel that will receive errors that have occurred
-func (f *Monitor) ErrorListener() <-chan error {
+func (f *Monitor) NewErrorListener() <-chan error {
 	f.errorMutex.Lock()
 	defer f.errorMutex.Unlock()
 
@@ -88,13 +87,12 @@ func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
 	if fail != nil {
 		return nil, fail
 	}
-	return info, err
+	return info, nil
 }
 
 // waitForNextHeight polls the node every second until a new height is reached.
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
 	for {
-		f.polls++
 		info, err := f.getMinute()
 
 		if err != nil {

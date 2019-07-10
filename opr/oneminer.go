@@ -15,7 +15,7 @@ import (
 )
 
 func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grader *Grader, miner int) {
-	alert := monitor.Listener()
+	alert := monitor.NewListener()
 	gAlert := grader.GetAlert()
 
 	mining := false

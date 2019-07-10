@@ -27,7 +27,7 @@ func (g *Grader) GetAlert() chan *OPRs {
 }
 
 func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
-	fdAlert := monitor.Listener()
+	fdAlert := monitor.NewListener()
 	for {
 		fds := <-fdAlert
 		if fds.Minute == 1 {

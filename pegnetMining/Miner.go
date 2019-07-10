@@ -80,7 +80,7 @@ func main() {
 	monitor.SetTimeout(time.Duration(Timeout) * time.Second)
 
 	go func() {
-		errListener := monitor.ErrorListener()
+		errListener := monitor.NewErrorListener()
 		err := <-errListener
 		panic("Monitor threw error: " + err.Error())
 	}()
