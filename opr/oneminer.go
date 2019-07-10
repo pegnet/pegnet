@@ -1,9 +1,11 @@
+package opr
+
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-package opr
 
 import (
 	"errors"
+	"strings"
 
 	"strings"
 
@@ -14,6 +16,9 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+// OneMiner starts a single mining goroutine that listens to the monitor.
+// Starts on minute 1 and writes data at minute 9
+// Terminates after writing data.
 func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grader *Grader, miner int) {
 	alert := monitor.NewListener()
 	gAlert := grader.GetAlert()
