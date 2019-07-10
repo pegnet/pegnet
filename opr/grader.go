@@ -29,9 +29,8 @@ func (g *Grader) GetAlert() chan *OPRs {
 	return alert
 }
 
-// Run the Grader
-func (g *Grader) Run(config *config.Config, monitor *common.FactomdMonitor) {
-	fdAlert := monitor.GetAlert()
+func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
+	fdAlert := monitor.NewListener()
 	for {
 		fds := <-fdAlert
 		if fds.Minute == 1 {

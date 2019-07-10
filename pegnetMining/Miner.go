@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/user"
 	"strings"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -23,6 +24,7 @@ var (
 	FactomdLocation string
 	WalletdLocation string
 	ECAddressString string
+	Timeout         uint
 )
 
 func init() {
@@ -30,6 +32,7 @@ func init() {
 	flag.StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
 	flag.StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
 	flag.StringVar(&ECAddressString, "ec", "", "EC Address to use in place of the one specified in PegNet config file")
+	flag.UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 }
 
 // Run a set of miners, as a network debugging aid
@@ -73,8 +76,15 @@ func main() {
 		log.SetLevel(log.FatalLevel)
 	}
 
-	monitor := new(common.FactomdMonitor)
-	monitor.Start()
+	monitor := common.GetMonitor()
+	monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+
+	go func() {
+		errListener := monitor.NewErrorListener()
+		err := <-errListener
+		panic("Monitor threw error: " + err.Error())
+	}()
+
 	grader := new(opr.Grader)
 	go grader.Run(Config, monitor)
 
