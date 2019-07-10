@@ -41,7 +41,7 @@ type MonitorEvent struct {
 	Dbht   int32
 }
 
-// Listener spawns a new listening channel that will receive updates of height or minute changes
+// NewListener spawns a new listening channel that will receive updates of height or minute changes
 func (f *Monitor) NewListener() <-chan MonitorEvent {
 	f.listenerMutex.Lock()
 	defer f.listenerMutex.Unlock()
@@ -51,7 +51,7 @@ func (f *Monitor) NewListener() <-chan MonitorEvent {
 	return listener
 }
 
-// ErrorListener spawns a new listening channel that will receive errors that have occurred
+// NewErrorListener spawns a new listening channel that will receive errors that have occurred
 func (f *Monitor) NewErrorListener() <-chan error {
 	f.errorMutex.Lock()
 	defer f.errorMutex.Unlock()
