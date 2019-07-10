@@ -3,9 +3,12 @@
 package polling
 
 import (
+	"encoding/json"
 	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 )
 
 type APILayerResponse struct {
@@ -15,6 +18,13 @@ type APILayerResponse struct {
 	Timestamp int64
 	Source    string
 	Quotes    APILayerRecord
+	Error     APILayerError
+}
+
+type APILayerError struct {
+	Code int64
+	Type string
+	Info string
 }
 
 type APILayerRecord struct {
@@ -196,20 +206,62 @@ func check(e error) {
 
 const apikeyfile = "apikey.dat"
 
-func CallAPILayer(c *config.Config) (opr []byte, err error) {
+func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
+	var APILayerResponse APILayerResponse
+
 	var apikey string
 	{
 		apikey, err = c.String("Oracle.APILayerKey")
 		check(err)
 	}
 
-	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
-	if err != nil {
-		return nil, err
-	} else {
+	operation := func() error {
+		resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
+		if err != nil {
+			log.WithError(err).Warning("Failed to get response from API Layer")
+			return err
+		}
+
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
-		return body, err
+		err = json.Unmarshal(body, &APILayerResponse)
+		return nil
 	}
+
+	err = backoff.Retry(operation, PollingExponentialBackOff())
+	return APILayerResponse, err
+}
+
+func HandleAPILayer(response APILayerResponse, peg *PegAssets) {
+
+	// Handle Response Errors
+	if !response.Success {
+		log.WithFields(log.Fields{
+			"code": response.Error.Code,
+			"type": response.Error.Type,
+			"info": response.Error.Info,
+		}).Fatal("Failed to access APILayer")
+	}
+
+	peg.USD.Value = Round(response.Quotes.USDUSD)
+	peg.USD.When = response.Timestamp
+	peg.EUR.Value = Round(response.Quotes.USDEUR)
+	peg.EUR.When = response.Timestamp
+	peg.JPY.Value = Round(response.Quotes.USDJPY)
+	peg.JPY.When = response.Timestamp
+	peg.GBP.Value = Round(response.Quotes.USDGBP)
+	peg.GBP.When = response.Timestamp
+	peg.CAD.Value = Round(response.Quotes.USDCAD)
+	peg.CAD.When = response.Timestamp
+	peg.CHF.Value = Round(response.Quotes.USDCHF)
+	peg.CHF.When = response.Timestamp
+	peg.INR.Value = Round(response.Quotes.USDINR)
+	peg.INR.When = response.Timestamp
+	peg.SGD.Value = Round(response.Quotes.USDSGD)
+	peg.SGD.When = response.Timestamp
+	peg.CNY.Value = Round(response.Quotes.USDCNY)
+	peg.CNY.When = response.Timestamp
+	peg.HKD.Value = Round(response.Quotes.USDHKD)
+	peg.HKD.When = response.Timestamp
 
 }

@@ -3,12 +3,13 @@
 package polling
 
 import (
-	"fmt"
+	"encoding/json"
+	"strconv"
+	"github.com/cenkalti/backoff"
 	"github.com/zpatrick/go-config"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
-	"os"
-	"time"
 )
 
 type CoinCapResponse struct {
@@ -30,20 +31,66 @@ type CoinCapRecord struct {
 	VWAP24Hr          string `json:"vwap24Hr"`
 }
 
-func CallCoinCap(config *config.Config) ([]byte, error) {
+func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
+	var CoinCapResponse CoinCapResponse
 
-	resp, err := http.Get("http://api.coincap.io/v2/assets?limit=500")
-	for i := 0; i < 10; i++ {
+	operation := func() error {
+		resp, err := http.Get("http://api.coincap.io/v2/assets?limit=500")
 		if err != nil {
-			time.Sleep(time.Second)
-			fmt.Fprintf(os.Stderr, "Error %2d, retrying... %v\n", i+1, err)
-			resp, err = http.Get("http://api.coincap.io/v2/assets?limit=500")
-		} else {
-			defer resp.Body.Close()
-			body, err := ioutil.ReadAll(resp.Body)
-			return body, err
+			log.WithError(err).Warning("Failed to get response from CoinCap")
+			return err
+		}
+		defer resp.Body.Close()
+		body, err := ioutil.ReadAll(resp.Body)
+		err = json.Unmarshal(body, &CoinCapResponse)
+		return nil
+	}
+
+	err := backoff.Retry(operation, PollingExponentialBackOff())
+	return CoinCapResponse, err
+}
+
+func HandleCoinCap(response CoinCapResponse, peg *PegAssets){
+
+	var timestamp = response.Timestamp
+
+	for _, currency := range response.Data {
+		if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg.XBT.Value = Round(value)
+			peg.XBT.When = timestamp
+			if err != nil {
+				continue
+			}
+		} else if currency.Symbol == "ETH" {
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg.ETH.Value = Round(value)
+			peg.ETH.When = timestamp
+			if err != nil {
+				continue
+			}
+		} else if currency.Symbol == "LTC" {
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg.LTC.Value = Round(value)
+			peg.LTC.When = timestamp
+			if err != nil {
+				continue
+			}
+		} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg.XBC.Value = Round(value)
+			peg.XBC.When = timestamp
+			if err != nil {
+				continue
+			}
+		} else if currency.Symbol == "FCT" {
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg.FCT.Value = Round(value)
+			peg.FCT.When = timestamp
+			if err != nil {
+				continue
+			}
 		}
 	}
-	return nil, err
 
 }

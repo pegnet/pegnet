@@ -3,10 +3,6 @@
 package polling
 
 import (
-	"encoding/json"
-	"fmt"
-	"math/rand"
-	"strconv"
 	"sync"
 	"time"
 
@@ -66,7 +62,7 @@ func (p *PegAssets) Clone(randomize float64) PegAssets {
 
 type PegItems struct {
 	Value float64
-	When  string
+	When  int64 // unix timestamp
 }
 
 func (p *PegItems) Clone(randomize float64) PegItems {
@@ -112,110 +108,76 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	}).Debug("Pulling PEG Asset data")
 
 	var Peg PegAssets
+
 	// digital currencies
-	CoinCapResponseBytes, err := CallCoinCap(config)
+	CoinCapResponse, err := CallCoinCap(config)
 	if err != nil {
 		log.WithError(err).Fatal("Failed to access CoinCap")
 	} else {
-		var CoinCapValues CoinCapResponse
-		err = json.Unmarshal(CoinCapResponseBytes, &CoinCapValues)
-		for _, currency := range CoinCapValues.Data {
-			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
-				Peg.XBT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.XBT.Value = Round(Peg.XBT.Value)
-				if err != nil {
-					continue
-				}
-				Peg.XBT.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "ETH" {
-				Peg.ETH.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.ETH.Value = Round(Peg.ETH.Value)
-				if err != nil {
-					continue
-				}
-				Peg.ETH.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "LTC" {
-				Peg.LTC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.LTC.Value = Round(Peg.LTC.Value)
-				if err != nil {
-					continue
-				}
-				Peg.LTC.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
-				Peg.XBC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.XBC.Value = Round(Peg.XBC.Value)
-				if err != nil {
-					continue
-				}
-				Peg.XBC.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "FCT" {
-				Peg.FCT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.FCT.Value = Round(Peg.FCT.Value)
-				if err != nil {
-					continue
-				}
-				Peg.FCT.When = string(CoinCapValues.Timestamp)
-			}
-		}
+		HandleCoinCap(CoinCapResponse, &Peg)
 	}
 
-	APILayerBytes, err := CallAPILayer(config)
-
-	if err != nil {
-		log.WithError(err).Fatal("Failed to access APILayer")
-	} else {
-		var APILayerResponse APILayerResponse
-		err = json.Unmarshal(APILayerBytes, &APILayerResponse)
-
-		Peg.USD.Value = Round(APILayerResponse.Quotes.USDUSD)
-		Peg.USD.When = string(APILayerResponse.Timestamp)
-		Peg.EUR.Value = Round(APILayerResponse.Quotes.USDEUR)
-		Peg.EUR.When = string(APILayerResponse.Timestamp)
-		Peg.JPY.Value = Round(APILayerResponse.Quotes.USDJPY)
-		Peg.JPY.When = string(APILayerResponse.Timestamp)
-		Peg.GBP.Value = Round(APILayerResponse.Quotes.USDGBP)
-		Peg.GBP.When = string(APILayerResponse.Timestamp)
-		Peg.CAD.Value = Round(APILayerResponse.Quotes.USDCAD)
-		Peg.CAD.When = string(APILayerResponse.Timestamp)
-		Peg.CHF.Value = Round(APILayerResponse.Quotes.USDCHF)
-		Peg.CHF.When = string(APILayerResponse.Timestamp)
-		Peg.INR.Value = Round(APILayerResponse.Quotes.USDINR)
-		Peg.INR.When = string(APILayerResponse.Timestamp)
-		Peg.SGD.Value = Round(APILayerResponse.Quotes.USDSGD)
-		Peg.SGD.When = string(APILayerResponse.Timestamp)
-		Peg.CNY.Value = Round(APILayerResponse.Quotes.USDCNY)
-		Peg.CNY.When = string(APILayerResponse.Timestamp)
-		Peg.HKD.Value = Round(APILayerResponse.Quotes.USDHKD)
-		Peg.HKD.When = string(APILayerResponse.Timestamp)
-
-	}
-
-	KitcoResponse, err := CallKitcoWeb()
-
-	for i := 0; i < 10; i++ {
+	// currency rates
+	// this is a temp switch for Sources
+	apikey, _ := config.String("Oracle.APILayerKey")
+	if len(apikey) > 5 {
+		// API Layer
+		APILayerResponse, err := CallAPILayer(config)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"error":     err,
-				"iteration": i + 1,
-			}).Fatal("Failed to access Kitco, retrying...")
-			time.Sleep(time.Second)
-			KitcoResponse, err = CallKitcoWeb()
+			log.WithError(err).Fatal("Failed to access APILayer")
 		} else {
-			break //	os.Exit(1)
+			HandleAPILayer(APILayerResponse, &Peg)
+		}
+	} else {
+		// ExchangeRates API
+		ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to access ExchangeRatesAPI")
+		} else {
+			HandleExchangeRatesAPI(ExchangeRatesApiResponse, &Peg)
 		}
 	}
+
+	/*
+		// Open Exchange Rates
+		OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
+		if err != nil {
+			log.WithError(err).Fatal("Failed to access OpenExchangesRates")
+		} else {
+			HandleOpenExchangeRates(OpenExchangeRatesResponse, &Peg)
+		}
+	*/
+
+	// precious metals
+	KitcoResponse, err := CallKitcoWeb()
 	if err != nil {
-		log.WithError(err).Fatal("Error, using old data.")
-		return 
+		log.WithError(err).Fatal("Failed to access Kitco Website")
+	} else {
+		HandleKitcoWeb(KitcoResponse, &Peg)
 	}
-	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
-	Peg.XAU.When = KitcoResponse.Silver.Date
-	Peg.XAG.Value, err = strconv.ParseFloat(KitcoResponse.Gold.Bid, 64)
-	Peg.XAG.When = KitcoResponse.Gold.Date
-	Peg.XPD.Value, err = strconv.ParseFloat(KitcoResponse.Palladium.Bid, 64)
-	Peg.XPD.When = KitcoResponse.Palladium.Date
-	Peg.XPT.Value, err = strconv.ParseFloat(KitcoResponse.Platinum.Bid, 64)
-	Peg.XPT.When = KitcoResponse.Platinum.Date
+
+	// debug
+	log.WithFields(log.Fields{
+		"XBT": Peg.XBT.Value,
+		"ETH": Peg.ETH.Value,
+		"LTC": Peg.LTC.Value,
+		"XBC": Peg.XBC.Value,
+		"FCT": Peg.FCT.Value,
+		"USD": Peg.USD.Value,
+		"EUR": Peg.EUR.Value,
+		"JPY": Peg.JPY.Value,
+		"GBP": Peg.GBP.Value,
+		"CAD": Peg.CAD.Value,
+		"CHF": Peg.CHF.Value,
+		"INR": Peg.INR.Value,
+		"SGD": Peg.SGD.Value,
+		"CNY": Peg.CNY.Value,
+		"HKD": Peg.HKD.Value,
+		"XAU": Peg.XAU.Value,
+		"XAG": Peg.XAG.Value,
+		"XPD": Peg.XPD.Value,
+		"XPT": Peg.XPT.Value,
+	}).Debug("Pulling PEG Asset data Result")
 
 	lastAnswer = Peg
 

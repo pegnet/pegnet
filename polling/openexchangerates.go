@@ -3,16 +3,24 @@
 package polling
 
 import (
+	"encoding/json"
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 )
 
-type OpenExchangeRates struct {
-	Disclaimer string                 `json:"disclaimer"`
-	License    string                 `json:"license"`
-	Timestamp  string                 `json:"timestamp"`
-	Base       string                 `json:"base"`
-	Currency   OpenExchangeCurrencies `json:"rates"`
+type OpenExchangeRatesResponse struct {
+	Disclaimer  string                  `json:"disclaimer"`
+	License     string                  `json:"license"`
+	Timestamp   int64                  `json:"timestamp"`
+	Base        string                  `json:"base"`
+	Error       bool				    `json:"error"`
+	Status	    int64					`json:"status"`
+	Message     string					`json:"message"`
+	Description string					`json:"description"`
+	Currency    OpenExchangeCurrencies  `json:"rates"`
 }
 
 type OpenExchangeCurrencies struct {
@@ -188,15 +196,62 @@ type OpenExchangeCurrencies struct {
 	ZWL float64
 }
 
-//   you will need to replace the values put into peg structure
-func CallOpenExchangeRates() ([]byte, error) {
-	resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=<INSERT API KEY HERE>")
-	if err != nil {
-		return nil, err
-	} else {
+func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse, err error) {
+	var OpenExchangeRatesResponse OpenExchangeRatesResponse
+
+	var apikey string
+	{
+		apikey, err = c.String("Oracle.OpenExchangeRatesKey")
+		check(err)
+	}
+
+	operation := func() error {
+		resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=" + apikey)
+		if err != nil {
+			log.WithError(err).Warning("Failed to get response from OpenExchangeRates")
+			return err
+		}
+
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
-		return body, err
+		err = json.Unmarshal(body, &OpenExchangeRatesResponse)
+		return nil
 	}
+
+	err = backoff.Retry(operation, PollingExponentialBackOff())
+	return OpenExchangeRatesResponse, err
+}
+
+func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets) {
+
+	// Handle Response Errors
+	if response.Error {
+		log.WithFields(log.Fields{
+			"status": response.Status,
+			"message": response.Message,
+			"description": response.Description,
+		}).Fatal("Failed to access OpenExchangeRates")
+	}
+
+	peg.USD.Value = Round(response.Currency.USD)
+	peg.USD.When = response.Timestamp
+	peg.EUR.Value = Round(response.Currency.EUR)
+	peg.EUR.When = response.Timestamp
+	peg.JPY.Value = Round(response.Currency.JPY)
+	peg.JPY.When = response.Timestamp
+	peg.GBP.Value = Round(response.Currency.GBP)
+	peg.GBP.When = response.Timestamp
+	peg.CAD.Value = Round(response.Currency.CAD)
+	peg.CAD.When = response.Timestamp
+	peg.CHF.Value = Round(response.Currency.CHF)
+	peg.CHF.When = response.Timestamp
+	peg.INR.Value = Round(response.Currency.INR)
+	peg.INR.When = response.Timestamp
+	peg.SGD.Value = Round(response.Currency.SGD)
+	peg.SGD.When = response.Timestamp
+	peg.CNY.Value = Round(response.Currency.CNY)
+	peg.CNY.When = response.Timestamp
+	peg.HKD.Value = Round(response.Currency.HKD)
+	peg.HKD.When = response.Timestamp
 
 }
