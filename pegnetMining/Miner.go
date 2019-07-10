@@ -13,7 +13,7 @@ import (
 const MaxMiners = 50
 
 // Mine runs a set of miners, as a network debugging aid
-func Mine(numMiners int, config *config.Config, monitor *common.FactomdMonitor, grader *opr.Grader) {
+func Mine(numMiners int, config *config.Config, monitor *common.Monitor, grader *opr.Grader) {
 	if numMiners > MaxMiners {
 		log.WithFields(log.Fields{
 			"attempted": numMiners,

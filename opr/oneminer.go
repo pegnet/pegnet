@@ -17,8 +17,8 @@ import (
 // OneMiner starts a single mining goroutine that listens to the monitor.
 // Starts on minute 1 and writes data at minute 9
 // Terminates after writing data.
-func OneMiner(verbose bool, config *config.Config, monitor *common.FactomdMonitor, grader *Grader, miner int) {
-	alert := monitor.GetAlert()
+func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grader *Grader, miner int) {
+	alert := monitor.NewListener()
 	gAlert := grader.GetAlert()
 
 	mining := false

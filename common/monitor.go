@@ -1,158 +1,154 @@
-// Copyright (c) of parts are held by the various contributors (see the CLA)
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package common
 
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 import (
-	"github.com/FactomProject/factom"
-	"math/rand"
 	"sync"
 	"time"
+
+	"github.com/FactomProject/factom"
+	"github.com/cenkalti/backoff"
 )
 
-// FactomdMonitor
-// Running multiple Monitors is problematic and should be avoided if possible
-type FactomdMonitor struct {
-	root       bool            // True if this is the root FactomMonitor
-	mutex      sync.Mutex      // Protect multiple parties accessing monitor data
-	lastminute int64           // Last minute we got
-	lastblock  int64           // Last block we got
-	polltime   int64           // How frequently do we poll
-	kill       chan int        // Channel to kill polling.
-	response   chan int        // Respond when we have stopped
-	alerts     []chan FDStatus // Channels to send minutes to
-	polls      int64
-	info       *factom.CurrentMinuteInfo
-	status     string
+var monitor *Monitor
+var once sync.Once
+
+// GetMonitor returns the singleton instance of the Factomd Monitor
+func GetMonitor() *Monitor {
+	once.Do(func() {
+		monitor = new(Monitor)
+		monitor.errors = []chan error{}
+		monitor.listeners = []chan MonitorEvent{}
+		go monitor.poll()
+	})
+	return monitor
 }
 
-func (f *FactomdMonitor) GetAlert() chan FDStatus {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-	alert := make(chan FDStatus, 10)
-	f.alerts = append(f.alerts, alert)
-	return alert
+// Monitor polls a factomd node and sends alerts whenever the block height or minute changes
+type Monitor struct {
+	timeout time.Duration
+
+	listenerMutex sync.Mutex
+	listeners     []chan MonitorEvent // Channels to send minutes to
+	errorMutex    sync.Mutex
+	errors        []chan error
 }
 
-// GetBlockTime
-// Returns the blocktime in seconds.  All blocks are divided into 10 "minute" sections.  But if the blocktime
-// is not 600 seconds, then a minute = the blocktime/10
-func (f *FactomdMonitor) GetBlockTime() int64 {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-	return f.info.DirectoryBlockInSeconds
+// MonitorEvent is the data sent to all listeners when being notified
+type MonitorEvent struct {
+	Minute int64
+	Dbht   int32
 }
 
-// Returns the highest saved block
-func (f *FactomdMonitor) GetHighestSavedDBlock() int64 {
-	f.mutex.Lock()
-	defer f.mutex.Unlock()
-	return f.info.DirectoryBlockHeight
+// NewListener spawns a new listening channel that will receive updates of height or minute changes
+func (f *Monitor) NewListener() <-chan MonitorEvent {
+	f.listenerMutex.Lock()
+	defer f.listenerMutex.Unlock()
+
+	listener := make(chan MonitorEvent, 10)
+	f.listeners = append(f.listeners, listener)
+	return listener
 }
 
-// poll
-// Go process to poll the Factoid client to provide insight into its operations.
-func (f *FactomdMonitor) poll() {
+// NewErrorListener spawns a new listening channel that will receive errors that have occurred
+func (f *Monitor) NewErrorListener() <-chan error {
+	f.errorMutex.Lock()
+	defer f.errorMutex.Unlock()
+
+	listener := make(chan error, 1)
+	f.errors = append(f.errors, listener)
+	return listener
+}
+
+// SetTimeout sets a new timeout duration.
+// If the monitor is unable to connect to the factomd node within the duration,
+// an error is sent to all error listeners.
+func (f *Monitor) SetTimeout(timeout time.Duration) {
+	f.timeout = timeout
+}
+
+// getMinute queries the factomd api using exponential backoff.
+func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
+	bo := backoff.NewExponentialBackOff()
+	bo.InitialInterval = time.Millisecond * 100
+	bo.MaxElapsedTime = f.timeout
+	bo.MaxInterval = time.Second * 10
+	bo.Reset()
+
+	var info *factom.CurrentMinuteInfo
+	var err error
+	retry := func() error {
+		info, err = factom.GetCurrentMinute()
+		return err
+	}
+
+	fail := backoff.Retry(retry, bo)
+	if fail != nil {
+		return nil, fail
+	}
+	return info, nil
+}
+
+// waitForNextHeight polls the node every second until a new height is reached.
+func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
 	for {
-		var err error
-		for {
-			f.mutex.Lock()
+		info, err := f.getMinute()
 
-			// If we have a kill message, die!
-			select {
-			case <-f.kill:
-				f.response <- 1
-				f.mutex.Unlock()
-				return
-			default:
-			}
-
-			for {
-				var dbht int64
-				if f.info != nil {
-					dbht = f.info.DirectoryBlockHeight
-				}
-				// Do our poll
-				f.info, err = factom.GetCurrentMinute()
-
-				f.mutex.Unlock()
-
-				for i := 0; i < 1000 && err != nil; i++ {
-					time.Sleep(time.Duration(rand.Intn(50)+50) * time.Millisecond)
-					// Do our poll
-					f.mutex.Lock()
-					f.info, err = factom.GetCurrentMinute()
-					f.mutex.Unlock()
-
-					if f.info != nil && err == nil {
-						break
-					}
-				}
-				f.mutex.Lock()
-				if dbht < f.info.DirectoryBlockHeight { // Keep looking if the dbht hasn't progressed forward
-					continue // Mostly this happens when the factomd node is rebooted.
-				}
-				f.info.DirectoryBlockHeight = dbht
-				break
-			}
-
-			// track how often we poll
-			f.polls++
-
-			// If we get an error, then report and break
-			if err != nil {
-				f.status = err.Error()
-				panic("Error with getting minute. " + f.status)
-
-				break
-			}
-			// If we got a different block time, consider that good and break
-			if f.info.Minute != f.lastminute || f.info.DirectoryBlockHeight != f.lastblock {
-				f.lastminute = f.info.Minute
-				f.lastblock = f.info.DirectoryBlockHeight
-				break
-			}
-
-			// Poll once per second until we get a new minute
-			f.mutex.Unlock()
-			time.Sleep(1 * time.Second)
+		if err != nil {
+			return factom.CurrentMinuteInfo{}, err
 		}
 
-		// send alerts to all interested parties
-		for _, alert := range f.alerts {
-			if cap(alert) > len(alert) {
-				var fds FDStatus
-				fds.Dbht = int32(f.info.DirectoryBlockHeight)
-				fds.Minute = f.info.Minute
-				alert <- fds
-			}
+		if info.DirectoryBlockHeight > current.DirectoryBlockHeight {
+			return *info, nil
 		}
 
-		f.mutex.Unlock()
-		// Poll once per second
-		time.Sleep(time.Duration(time.Second))
+		if info.DirectoryBlockHeight == current.DirectoryBlockHeight && current.Minute != info.Minute {
+			return *info, nil
+		}
+
+		// the API has a lower height than the one we've seen
+		time.Sleep(time.Second)
 	}
 }
 
-func (f *FactomdMonitor) Start() {
-	f.mutex.Lock()
-	if f.kill == nil {
-		f.response = make(chan int, 1)
-		f.alerts = []chan FDStatus{}
-		f.kill = make(chan int, 1)
-		factom.SetFactomdServer("localhost:8088")
-		factom.SetWalletServer("localhost:8089")
-		go f.poll()
+func (f *Monitor) notifyError(err error) {
+	f.errorMutex.Lock()
+	defer f.errorMutex.Unlock()
+	for _, ec := range f.errors {
+		select {
+		case ec <- err:
+		default:
+		}
 	}
-	f.mutex.Unlock()
-	return
 }
 
-func (f *FactomdMonitor) Stop() {
-	f.mutex.Lock()
-	kill := f.kill
-	response := f.response
-	f.mutex.Unlock()
+func (f *Monitor) notify(info factom.CurrentMinuteInfo) {
+	f.listenerMutex.Lock()
+	defer f.listenerMutex.Unlock()
 
-	kill <- 0
-	<-response
+	fds := MonitorEvent{
+		Dbht:   int32(info.DirectoryBlockHeight),
+		Minute: info.Minute,
+	}
+	for _, l := range f.listeners {
+		select {
+		case l <- fds:
+		default:
+		}
+	}
+}
+
+// poll the factomd node and notify listeners of minute/height changes
+func (f *Monitor) poll() {
+	var info factom.CurrentMinuteInfo
+	var err error
+	for {
+		info, err = f.waitForNextMinute(info)
+		if err != nil {
+			f.notifyError(err)
+			continue
+		}
+		f.notify(info)
+	}
 }

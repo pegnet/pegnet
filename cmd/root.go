@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/user"
 	"strings"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -22,6 +23,7 @@ var (
 	FactomdLocation string
 	WalletdLocation string
 	Miners          int
+	Timeout         uint
 )
 
 func init() {
@@ -33,6 +35,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
 	rootCmd.PersistentFlags().StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
 	rootCmd.PersistentFlags().IntVar(&Miners, "miners", 0, "Change the number of miners being run (default 0)")
+	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Run a few functions (in the order specified) to initialize some globals
 	cobra.OnInitialize(initLogger, initFactomdLocs, initConfig)
@@ -57,8 +60,15 @@ var rootCmd = &cobra.Command{
 			Miners = configMiners
 		}
 
-		monitor := new(common.FactomdMonitor)
-		monitor.Start()
+		monitor := common.GetMonitor()
+		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+
+		go func() {
+			errListener := monitor.NewErrorListener()
+			err := <-errListener
+			panic("Monitor threw error: " + err.Error())
+		}()
+
 		grader := new(opr.Grader)
 		go grader.Run(Config, monitor)
 
