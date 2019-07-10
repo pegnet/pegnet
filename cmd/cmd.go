@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/pegnet/pegnet/initialization"
 	"os"
 	"sort"
 	"strings"
@@ -14,44 +13,8 @@ import (
 
 func init() {
 	// Add commands to the root cmd
-	rootCmd.AddCommand(createProtocolChains)
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
-}
-
-var createProtocolChains = &cobra.Command{
-	Use:     "createchains [ec address]",
-	Short:   "Initialize the various PegNet protocol chains on Factom",
-	ValidArgs: ValidOwnedECAddresses(),
-
-	Long: "" +
-		"A single PegNet is composed of a set of 4 chains on Factom: one for protocol rules, miner registration,\n" +
-		"transactions, and oracle price records.. This command will take the EC address specified in the config\n" +
-		"file (or optionally override it with the address provided as an argument) and attempt to create the 4 chains.",
-	Args: CombineCobraArgs(cobra.RangeArgs(0, 1), CustomArgOrderValidationBuilder(false, ArgValidatorECAddress)),
-	Run: func(cmd *cobra.Command, args []string) {
-		protocol, err := Config.String("Miner.Protocol")
-		if err != nil {
-			panic(err)
-		}
-		network, err := Config.String("Miner.Network")
-		if err != nil {
-			panic(err)
-		}
-		configECAddress, err := Config.String("Miner.ECAddress")
-		if err != nil {
-			panic(err)
-		}
-
-		var ecAddress string
-		if len(args) == 1 {
-			ecAddress = args[0]
-		} else{
-			ecAddress = configECAddress
-		}
-
-		initialization.CreateProtocolChains(protocol, network, ecAddress)
-	},
 }
 
 var getEncoding = &cobra.Command{
