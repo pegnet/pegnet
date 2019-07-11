@@ -171,7 +171,7 @@ func oprsByHeight(dbht int64) *opr.OprBlock {
 
 // OprsByDigitalID returns every OPR created by a given ID
 // Multiple ID's per miner or single daemon are possible.
-// This function searches searches and returns all.
+// This function searches through every possible ID and returns all.
 func oprsByDigitalID(did string) []opr.OraclePriceRecord {
 var subset []opr.OraclePriceRecord
 	for _, block := range opr.OPRBlocks {
