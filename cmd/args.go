@@ -72,6 +72,17 @@ func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
 	return fmt.Errorf("%s is not a valid FCT address", arg)
 }
 
+// ArgValidatorECAddress checks for EC address
+func ArgValidatorECAddress(cmd *cobra.Command, arg string) error {
+	if len(arg) > 2 && arg[:2] != "EC" {
+		return fmt.Errorf("EC addresses start with EC")
+	}
+	if factom.IsValidAddress(arg) {
+		return nil
+	}
+	return fmt.Errorf("%s is not a valid EC address", arg)
+}
+
 // ArgValidatorAssetAndAll checks for valid asset or 'all'
 func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
 	list := append([]string{"all"}, common.AssetNames...)
@@ -100,9 +111,21 @@ func ValidOwnedFCTAddresses() []string {
 	if err != nil {
 		return []string{""}
 	}
-	strs := []string{}
+	var strs []string
 	for _, fa := range fas {
 		strs = append(strs, fa.String())
+	}
+	return strs
+}
+
+func ValidOwnedECAddresses() []string {
+	_, ecs, err := factom.FetchAddresses()
+	if err != nil {
+		return []string{""}
+	}
+	var strs []string
+	for _, ec := range ecs {
+		strs = append(strs, ec.String())
 	}
 	return strs
 }

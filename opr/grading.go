@@ -1,22 +1,23 @@
+package opr
+
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
-package opr
 
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
-	"github.com/dustin/go-humanize"
 	"sort"
 	"strings"
 	"sync"
 
 	"github.com/FactomProject/factom"
+	"github.com/dustin/go-humanize"
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
-// Compute the average answer for the price of each token reported
+// Avg computes the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 
 	// Sum up all the prices
@@ -38,7 +39,7 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	return
 }
 
-// Given the average answers across a set of tokens, grade the opr
+// CalculateGrade takes the averages and grades the individual OPRs
 func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
@@ -49,7 +50,8 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	return opr.Grade
 }
 
-// Given a list of OraclePriceRecord, figure out which 10 should be paid, and in what order
+// GradeBlock takes all OPRs in a block and sorts them according to Grade and Difficulty.
+// The top ten entries are considered the winners.
 func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
 
 	list = RemoveDuplicateMiningIDs(list)
@@ -110,18 +112,21 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	return nlist
 }
 
-type OPRBlock struct {
+// block data at a specific height
+type oprBlock struct {
 	OPRs []*OraclePriceRecord
 	Dbht int64
 }
 
-var OPRBlocks []*OPRBlock
-var EBMutex sync.Mutex
+// OPRBlocks holds all the known OPRs
+var OPRBlocks []*oprBlock
 
-// Get the OPR Records at a given dbht
+var ebMutex sync.Mutex
+
+// GetEntryBlocks creates the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
-	EBMutex.Lock()
-	defer EBMutex.Unlock()
+	ebMutex.Lock()
+	defer ebMutex.Unlock()
 
 	p, err := config.String("Miner.Protocol")
 	check(err)
@@ -137,7 +142,7 @@ func GetEntryBlocks(config *config.Config) {
 	// Because we go from the head of the chain backwards to collect them, they have to be
 	// collected before I can then validate them forward from the highest valid OPR block
 	// I have found.
-	var oprblocks []*OPRBlock
+	var oprblocks []*oprBlock
 	// For each entryblock in the Oracle Price Records chain
 	// Get all the valid OPRs and put them in  a new OPRBlock structure
 	for eb != nil && (len(OPRBlocks) == 0 ||
@@ -145,7 +150,7 @@ func GetEntryBlocks(config *config.Config) {
 
 		// Go through the Entry Block and collect all the valid OPR records
 		if len(eb.EntryList) > 10 {
-			oprblk := new(OPRBlock)
+			oprblk := new(oprBlock)
 			oprblk.Dbht = eb.Header.DBHeight
 			for _, ebentry := range eb.EntryList {
 				entry, err := factom.GetEntry(ebentry.EntryHash)
@@ -217,9 +222,10 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		common.Logf("NewOPR", "Added a new valid block in the OPR chain at directory block height %s",
-			humanize.Comma(oprblocks[i].Dbht))
-		results := ""
+		log.WithFields(log.Fields{
+			"height": humanize.Comma(oprblocks[i].Dbht),
+		}).Info("Added new valid block to OPR Chain")
+
 		// Update the balances for each winner
 		for i, win := range winners {
 			switch i {
@@ -227,41 +233,39 @@ func GetEntryBlocks(config *config.Config) {
 			case 0:
 				err := AddToBalance(win.CoinbasePNTAddress, 800)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			// Second Place
 			case 1:
 				err := AddToBalance(win.CoinbasePNTAddress, 600)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			default:
 				err := AddToBalance(win.CoinbasePNTAddress, 450)
 				if err != nil {
-					panic(err)
+					log.WithError(err).Fatal("Failed to update balance")
 				}
 			}
 			fid := win.FactomDigitalID[0]
 			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
-			results = results + fmt.Sprintf("%16x grade %20.18f difficulty %16x %35s %-60s=%10s\n",
-				win.Entry.Hash()[:8],
-				win.Grade,
-				win.Difficulty,
-				fid,
-				win.CoinbasePNTAddress,
-				humanize.Comma(GetBalance(win.CoinbasePNTAddress)))
+			log.WithFields(log.Fields{
+				"place":      i,
+				"fid":        fid,
+				"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
+				"grade":      win.Grade,
+				"difficulty": win.Difficulty,
+				"address":    win.CoinbasePNTAddress,
+				"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
+			}).Info("New OPR Winner")
 		}
-		common.Logf("NewOPR", results)
 	}
-
 	return
 }
 
-// GetPreviousOPRs()
-// So what they are asking for here is the previous winning blocks. In our list, we have graded and ordered
-// the OPRs, so just go through the list and return the highest dbht less than the one asked for.
+// GetPreviousOPRs returns the OPRs in highest-known block less than dbht.
 // Returns nil if the dbht is the first dbht in the chain.
 func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	for i := len(OPRBlocks) - 1; i >= 0; i-- {
