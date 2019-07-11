@@ -51,12 +51,9 @@ func (h RequestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request)
 	log.WithFields(log.Fields{
 		"IP":             req.RemoteAddr,
 		"Request Method": req.Method}).Info("Server Request")
-	switch req.Method {
-	case "GET":
-		// serve dashboard
-	case "POST":
+	if req.Method == "POST" {
 		apiHandler(writer, req)
-	default:
+	} else {
 		methodNotAllowed(writer)
 	}
 }
