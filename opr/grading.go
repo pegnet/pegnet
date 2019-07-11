@@ -113,13 +113,13 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 }
 
 // block data at a specific height
-type oprBlock struct {
+type OprBlock struct {
 	OPRs []*OraclePriceRecord
 	Dbht int64
 }
 
 // OPRBlocks holds all the known OPRs
-var OPRBlocks []*oprBlock
+var OPRBlocks []*OprBlock
 
 var ebMutex sync.Mutex
 
@@ -142,7 +142,7 @@ func GetEntryBlocks(config *config.Config) {
 	// Because we go from the head of the chain backwards to collect them, they have to be
 	// collected before I can then validate them forward from the highest valid OPR block
 	// I have found.
-	var oprblocks []*oprBlock
+	var oprblocks []*OprBlock
 	// For each entryblock in the Oracle Price Records chain
 	// Get all the valid OPRs and put them in  a new OPRBlock structure
 	for eb != nil && (len(OPRBlocks) == 0 ||
@@ -150,7 +150,7 @@ func GetEntryBlocks(config *config.Config) {
 
 		// Go through the Entry Block and collect all the valid OPR records
 		if len(eb.EntryList) > 10 {
-			oprblk := new(oprBlock)
+			oprblk := new(OprBlock)
 			oprblk.Dbht = eb.Header.DBHeight
 			for _, ebentry := range eb.EntryList {
 				entry, err := factom.GetEntry(ebentry.EntryHash)

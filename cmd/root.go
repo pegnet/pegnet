@@ -6,10 +6,12 @@ import (
 	"os/user"
 	"strings"
 	"time"
+	"net/http"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/pegnetMining"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -71,6 +73,9 @@ var rootCmd = &cobra.Command{
 
 		grader := new(opr.Grader)
 		go grader.Run(Config, monitor)
+
+		http.Handle("/v1", api.RequestHandler{})
+		go http.ListenAndServe(":8099", nil)
 
 		if Miners > 0 {
 			pegnetMining.Mine(Miners, Config, monitor, grader)
