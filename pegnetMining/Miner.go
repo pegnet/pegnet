@@ -4,8 +4,9 @@ package pegnetMining
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
 import (
+	"net/http"
 	"github.com/pegnet/pegnet/common"
-	"github.com/pegnet/pegnet/server"
+	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -26,7 +27,7 @@ func Mine(numMiners int, config *config.Config, monitor *common.Monitor, grader 
 		"miner_count": numMiners,
 	}).Info("Starting to mine")
 
-	http.Handle("/", server.RequestHandler{})
+	http.Handle("/", api.RequestHandler{})
 	go http.ListenAndServe(":8099", nil)
 
 	for i := 1; i < numMiners; i++ {
