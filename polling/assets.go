@@ -4,8 +4,8 @@ package polling
 
 import (
 	"sync"
+	"math/rand"
 	"time"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -77,8 +77,49 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
-func Round(v float64) float64 {
-	return float64(int64(v*10000)) / 10000
+var defaultDigitalAsset = "CoinCap"
+var availableDigitalAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"CoinCap": CoinCapInterface,
+}
+
+var defaultCurrencyAsset = "ExchangeRatesAPI"
+var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"APILayer": APILayerInterface,
+	"ExchangeRatesAPI": ExchangeRatesAPIInterface, 
+	"OpenExchangeRates": OpenExchangeRatesInterface,
+}
+
+var defaultMetalAsset = "Kitco"
+var availableMetalAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"Kitco": KitcoInterface,
+}
+
+func GetAssetsByWieght(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
+	var result = []string{}
+	for key := range assets {
+		weight, _ := config.Int("Oracle." + key)
+		for w := 0; w < weight; w++ {
+			result = append(result, key)
+		}
+	}
+	if len(result) == 0 {
+		result = append(result, default_asset)
+	}
+	return result
+}
+
+func GetAvailableAssetsByWieght(config *config.Config) (string, string, string) {
+	rand.Seed(time.Now().Unix())
+
+	var digital_currencies = GetAssetsByWieght(config, availableDigitalAssets, defaultDigitalAsset)
+	var currency_rates = GetAssetsByWieght(config, availableCurrencyAssets, defaultCurrencyAsset)
+	var precious_metals = GetAssetsByWieght(config, availableMetalAssets, defaultMetalAsset)
+
+	var digital_currencies_asset = digital_currencies[rand.Intn(len(digital_currencies))]
+	var currency_rates_asset = currency_rates[rand.Intn(len(currency_rates))]
+	var precious_metals_asset = precious_metals[rand.Intn(len(precious_metals))]
+
+	return digital_currencies_asset, currency_rates_asset, precious_metals_asset
 }
 
 func PullPEGAssets(config *config.Config) (pa PegAssets) {
@@ -109,53 +150,18 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	var Peg PegAssets
 
+	
+	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWieght(config)
+
 	// digital currencies
-	CoinCapResponse, err := CallCoinCap(config)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to access CoinCap")
-	} else {
-		HandleCoinCap(CoinCapResponse, &Peg)
-	}
+	availableDigitalAssets[digital_currencies](config, &Peg)
 
 	// currency rates
-	// this is a temp switch for Sources
-	apikey, _ := config.String("Oracle.APILayerKey")
-	if len(apikey) > 5 {
-		// API Layer
-		APILayerResponse, err := CallAPILayer(config)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to access APILayer")
-		} else {
-			HandleAPILayer(APILayerResponse, &Peg)
-		}
-	} else {
-		// ExchangeRates API
-		ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to access ExchangeRatesAPI")
-		} else {
-			HandleExchangeRatesAPI(ExchangeRatesApiResponse, &Peg)
-		}
-	}
-
-	/*
-		// Open Exchange Rates
-		OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
-		if err != nil {
-			log.WithError(err).Fatal("Failed to access OpenExchangesRates")
-		} else {
-			HandleOpenExchangeRates(OpenExchangeRatesResponse, &Peg)
-		}
-	*/
+	availableCurrencyAssets[currency_rates](config, &Peg)
 
 	// precious metals
-	KitcoResponse, err := CallKitcoWeb()
-	if err != nil {
-		log.WithError(err).Fatal("Failed to access Kitco Website")
-	} else {
-		HandleKitcoWeb(KitcoResponse, &Peg)
-	}
-
+	availableMetalAssets[precious_metals](config, &Peg)
+	
 	// debug
 	log.WithFields(log.Fields{
 		"XBT": Peg.XBT.Value,

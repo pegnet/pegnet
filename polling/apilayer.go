@@ -265,3 +265,13 @@ func HandleAPILayer(response APILayerResponse, peg *PegAssets) {
 	peg.HKD.When = response.Timestamp
 
 }
+
+func APILayerInterface(config *config.Config, peg *PegAssets) {
+	log.Debug("Pulling Asset data from APILayer")
+	APILayerResponse, err := CallAPILayer(config)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to access APILayer")
+	} else {
+		HandleAPILayer(APILayerResponse, peg)
+	}
+}

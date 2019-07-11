@@ -255,3 +255,13 @@ func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets)
 	peg.HKD.When = response.Timestamp
 
 }
+
+func OpenExchangeRatesInterface(config *config.Config, peg *PegAssets) { 
+	log.Debug("Pulling Asset data from OpenExchangesRates")
+	OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to access OpenExchangesRates")
+	} else {
+		HandleOpenExchangeRates(OpenExchangeRatesResponse, peg)
+	}
+}

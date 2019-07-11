@@ -5,6 +5,7 @@ package polling
 import (
 	"errors"
 	"strconv"
+	"github.com/zpatrick/go-config"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
@@ -167,4 +168,14 @@ func HandleKitcoWeb(data KitcoData, peg *PegAssets) {
 	peg.XPT.Value, _ = strconv.ParseFloat(data.Platinum.Bid, 64)
 	peg.XPT.When = ConverToUnix(format, data.Platinum.Date)
 
+}
+
+func KitcoInterface(config *config.Config, peg *PegAssets) { 
+	log.Debug("Pulling Asset data from Kitco")
+	KitcoResponse, err := CallKitcoWeb()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to access Kitco Website")
+	} else {
+		HandleKitcoWeb(KitcoResponse, peg)
+	}
 }

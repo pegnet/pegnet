@@ -16,7 +16,7 @@ const (
 	DefaultRandomizationFactor = 0.5
 	DefaultMultiplier          = 1.5
 	DefaultMaxInterval         = 6 * time.Second
-	DefaultMaxElapsedTime      = 30 * time.Second // max 60 seconds
+	DefaultMaxElapsedTime      = 30 * time.Second // max 30 seconds
 )
 
 // PollingExponentialBackOff creates an instance of ExponentialBackOff
@@ -33,6 +33,9 @@ func PollingExponentialBackOff() *backoff.ExponentialBackOff {
 	return b
 }
 
+func Round(v float64) float64 {
+	return float64(int64(v*10000)) / 10000
+}
 
 func ConverToUnix(format string, value string) (timestamp int64) {
 	t, err := time.Parse(format, value)

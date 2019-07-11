@@ -100,3 +100,13 @@ func HandleExchangeRatesAPI(response ExchangeRatesAPIResponse, peg *PegAssets) {
 	peg.HKD.When = timestamp
 
 }
+
+func ExchangeRatesAPIInterface(config *config.Config, peg *PegAssets) {
+	log.Debug("Pulling Asset data from ExchangeRatesAPI")
+	ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
+	if err != nil {
+		log.WithError(err).Fatal("Failed to access ExchangeRatesAPI")
+	} else {
+		HandleExchangeRatesAPI(ExchangeRatesApiResponse, peg)
+	}
+}
