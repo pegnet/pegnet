@@ -9,8 +9,10 @@ os:
   - osx
   - windows
 
-allow_failures:
-  - os: windows
+matrix:
+  fast_finish: true
+  allow_failures:
+    - os: windows
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
