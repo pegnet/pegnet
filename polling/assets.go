@@ -3,6 +3,7 @@
 package polling
 
 import (
+	"fmt"
 	"sync"
 	"math/rand"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
-const qlimit = 12 // Limit queries to once just shy of 10 minutes (600 seconds)
+const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
 
 type PegAssets struct {
 	PNT PegItems
@@ -107,6 +108,10 @@ var availableMetalAssets = map[string]func(config *config.Config, peg *PegAssets
 	"Kitco": KitcoInterface,
 }
 
+var prodBlacklistAssets = []string{
+	"OpenExchangeRates",
+}
+
 func GetAssetsByWieght(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
 	var result = []string{}
 	for key := range assets {
@@ -131,6 +136,8 @@ func GetAvailableAssetsByWieght(config *config.Config) (string, string, string) 
 	var digital_currencies_asset = digital_currencies[rand.Intn(len(digital_currencies))]
 	var currency_rates_asset = currency_rates[rand.Intn(len(currency_rates))]
 	var precious_metals_asset = precious_metals[rand.Intn(len(precious_metals))]
+
+	// TODO: check if assets are in blacklist when running on production
 
 	return digital_currencies_asset, currency_rates_asset, precious_metals_asset
 }
