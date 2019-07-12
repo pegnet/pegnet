@@ -5,7 +5,7 @@ package polling
 
 import (
 	"time"
-
+	"reflect"
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 )
@@ -43,4 +43,20 @@ func ConverToUnix(format string, value string) (timestamp int64) {
 		log.WithError(err).Fatal("Failed to convert timestamp")
 	}
 	return t.Unix()
+}
+
+func UpdatePegAssets(rates map[string]float64, timestamp int64, peg *PegAssets, prefix ...string) {
+	p := ""
+	if len(prefix) > 0 {
+		p = prefix[0]
+	}
+
+	elem := reflect.ValueOf(peg).Elem()
+	for _, currencyISO := range currenciesList {
+		f := elem.FieldByName(currencyISO)
+		if f.IsValid() {
+			f.FieldByName("Value").SetFloat(Round(rates[p + currencyISO]))
+			f.FieldByName("When").SetInt(timestamp)
+		}
+	}
 }

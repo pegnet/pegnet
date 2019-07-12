@@ -10,7 +10,7 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
-const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
+const qlimit = 12 // Limit queries to once just shy of 10 minutes (600 seconds)
 
 type PegAssets struct {
 	PNT PegItems
@@ -77,12 +77,25 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
+var currenciesList = []string {
+	"USD",
+	"EUR",
+	"JPY",
+	"GBP",
+	"CAD",
+	"CHF",
+	"INR",
+	"SGD",
+	"CNY",
+	"HKD",
+}
+
 var defaultDigitalAsset = "CoinCap"
 var availableDigitalAssets = map[string]func(config *config.Config, peg *PegAssets){
 	"CoinCap": CoinCapInterface,
 }
 
-var defaultCurrencyAsset = "ExchangeRatesAPI"
+var defaultCurrencyAsset = "APILayer"
 var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAssets){
 	"APILayer": APILayerInterface,
 	"ExchangeRatesAPI": ExchangeRatesAPIInterface, 
@@ -146,7 +159,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastTime = now
 	log.WithFields(log.Fields{
 		"delta_time": delta,
-	}).Debug("Pulling PEG Asset data")
+	}).Info("Pulling PEG Asset data")
 
 	var Peg PegAssets
 
