@@ -24,7 +24,11 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 	for _, opr := range list {
 		tokens := opr.GetTokens()
 		for i, token := range tokens {
-			avg[i] += token.value
+			if token.value >= 0 { // Make sure no OPR has negative values for
+				avg[i] += token.value // assets.  Simply treat all values as positive.
+			} else {
+				avg[i] -= token.value
+			}
 		}
 	}
 	// Then divide the prices by the number of OraclePriceRecord records.  Two steps is actually faster
@@ -44,8 +48,12 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
 	for i, v := range tokens {
-		d := v.value - avg[i]           // compute the difference from the average
-		opr.Grade = opr.Grade + d*d*d*d // the grade is the sum of the squares of the differences
+		if avg[i] > 0 {
+			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
+			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the squares of the differences
+		} else {
+			opr.Grade = v.value // If the average is zero, then it's all zero so
+		} // set the Grade to the value.  It is as good a choice as any.
 	}
 	return opr.Grade
 }
