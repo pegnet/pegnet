@@ -112,7 +112,7 @@ var prodBlacklistAssets = []string{
 	"OpenExchangeRates",
 }
 
-func GetAssetsByWieght(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
+func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
 	var result = []string{}
 	for key := range assets {
 		weight, _ := config.Int("Oracle." + key)
@@ -126,12 +126,12 @@ func GetAssetsByWieght(config *config.Config, assets map[string]func(config *con
 	return result
 }
 
-func GetAvailableAssetsByWieght(config *config.Config) (string, string, string) {
+func GetAvailableAssetsByWeight(config *config.Config) (string, string, string) {
 	rand.Seed(time.Now().Unix())
 
-	var digital_currencies = GetAssetsByWieght(config, availableDigitalAssets, defaultDigitalAsset)
-	var currency_rates = GetAssetsByWieght(config, availableCurrencyAssets, defaultCurrencyAsset)
-	var precious_metals = GetAssetsByWieght(config, availableMetalAssets, defaultMetalAsset)
+	var digital_currencies = GetAssetsByWeight(config, availableDigitalAssets, defaultDigitalAsset)
+	var currency_rates = GetAssetsByWeight(config, availableCurrencyAssets, defaultCurrencyAsset)
+	var precious_metals = GetAssetsByWeight(config, availableMetalAssets, defaultMetalAsset)
 
 	var digital_currencies_asset = digital_currencies[rand.Intn(len(digital_currencies))]
 	var currency_rates_asset = currency_rates[rand.Intn(len(currency_rates))]
@@ -171,7 +171,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	var Peg PegAssets
 
 	
-	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWieght(config)
+	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
 
 	// digital currencies
 	availableDigitalAssets[digital_currencies](config, &Peg)
