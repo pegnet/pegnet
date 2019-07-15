@@ -75,7 +75,7 @@ var rootCmd = &cobra.Command{
 		go grader.Run(Config, monitor)
 
 		http.Handle("/v1", api.RequestHandler{})
-		go http.ListenAndServe(":8099", nil)
+		log.WithError(http.ListenAndServe(":8099", nil)).Error("Unable to start http server")
 
 		if Miners > 0 {
 			pegnetMining.Mine(Miners, Config, monitor, grader)
