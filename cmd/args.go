@@ -7,6 +7,9 @@ import (
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
+	"regexp"
+	"strconv"
+	"math"
 )
 
 //
@@ -72,6 +75,12 @@ func ArgValidatorFCTAddress(cmd *cobra.Command, arg string) error {
 	return fmt.Errorf("%s is not a valid FCT address", arg)
 }
 
+func ArgValidatorFCTAmount(cmd *cobra.Command, arg string) error {
+	// The FCT amount must not be beyond 1e8 divisible
+	_, err := factoidToFactoshi(arg)
+	return err
+}
+
 // ArgValidatorECAddress checks for EC address
 func ArgValidatorECAddress(cmd *cobra.Command, arg string) error {
 	if len(arg) > 2 && arg[:2] != "EC" {
@@ -128,4 +137,35 @@ func ValidOwnedECAddresses() []string {
 		strs = append(strs, ec.String())
 	}
 	return strs
+}
+
+
+// FactoidToFactoshi is taken from the factom lib, but errors when extra decimals provided
+func factoidToFactoshi(amt string) (uint64, error) {
+	valid := regexp.MustCompile(`^([0-9]+)?(\.[0-9]+)?$`)
+	if !valid.MatchString(amt) {
+		return 0, nil
+	}
+
+	var total uint64 = 0
+
+	dot := regexp.MustCompile(`\.`)
+	pieces := dot.Split(amt, 2)
+	whole, _ := strconv.Atoi(pieces[0])
+	total += uint64(whole) * 1e8
+
+	if len(pieces) > 1 {
+		if len(pieces[1]) > 8 {
+			return 0, fmt.Errorf("factoids are only subdivisible up to 1e-8, trim back on the number of decimal places.")
+		}
+
+		a := regexp.MustCompile(`(0*)([0-9]+)$`)
+
+		as := a.FindStringSubmatch(pieces[1])
+		part, _ := strconv.Atoi(as[0])
+		power := len(as[1]) + len(as[2])
+		total += uint64(part * 1e8 / int(math.Pow10(power)))
+	}
+
+	return total, nil
 }

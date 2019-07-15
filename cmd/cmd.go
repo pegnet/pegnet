@@ -15,6 +15,7 @@ func init() {
 	// Add commands to the root cmd
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
+	rootCmd.AddCommand(burn)
 }
 
 var getEncoding = &cobra.Command{
@@ -90,3 +91,14 @@ var newAddress = &cobra.Command{
 		}
 	},
 }
+
+
+var burn = &cobra.Command{
+	Use:"burn",
+	Short:"Burns the specied amount of FCT into PNT",
+	Args: CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress, ArgValidatorFCTAmount)),
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
