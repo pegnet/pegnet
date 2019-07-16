@@ -50,7 +50,8 @@ type Result struct {
 func (h RequestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	log.WithFields(log.Fields{
 		"IP":             req.RemoteAddr,
-		"Request Method": req.Method}).Info("Server Request")
+		"URL":						req.RequestURI,
+		"Request Method": req.Method}).Debug("Server Request")
 	if req.Method == "POST" {
 		apiHandler(writer, req)
 	} else {
