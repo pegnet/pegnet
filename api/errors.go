@@ -46,3 +46,9 @@ func jsonDecodingError(w http.ResponseWriter) {
   log.Error("Error Decoding JSON request")
   errorResponse(w,Error{Code: 3, Reason: "Unable to parse JSON body"})
 }
+
+// oprLookupError returns when opr cannot be found
+func oprLookupError(w http.ResponseWriter, params Parameters) {
+	log.WithFields(log.Fields{"Params": params}).Error("Can't find OPR")
+	errorResponse(w, Error{Code: 4, Reason: "No OPR found"})
+}
