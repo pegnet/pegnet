@@ -190,12 +190,15 @@ var subset []opr.OraclePriceRecord
 
 // OprByHash returns the entire OPR based on it's hash 
 func oprByHash(hash string) opr.OraclePriceRecord {
-	for _, block := range opr.OPRBlocks {
-		for _, opr := range block.OPRs{
-			if hash == hex.EncodeToString(opr.OPRHash) {
-				return *opr
-			}
-		}    
+	oprhash, err := hex.DecodeString(hash)
+	if err == nil {
+		for _, block := range opr.OPRBlocks {
+			for _, opr := range block.OPRs{
+				if bytes.Compare(oprhash, opr.OPRHash) == 0 {
+					return *opr
+				}
+			}    
+		}
 	}
 	return opr.OraclePriceRecord{}
 }
