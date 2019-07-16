@@ -125,12 +125,14 @@ func getOprsByDigitalID(w http.ResponseWriter, params Parameters) {
 	}
 }
 
-// getOPRsByHeight handler will return all OPR's at any height except the current block.
-// Will only return local OPR's for the current chainhead.
+// getOPRsByHeight handler will grab OPRs for a height except current block
 func getOPRsByHeight(w http.ResponseWriter, params Parameters) {
 	if params.Height !=nil {
 		oprblock := oprsByHeight(*params.Height)
-		response(w, Result{OPRBlock: oprblock})
+		if oprblock != nil {
+			response(w, Result{OPRBlock: oprblock})
+		}
+		errorResponse(w, Error{Code: 4, Reason: "No OPRs found"})
 	} else {
 		invalidParameterError(w, params)
 	}
@@ -149,10 +151,14 @@ func getBalance(w http.ResponseWriter, params Parameters) {
 
 // getWinners returns the current 10 winners entry shorthashes from the last recorded block
 func getWinners() [10]string {
+	var winners [10]string
 	height := leaderHeight()
 	currentOPRS := oprsByHeight(height)
-	opr := currentOPRS.OPRs[0]
-	return opr.WinPreviousOPR
+	if currentOPRS != nil {
+		opr := currentOPRS.OPRs[0]
+		return opr.WinPreviousOPR
+	}
+	return winners
 }
 
 // getWinner returns the highest graded entry shorthash from the last recorded block
@@ -183,6 +189,17 @@ func oprsByHeight(dbht int64) *opr.OprBlock {
 	}
 	return nil
 }
+
+// func oprsByHeight(dbht int64) *opr.OprBlock {
+// 	for i := len(opr.OPRBlocks) -1; i > 0; i-- {
+// 		opr := opr.OPRBlocks[i]
+// 		if opr.Dbht == dbht {
+// 			return opr
+// 		}
+// 	}
+// 	return nil
+// }
+
 
 // OprsByDigitalID returns every OPR created by a given ID
 // Multiple ID's per miner or single daemon are possible.
@@ -231,13 +248,13 @@ func oprByEntryHash(hash string) opr.OraclePriceRecord {
 	return opr.OraclePriceRecord{}
 }
 
-// Failing tests. Need to grok how the short 8 byte winning oprhashes are done.
+// OprByShortHash checks the truncated entry hash for listed OPR winners
 func oprByShortHash(shorthash string) opr.OraclePriceRecord {
 	hashbytes, _  := hex.DecodeString(shorthash)
 	// hashbytes = reverseBytes(hashbytes)
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs{
-			if bytes.Compare(hashbytes, opr.OPRHash[:8]) ==  0 {
+			if bytes.Compare(hashbytes, opr.Entry.Hash()[:8]) ==  0 {
 			return *opr
 			}
 		}    
