@@ -54,6 +54,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		case "opr-by-hash":
 			getOprByHash(w, request.Params)
 
+		case "opr-by-entry-hash":
+			getOprByHash(w, request.Params)
+
 		case "opr-by-shorthash":
 			getOprByShortHash(w, request.Params)
 
@@ -84,6 +87,16 @@ func getCurrentOPRs(w http.ResponseWriter){
   
 // getOprByHash handler to return the opr by full hash
 func getOprByHash(w http.ResponseWriter, params Parameters) {
+	if params.Hash != "" {
+		opr := oprByHash(params.Hash)
+		response(w, Result{OPR: &opr})
+	} else {
+		invalidParameterError(w, params)
+	}
+}
+
+// getOprByHash handler to return the opr by full hash
+func getOprByEntryHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
 		opr := oprByHash(params.Hash)
 		response(w, Result{OPR: &opr})
@@ -195,6 +208,21 @@ func oprByHash(hash string) opr.OraclePriceRecord {
 		for _, block := range opr.OPRBlocks {
 			for _, opr := range block.OPRs{
 				if bytes.Compare(oprhash, opr.OPRHash) == 0 {
+					return *opr
+				}
+			}    
+		}
+	}
+	return opr.OraclePriceRecord{}
+}
+
+// OprByHash returns the entire OPR based on it's Factom Entry hash 
+func oprByEntryHash(hash string) opr.OraclePriceRecord {
+	oprhash, err := hex.DecodeString(hash)
+	if err == nil {
+		for _, block := range opr.OPRBlocks {
+			for _, opr := range block.OPRs{
+				if bytes.Compare(oprhash, opr.Entry.Hash()) == 0 {
 					return *opr
 				}
 			}    
