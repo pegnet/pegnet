@@ -19,17 +19,15 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		jsonDecodingError(w)
 		return 
-  	}
+		}
+	params, _ := json.Marshal(request.Params)
 	log.WithFields(log.Fields{
 		"API Method": request.Method,
-		"Params": request.Params}).Info("API Request")
+		"Params": string(params)}).Info("API Request")
 
 	switch request.Method {
 		case "all-oprs":
-		response(w, Result{OPRBlocks: opr.OPRBlocks})
-		
-		case "balances":
-			response(w, Result{Balances: opr.Balances})
+			response(w, Result{OPRBlocks: opr.OPRBlocks})
 		
 		case "balance":
 			getBalance(w, request.Params)
@@ -37,8 +35,12 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		case "chainid":
 			response(w, Result{ChainID: opr.OPRChainID})
 
-		case "current-oprs":
-			getCurrentOPRs(w)
+		// case "current-oprs":
+		// 	var current []opr.OraclePriceRecord
+		// 	for _, opr := range opr.CurrentOPRs {
+		// 		current = append(current, *opr)
+		// 	}
+		// 	response(w, Result{OPRs: current})
     
 		case "leaderheight":
 			response(w, Result{LeaderHeight: leaderHeight()})
