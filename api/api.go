@@ -27,54 +27,70 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"Params": string(params)}).Info("API Request")
 
 	switch request.Method {
+		// All oprs in the OPRBlocks struct (large!)
 		case "all-oprs":
 			response(w, Result{OPRBlocks: opr.OPRBlocks})
 		
+		// Balance of a particular pegnet address
 		case "balance":
 			getBalance(w, request.Params)
 
+		// Factom chainid oprs are entered into
 		case "chainid":
 			response(w, Result{ChainID: opr.OPRChainID})
 
+		// The OPR of the last winning miner. Contains all conversion rates
 		case "current-rates":
 			rates := CurrentRates()
 			response(w, Result{OPR: &rates})
 
+		// Returns the conversion rate for a particular ticker
 		case "conversion-rate":
 			getConversionRate(w, request.Params)
 			
+		// Highest current block
 		case "leaderheight":
 			response(w, Result{LeaderHeight: leaderHeight()})
 
+		// Returns the diffilculty of an OPR given its shorthash
 		case "opr-difficulty":
 			getOprDifficulty(w, request.Params)
 
+		// Returns the full factom entryhash of an OPR given its shorthash
 		case "opr-entryhash":
 			getOprEntry(w, request.Params)
 
+		// Gets all the OPRs given a particular height
 		case "oprs-by-height":
 			getOPRsByHeight(w, request.Params)
 
+		// Gets all the OPRs given a particular Digital ID (Multiple IDs possible per miner)
 		case "oprs-by-id":
 			getOprsByDigitalID(w, request.Params)
 
+		// Returns the full OPR when given a valid OPR Hash
 		case "opr-by-hash":
 			getOprByHash(w, request.Params)
 
+		// Returns the full OPR when given a valid entry Hash
 		case "opr-by-entryhash":
 			getOprByEntryHash(w, request.Params)
 
+		// Returns the full OPR when given a valid short entry Hash
 		case "opr-by-shorthash":
 			getOprByShortHash(w, request.Params)
 
+		// List of shorthash strings of the current winners
 		case "winners":
 			winners := getWinners()
 			response(w, Result{Winners: winners[:]})
 
+		// Single shorthash string of the current highest graded OPR 
 		case "winner":
 			winner :=  getWinner()
 			response(w, Result{Winner: winner}) 
 
+		// Full OPR of the current highest graded OPR
 		case "winning-opr":
 			winner :=  getWinner()
 			winningOPR := oprByShortHash(winner)
