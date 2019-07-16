@@ -153,7 +153,7 @@ func getBalance(w http.ResponseWriter, params Parameters) {
 func getWinners() [10]string {
 	var winners [10]string
 	height := leaderHeight()
-	currentOPRS := oprsByHeight(height)
+	currentOPRS := oprsByHeight(height - 1)
 	if currentOPRS != nil {
 		opr := currentOPRS.OPRs[0]
 		return opr.WinPreviousOPR
@@ -163,7 +163,7 @@ func getWinners() [10]string {
 
 // getWinner returns the highest graded entry shorthash from the last recorded block
 func getWinner() string {
-	return getWinners()[0]	
+	return getWinners()[0]
 }
 
 // response is a wrapper around all responses to be served
@@ -189,17 +189,6 @@ func oprsByHeight(dbht int64) *opr.OprBlock {
 	}
 	return nil
 }
-
-// func oprsByHeight(dbht int64) *opr.OprBlock {
-// 	for i := len(opr.OPRBlocks) -1; i > 0; i-- {
-// 		opr := opr.OPRBlocks[i]
-// 		if opr.Dbht == dbht {
-// 			return opr
-// 		}
-// 	}
-// 	return nil
-// }
-
 
 // OprsByDigitalID returns every OPR created by a given ID
 // Multiple ID's per miner or single daemon are possible.
