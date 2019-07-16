@@ -127,7 +127,7 @@ func byHash(w http.ResponseWriter, params Parameters) {
 // getOprByHash handler to return the opr by full hash
 func byEntryHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		opr := OprByHash(params.Hash)
+		opr := OprByEntryHash(params.Hash)
 		response(w, Result{OPR: &opr})
 	} else {
 		invalidParameterError(w, params)
