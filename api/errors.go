@@ -29,13 +29,17 @@ func methodNotAllowed(w http.ResponseWriter) {
   log.Error("Invalid HTTP Request Method")
   http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
 }
+
+func methodNotFound(w http.ResponseWriter, method string) {
+	log.WithFields(log.Fields{"Method": method}).Error("Method Not Found")
+	errorResponse(w, Error{Code: 1, Reason: "Method Not Found"})
+}
   
 // invalidParameterError returns when the method is valid but the parameter is not
 func invalidParameterError(w http.ResponseWriter, params Parameters) {
   log.WithFields(log.Fields{"Params": params}).Error("Post Parameters Error")
   errorResponse(w,Error{Code: 2, Reason: "Parameter Not Found"})
 }
-  
   
 // jsonDecodingError returns when the request body is unable to be parsed
 func jsonDecodingError(w http.ResponseWriter) {
