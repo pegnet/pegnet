@@ -5,6 +5,7 @@ package api
 
 import (
 	"bytes"
+	"reflect"
 	"net/http"
 	"encoding/json"
 	"encoding/hex"
@@ -35,15 +36,21 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		case "chainid":
 			response(w, Result{ChainID: opr.OPRChainID})
 
-		// case "current-oprs":
-		// 	var current []opr.OraclePriceRecord
-		// 	for _, opr := range opr.CurrentOPRs {
-		// 		current = append(current, *opr)
-		// 	}
-		// 	response(w, Result{OPRs: current})
-    
+		case "current-rates":
+			rates := CurrentRates()
+			response(w, Result{OPR: &rates})
+
+		case "conversion-rate":
+			getConversionRate(w, request.Params)
+			
 		case "leaderheight":
 			response(w, Result{LeaderHeight: leaderHeight()})
+
+		case "opr-difficulty":
+			getOprDifficulty(w, request.Params)
+
+		case "opr-entryhash":
+			getOprEntry(w, request.Params)
 
 		case "oprs-by-height":
 			getOPRsByHeight(w, request.Params)
@@ -54,8 +61,8 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		case "opr-by-hash":
 			getOprByHash(w, request.Params)
 
-		case "opr-by-entry-hash":
-			getOprByHash(w, request.Params)
+		case "opr-by-entryhash":
+			getOprByEntryHash(w, request.Params)
 
 		case "opr-by-shorthash":
 			getOprByShortHash(w, request.Params)
@@ -68,23 +75,26 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 			winner :=  getWinner()
 			response(w, Result{Winner: winner}) 
 
-		// Failing method - shorthash needs to be fixed
 		case "winning-opr":
 			winner :=  getWinner()
 			winningOPR := oprByShortHash(winner)
 			response(w, Result{OPR: &winningOPR})
 
 		default:
-			errorResponse(w, Error{Code: 1, Reason: "Method Not Found"})
+			methodNotFound(w, request.Method)
 	}
 }
 
-func getCurrentOPRs(w http.ResponseWriter){
-	height := leaderHeight()
-	oprs := oprsByHeight(height)
-	response(w, Result{OPRBlock: oprs})
+func getConversionRate(w http.ResponseWriter, params Parameters) {
+	if params.Ticker != "" {
+		rates := CurrentRates()
+		rate := reflect.ValueOf(rates).FieldByName(params.Ticker).Float()
+		response(w, Result{Rate: rate})
+	} else {
+		invalidParameterError(w, params)
+	}
 }
-  
+
 // getOprByHash handler to return the opr by full hash
 func getOprByHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
@@ -131,8 +141,33 @@ func getOPRsByHeight(w http.ResponseWriter, params Parameters) {
 		oprblock := oprsByHeight(*params.Height)
 		if oprblock != nil {
 			response(w, Result{OPRBlock: oprblock})
+		} else {
+			oprLookupError(w, params)
 		}
-		errorResponse(w, Error{Code: 4, Reason: "No OPRs found"})
+	} else {
+		invalidParameterError(w, params)
+	}
+}
+
+func getOprDifficulty(w http.ResponseWriter, params Parameters) {
+	if params.Hash != "" {
+		oprblock := oprByShortHash(params.Hash)
+		if oprblock.OPRChainID == "" {
+			oprLookupError(w, params)
+		}
+		response(w, Result{Difficulty: oprblock.Difficulty})
+	} else {
+		invalidParameterError(w, params)
+	}
+}
+
+func getOprEntry(w http.ResponseWriter, params Parameters) {
+	if params.Hash != "" {
+		oprblock := oprByShortHash(params.Hash)
+		if &oprblock == nil {
+			oprLookupError(w, params)
+		}
+		response(w, Result{EntryHash: hex.EncodeToString(oprblock.Entry.Hash())})
 	} else {
 		invalidParameterError(w, params)
 	}
@@ -147,6 +182,12 @@ func getBalance(w http.ResponseWriter, params Parameters) {
 	} else {
 		invalidParameterError(w, params)
 	}
+}
+
+// CurrentRates returns the last winning OPR Block
+func CurrentRates() opr.OraclePriceRecord {
+	winner := getWinner()
+	return oprByShortHash(winner)
 }
 
 // getWinners returns the current 10 winners entry shorthashes from the last recorded block
@@ -194,7 +235,7 @@ func oprsByHeight(dbht int64) *opr.OprBlock {
 // Multiple ID's per miner or single daemon are possible.
 // This function searches through every possible ID and returns all.
 func oprsByDigitalID(did string) []opr.OraclePriceRecord {
-var subset []opr.OraclePriceRecord
+	var subset []opr.OraclePriceRecord
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs{
 			for _, digitalID := range opr.FactomDigitalID{
@@ -240,7 +281,6 @@ func oprByEntryHash(hash string) opr.OraclePriceRecord {
 // OprByShortHash checks the truncated entry hash for listed OPR winners
 func oprByShortHash(shorthash string) opr.OraclePriceRecord {
 	hashbytes, _  := hex.DecodeString(shorthash)
-	// hashbytes = reverseBytes(hashbytes)
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs{
 			if bytes.Compare(hashbytes, opr.Entry.Hash()[:8]) ==  0 {
