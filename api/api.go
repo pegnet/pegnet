@@ -87,18 +87,21 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Single shorthash string of the current highest graded OPR 
 		case "winner":
-			winner :=  GetWinner()
-			response(w, Result{Winner: winner}) 
+			response(w, Result{Winner: GetWinner()}) 
 
 		// Full OPR of the current highest graded OPR
 		case "winning-opr":
-			winner :=  GetWinner()
-			winningOPR := OprByShortHash(winner)
+			winningOPR := OprByShortHash(GetWinner())
 			response(w, Result{OPR: &winningOPR})
 
 		default:
 			methodNotFound(w, request.Method)
 	}
+}
+
+// response is a wrapper around all responses to be served
+func response(w http.ResponseWriter, res Result){
+	json.NewEncoder(w).Encode(PostResponse{Res: res})
 }
 
 func conversionRate(w http.ResponseWriter, params Parameters) {
@@ -221,11 +224,6 @@ func GetWinners() [10]string {
 // GetWinner returns the highest graded entry shorthash from the last recorded block
 func GetWinner() string {
 	return GetWinners()[0]
-}
-
-// response is a wrapper around all responses to be served
-func response(w http.ResponseWriter, res Result){
-	json.NewEncoder(w).Encode(PostResponse{Res: res})
 }
 
 // LeaderHeight helper function, returns current height
