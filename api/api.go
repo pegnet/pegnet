@@ -33,9 +33,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		
 		// Balance of a particular pegnet address
 		case "balance":
-			getBalance(w, request.Params)
+			balance(w, request.Params)
 
-		// Factom chainid oprs are entered into
+		// Factom chainid that oprs are entered into
 		case "chainid":
 			response(w, Result{ChainID: opr.OPRChainID})
 
@@ -46,54 +46,54 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Returns the conversion rate for a particular ticker
 		case "conversion-rate":
-			getConversionRate(w, request.Params)
+			conversionRate(w, request.Params)
 			
 		// Highest current block
 		case "leaderheight":
-			response(w, Result{LeaderHeight: leaderHeight()})
+			response(w, Result{LeaderHeight: LeaderHeight()})
 
-		// Returns the diffilculty of an OPR given its shorthash
+		// Returns the difficulty of an OPR given its shorthash
 		case "opr-difficulty":
-			getOprDifficulty(w, request.Params)
+			oprDifficulty(w, request.Params)
 
 		// Returns the full factom entryhash of an OPR given its shorthash
 		case "opr-entryhash":
-			getOprEntry(w, request.Params)
+			oprEntry(w, request.Params)
 
 		// Gets all the OPRs given a particular height
 		case "oprs-by-height":
-			getOPRsByHeight(w, request.Params)
+			byHeight(w, request.Params)
 
 		// Gets all the OPRs given a particular Digital ID (Multiple IDs possible per miner)
 		case "oprs-by-id":
-			getOprsByDigitalID(w, request.Params)
+			byDigitalID(w, request.Params)
 
 		// Returns the full OPR when given a valid OPR Hash
 		case "opr-by-hash":
-			getOprByHash(w, request.Params)
+			byHash(w, request.Params)
 
 		// Returns the full OPR when given a valid entry Hash
 		case "opr-by-entryhash":
-			getOprByEntryHash(w, request.Params)
+			byEntryHash(w, request.Params)
 
 		// Returns the full OPR when given a valid short entry Hash
 		case "opr-by-shorthash":
-			getOprByShortHash(w, request.Params)
+			byShortHash(w, request.Params)
 
-		// List of shorthash strings of the current winners
+		// List of shorthash strings of current winners
 		case "winners":
-			winners := getWinners()
+			winners := GetWinners()
 			response(w, Result{Winners: winners[:]})
 
 		// Single shorthash string of the current highest graded OPR 
 		case "winner":
-			winner :=  getWinner()
+			winner :=  GetWinner()
 			response(w, Result{Winner: winner}) 
 
 		// Full OPR of the current highest graded OPR
 		case "winning-opr":
-			winner :=  getWinner()
-			winningOPR := oprByShortHash(winner)
+			winner :=  GetWinner()
+			winningOPR := OprByShortHash(winner)
 			response(w, Result{OPR: &winningOPR})
 
 		default:
@@ -101,7 +101,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func getConversionRate(w http.ResponseWriter, params Parameters) {
+func conversionRate(w http.ResponseWriter, params Parameters) {
 	if params.Ticker != "" {
 		rates := CurrentRates()
 		rate := reflect.ValueOf(rates).FieldByName(params.Ticker).Float()
@@ -111,10 +111,10 @@ func getConversionRate(w http.ResponseWriter, params Parameters) {
 	}
 }
 
-// getOprByHash handler to return the opr by full hash
-func getOprByHash(w http.ResponseWriter, params Parameters) {
+// byHash handler to return the opr by full hash
+func byHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		opr := oprByHash(params.Hash)
+		opr := OprByHash(params.Hash)
 		response(w, Result{OPR: &opr})
 	} else {
 		invalidParameterError(w, params)
@@ -122,19 +122,19 @@ func getOprByHash(w http.ResponseWriter, params Parameters) {
 }
 
 // getOprByHash handler to return the opr by full hash
-func getOprByEntryHash(w http.ResponseWriter, params Parameters) {
+func byEntryHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		opr := oprByHash(params.Hash)
+		opr := OprByHash(params.Hash)
 		response(w, Result{OPR: &opr})
 	} else {
 		invalidParameterError(w, params)
 	}
 }
 
-// getOprByShortHash handler to return the opr by the short 8 byte hash
-func getOprByShortHash(w http.ResponseWriter, params Parameters) {
+// byShortHash handler to return the opr by the short 8 byte hash
+func byShortHash(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		opr := oprByShortHash(params.Hash)
+		opr := OprByShortHash(params.Hash)
 		response(w, Result{OPR: &opr})
 	} else {
 		invalidParameterError(w, params)
@@ -142,19 +142,19 @@ func getOprByShortHash(w http.ResponseWriter, params Parameters) {
 }
 
 // getOprsByDigitalID handler to return all oprs based on Digital ID
-func getOprsByDigitalID(w http.ResponseWriter, params Parameters) {
+func byDigitalID(w http.ResponseWriter, params Parameters) {
 	if params.DigitalID != "" {
-		oprs := oprsByDigitalID(params.DigitalID)
+		oprs := OprsByDigitalID(params.DigitalID)
 		response(w, Result{OPRs: oprs})
 	} else {
 		invalidParameterError(w, params)
 	}
 }
 
-// getOPRsByHeight handler will grab OPRs for a height except current block
-func getOPRsByHeight(w http.ResponseWriter, params Parameters) {
+// byHeight handler will grab OPRs for a height except current block
+func byHeight(w http.ResponseWriter, params Parameters) {
 	if params.Height !=nil {
-		oprblock := oprsByHeight(*params.Height)
+		oprblock := OprsByHeight(*params.Height)
 		if oprblock != nil {
 			response(w, Result{OPRBlock: oprblock})
 		} else {
@@ -165,9 +165,9 @@ func getOPRsByHeight(w http.ResponseWriter, params Parameters) {
 	}
 }
 
-func getOprDifficulty(w http.ResponseWriter, params Parameters) {
+func oprDifficulty(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		oprblock := oprByShortHash(params.Hash)
+		oprblock := OprByShortHash(params.Hash)
 		if oprblock.OPRChainID == "" {
 			oprLookupError(w, params)
 		}
@@ -177,9 +177,9 @@ func getOprDifficulty(w http.ResponseWriter, params Parameters) {
 	}
 }
 
-func getOprEntry(w http.ResponseWriter, params Parameters) {
+func oprEntry(w http.ResponseWriter, params Parameters) {
 	if params.Hash != "" {
-		oprblock := oprByShortHash(params.Hash)
+		oprblock := OprByShortHash(params.Hash)
 		if &oprblock == nil {
 			oprLookupError(w, params)
 		}
@@ -189,8 +189,8 @@ func getOprEntry(w http.ResponseWriter, params Parameters) {
 	}
 }
 
-// getBalance handler will get the balance of a pegnet address
-func getBalance(w http.ResponseWriter, params Parameters) {
+// balance handler will get the balance of a pegnet address
+func balance(w http.ResponseWriter, params Parameters) {
 	if params.Address != nil {
 		balance := opr.GetBalance(*params.Address)
 		res := Result{Balance: balance}
@@ -202,15 +202,15 @@ func getBalance(w http.ResponseWriter, params Parameters) {
 
 // CurrentRates returns the last winning OPR Block
 func CurrentRates() opr.OraclePriceRecord {
-	winner := getWinner()
-	return oprByShortHash(winner)
+	winner := GetWinner()
+	return OprByShortHash(winner)
 }
 
-// getWinners returns the current 10 winners entry shorthashes from the last recorded block
-func getWinners() [10]string {
+// GetWinners returns the current 10 winners entry shorthashes from the last recorded block
+func GetWinners() [10]string {
 	var winners [10]string
-	height := leaderHeight()
-	currentOPRS := oprsByHeight(height - 1)
+	height := LeaderHeight()
+	currentOPRS := OprsByHeight(height - 1)
 	if currentOPRS != nil {
 		opr := currentOPRS.OPRs[0]
 		return opr.WinPreviousOPR
@@ -218,9 +218,9 @@ func getWinners() [10]string {
 	return winners
 }
 
-// getWinner returns the highest graded entry shorthash from the last recorded block
-func getWinner() string {
-	return getWinners()[0]
+// GetWinner returns the highest graded entry shorthash from the last recorded block
+func GetWinner() string {
+	return GetWinners()[0]
 }
 
 // response is a wrapper around all responses to be served
@@ -228,8 +228,8 @@ func response(w http.ResponseWriter, res Result){
 	json.NewEncoder(w).Encode(PostResponse{Res: res})
 }
 
-// getLeaderHeight helper function, cleaner than using the factom monitor
-func leaderHeight() int64 {
+// LeaderHeight helper function, returns current height
+func LeaderHeight() int64 {
 	heights, err := factom.GetHeights()
 	if err != nil {
 		return 0
@@ -238,7 +238,7 @@ func leaderHeight() int64 {
 }
 
 // OprsByHeight returns a single OPRBlock
-func oprsByHeight(dbht int64) *opr.OprBlock {
+func OprsByHeight(dbht int64) *opr.OprBlock {
 	for _, opr := range opr.OPRBlocks {
 		if opr.Dbht == dbht {
 		return opr
@@ -248,9 +248,9 @@ func oprsByHeight(dbht int64) *opr.OprBlock {
 }
 
 // OprsByDigitalID returns every OPR created by a given ID
-// Multiple ID's per miner or single daemon are possible.
+// Multiple ID's per miner are possible.
 // This function searches through every possible ID and returns all.
-func oprsByDigitalID(did string) []opr.OraclePriceRecord {
+func OprsByDigitalID(did string) []opr.OraclePriceRecord {
 	var subset []opr.OraclePriceRecord
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs{
@@ -265,7 +265,7 @@ func oprsByDigitalID(did string) []opr.OraclePriceRecord {
 }
 
 // OprByHash returns the entire OPR based on it's hash 
-func oprByHash(hash string) opr.OraclePriceRecord {
+func OprByHash(hash string) opr.OraclePriceRecord {
 	oprhash, err := hex.DecodeString(hash)
 	if err == nil {
 		for _, block := range opr.OPRBlocks {
@@ -279,8 +279,8 @@ func oprByHash(hash string) opr.OraclePriceRecord {
 	return opr.OraclePriceRecord{}
 }
 
-// OprByHash returns the entire OPR based on it's Factom Entry hash 
-func oprByEntryHash(hash string) opr.OraclePriceRecord {
+// OprByEntryHash returns the entire OPR based on it's Factom Entry hash 
+func OprByEntryHash(hash string) opr.OraclePriceRecord {
 	oprhash, err := hex.DecodeString(hash)
 	if err == nil {
 		for _, block := range opr.OPRBlocks {
@@ -295,7 +295,7 @@ func oprByEntryHash(hash string) opr.OraclePriceRecord {
 }
 
 // OprByShortHash checks the truncated entry hash for listed OPR winners
-func oprByShortHash(shorthash string) opr.OraclePriceRecord {
+func OprByShortHash(shorthash string) opr.OraclePriceRecord {
 	hashbytes, _  := hex.DecodeString(shorthash)
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs{
