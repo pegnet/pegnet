@@ -24,6 +24,7 @@ type Parameters struct {
 	Height    *int64  `json:"height,omitempty"`
 	DigitalID string  `json:"digital-id,omitempty"`
 	Hash      string  `json:"hash,omitempty"`
+	Ticker    string  `json:"ticker,omitempty"`
 }
 
 // PostResponse to either contain a valid result or error
@@ -44,6 +45,9 @@ type Result struct {
 	OPRBlock     *opr.OprBlock                 `json:"oprblock,omitempty"`
 	OPRs         []opr.OraclePriceRecord       `json:"oprs,omitempty"`
 	OPR          *opr.OraclePriceRecord        `json:"opr,omitempty"`
+	Rate         float64                       `json:"rate,omitempty"`
+	Difficulty   uint64                        `json:"difficulty,omitempty"`
+	EntryHash    string                        `json:"entryhash,omitempty"`
 }
 
 // Base handler of all requests
