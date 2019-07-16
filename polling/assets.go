@@ -3,13 +3,10 @@
 package polling
 
 import (
-	"encoding/json"
 	"fmt"
-	"math/rand"
-	"strconv"
 	"sync"
+	"math/rand"
 	"time"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -66,7 +63,7 @@ func (p *PegAssets) Clone(randomize float64) PegAssets {
 
 type PegItems struct {
 	Value float64
-	When  string
+	When  int64 // unix timestamp
 }
 
 func (p *PegItems) Clone(randomize float64) PegItems {
@@ -81,8 +78,68 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
-func Round(v float64) float64 {
-	return float64(int64(v*10000)) / 10000
+var currenciesList = []string {
+	"USD",
+	"EUR",
+	"JPY",
+	"GBP",
+	"CAD",
+	"CHF",
+	"INR",
+	"SGD",
+	"CNY",
+	"HKD",
+}
+
+var defaultDigitalAsset = "CoinCap"
+var availableDigitalAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"CoinCap": CoinCapInterface,
+}
+
+var defaultCurrencyAsset = "APILayer"
+var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"APILayer": APILayerInterface,
+	"ExchangeRatesAPI": ExchangeRatesAPIInterface, 
+	"OpenExchangeRates": OpenExchangeRatesInterface,
+}
+
+var defaultMetalAsset = "Kitco"
+var availableMetalAssets = map[string]func(config *config.Config, peg *PegAssets){
+	"Kitco": KitcoInterface,
+}
+
+var prodBlacklistAssets = []string{
+	"OpenExchangeRates",
+}
+
+func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
+	var result = []string{}
+	for key := range assets {
+		weight, _ := config.Int("Oracle." + key)
+		for w := 0; w < weight; w++ {
+			result = append(result, key)
+		}
+	}
+	if len(result) == 0 {
+		result = append(result, default_asset)
+	}
+	return result
+}
+
+func GetAvailableAssetsByWeight(config *config.Config) (string, string, string) {
+	rand.Seed(time.Now().Unix())
+
+	var digital_currencies = GetAssetsByWeight(config, availableDigitalAssets, defaultDigitalAsset)
+	var currency_rates = GetAssetsByWeight(config, availableCurrencyAssets, defaultCurrencyAsset)
+	var precious_metals = GetAssetsByWeight(config, availableMetalAssets, defaultMetalAsset)
+
+	var digital_currencies_asset = digital_currencies[rand.Intn(len(digital_currencies))]
+	var currency_rates_asset = currency_rates[rand.Intn(len(currency_rates))]
+	var precious_metals_asset = precious_metals[rand.Intn(len(precious_metals))]
+
+	// TODO: check if assets are in blacklist when running on production
+
+	return digital_currencies_asset, currency_rates_asset, precious_metals_asset
 }
 
 func PullPEGAssets(config *config.Config) (pa PegAssets) {
@@ -109,113 +166,44 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	lastTime = now
 	log.WithFields(log.Fields{
 		"delta_time": delta,
-	}).Debug("Pulling PEG Asset data")
+	}).Info("Pulling PEG Asset data")
 
 	var Peg PegAssets
+
+	
+	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
+
 	// digital currencies
-	CoinCapResponseBytes, err := CallCoinCap(config)
-	if err != nil {
-		log.WithError(err).Fatal("Failed to access CoinCap")
-	} else {
-		var CoinCapValues CoinCapResponse
-		err = json.Unmarshal(CoinCapResponseBytes, &CoinCapValues)
-		for _, currency := range CoinCapValues.Data {
-			if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
-				Peg.XBT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.XBT.Value = Round(Peg.XBT.Value)
-				if err != nil {
-					continue
-				}
-				Peg.XBT.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "ETH" {
-				Peg.ETH.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.ETH.Value = Round(Peg.ETH.Value)
-				if err != nil {
-					continue
-				}
-				Peg.ETH.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "LTC" {
-				Peg.LTC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.LTC.Value = Round(Peg.LTC.Value)
-				if err != nil {
-					continue
-				}
-				Peg.LTC.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
-				Peg.XBC.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.XBC.Value = Round(Peg.XBC.Value)
-				if err != nil {
-					continue
-				}
-				Peg.XBC.When = string(CoinCapValues.Timestamp)
-			} else if currency.Symbol == "FCT" {
-				Peg.FCT.Value, err = strconv.ParseFloat(currency.PriceUSD, 64)
-				Peg.FCT.Value = Round(Peg.FCT.Value)
-				if err != nil {
-					continue
-				}
-				Peg.FCT.When = string(CoinCapValues.Timestamp)
-			}
-		}
-	}
+	availableDigitalAssets[digital_currencies](config, &Peg)
 
-	APILayerBytes, err := CallAPILayer(config)
+	// currency rates
+	availableCurrencyAssets[currency_rates](config, &Peg)
 
-	if err != nil {
-		log.WithError(err).Fatal("Failed to access APILayer")
-	} else {
-		var APILayerResponse APILayerResponse
-		err = json.Unmarshal(APILayerBytes, &APILayerResponse)
-
-		Peg.USD.Value = Round(APILayerResponse.Quotes.USDUSD)
-		Peg.USD.When = string(APILayerResponse.Timestamp)
-		Peg.EUR.Value = Round(APILayerResponse.Quotes.USDEUR)
-		Peg.EUR.When = string(APILayerResponse.Timestamp)
-		Peg.JPY.Value = Round(APILayerResponse.Quotes.USDJPY)
-		Peg.JPY.When = string(APILayerResponse.Timestamp)
-		Peg.GBP.Value = Round(APILayerResponse.Quotes.USDGBP)
-		Peg.GBP.When = string(APILayerResponse.Timestamp)
-		Peg.CAD.Value = Round(APILayerResponse.Quotes.USDCAD)
-		Peg.CAD.When = string(APILayerResponse.Timestamp)
-		Peg.CHF.Value = Round(APILayerResponse.Quotes.USDCHF)
-		Peg.CHF.When = string(APILayerResponse.Timestamp)
-		Peg.INR.Value = Round(APILayerResponse.Quotes.USDINR)
-		Peg.INR.When = string(APILayerResponse.Timestamp)
-		Peg.SGD.Value = Round(APILayerResponse.Quotes.USDSGD)
-		Peg.SGD.When = string(APILayerResponse.Timestamp)
-		Peg.CNY.Value = Round(APILayerResponse.Quotes.USDCNY)
-		Peg.CNY.When = string(APILayerResponse.Timestamp)
-		Peg.HKD.Value = Round(APILayerResponse.Quotes.USDHKD)
-		Peg.HKD.When = string(APILayerResponse.Timestamp)
-
-	}
-
-	KitcoResponse, err := CallKitcoWeb()
-
-	for i := 0; i < 10; i++ {
-		if err != nil {
-			log.WithFields(log.Fields{
-				"error":     err,
-				"iteration": i + 1,
-			}).Fatal("Failed to access Kitco, retrying...")
-			time.Sleep(time.Second)
-			KitcoResponse, err = CallKitcoWeb()
-		} else {
-			break //	os.Exit(1)
-		}
-	}
-	if err != nil {
-		log.WithError(err).Fatal("Error, using old data.")
-		return 
-	}
-	Peg.XAU.Value, err = strconv.ParseFloat(KitcoResponse.Silver.Bid, 64)
-	Peg.XAU.When = KitcoResponse.Silver.Date
-	Peg.XAG.Value, err = strconv.ParseFloat(KitcoResponse.Gold.Bid, 64)
-	Peg.XAG.When = KitcoResponse.Gold.Date
-	Peg.XPD.Value, err = strconv.ParseFloat(KitcoResponse.Palladium.Bid, 64)
-	Peg.XPD.When = KitcoResponse.Palladium.Date
-	Peg.XPT.Value, err = strconv.ParseFloat(KitcoResponse.Platinum.Bid, 64)
-	Peg.XPT.When = KitcoResponse.Platinum.Date
+	// precious metals
+	availableMetalAssets[precious_metals](config, &Peg)
+	
+	// debug
+	log.WithFields(log.Fields{
+		"XBT": Peg.XBT.Value,
+		"ETH": Peg.ETH.Value,
+		"LTC": Peg.LTC.Value,
+		"XBC": Peg.XBC.Value,
+		"FCT": Peg.FCT.Value,
+		"USD": Peg.USD.Value,
+		"EUR": Peg.EUR.Value,
+		"JPY": Peg.JPY.Value,
+		"GBP": Peg.GBP.Value,
+		"CAD": Peg.CAD.Value,
+		"CHF": Peg.CHF.Value,
+		"INR": Peg.INR.Value,
+		"SGD": Peg.SGD.Value,
+		"CNY": Peg.CNY.Value,
+		"HKD": Peg.HKD.Value,
+		"XAU": Peg.XAU.Value,
+		"XAG": Peg.XAG.Value,
+		"XPD": Peg.XPD.Value,
+		"XPT": Peg.XPT.Value,
+	}).Debug("Pulling PEG Asset data Result")
 
 	lastAnswer = Peg
 

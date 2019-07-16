@@ -4,7 +4,11 @@ package polling
 
 import (
 	"errors"
+	"strconv"
+	"github.com/zpatrick/go-config"
+	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -30,12 +34,15 @@ type KitcoRecord struct {
 }
 
 func CallKitcoWeb() (KitcoData, error) {
-	resp, err := http.Get("https://www.kitco.com/market/")
 	var kData KitcoData
 
-	if err != nil {
-		return kData, err
-	} else {
+	operation := func() error {
+		resp, err := http.Get("https://www.kitco.com/market/")
+		if err != nil {
+			log.WithError(err).Warning("Failed to get response from Kitco")
+			return err
+		}
+
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		matchStart := "<table class=\"world_spot_price\">"
@@ -43,7 +50,9 @@ func CallKitcoWeb() (KitcoData, error) {
 		strResp := string(body)
 		start := strings.Index(strResp, matchStart)
 		if start < 0 {
-			return kData, errors.New("No Response")
+			err = errors.New("No Response")
+			log.WithError(err).Warning("Failed to get response from Kitco")
+			return err
 		}
 		strResp = strResp[start:]
 		stop := strings.Index(strResp, matchStop)
@@ -51,17 +60,17 @@ func CallKitcoWeb() (KitcoData, error) {
 		rows := strings.Split(strResp, "\n")
 		for _, r := range rows {
 			if strings.Index(r, "wsp-") > 0 {
-				kData = ParseKitco(r, kData)
+				ParseKitco(r, &kData)
 			}
 		}
-		//	fmt.Println("RETURNINGKITCO:", strResp)
-
-		return kData, err
+		return nil
 	}
 
+	err := backoff.Retry(operation, PollingExponentialBackOff())
+	return kData, err
 }
 
-func ParseKitco(line string, kData KitcoData) KitcoData {
+func ParseKitco(line string, kData *KitcoData) {
 
 	if strings.Index(line, "wsp-AU-date") > 0 {
 		kData.Gold.Date = common.PullValue(line, 1)
@@ -144,7 +153,29 @@ func ParseKitco(line string, kData KitcoData) KitcoData {
 		kData.Rhodium.Low = common.PullValue(line, 1)
 	} else if strings.Index(line, "wsp-RH-high") > 0 {
 		kData.Rhodium.High = common.PullValue(line, 1)
-
 	}
-	return kData
+}
+
+func HandleKitcoWeb(data KitcoData, peg *PegAssets) {
+	var format = "01/02/2006" // Kitco date format
+
+	peg.XAU.Value, _ = strconv.ParseFloat(data.Silver.Bid, 64)
+	peg.XAU.When = ConverToUnix(format, data.Silver.Date)
+	peg.XAG.Value, _ = strconv.ParseFloat(data.Gold.Bid, 64)
+	peg.XAG.When = ConverToUnix(format, data.Gold.Date)
+	peg.XPD.Value, _ = strconv.ParseFloat(data.Palladium.Bid, 64)
+	peg.XPD.When = ConverToUnix(format, data.Palladium.Date)
+	peg.XPT.Value, _ = strconv.ParseFloat(data.Platinum.Bid, 64)
+	peg.XPT.When = ConverToUnix(format, data.Platinum.Date)
+
+}
+
+func KitcoInterface(config *config.Config, peg *PegAssets) { 
+	log.Debug("Pulling Asset data from Kitco")
+	KitcoResponse, err := CallKitcoWeb()
+	if err != nil {
+		log.WithError(err).Fatal("Failed to access Kitco Website")
+	} else {
+		HandleKitcoWeb(KitcoResponse, peg)
+	}
 }
