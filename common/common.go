@@ -32,8 +32,11 @@ func PegnetBurnAddress(network string) string {
 	return BurnAddresses[strings.ToLower(network)]
 }
 
-// TODO: Remove this, just making sure w/e burn address we come up with is valid
-//	Also this will try and replace the checksum, then see if is valid. Then it will recommend that.
+// TODO: Remove this, when the final main and test burn addresses are determined.
+//		Once they are determined, then we don't need to check if they are valid on init.
+//  	This code is put here to ensure the chosen burn addresses are actually valid.
+//		If the address is invalid, it will panic with a corrected checksum, so you can
+//		update the burn address you put here. So it makes changing the burn addresses easy.
 func init() {
 	for network, add := range BurnAddresses {
 		if !factom.IsValidAddress(add) {

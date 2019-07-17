@@ -105,35 +105,37 @@ var burn = &cobra.Command{
 	ValidArgs: ValidOwnedFCTAddresses(),
 	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress, ArgValidatorFCTAmount)),
 	Run: func(cmd *cobra.Command, args []string) {
-		defer factom.DeleteTransaction("burn") // Any cleanup from errors
+		name := "burn"                       // The tmp tx name in the wallet.
+		defer factom.DeleteTransaction(name) // Any cleanup from errors
+
+		ownedAddress, fctBurnAmount := args[0], args[1]
 		// First see if we own the specified FCT address
-		_, err := factom.FetchFactoidAddress(args[0])
+		_, err := factom.FetchFactoidAddress(ownedAddress)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
 		// Get our balance
-		factoshiBalance, err := factom.GetFactoidBalance(args[0])
+		factoshiBalance, err := factom.GetFactoidBalance(ownedAddress)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
 		// Ensure our balance is enough to cover the burn
-		factoshiBurn := factom.FactoidToFactoshi(args[1])
+		factoshiBurn := factom.FactoidToFactoshi(fctBurnAmount)
 		if factoshiBurn > uint64(factoshiBalance) {
 			fctBal := factom.FactoshiToFactoid(uint64(factoshiBalance))
-			fmt.Printf("You only have %s FCT, you specified to burn %s\n", fctBal, args[1])
+			fmt.Printf("You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
 			return
 		}
 
-		name := "burn"
 		if _, err := factom.NewTransaction(name); err != nil {
 			fmt.Println(err)
 			return
 		}
-		if _, err := factom.AddTransactionInput(name, args[0], factoshiBurn); err != nil {
+		if _, err := factom.AddTransactionInput(name, ownedAddress, factoshiBurn); err != nil {
 			fmt.Println(err)
 			return
 		}
@@ -174,6 +176,6 @@ var burn = &cobra.Command{
 		}
 
 		fmt.Println("Burn transaction sent to the network")
-		fmt.Printf("TransacitonID: %s\n", tx.TxID)
+		fmt.Printf("Transaction: %s\n", tx.TxID)
 	},
 }
