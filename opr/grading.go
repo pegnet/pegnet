@@ -230,13 +230,15 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		log.WithFields(log.Fields{
-			"height": humanize.Comma(oprblocks[i].Dbht),
-		}).Info("Added new valid block to OPR Chain")
+		if i == 0 {
+			log.WithFields(log.Fields{
+				"height": humanize.Comma(oprblocks[i].Dbht),
+			}).Info("Added new valid block to OPR Chain")
+		}
 
 		// Update the balances for each winner
-		for i, win := range winners {
-			switch i {
+		for place, win := range winners {
+			switch place {
 			// The Big Winner
 			case 0:
 				err := AddToBalance(win.CoinbasePNTAddress, 800)
@@ -259,15 +261,17 @@ func GetEntryBlocks(config *config.Config) {
 			for _, f := range win.FactomDigitalID[1:] {
 				fid = fid + "-" + f
 			}
-			log.WithFields(log.Fields{
-				"place":      i,
-				"fid":        fid,
-				"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
-				"grade":      win.Grade,
-				"difficulty": win.Difficulty,
-				"address":    win.CoinbasePNTAddress,
-				"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
-			}).Info("New OPR Winner")
+			if i == 0 {
+				log.WithFields(log.Fields{
+					"place":      place,
+					"fid":        fid,
+					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
+					"grade":      win.Grade,
+					"difficulty": win.Difficulty,
+					"address":    win.CoinbasePNTAddress,
+					"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
+				}).Info("New OPR Winner")
+			}
 		}
 	}
 	return
