@@ -112,14 +112,14 @@ var burn = &cobra.Command{
 		// First see if we own the specified FCT address
 		_, err := factom.FetchFactoidAddress(ownedAddress)
 		if err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 
 		// Get our balance
 		factoshiBalance, err := factom.GetFactoidBalance(ownedAddress)
 		if err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 
@@ -127,20 +127,20 @@ var burn = &cobra.Command{
 		factoshiBurn := factom.FactoidToFactoshi(fctBurnAmount)
 		if factoshiBurn > uint64(factoshiBalance) {
 			fctBal := factom.FactoshiToFactoid(uint64(factoshiBalance))
-			fmt.Printf("You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
+			cmd.PrintErrf("You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
 			return
 		}
 
 		if _, err := factom.NewTransaction(name); err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 		if _, err := factom.AddTransactionInput(name, ownedAddress, factoshiBurn); err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 		if _, err := factom.AddTransactionECOutput(name, common.PegnetBurnAddress(Network), 0); err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 
@@ -148,21 +148,21 @@ var burn = &cobra.Command{
 		if _, err := factom.SignTransaction(name, false); err != nil {
 			// Only care about the insufficient fee error here
 			if strings.Contains(err.Error(), "Insufficient Fee") {
-				fmt.Println(err)
+				cmd.PrintErr(err.Error())
 				return
 			}
 		}
 
 		// We will force the transaction to ignore any fee too high errors
 		if _, err := factom.SignTransaction(name, true); err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 
 		if dryrun, _ := cmd.Flags().GetBool("dryrun"); dryrun {
 			tx, err := factom.ComposeTransaction(name)
 			if err != nil {
-				fmt.Println(err)
+				cmd.PrintErr(err.Error())
 				return
 			}
 			fmt.Println("This transaction was not submitted to the network.")
@@ -171,7 +171,7 @@ var burn = &cobra.Command{
 		}
 		tx, err := factom.SendTransaction(name)
 		if err != nil {
-			fmt.Println(err)
+			cmd.PrintErr(err.Error())
 			return
 		}
 
