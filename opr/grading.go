@@ -6,6 +6,7 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -266,8 +267,8 @@ func GetEntryBlocks(config *config.Config) {
 					"place":      place,
 					"fid":        fid,
 					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
-					"grade":      win.Grade,
-					"difficulty": win.Difficulty,
+					"grade":      fmt.Sprintf("%.4e", win.Grade),
+					"difficulty": fmt.Sprintf("%.10e", float64(win.Difficulty)),
 					"address":    win.CoinbasePNTAddress,
 					"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
 				}).Info("New OPR Winner")
