@@ -7,9 +7,10 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"testing"
+
 	"github.com/FactomProject/factoid"
 	. "github.com/pegnet/pegnet/common"
-	"testing"
 )
 
 func TestConvertFctToPegAssets(t *testing.T) {

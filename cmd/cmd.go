@@ -15,6 +15,8 @@ func init() {
 	// Add commands to the root cmd
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
+
+	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
 }
 
@@ -92,13 +94,78 @@ var newAddress = &cobra.Command{
 	},
 }
 
-
 var burn = &cobra.Command{
-	Use:"burn",
-	Short:"Burns the specied amount of FCT into PNT",
-	Args: CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress, ArgValidatorFCTAmount)),
+	Use:   "burn <fct address> <fct amount>",
+	Short: "Burns the specied amount of FCT into PNT",
+	Long: "Burning FCT will turn it into PNT. The PNT burn address is an EC address, and the transaction has " +
+		"an input with # of FCT, and an output of 0 EC. This means the entire tx input becomes the fee. " +
+		"This command costs FCT, so be careful when using it.",
+	Example: "pegnet burn FA3EPZYqodgyEGXNMbiZKE5TS2x2J9wF8J9MvPZb52iGR78xMgCb 1",
+	// TODO: Verify this functionality.
+	ValidArgs: ValidOwnedFCTAddresses(),
+	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress, ArgValidatorFCTAmount)),
 	Run: func(cmd *cobra.Command, args []string) {
+		name := "burn"                       // The tmp tx name in the wallet.
+		defer factom.DeleteTransaction(name) // Any cleanup from errors
 
+		ownedAddress, fctBurnAmount := args[0], args[1]
+		// First see if we own the specified FCT address
+		_, err := factom.FetchFactoidAddress(ownedAddress)
+		if err != nil {
+			CmdError(cmd, err.Error())
+		}
+
+		// Get our balance
+		factoshiBalance, err := factom.GetFactoidBalance(ownedAddress)
+		if err != nil {
+			CmdError(cmd, err.Error())
+		}
+
+		// Ensure our balance is enough to cover the burn
+		factoshiBurn := factom.FactoidToFactoshi(fctBurnAmount)
+		if factoshiBurn > uint64(factoshiBalance) {
+			fctBal := factom.FactoshiToFactoid(uint64(factoshiBalance))
+			CmdErrorf(cmd, "You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
+		}
+
+		if _, err := factom.NewTransaction(name); err != nil {
+			CmdError(cmd, err.Error())
+		}
+		if _, err := factom.AddTransactionInput(name, ownedAddress, factoshiBurn); err != nil {
+			CmdError(cmd, err.Error())
+		}
+		if _, err := factom.AddTransactionECOutput(name, common.PegnetBurnAddress(Network), 0); err != nil {
+			CmdError(cmd, err.Error())
+		}
+
+		// Signing the tx without a force makes the wallet check the fee amount
+		if _, err := factom.SignTransaction(name, false); err != nil {
+			// Only care about the insufficient fee error here
+			if strings.Contains(err.Error(), "Insufficient Fee") {
+				CmdError(cmd, err.Error())
+			}
+		}
+
+		// We will force the transaction to ignore any fee too high errors
+		if _, err := factom.SignTransaction(name, true); err != nil {
+			CmdError(cmd, err.Error())
+		}
+
+		if dryrun, _ := cmd.Flags().GetBool("dryrun"); dryrun {
+			tx, err := factom.ComposeTransaction(name)
+			if err != nil {
+				CmdError(cmd, err.Error())
+			}
+			fmt.Println("This transaction was not submitted to the network.")
+			fmt.Println(string(tx))
+			os.Exit(0)
+		}
+		tx, err := factom.SendTransaction(name)
+		if err != nil {
+			CmdError(cmd, err.Error())
+		}
+
+		fmt.Println("Burn transaction sent to the network")
+		fmt.Printf("Transaction: %s\n", tx.TxID)
 	},
 }
-
