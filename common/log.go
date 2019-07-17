@@ -18,11 +18,6 @@ var DoLogging bool = false
 var start int64
 var LogFile = os.Stdout
 
-func init() {
-	fmt.Println(time.Now().String())
-	start = time.Now().UnixNano()
-}
-
 // Some parameters are really pricey to compute.  So use Do in those cases.
 // common.Do(func() {
 //    common.Logf("sortMessages", "%s", AReallyExpensiveThing())
