@@ -42,8 +42,8 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grad
 				}
 				if verbose {
 					log.WithFields(log.Fields{
-						"did": strings.Join(opr.FactomDigitalID, "-"),
-						"Miners": numMiners,
+						"did": strings.Join(opr.FactomDigitalID[:len(opr.FactomDigitalID)-1], "-"),
+						"miner_count": numMiners,
 					}).Info("New OPR miners")
 
 				}
