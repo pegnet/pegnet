@@ -50,6 +50,15 @@ wget https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini -P
 
 On first startup there will be some delay while the bytemap is shuffled. It will only start mining at the beginning of a block also.
 
+# Contributing 
+* Join [Discord](https://discord.gg/V6T7mCW) and chat about it with lovely people!
+
+* Run a testnet node
+
+* Create a github issue because they always exist.
+
+* Fork the repo and submit your pull requests, fix things. 
+
 # Development
 
 Docker guide can be found [here](https://github.com/pegnet/pegnet/blob/develop/Docker.md) for an automated solution.
@@ -92,12 +101,3 @@ go build
 
 # You should be ready to roll from here
 ```
-
-# Contributing 
-* Join [Discord](https://discord.gg/V6T7mCW) and chat about it with lovely people!
-
-* Run a node yourself
-
-* Create an issue because it probably exists.
-
-* Fork the repo and submit your pull requests, things always need fixing. 
