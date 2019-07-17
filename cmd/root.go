@@ -139,3 +139,13 @@ pncli completion > /tmp/ntc && source /tmp/ntc`,
 		rootCmd.GenBashCompletion(os.Stdout)
 	},
 }
+
+func CmdError(cmd *cobra.Command, i interface{}) {
+	cmd.PrintErr(i)
+	os.Exit(1)
+}
+
+func CmdErrorf(cmd *cobra.Command, format string, i ...interface{}) {
+	cmd.PrintErrf(format, i...)
+	os.Exit(1)
+}

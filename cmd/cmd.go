@@ -112,67 +112,57 @@ var burn = &cobra.Command{
 		// First see if we own the specified FCT address
 		_, err := factom.FetchFactoidAddress(ownedAddress)
 		if err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 
 		// Get our balance
 		factoshiBalance, err := factom.GetFactoidBalance(ownedAddress)
 		if err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 
 		// Ensure our balance is enough to cover the burn
 		factoshiBurn := factom.FactoidToFactoshi(fctBurnAmount)
 		if factoshiBurn > uint64(factoshiBalance) {
 			fctBal := factom.FactoshiToFactoid(uint64(factoshiBalance))
-			cmd.PrintErrf("You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
-			return
+			CmdErrorf(cmd, "You only have %s FCT, you specified to burn %s\n", fctBal, fctBurnAmount)
 		}
 
 		if _, err := factom.NewTransaction(name); err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 		if _, err := factom.AddTransactionInput(name, ownedAddress, factoshiBurn); err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 		if _, err := factom.AddTransactionECOutput(name, common.PegnetBurnAddress(Network), 0); err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 
 		// Signing the tx without a force makes the wallet check the fee amount
 		if _, err := factom.SignTransaction(name, false); err != nil {
 			// Only care about the insufficient fee error here
 			if strings.Contains(err.Error(), "Insufficient Fee") {
-				cmd.PrintErr(err.Error())
-				return
+				CmdError(cmd, err.Error())
 			}
 		}
 
 		// We will force the transaction to ignore any fee too high errors
 		if _, err := factom.SignTransaction(name, true); err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 
 		if dryrun, _ := cmd.Flags().GetBool("dryrun"); dryrun {
 			tx, err := factom.ComposeTransaction(name)
 			if err != nil {
-				cmd.PrintErr(err.Error())
-				return
+				CmdError(cmd, err.Error())
 			}
 			fmt.Println("This transaction was not submitted to the network.")
 			fmt.Println(string(tx))
-			return
+			os.Exit(0)
 		}
 		tx, err := factom.SendTransaction(name)
 		if err != nil {
-			cmd.PrintErr(err.Error())
-			return
+			CmdError(cmd, err.Error())
 		}
 
 		fmt.Println("Burn transaction sent to the network")
