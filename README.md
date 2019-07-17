@@ -1,30 +1,103 @@
-# PegNet
-This is now the main repository for mining for the PegNet
+<p align="center">
+  <img src="https://pegnet.org/assets/img/logo.png"/>
+</p>
 
-The TestNet has started writing records in mid June.
+----
 
-This is a work in progress.  The TestNet is certain to reset the actual rewards a few times as we develop more code and adjust the approach.  None the less, it is a great help to have multiple people do mining.  If you would like to help, you can run a miner.  To do so, do these 10 things:
+[![Build Status](https://travis-ci.com/pegnet/pegnet.svg?branch=develop)](https://travis-ci.com/pegnet/pegnet)
+[![Discord](https://img.shields.io/discord/550312670528798755.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/V6T7mCW)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pegnet/pegnet/blob/master/LICENSE)
 
-*Assumes Linux or use of a virtual machine running Linux*
 
-1. Clone the OracleRecord repository https://github.com/pegnet/pegnet
 
-2. Copy the defaultconfig.ini file from the OracleRecord repository to ~/.pegnet directory
+## A Network of Pegged Tokens
 
-3. Sign up for an API Key from https://currencylayer.com.
+This is the main repository for the PegNet application.
 
-4. Replace the Oracle.APILayerKey key with your API Key
+Pegged tokens reflect real market assets such as currencies, precious metals, commodities, cryptocurrencies etc. The conversion rates on PegNet are determined by a decentralized set of miners who submit values based on current market data. These values are recorded in the Factom blockchain and then graded based upon accuracy and mining hashpower.
 
-5. Edit the Miner.IdentityChain to add a unique name like:
+The draft proposal paper is available [here](https://docs.google.com/document/d/1yv1UaOXjJLEYOvPUT_a8RowRqPX_ofBTJuPHmq6mQGQ).
 
-6. IdentityChain=prototype,BigMiner
+For any questions, troubleshooting or further information head to [discord](https://discord.gg/V6T7mCW).
 
-7. Right now you can donate to the cause, and leave the pPNT address alone. We will had a utility to generate your own PNT address from one of your FCT addresses in your wallet
+# Mining
 
-7.5 Run a local factomd instance, and run factom-walletd.  This will give you a factom node to run against, and a wallet to write entries with.  There is an Open Node configuration, and we will add instructions for that soon.
+#### Requirements
 
-8. Buy some Entry Credits and fund one of your EC addresses in your factom-walletd wallet
+* Pegnet binary from the [releases page](https://github.com/pegnet/pegnet/releases)
+* Factom binaries from their [distribution page](https://github.com/FactomProject/distribution/releases)
+* Factom Address that is funded or Entry Credits which can be purchased directly [here](https://shop.factom.com/) or [here](https://ec.de-facto.pro/).
 
-9. Download the image checked into the PegNetDistribution repository
+#### Setup
 
-10. Create a folder and Run it.
+Create a `.pegnet` folder inside your home directory. Copy the `defaultconfig.ini` [file](https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini) there. 
+
+On Windows this is your `%USERPROFILE%` folder
+
+Linux example:
+```bash
+mkdir ~/.pegnet
+wget https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini -P ~/.pegnet/
+```
+
+* Sign up for an API Key from https://currencylayer.com, replace APILayerKey in the config with your own
+
+* Replace either ECAddress or FCTAddress with your own
+* Modify the IdentityChain name to one of your choosing.
+* Have a factomd node running on mainnet.
+* Have factom-walletd open
+* Start Pegnet
+
+On first startup there will be some delay while the bytemap is shuffled. It will only start mining at the beginning of a block also.
+
+# Development
+
+Docker guide can be found [here](https://github.com/pegnet/pegnet/blob/develop/Docker.md) for an automated solution.
+
+### Manual Setup
+
+Install the [factom binaries](https://github.com/FactomProject/distribution/releases)
+
+The Factom developer sandbox setup overview is [here], which covers the first parts, otherwise use below.
+
+```bash
+# In first terminal
+# Change blocktime to whatever suits you 
+factomd -blktime=120 -network=LOCAL
+
+# Second Terminal
+factom-walletd
+
+# Third Terminal
+fa='factom-cli importaddress Fs3E9gV6DXsYzf7Fqx1fVBQPQXV695eP3k5XbmHEZVRLkMdD9qCK'
+ec='factom-cli newecaddress'
+factom-cli listaddresses # Verify addresses
+factom-cli buyec $fa $ec 100000
+factom-cli balance $ec # Verify Balance
+
+# Fork Repo on github, clone your fork
+git clone https://github.com/<USER>/pegnet
+
+# Add main pegnet repo as a remote
+cd pegnet
+git remote add upstream https://github.com/pegnet/pegnet
+
+# Sync with main development branch
+git pull upstream develop 
+
+# Initialize the pegnet chain
+cd initialization
+go build
+./initialization
+
+# You should be ready to roll from here
+```
+
+# Contributing 
+* Join [Discord](https://discord.gg/V6T7mCW) and chat about it with lovely people!
+
+* Run a node yourself
+
+* Create an issue because it probably exists.
+
+* Fork the repo and submit your pull requests, things always need fixing. 
