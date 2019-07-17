@@ -75,7 +75,7 @@ var rootCmd = &cobra.Command{
 		go grader.Run(Config, monitor)
 
 		// Start API server
-		http.Handle("/v1", api.RequestHandler{})
+		http.Handle("/v0", api.RequestHandler{})
 		log.Info("Starting api server on localhost:8099")
 		go func() {
 			log.WithError(http.ListenAndServe(":8099", nil)).Error("Unable to start http server")
