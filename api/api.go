@@ -29,7 +29,7 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	switch request.Method {
 		// All oprs in the OPRBlocks struct (large!)
 		case "all-oprs":
-			response(w, Result{OPRBlocks: opr.OPRBlocks})
+			allOprs(w, request.Params)
 		
 		// Balance of a particular pegnet address
 		case "balance":
@@ -104,6 +104,15 @@ func response(w http.ResponseWriter, res Result){
 	json.NewEncoder(w).Encode(PostResponse{Res: res})
 }
 
+func allOprs(w http.ResponseWriter, params Parameters) {
+	page := params.Page
+	if page == 0 {
+		page = 1
+	}
+	blocks := paginateBlocks(page, ItemsPerPage, opr.OPRBlocks)
+	response(w, Result{OPRBlocks: &blocks})
+}
+
 func conversionRate(w http.ResponseWriter, params Parameters) {
 	if params.Ticker != "" {
 		rates := CurrentRates()
@@ -148,7 +157,12 @@ func byShortHash(w http.ResponseWriter, params Parameters) {
 func byDigitalID(w http.ResponseWriter, params Parameters) {
 	if params.DigitalID != "" {
 		oprs := OprsByDigitalID(params.DigitalID)
-		response(w, Result{OPRs: oprs})
+		page := params.Page
+		if page == 0 {
+			page = 1
+		}
+		pagedOprs := paginateOPRs(page, ItemsPerPage, oprs)
+		response(w, Result{OPRs: &pagedOprs})
 	} else {
 		invalidParameterError(w, params)
 	}

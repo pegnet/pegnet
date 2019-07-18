@@ -25,6 +25,7 @@ type Parameters struct {
 	DigitalID string  `json:"digital-id,omitempty"`
 	Hash      string  `json:"hash,omitempty"`
 	Ticker    string  `json:"ticker,omitempty"`
+	Page      uint32  `json:"page,omitempty"`
 }
 
 // PostResponse to either contain a valid result or error
@@ -39,24 +40,18 @@ type Result struct {
 	Balances     map[string]map[[32]byte]int64 `json:"balances,omitempty"`
 	ChainID      string                        `json:"chainid,omitempty"`
 	LeaderHeight int64                         `json:"leaderheight,omitempty"`
-	OPRBlocks    []*opr.OprBlock               `json:"oprblocks,omitempty"`
+	OPRBlocks    *PagedBlocks                   `json:"oprblocks,omitempty"`
 	Winners      []string                      `json:"winners,omitempty"`
 	Winner       string                        `json:"winner,omitempty"`
 	OPRBlock     *opr.OprBlock                 `json:"oprblock,omitempty"`
-	OPRs         []opr.OraclePriceRecord       `json:"oprs,omitempty"`
+	OPRs         *PagedOPRs                     `json:"oprs,omitempty"`
 	OPR          *opr.OraclePriceRecord        `json:"opr,omitempty"`
 	Rate         float64                       `json:"rate,omitempty"`
 	Difficulty   uint64                        `json:"difficulty,omitempty"`
 	EntryHash    string                        `json:"entryhash,omitempty"`
 }
 
-// Pagination holds all the metadata for paged queries
-type Pagination struct {
-	Page         uint32    `json:"page"`
-	PageCount    uint32    `json:"page_count"`
-	ItemsPerPage uint16    `json:"items_per_page"`
-	TotalCount   uint64    `json:"total_count"`
-}
+
 
 // Base handler of all requests
 func (h RequestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
