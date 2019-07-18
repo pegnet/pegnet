@@ -21,6 +21,7 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grad
 	alert := monitor.NewListener()
 	gAlert := grader.GetAlert()
 
+	numMiners, _ := config.Int("Miner.NumberOfMiners")
 	mining := false
 	var opr *OraclePriceRecord
 	var err error
@@ -39,9 +40,13 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grad
 				if err != nil {
 					log.WithError(err).Fatal("Error creating an OPR.  Likely a config file issue")
 				}
-				log.WithFields(log.Fields{
-					"did": strings.Join(opr.FactomDigitalID, "-"),
-				}).Info("New OPR miner")
+				if verbose {
+					log.WithFields(log.Fields{
+						"did": strings.Join(opr.FactomDigitalID[:len(opr.FactomDigitalID)-1], "-"),
+						"miner_count": numMiners,
+					}).Info("New OPR miners")
+
+				}
 				go opr.Mine(verbose)
 			}
 		case 9:
