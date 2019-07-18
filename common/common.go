@@ -8,17 +8,22 @@ import (
 	"strings"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/LXRHash"
 )
-
-var PointMultiple float64 = 100000000
-
-type NetworkType int
 
 const (
-	INVALID NetworkType = iota + 1
-	MAIN_NETWORK
-	TEST_NETWORK
+	Seed       = uint64(0xfafaececfafaecec)
+	BitMapSize = uint64(30)
+	HashSize   = uint64(256)
+	Passes     = uint64(5)
 )
+
+// LX holds an instance of lxrhash
+var LX lxr.LXRHash
+
+func init() {
+	LX.Init(Seed, BitMapSize, HashSize, Passes)
+}
 
 var (
 	// Pegnet Burn Addresses

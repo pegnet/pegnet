@@ -4,12 +4,12 @@ package polling
 
 import (
 	"encoding/json"
-	"strconv"
 	"github.com/cenkalti/backoff"
-	"github.com/zpatrick/go-config"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 type CoinCapResponse struct {
@@ -50,7 +50,7 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 	return CoinCapResponse, err
 }
 
-func HandleCoinCap(response CoinCapResponse, peg *PegAssets){
+func HandleCoinCap(response CoinCapResponse, peg *PegAssets) {
 
 	var timestamp = response.Timestamp
 

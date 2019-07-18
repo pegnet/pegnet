@@ -185,7 +185,7 @@ func GetEntryBlocks(config *config.Config) {
 				opr.Entry = entry
 
 				// Looking good.  Go ahead and compute the OPRHash
-				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
+				opr.OPRHash = common.LX.Hash(entry.Content) // Save the OPRHash
 
 				// Okay, mostly good.  Add to our candidate list
 				oprblk.OPRs = append(oprblk.OPRs, opr)
@@ -275,7 +275,6 @@ func GetEntryBlocks(config *config.Config) {
 			}
 		}
 	}
-	return
 }
 
 // GetPreviousOPRs returns the OPRs in highest-known block less than dbht.

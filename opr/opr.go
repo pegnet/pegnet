@@ -13,7 +13,6 @@ import (
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	"github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
@@ -61,15 +60,8 @@ type OraclePriceRecord struct {
 	FCT float64
 }
 
-// LX holds an instance of lxrhash
-var LX lxr.LXRHash
-
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
-
-func init() {
-	LX.Init(0xfafaececfafaecec, 25, 256, 5)
-}
 
 // Token is a combination of currency code and value
 type Token struct {
@@ -160,7 +152,7 @@ func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 func (opr *OraclePriceRecord) GetHash() []byte {
 	data, err := json.Marshal(opr)
 	check(err)
-	oprHash := LX.Hash(data)
+	oprHash := common.LX.Hash(data)
 	return oprHash
 }
 
@@ -169,7 +161,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 // taken as uint64 in Big Endian
 func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64) {
 	no := append(opr.OPRHash, nonce...)
-	h := LX.Hash(no)
+	h := common.LX.Hash(no)
 
 	// The high eight bytes of the hash(hash(entry.Content) + nonce) is the difficulty.
 	// Because we don't have a difficulty bar, we can define difficulty as the greatest
@@ -419,8 +411,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	opr.Config = c
 	//get asset values
-	var Peg polling.PegAssets
-	Peg = polling.PullPEGAssets(c)
+	Peg := polling.PullPEGAssets(c)
 	opr.SetPegValues(Peg)
 
 	var err error
@@ -431,5 +422,5 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	if err != nil {
 		panic(err)
 	}
-	opr.OPRHash = LX.Hash(opr.Entry.Content)
+	opr.OPRHash = common.LX.Hash(opr.Entry.Content)
 }
