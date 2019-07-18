@@ -67,7 +67,7 @@ Docker guide can be found [here](https://github.com/pegnet/pegnet/blob/develop/D
 
 Install the [factom binaries](https://github.com/FactomProject/distribution/releases)
 
-The Factom developer sandbox setup overview is [here](https://github.com/FactomProject/FactomDocs/blob/master/developerSandboxSetup.md), which covers the first parts, otherwise use below.
+The Factom developer sandbox setup overview is [here](https://docs.factomprotocol.org/start/developer-sandbox-setup-guide), which covers the first parts, otherwise use below.
 
 ```bash
 # In first terminal
