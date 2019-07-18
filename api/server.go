@@ -50,6 +50,14 @@ type Result struct {
 	EntryHash    string                        `json:"entryhash,omitempty"`
 }
 
+// Pagination holds all the metadata for paged queries
+type Pagination struct {
+	Page         uint32    `json:"page"`
+	PageCount    uint32    `json:"page_count"`
+	ItemsPerPage uint16    `json:"items_per_page"`
+	TotalCount   uint64    `json:"total_count"`
+}
+
 // Base handler of all requests
 func (h RequestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	log.WithFields(log.Fields{
