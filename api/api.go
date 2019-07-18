@@ -109,7 +109,7 @@ func allOprs(w http.ResponseWriter, params Parameters) {
 	if page == 0 {
 		page = 1
 	}
-	blocks := paginateBlocks(page, ItemsPerPage, opr.OPRBlocks)
+	blocks := paginateBlocks(page, BlocksPerPage, opr.OPRBlocks)
 	response(w, Result{OPRBlocks: &blocks})
 }
 
@@ -161,7 +161,7 @@ func byDigitalID(w http.ResponseWriter, params Parameters) {
 		if page == 0 {
 			page = 1
 		}
-		pagedOprs := paginateOPRs(page, ItemsPerPage, oprs)
+		pagedOprs := paginateOPRs(page, OPRsPerPage, oprs)
 		response(w, Result{OPRs: &pagedOprs})
 	} else {
 		invalidParameterError(w, params)

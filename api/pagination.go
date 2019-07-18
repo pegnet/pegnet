@@ -7,8 +7,11 @@ import (
 	"github.com/pegnet/pegnet/opr"
 )
 
-// ItemsPerPage is how many items are returnedl
-var ItemsPerPage uint32 = 20
+// BlocksPerPage is the max number of OPRBlocks returned at once
+var BlocksPerPage uint32 = 5
+
+// OPRsPerPage is the max number of OPRs returned at once
+var OPRsPerPage uint32 = 50
 
 // Pagination holds all the metadata for paged queries
 type Pagination struct {
@@ -18,11 +21,13 @@ type Pagination struct {
 	TotalCount   uint32    `json:"total_count,omitempty"`
 }
 
+// PagedBlocks returns a subset of OPRBlocks along with metadata
 type PagedBlocks struct {
 	OPRBlocks   []*opr.OprBlock  `json:"oprblocks,omitempty"`
 	MetaData    Pagination `      json:"pagination,omitempty"`
 }
 
+// PagedOPRs returns a subset of OPRs along with metadata
 type PagedOPRs struct {
 	OPRs     []opr.OraclePriceRecord   `json:"oprs,omitempty"`
 	MetaData  Pagination               `json:"pagination,omitempty"`
