@@ -2,16 +2,16 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/user"
 	"strings"
 	"time"
-	"net/http"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/pegnetMining"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -26,6 +26,7 @@ var (
 	WalletdLocation string
 	Miners          int
 	Timeout         uint
+	Network         string
 )
 
 func init() {
@@ -38,6 +39,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
 	rootCmd.PersistentFlags().IntVar(&Miners, "miners", 0, "Change the number of miners being run (default 0)")
 	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
+	rootCmd.PersistentFlags().StringVar(&Network, "network", "test", "The pegnet network to target. <Main|Test>")
 
 	// Run a few functions (in the order specified) to initialize some globals
 	cobra.OnInitialize(initLogger, initFactomdLocs, initConfig)
@@ -48,6 +50,8 @@ var rootCmd = &cobra.Command{
 	Use:   "pegnet",
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
+		// TODO: Do we really want to init the miner by default?
+		//  	 Not like `pegnet -service=miner` or something?
 		_, err := Config.String("Miner.Protocol")
 		if err != nil {
 			log.WithError(err).Fatal("Failed to read miner protocol from config")
@@ -134,4 +138,14 @@ pncli completion > /tmp/ntc && source /tmp/ntc`,
 		addGetEncodingCommands()
 		rootCmd.GenBashCompletion(os.Stdout)
 	},
+}
+
+func CmdError(cmd *cobra.Command, i interface{}) {
+	cmd.PrintErr(i)
+	os.Exit(1)
+}
+
+func CmdErrorf(cmd *cobra.Command, format string, i ...interface{}) {
+	cmd.PrintErrf(format, i...)
+	os.Exit(1)
 }
