@@ -40,33 +40,24 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grad
 				if err != nil {
 					log.WithError(err).Fatal("Error creating an OPR.  Likely a config file issue")
 				}
-				if verbose {
-					log.WithFields(log.Fields{
-						"did": strings.Join(opr.FactomDigitalID[:len(opr.FactomDigitalID)-1], "-"),
-						"miner_count": numMiners,
-					}).Info("New OPR miners")
-
-				}
 				go opr.Mine(verbose)
 			}
 		case 9:
 			if mining {
 				opr.StopMining <- 0
-
-				common.Do(func() {
-					data, ok := opr.Entry.MarshalBinary()
-					if ok != nil {
-						log.Fatal("Failed to marshal OPR Entry")
-					}
-					recordFields := opr.LogFieldsShort()
-					recordFields["miner"] = miner
-					recordFields["entry_size"] = len(data)
-					log.WithFields(recordFields).Info("Created OPR Entry")
-				})
-
 				mining = false
-
 				writeMiningRecord(opr)
+				if verbose {
+					did := strings.Join(opr.FactomDigitalID[:len(opr.FactomDigitalID)-1], "-")
+					log.WithFields(log.Fields{
+						"hashrate": common.Stats.GetHashRate(),
+						"difficulty": common.FormatDiff(common.Stats.Difficulty, 10),
+						"id": did,
+						"miner_count": numMiners,
+						"height": fds.Dbht,
+						}).Info("OPR Block Mined")
+					common.Stats.Clear()
+				}
 			}
 		}
 	}
@@ -80,7 +71,7 @@ func writeMiningRecord(opr *OraclePriceRecord) {
 		if err1 == nil && err2 == nil {
 			return nil
 		}
-		return errors.New("unable to commit Entry to factom")
+		return errors.New("Unable to commit entry to factom")
 	}
 
 	err := backoff.Retry(operation, common.PegExponentialBackOff())
