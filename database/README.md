@@ -4,4 +4,4 @@ used to keep up with balances at addresses from mining rewards, and may be
 extended to include balances at addresses after conversions and transactions
 
 The database ensures that we don't have to reprocess the entire PegNet chains
-everything someone launches the PegNet.
+everytime someone launches the PegNet.
