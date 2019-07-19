@@ -6,7 +6,6 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -231,12 +230,6 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = winners
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-		if i == 0 {
-			log.WithFields(log.Fields{
-				"height": humanize.Comma(oprblocks[i].Dbht),
-			}).Info("Added new valid block to OPR Chain")
-		}
-
 		// Update the balances for each winner
 		for place, win := range winners {
 			switch place {
@@ -263,15 +256,20 @@ func GetEntryBlocks(config *config.Config) {
 				fid = fid + "-" + f
 			}
 			if i == 0 {
-				log.WithFields(log.Fields{
+				logger := log.WithFields(log.Fields{
 					"place":      place,
-					"fid":        fid,
+					"id":        fid,
 					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
-					"grade":      fmt.Sprintf("%.4e", win.Grade),
-					"difficulty": fmt.Sprintf("%.10e", float64(win.Difficulty)),
+					"grade":      common.FormatGrade(win.Grade, 4),
+					"difficulty": common.FormatDiff(win.Difficulty, 10),
 					"address":    win.CoinbasePNTAddress,
 					"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
-				}).Info("New OPR Winner")
+				})
+				if place == 0 {
+					logger.Info("New OPR Winner")
+				} else {
+					logger.Debug("New OPR Winner")
+				}
 			}
 		}
 	}
