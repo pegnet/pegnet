@@ -120,7 +120,7 @@ func (stats *MiningStats) Clear() {
 func (stats *MiningStats) GetHashRate () uint64 {
 	stats.Mux.Lock()
 	defer stats.Mux.Unlock()
-	return stats.HashRate / 540   // 540 seconds in 9 minutes
+	return stats.HashRate / 480   // 480 seconds in 8 minutes
 }
 
 // FormatDiff returns a human readable string in scientific notation
