@@ -4,13 +4,13 @@ package polling
 
 import (
 	"errors"
-	"strconv"
-	"github.com/zpatrick/go-config"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -170,7 +170,7 @@ func HandleKitcoWeb(data KitcoData, peg *PegAssets) {
 
 }
 
-func KitcoInterface(config *config.Config, peg *PegAssets) { 
+func KitcoInterface(config *config.Config, peg *PegAssets) {
 	log.Debug("Pulling Asset data from Kitco")
 	KitcoResponse, err := CallKitcoWeb()
 	if err != nil {

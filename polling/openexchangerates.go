@@ -4,23 +4,23 @@ package polling
 
 import (
 	"encoding/json"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
-	"github.com/cenkalti/backoff"
-	log "github.com/sirupsen/logrus"
 )
 
 type OpenExchangeRatesResponse struct {
-	Disclaimer  string                  `json:"disclaimer"`
-	License     string                  `json:"license"`
-	Timestamp   int64                   `json:"timestamp"`
-	Base        string                  `json:"base"`
-	Error       bool				    `json:"error"`
-	Status	    int64					`json:"status"`
-	Message     string					`json:"message"`
-	Description string					`json:"description"`
-	Rates       map[string]float64      `json:"rates"`
+	Disclaimer  string             `json:"disclaimer"`
+	License     string             `json:"license"`
+	Timestamp   int64              `json:"timestamp"`
+	Base        string             `json:"base"`
+	Error       bool               `json:"error"`
+	Status      int64              `json:"status"`
+	Message     string             `json:"message"`
+	Description string             `json:"description"`
+	Rates       map[string]float64 `json:"rates"`
 }
 
 func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse, err error) {
@@ -54,8 +54,8 @@ func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets)
 	// Handle Response Errors
 	if response.Error {
 		log.WithFields(log.Fields{
-			"status": response.Status,
-			"message": response.Message,
+			"status":      response.Status,
+			"message":     response.Message,
 			"description": response.Description,
 		}).Fatal("Failed to access OpenExchangeRates")
 	}
@@ -63,7 +63,7 @@ func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets)
 	UpdatePegAssets(response.Rates, response.Timestamp, peg)
 }
 
-func OpenExchangeRatesInterface(config *config.Config, peg *PegAssets) { 
+func OpenExchangeRatesInterface(config *config.Config, peg *PegAssets) {
 	log.Debug("Pulling Asset data from OpenExchangesRates")
 	OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
 	if err != nil {
