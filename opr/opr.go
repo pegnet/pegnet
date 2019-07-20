@@ -190,19 +190,21 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 	nonce := []byte{0, 0}
 	log.WithFields(log.Fields{"opr_hash": hex.EncodeToString(opr.OPRHash)}).Debug("Started mining")
 
-miningloop:
-	for i := 0; ; i++ {
+	var i uint64
+	var diff uint64
+	miningloop:
+	for i = 0; ; i++ {
 		select {
-		case <-opr.StopMining:
-			break miningloop
+			case <-opr.StopMining:
+				break miningloop
 
-		default:
+			default:
 		}
 		nonce = nonce[:0]
 		for j := i; j > 0; j = j >> 8 {
 			nonce = append(nonce, byte(j))
 		}
-		diff := opr.ComputeDifficulty(nonce)
+		diff = opr.ComputeDifficulty(nonce)
 
 		if diff > opr.Difficulty {
 			opr.Difficulty = diff
@@ -210,12 +212,12 @@ miningloop:
 			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
 			log.WithFields(log.Fields{
 				"opr_hash":   hex.EncodeToString(opr.OPRHash),
-				"difficulty": fmt.Sprintf("%016x", diff),
+				"difficulty": diff,
 				"nonce":      hex.EncodeToString(nonce),
-			}).Trace("Mined OPR")
+			}).Debug("Mined OPR")
 		}
-
 	}
+	common.Stats.Update(i, opr.Difficulty)
 }
 
 // ShortString returns a human readable string with select data
