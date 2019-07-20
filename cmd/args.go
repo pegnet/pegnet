@@ -1,3 +1,6 @@
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package cmd
 
 import (
@@ -7,9 +10,9 @@ import (
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
+	"math"
 	"regexp"
 	"strconv"
-	"math"
 )
 
 //
@@ -138,7 +141,6 @@ func ValidOwnedECAddresses() []string {
 	}
 	return strs
 }
-
 
 // FactoidToFactoshi is taken from the factom lib, but errors when extra decimals provided
 func factoidToFactoshi(amt string) (uint64, error) {

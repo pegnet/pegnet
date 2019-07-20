@@ -1,24 +1,25 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package polling
 
 import (
 	"encoding/json"
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
-	"github.com/cenkalti/backoff"
-	log "github.com/sirupsen/logrus"
 )
 
 type APILayerResponse struct {
-	Success   bool					`json:"success"`
-	Terms     string				`json:"terms"`
-	Privacy   string				`json:"privacy"`
-	Timestamp int64					`json:"timestamp"`
-	Source    string				`json:"source"`
-	Quotes    map[string]float64    `json:"quotes"`
-	Error     APILayerError			`json:"error"`
+	Success   bool               `json:"success"`
+	Terms     string             `json:"terms"`
+	Privacy   string             `json:"privacy"`
+	Timestamp int64              `json:"timestamp"`
+	Source    string             `json:"source"`
+	Quotes    map[string]float64 `json:"quotes"`
+	Error     APILayerError      `json:"error"`
 }
 
 type APILayerError struct {

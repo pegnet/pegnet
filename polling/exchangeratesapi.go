@@ -1,20 +1,21 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package polling
 
 import (
 	"encoding/json"
 	"github.com/cenkalti/backoff"
-	"github.com/zpatrick/go-config"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
 )
 
 type ExchangeRatesAPIResponse struct {
-	Date    string             `json:"date"`
-	Base    string             `json:"base"`
-	Rates   map[string]float64 `json:"rates"`
+	Date  string             `json:"date"`
+	Base  string             `json:"base"`
+	Rates map[string]float64 `json:"rates"`
 }
 
 func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {

@@ -1,13 +1,13 @@
-package polling
-
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 
+package polling
+
 import (
-	"time"
-	"reflect"
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
+	"reflect"
+	"time"
 )
 
 // Default values for PollingExponentialBackOff.
@@ -55,7 +55,7 @@ func UpdatePegAssets(rates map[string]float64, timestamp int64, peg *PegAssets, 
 	for _, currencyISO := range currenciesList {
 		f := elem.FieldByName(currencyISO)
 		if f.IsValid() {
-			f.FieldByName("Value").SetFloat(Round(rates[p + currencyISO]))
+			f.FieldByName("Value").SetFloat(Round(rates[p+currencyISO]))
 			f.FieldByName("When").SetInt(timestamp)
 		}
 	}

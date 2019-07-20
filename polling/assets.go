@@ -1,14 +1,15 @@
 // Copyright (c) of parts are held by the various contributors (see the CLA)
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
+
 package polling
 
 import (
 	"fmt"
-	"sync"
-	"math/rand"
-	"time"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
+	"math/rand"
+	"sync"
+	"time"
 )
 
 const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
@@ -78,7 +79,7 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
-var currenciesList = []string {
+var currenciesList = []string{
 	"USD",
 	"EUR",
 	"JPY",
@@ -98,8 +99,8 @@ var availableDigitalAssets = map[string]func(config *config.Config, peg *PegAsse
 
 var defaultCurrencyAsset = "APILayer"
 var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAssets){
-	"APILayer": APILayerInterface,
-	"ExchangeRatesAPI": ExchangeRatesAPIInterface, 
+	"APILayer":          APILayerInterface,
+	"ExchangeRatesAPI":  ExchangeRatesAPIInterface,
 	"OpenExchangeRates": OpenExchangeRatesInterface,
 }
 
@@ -170,7 +171,6 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	var Peg PegAssets
 
-	
 	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
 
 	// digital currencies
@@ -181,7 +181,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	// precious metals
 	availableMetalAssets[precious_metals](config, &Peg)
-	
+
 	// debug
 	log.WithFields(log.Fields{
 		"XBT": Peg.XBT.Value,
