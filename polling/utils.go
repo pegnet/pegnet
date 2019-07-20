@@ -4,10 +4,11 @@
 package polling
 
 import (
-	"github.com/cenkalti/backoff"
-	log "github.com/sirupsen/logrus"
 	"reflect"
 	"time"
+
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
 )
 
 // Default values for PollingExponentialBackOff.

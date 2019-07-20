@@ -5,14 +5,15 @@ package polling
 
 import (
 	"errors"
-	"github.com/cenkalti/backoff"
-	"github.com/pegnet/pegnet/common"
-	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 type KitcoData struct {
@@ -45,23 +46,25 @@ func CallKitcoWeb() (KitcoData, error) {
 		}
 
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		matchStart := "<table class=\"world_spot_price\">"
-		matchStop := "</table>"
-		strResp := string(body)
-		start := strings.Index(strResp, matchStart)
-		if start < 0 {
-			err = errors.New("No Response")
-			log.WithError(err).Warning("Failed to get response from Kitco")
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
 			return err
-		}
-		strResp = strResp[start:]
-		stop := strings.Index(strResp, matchStop)
-		strResp = strResp[0 : stop+9]
-		rows := strings.Split(strResp, "\n")
-		for _, r := range rows {
-			if strings.Index(r, "wsp-") > 0 {
-				ParseKitco(r, &kData)
+		} else {
+			matchStart := "<table class=\"world_spot_price\">"
+			matchStop := "</table>"
+			strResp := string(body)
+			start := strings.Index(strResp, matchStart)
+			if start < 0 {
+				err = errors.New("No Response")
+				log.WithError(err).Warning("Failed to get response from Kitco")
+			}
+			strResp = strResp[start:]
+			stop := strings.Index(strResp, matchStop)
+			strResp = strResp[0 : stop+9]
+			rows := strings.Split(strResp, "\n")
+			for _, r := range rows {
+				if strings.Index(r, "wsp-") > 0 {
+					ParseKitco(r, &kData)
+				}
 			}
 		}
 		return nil

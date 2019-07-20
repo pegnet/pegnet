@@ -7,10 +7,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"net/http"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 func apiHandler(w http.ResponseWriter, r *http.Request) {

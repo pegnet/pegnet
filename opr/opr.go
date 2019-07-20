@@ -192,13 +192,13 @@ func (opr *OraclePriceRecord) Mine(verbose bool) {
 
 	var i uint64
 	var diff uint64
-	miningloop:
+miningloop:
 	for i = 0; ; i++ {
 		select {
-			case <-opr.StopMining:
-				break miningloop
+		case <-opr.StopMining:
+			break miningloop
 
-			default:
+		default:
 		}
 		nonce = nonce[:0]
 		for j := i; j > 0; j = j >> 8 {

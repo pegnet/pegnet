@@ -5,8 +5,9 @@ package api
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
 	"net/http"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Error struct returns a code and it's associated message

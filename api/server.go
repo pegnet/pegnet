@@ -4,9 +4,10 @@
 package api
 
 import (
+	"net/http"
+
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
-	"net/http"
 )
 
 // RequestHandler as the base handler

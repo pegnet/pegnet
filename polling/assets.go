@@ -5,11 +5,12 @@ package polling
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
 	"math/rand"
 	"sync"
 	"time"
+
+	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
@@ -107,10 +108,6 @@ var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAss
 var defaultMetalAsset = "Kitco"
 var availableMetalAssets = map[string]func(config *config.Config, peg *PegAssets){
 	"Kitco": KitcoInterface,
-}
-
-var prodBlacklistAssets = []string{
-	"OpenExchangeRates",
 }
 
 func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
