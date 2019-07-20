@@ -5,14 +5,14 @@ package cmd
 
 import (
 	"fmt"
+	"math"
+	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
-	"math"
-	"regexp"
-	"strconv"
 )
 
 //

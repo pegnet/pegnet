@@ -50,12 +50,12 @@ func OneMiner(verbose bool, config *config.Config, monitor *common.Monitor, grad
 				if verbose {
 					did := strings.Join(opr.FactomDigitalID[:len(opr.FactomDigitalID)-1], "-")
 					log.WithFields(log.Fields{
-						"hashrate": common.Stats.GetHashRate(),
-						"difficulty": common.FormatDiff(common.Stats.Difficulty, 10),
-						"id": did,
+						"hashrate":    common.Stats.GetHashRate(),
+						"difficulty":  common.FormatDiff(common.Stats.Difficulty, 10),
+						"id":          did,
 						"miner_count": numMiners,
-						"height": fds.Dbht,
-						}).Info("OPR Block Mined")
+						"height":      fds.Dbht,
+					}).Info("OPR Block Mined")
 					common.Stats.Clear()
 				}
 			}

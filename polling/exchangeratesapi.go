@@ -5,11 +5,12 @@ package polling
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"io/ioutil"
-	"net/http"
 )
 
 type ExchangeRatesAPIResponse struct {
@@ -29,8 +30,11 @@ func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
 		}
 
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		err = json.Unmarshal(body, &ExchangeRatesAPIResponse)
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		} else if err = json.Unmarshal(body, &ExchangeRatesAPIResponse); err != nil {
+			return err
+		}
 		return nil
 	}
 

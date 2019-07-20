@@ -4,8 +4,9 @@
 package database_test
 
 import (
-	. "github.com/pegnet/pegnet/database"
 	"testing"
+
+	. "github.com/pegnet/pegnet/database"
 )
 
 // Helper function to check for errors, particularly where we don't ever expect them.

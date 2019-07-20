@@ -4,8 +4,9 @@
 package common
 
 import (
-	"github.com/cenkalti/backoff"
 	"time"
+
+	"github.com/cenkalti/backoff"
 )
 
 // Default values for PegExponentialBackOff.

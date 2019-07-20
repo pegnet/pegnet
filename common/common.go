@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
 	"github.com/FactomProject/factom"
 )
 
@@ -97,7 +98,7 @@ type MiningStats struct {
 }
 
 // Update adds info from an individual miner
-func (stats *MiningStats) Update (hashrate uint64, diff uint64) {
+func (stats *MiningStats) Update(hashrate uint64, diff uint64) {
 	stats.Mux.Lock()
 	defer stats.Mux.Unlock()
 	stats.HashRate += hashrate
@@ -117,10 +118,10 @@ func (stats *MiningStats) Clear() {
 }
 
 // GetHashRate returns the hashes per second mined in the last block
-func (stats *MiningStats) GetHashRate () uint64 {
+func (stats *MiningStats) GetHashRate() uint64 {
 	stats.Mux.Lock()
 	defer stats.Mux.Unlock()
-	return stats.HashRate / 480   // 480 seconds in 8 minutes
+	return stats.HashRate / 480 // 480 seconds in 8 minutes
 }
 
 // FormatDiff returns a human readable string in scientific notation

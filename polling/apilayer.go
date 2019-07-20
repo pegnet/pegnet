@@ -5,11 +5,12 @@ package polling
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"net/http"
+
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"io/ioutil"
-	"net/http"
 )
 
 type APILayerResponse struct {
@@ -34,8 +35,6 @@ func check(e error) {
 	}
 }
 
-const apikeyfile = "apikey.dat"
-
 func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 	var APILayerResponse APILayerResponse
 
@@ -49,13 +48,15 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 		resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
 		if err != nil {
 			log.WithError(err).Warning("Failed to get response from API Layer")
-			return err
 		}
 
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		err = json.Unmarshal(body, &APILayerResponse)
-		return nil
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		} else if err = json.Unmarshal(body, &APILayerResponse); err != nil {
+			return err
+		}
+		return err
 	}
 
 	err = backoff.Retry(operation, PollingExponentialBackOff())

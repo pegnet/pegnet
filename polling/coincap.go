@@ -5,12 +5,13 @@ package polling
 
 import (
 	"encoding/json"
-	"github.com/cenkalti/backoff"
-	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
 	"io/ioutil"
 	"net/http"
 	"strconv"
+
+	"github.com/cenkalti/backoff"
+	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 type CoinCapResponse struct {
@@ -42,8 +43,11 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 			return err
 		}
 		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		err = json.Unmarshal(body, &CoinCapResponse)
+		if body, err := ioutil.ReadAll(resp.Body); err != nil {
+			return err
+		} else if err = json.Unmarshal(body, &CoinCapResponse); err != nil {
+			return err
+		}
 		return nil
 	}
 

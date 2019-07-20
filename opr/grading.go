@@ -258,7 +258,7 @@ func GetEntryBlocks(config *config.Config) {
 			if i == 0 {
 				logger := log.WithFields(log.Fields{
 					"place":      place,
-					"id":        fid,
+					"id":         fid,
 					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
 					"grade":      common.FormatGrade(win.Grade, 4),
 					"difficulty": common.FormatDiff(win.Difficulty, 10),

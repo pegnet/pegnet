@@ -4,9 +4,10 @@
 package database
 
 import (
+	"sync"
+
 	"github.com/syndtr/goleveldb/leveldb"
 	"github.com/syndtr/goleveldb/leveldb/util"
-	"sync"
 )
 
 var _ = leveldb.OpenFile
