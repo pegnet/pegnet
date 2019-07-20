@@ -48,7 +48,7 @@ wget https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini -P
 * Have factom-walletd open
 * Start Pegnet
 
-On first startup there will be some delay while the bytemap is shuffled. It will only start mining at the beginning of a block also.
+On first startup there will be a delay while the hash bytemap is generated. Mining will only begin at the start of each ten minute block.
 
 # Contributing 
 * Join [Discord](https://discord.gg/V6T7mCW) and chat about it with lovely people!
@@ -67,7 +67,7 @@ Docker guide can be found [here](https://github.com/pegnet/pegnet/blob/develop/D
 
 Install the [factom binaries](https://github.com/FactomProject/distribution/releases)
 
-The Factom developer sandbox setup overview is [here], which covers the first parts, otherwise use below.
+The Factom developer sandbox setup overview is [here](https://docs.factomprotocol.org/start/developer-sandbox-setup-guide), which covers the first parts, otherwise use below.
 
 ```bash
 # In first terminal
