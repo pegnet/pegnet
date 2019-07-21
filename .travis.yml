@@ -15,7 +15,7 @@ matrix:
     - os: windows
 
 script:
-  - ./.travis.gofmt.sh
+  - ./.gofmt.sh
   - go test ./...
   - go test -race ./...
 
