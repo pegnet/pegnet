@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pegnet/pegnet/common"
-
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )

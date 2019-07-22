@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/pegnet/pegnet/common"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -19,55 +18,12 @@ const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
 
 type PegAssets map[string]PegItem
 
-type pegAssets struct {
-	PNT PegItem
-	USD PegItem
-	EUR PegItem
-	JPY PegItem
-	GBP PegItem
-	CAD PegItem
-	CHF PegItem
-	INR PegItem
-	SGD PegItem
-	CNY PegItem
-	HKD PegItem
-	XAU PegItem
-	XAG PegItem
-	XPD PegItem
-	XPT PegItem
-	XBT PegItem
-	ETH PegItem
-	LTC PegItem
-	XBC PegItem
-	FCT PegItem
-}
-
 func (p PegAssets) Clone(randomize float64) PegAssets {
 	np := make(PegAssets)
 	for _, asset := range common.AllAssets {
 		np[asset] = p[asset].Clone(randomize)
 	}
 
-	//np.PNT = p.PNT.Clone(randomize)
-	//np.USD = p.USD.Clone(randomize)
-	//np.EUR = p.EUR.Clone(randomize)
-	//np.JPY = p.JPY.Clone(randomize)
-	//np.GBP = p.GBP.Clone(randomize)
-	//np.CAD = p.CAD.Clone(randomize)
-	//np.CHF = p.CHF.Clone(randomize)
-	//np.INR = p.INR.Clone(randomize)
-	//np.SGD = p.SGD.Clone(randomize)
-	//np.CNY = p.CNY.Clone(randomize)
-	//np.HKD = p.HKD.Clone(randomize)
-	//np.XAU = p.XAU.Clone(randomize)
-	//np.XAG = p.XAG.Clone(randomize)
-	//np.XPD = p.XPD.Clone(randomize)
-	//np.XPT = p.XPT.Clone(randomize)
-	//np.XBT = p.XBT.Clone(randomize)
-	//np.ETH = p.ETH.Clone(randomize)
-	//np.LTC = p.LTC.Clone(randomize)
-	//np.XBC = p.XBC.Clone(randomize)
-	//np.FCT = p.FCT.Clone(randomize)
 	return np
 }
 

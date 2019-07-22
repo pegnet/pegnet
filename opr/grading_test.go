@@ -11,9 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pegnet/pegnet/common"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 )
 
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
