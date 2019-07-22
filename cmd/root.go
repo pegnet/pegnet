@@ -14,6 +14,7 @@ import (
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/controlPanel"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/pegnet/pegnet/pegnetMining"
 	log "github.com/sirupsen/logrus"
@@ -83,6 +84,8 @@ var rootCmd = &cobra.Command{
 
 		http.Handle("/v1", api.RequestHandler{})
 		go http.ListenAndServe(":8099", nil)
+
+		go controlPanel.ServeControlPanel(monitor)
 
 		if Miners > 0 {
 			pegnetMining.Mine(Miners, Config, monitor, grader)
