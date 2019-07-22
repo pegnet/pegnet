@@ -3,11 +3,15 @@ package opr_test
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/FactomProject/btcutil/base58"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
+	"github.com/zpatrick/go-config"
 )
 
 // The correct marshal format
@@ -72,6 +76,53 @@ func TestAssetListUnmarshal(t *testing.T) {
 		t.Error("Marshal is different than unmarshaled original")
 		fmt.Println(string(data))
 	}
+}
+
+// TestOPRJsonMarshal will ensure the json marshalling can go both ways
+func TestOPRJsonMarshal(t *testing.T) {
+	var err error
+	o := opr.NewOraclePriceRecord()
+	for _, asset := range common.AllAssets {
+		o.Assets[asset] = rand.Float64()
+	}
+
+	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	protocol, err1 := c.String("Miner.Protocol")
+	network, err2 := c.String("Miner.Network")
+	if err1 != nil || err2 != nil {
+		t.Error("Should have protocol and network")
+	}
+	o.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	o.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", common.RandomByteSliceOfLen(32))
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !o.Validate(c) {
+		t.Error("Should be valid")
+	}
+
+	data, err := json.Marshal(o)
+	if err != nil {
+		t.Error(err)
+	}
+
+	o2 := opr.NewOraclePriceRecord()
+	err = json.Unmarshal(data, o2)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !reflect.DeepEqual(o, o2) {
+		t.Errorf("did not marshal into the same")
+	}
+
+	o2.Assets["PNT"] = 0.123
+	// Ensure not just a deep equal oddity
+	if reflect.DeepEqual(o, o2) {
+		t.Errorf("I changed it, they should not be different")
+	}
+
 }
 
 // verifyAssetStringOrder will verify the resulting string has the assets in the same order as the global order
