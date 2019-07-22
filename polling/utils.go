@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 )
@@ -46,14 +48,14 @@ func ConverToUnix(format string, value string) (timestamp int64) {
 	return t.Unix()
 }
 
-func UpdatePegAssets(rates map[string]float64, timestamp int64, peg *PegAssets, prefix ...string) {
+func UpdatePegAssets(rates map[string]float64, timestamp int64, peg PegAssets, prefix ...string) {
 	p := ""
 	if len(prefix) > 0 {
 		p = prefix[0]
 	}
 
 	elem := reflect.ValueOf(peg).Elem()
-	for _, currencyISO := range currenciesList {
+	for _, currencyISO := range common.CurrencyAssets {
 		f := elem.FieldByName(currencyISO)
 		if f.IsValid() {
 			f.FieldByName("Value").SetFloat(Round(rates[p+currencyISO]))

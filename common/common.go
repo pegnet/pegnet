@@ -59,29 +59,6 @@ func init() {
 	}
 }
 
-var AssetNames = []string{
-	"PNT",
-	"USD",
-	"EUR",
-	"JPY",
-	"GBP",
-	"CAD",
-	"CHF",
-	"INR",
-	"SGD",
-	"CNY",
-	"HKD",
-	"XAU",
-	"XAG",
-	"XPD",
-	"XPT",
-	"XBT",
-	"ETH",
-	"LTC",
-	"XBC",
-	"FCT",
-}
-
 var (
 	fcPubPrefix = []byte{0x5f, 0xb1}
 	fcSecPrefix = []byte{0x64, 0x78}

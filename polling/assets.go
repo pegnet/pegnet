@@ -9,67 +9,75 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pegnet/pegnet/common"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
 const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
 
-type PegAssets struct {
-	PNT PegItems
-	USD PegItems
-	EUR PegItems
-	JPY PegItems
-	GBP PegItems
-	CAD PegItems
-	CHF PegItems
-	INR PegItems
-	SGD PegItems
-	CNY PegItems
-	HKD PegItems
-	XAU PegItems
-	XAG PegItems
-	XPD PegItems
-	XPT PegItems
-	XBT PegItems
-	ETH PegItems
-	LTC PegItems
-	XBC PegItems
-	FCT PegItems
+type PegAssets map[string]PegItem
+
+type pegAssets struct {
+	PNT PegItem
+	USD PegItem
+	EUR PegItem
+	JPY PegItem
+	GBP PegItem
+	CAD PegItem
+	CHF PegItem
+	INR PegItem
+	SGD PegItem
+	CNY PegItem
+	HKD PegItem
+	XAU PegItem
+	XAG PegItem
+	XPD PegItem
+	XPT PegItem
+	XBT PegItem
+	ETH PegItem
+	LTC PegItem
+	XBC PegItem
+	FCT PegItem
 }
 
-func (p *PegAssets) Clone(randomize float64) PegAssets {
-	np := new(PegAssets)
-	np.PNT = p.PNT.Clone(randomize)
-	np.USD = p.USD.Clone(randomize)
-	np.EUR = p.EUR.Clone(randomize)
-	np.JPY = p.JPY.Clone(randomize)
-	np.GBP = p.GBP.Clone(randomize)
-	np.CAD = p.CAD.Clone(randomize)
-	np.CHF = p.CHF.Clone(randomize)
-	np.INR = p.INR.Clone(randomize)
-	np.SGD = p.SGD.Clone(randomize)
-	np.CNY = p.CNY.Clone(randomize)
-	np.HKD = p.HKD.Clone(randomize)
-	np.XAU = p.XAU.Clone(randomize)
-	np.XAG = p.XAG.Clone(randomize)
-	np.XPD = p.XPD.Clone(randomize)
-	np.XPT = p.XPT.Clone(randomize)
-	np.XBT = p.XBT.Clone(randomize)
-	np.ETH = p.ETH.Clone(randomize)
-	np.LTC = p.LTC.Clone(randomize)
-	np.XBC = p.XBC.Clone(randomize)
-	np.FCT = p.FCT.Clone(randomize)
-	return *np
+func (p PegAssets) Clone(randomize float64) PegAssets {
+	np := make(PegAssets)
+	for _, asset := range common.AllAssets {
+		np[asset] = p[asset].Clone(randomize)
+	}
+
+	//np.PNT = p.PNT.Clone(randomize)
+	//np.USD = p.USD.Clone(randomize)
+	//np.EUR = p.EUR.Clone(randomize)
+	//np.JPY = p.JPY.Clone(randomize)
+	//np.GBP = p.GBP.Clone(randomize)
+	//np.CAD = p.CAD.Clone(randomize)
+	//np.CHF = p.CHF.Clone(randomize)
+	//np.INR = p.INR.Clone(randomize)
+	//np.SGD = p.SGD.Clone(randomize)
+	//np.CNY = p.CNY.Clone(randomize)
+	//np.HKD = p.HKD.Clone(randomize)
+	//np.XAU = p.XAU.Clone(randomize)
+	//np.XAG = p.XAG.Clone(randomize)
+	//np.XPD = p.XPD.Clone(randomize)
+	//np.XPT = p.XPT.Clone(randomize)
+	//np.XBT = p.XBT.Clone(randomize)
+	//np.ETH = p.ETH.Clone(randomize)
+	//np.LTC = p.LTC.Clone(randomize)
+	//np.XBC = p.XBC.Clone(randomize)
+	//np.FCT = p.FCT.Clone(randomize)
+	return np
 }
 
-type PegItems struct {
+type PegItem struct {
 	Value float64
 	When  int64 // unix timestamp
 }
 
-func (p *PegItems) Clone(randomize float64) PegItems {
-	np := new(PegItems)
+func (p PegItem) Clone(randomize float64) PegItem {
+	np := new(PegItem)
 	np.Value = p.Value + p.Value*(randomize/2*rand.Float64()) - p.Value*(randomize/2*rand.Float64())
 	np.Value = Round(np.Value)
 	np.When = p.When
@@ -80,37 +88,24 @@ var lastMutex sync.Mutex
 var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
-var currenciesList = []string{
-	"USD",
-	"EUR",
-	"JPY",
-	"GBP",
-	"CAD",
-	"CHF",
-	"INR",
-	"SGD",
-	"CNY",
-	"HKD",
-}
-
 var defaultDigitalAsset = "CoinCap"
-var availableDigitalAssets = map[string]func(config *config.Config, peg *PegAssets){
+var availableDigitalAssets = map[string]func(config *config.Config, peg PegAssets){
 	"CoinCap": CoinCapInterface,
 }
 
 var defaultCurrencyAsset = "APILayer"
-var availableCurrencyAssets = map[string]func(config *config.Config, peg *PegAssets){
+var availableCurrencyAssets = map[string]func(config *config.Config, peg PegAssets){
 	"APILayer":          APILayerInterface,
 	"ExchangeRatesAPI":  ExchangeRatesAPIInterface,
 	"OpenExchangeRates": OpenExchangeRatesInterface,
 }
 
 var defaultMetalAsset = "Kitco"
-var availableMetalAssets = map[string]func(config *config.Config, peg *PegAssets){
+var availableMetalAssets = map[string]func(config *config.Config, peg PegAssets){
 	"Kitco": KitcoInterface,
 }
 
-func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg *PegAssets), default_asset string) []string {
+func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg PegAssets), default_asset string) []string {
 	var result = []string{}
 	for key := range assets {
 		weight, _ := config.Int("Oracle." + key)
@@ -166,43 +161,27 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 		"delta_time": delta,
 	}).Info("Pulling PEG Asset data")
 
-	var Peg PegAssets
+	peg := make(PegAssets)
 
 	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
 
 	// digital currencies
-	availableDigitalAssets[digital_currencies](config, &Peg)
+	availableDigitalAssets[digital_currencies](config, peg)
 
 	// currency rates
-	availableCurrencyAssets[currency_rates](config, &Peg)
+	availableCurrencyAssets[currency_rates](config, peg)
 
 	// precious metals
-	availableMetalAssets[precious_metals](config, &Peg)
+	availableMetalAssets[precious_metals](config, peg)
 
 	// debug
-	log.WithFields(log.Fields{
-		"XBT": Peg.XBT.Value,
-		"ETH": Peg.ETH.Value,
-		"LTC": Peg.LTC.Value,
-		"XBC": Peg.XBC.Value,
-		"FCT": Peg.FCT.Value,
-		"USD": Peg.USD.Value,
-		"EUR": Peg.EUR.Value,
-		"JPY": Peg.JPY.Value,
-		"GBP": Peg.GBP.Value,
-		"CAD": Peg.CAD.Value,
-		"CHF": Peg.CHF.Value,
-		"INR": Peg.INR.Value,
-		"SGD": Peg.SGD.Value,
-		"CNY": Peg.CNY.Value,
-		"HKD": Peg.HKD.Value,
-		"XAU": Peg.XAU.Value,
-		"XAG": Peg.XAG.Value,
-		"XPD": Peg.XPD.Value,
-		"XPT": Peg.XPT.Value,
-	}).Debug("Pulling PEG Asset data Result")
+	fields := log.Fields{}
+	for asset, v := range peg {
+		fields[asset] = v.Value
+	}
+	log.WithFields(fields).Debug("Pulling PEG Asset data Result")
 
-	lastAnswer = Peg
+	lastAnswer = peg
 
-	return Peg.Clone(randomize)
+	return peg.Clone(randomize)
 }
