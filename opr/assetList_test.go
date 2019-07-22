@@ -35,7 +35,9 @@ func TestVerifyFunction(t *testing.T) {
 
 func TestAssetListJSONMarshal(t *testing.T) {
 	a := make(opr.OraclePriceRecordAssetList)
-	for _, asset := range common.AllAssets {
+	// Add them in reverse order
+	for i := len(common.AllAssets) - 1; i >= 0; i-- {
+		asset := common.AllAssets[i]
 		a[asset] = 0
 	}
 
