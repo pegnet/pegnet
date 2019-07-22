@@ -51,9 +51,7 @@ func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
 		if avg[i] > 0 {
 			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
 			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the squares of the differences
-		} else {
-			opr.Grade = v.value // If the average is zero, then it's all zero so
-		} // set the Grade to the value.  It is as good a choice as any.
+		}
 	}
 	return opr.Grade
 }
