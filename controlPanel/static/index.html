@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>PegNet ControlPanel</title>
+
+    <link rel="stylesheet" href="/styles/styles.css">
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-light bg-light flex-md-nowrap p-0">
+        <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="/"><img src="/img/logo.png" alt="PegNet" title="PegNet" class="img-fluid" /></a>
+        
+        <input class="form-control form-control-dark w-100" type="text" placeholder="Search" aria-label="Search">
+    </nav>
+
+    <div class="container-fluid">
+        <div class="row">
+            <nav class="col-md-2 d-none d-md-block bg-light sidebar">
+                <div class="sidebar-sticky">
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link active" href="#">
+                            <i class="fa fa-home"></i>
+                            Dashboard <span class="sr-only">(current)</span>
+                            </a>
+                        </li>
+                 
+                    </ul>
+                </div>
+            </nav>
+
+            <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">Dashboard</h1>
+                </div>
+                
+                <div class="form-group row">
+									<label for="block_height" class="col-sm-3 col-form-label">Your Block Height:</label>
+									<div class="col-sm-9">
+										<input type="text" readonly class="form-control-plaintext" id="block_height" value="0">
+									</div>
+								</div>
+								<div class="form-group row">
+									<label for="current_minute" class="col-sm-3 col-form-label">Your Current Minute:</label>
+									<div class="col-sm-9">
+										<input type="text" readonly class="form-control-plaintext" id="current_minute" value="0">
+									</div>
+								</div>
+
+            </main>
+        </div>
+    </div>
+    <script src="/scripts/app.js"></script>
+</body>
+</html>
