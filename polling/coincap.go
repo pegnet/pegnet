@@ -44,6 +44,7 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 			log.WithError(err).Warning("Failed to get response from CoinCap")
 			return err
 		}
+
 		defer resp.Body.Close()
 		if body, err := ioutil.ReadAll(resp.Body); err != nil {
 			return err

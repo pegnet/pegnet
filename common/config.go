@@ -40,6 +40,7 @@ func NewDefaultConfigProvider() *DefaultConfigProvider {
   IdentityChain=prototype
 [Oracle]
   APILayerKey=f6c9765ef81279e8891d40e34ef7ab01
+  OpenExchangeRatesKey=bogus
   CoinCap=1
   APILayer=1
   ExchangeRatesAPI=0

@@ -4,7 +4,6 @@
 package polling
 
 import (
-	"reflect"
 	"time"
 
 	"github.com/pegnet/pegnet/common"
@@ -54,12 +53,9 @@ func UpdatePegAssets(rates map[string]float64, timestamp int64, peg PegAssets, p
 		p = prefix[0]
 	}
 
-	elem := reflect.ValueOf(peg).Elem()
 	for _, currencyISO := range common.CurrencyAssets {
-		f := elem.FieldByName(currencyISO)
-		if f.IsValid() {
-			f.FieldByName("Value").SetFloat(Round(rates[p+currencyISO]))
-			f.FieldByName("When").SetInt(timestamp)
+		if v, ok := rates[p+currencyISO]; ok {
+			peg[currencyISO] = PegItem{Value: v, When: timestamp}
 		}
 	}
 }
