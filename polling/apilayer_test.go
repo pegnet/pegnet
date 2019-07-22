@@ -14,8 +14,8 @@ var (
 `
 )
 
-// TestApiLayerPeggedAssets tests all the crypto assets are found on ApiLayer
-func TestApiLayerPeggedAssets(t *testing.T) {
+// TestFixedApiLayerPeggedAssets tests all the crypto assets are found on ApiLayer
+func TestFixedApiLayerPeggedAssets(t *testing.T) {
 	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer

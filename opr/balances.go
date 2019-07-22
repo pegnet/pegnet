@@ -19,7 +19,7 @@ var Balances map[string]map[[32]byte]int64
 
 func init() {
 	Balances = make(map[string]map[[32]byte]int64)
-	for _, asset := range common.AssetNames {
+	for _, asset := range common.AllAssets {
 		Balances["p"+asset] = make(map[[32]byte]int64)
 		Balances["t"+asset] = make(map[[32]byte]int64)
 	}

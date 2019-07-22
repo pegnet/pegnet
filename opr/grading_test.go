@@ -11,6 +11,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/FactomProject/factom"
 )
 
@@ -18,7 +20,7 @@ import (
 // the ID is the first character of the name
 func dopr(name string, difficulty uint64) *OraclePriceRecord {
 	//split := strings.Split("name", "")
-	o := new(OraclePriceRecord)
+	o := NewOraclePriceRecord()
 	o.FactomDigitalID = []string{string(name[0])}
 	o.Difficulty = difficulty
 	o.OPRChainID = name
@@ -130,7 +132,7 @@ func init() {
 	// create difficulties that are in order and indexed in an array so I can assign them and compare
 	// them in the tests.
 	for i := 0; i < 100; i++ {
-		opr := new(OraclePriceRecord)
+		opr := NewOraclePriceRecord()
 		opr.Entry = new(factom.Entry)
 		opr.Entry.ExtIDs = [][]byte{{byte(i)}}
 		opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
@@ -143,28 +145,11 @@ func init() {
 }
 
 func genOPR(entry gradeEntry) *OraclePriceRecord {
-	opr := new(OraclePriceRecord)
+	opr := NewOraclePriceRecord()
 	opr.FactomDigitalID = []string{entry.id}
-	opr.PNT = entry.data
-	opr.USD = entry.data
-	opr.EUR = entry.data
-	opr.JPY = entry.data
-	opr.GBP = entry.data
-	opr.CAD = entry.data
-	opr.CHF = entry.data
-	opr.INR = entry.data
-	opr.SGD = entry.data
-	opr.CNY = entry.data
-	opr.HKD = entry.data
-	opr.XAU = entry.data
-	opr.XAG = entry.data
-	opr.XPD = entry.data
-	opr.XPT = entry.data
-	opr.XBT = entry.data
-	opr.ETH = entry.data
-	opr.LTC = entry.data
-	opr.XBC = entry.data
-	opr.FCT = entry.data
+	for _, k := range common.AllAssets {
+		opr.Assets[k] = entry.data
+	}
 
 	return opr
 }

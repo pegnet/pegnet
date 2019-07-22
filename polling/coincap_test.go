@@ -13,6 +13,9 @@ import (
 func TestCoinCapPeggedAssets(t *testing.T) {
 	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
 	peg := make(PegAssets)
+
+	http.DefaultClient = &http.Client{}
+
 	CoinCapInterface(c, peg)
 	for _, asset := range common.CryptoAssets {
 		_, ok := peg[asset]

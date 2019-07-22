@@ -39,28 +39,14 @@ type OraclePriceRecord struct {
 	FactomDigitalID    []string   `json:"FactomDigitalID"` // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
-	//PNT float64
-	//USD float64
-	//EUR float64
-	//JPY float64
-	//GBP float64
-	//CAD float64
-	//CHF float64
-	//INR float64
-	//SGD float64
-	//CNY float64
-	//HKD float64
-	//XAU float64
-	//XAG float64
-	//XPD float64
-	//XPT float64
-	//XBT float64
-	//ETH float64
-	//LTC float64
-	//XBC float64
-	//FCT float64
-
 	Assets OraclePriceRecordAssetList `json:"assets"`
+}
+
+func NewOraclePriceRecord() *OraclePriceRecord {
+	o := new(OraclePriceRecord)
+	o.Assets = make(OraclePriceRecordAssetList)
+
+	return o
 }
 
 // LX holds an instance of lxrhash
@@ -276,7 +262,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
 func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
-	opr := new(OraclePriceRecord)
+	opr := NewOraclePriceRecord()
 
 	// create the channel to stop pegnetMining
 	opr.StopMining = make(chan int, 1)

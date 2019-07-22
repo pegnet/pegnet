@@ -1,6 +1,7 @@
 package polling_test
 
 import (
+	"net/http"
 	"testing"
 
 	"github.com/pegnet/pegnet/common"
@@ -12,6 +13,9 @@ import (
 func TestKitcoPeggedAssets(t *testing.T) {
 	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
 	peg := make(PegAssets)
+
+	http.DefaultClient = &http.Client{}
+
 	KitcoInterface(c, peg)
 	for _, asset := range common.CommodityAssets {
 		_, ok := peg[asset]

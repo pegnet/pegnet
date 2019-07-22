@@ -16,6 +16,9 @@ var exchangeRateResponse = `{"rates":{"CAD":1.3076237182,"HKD":7.8096299599,"ISK
 func TestActualExchangeRatesPeggedAssets(t *testing.T) {
 	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
 	peg := make(PegAssets)
+
+	http.DefaultClient = &http.Client{}
+
 	ExchangeRatesAPIInterface(c, peg)
 	for _, asset := range common.CurrencyAssets {
 		_, ok := peg[asset]

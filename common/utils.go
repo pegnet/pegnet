@@ -12,6 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
+
 	"github.com/FactomProject/btcutil/base58"
 )
 
@@ -20,7 +21,7 @@ var PegAssetNames []string
 var TestPegAssetNames []string
 
 func init() {
-	for _, asset := range AssetNames {
+	for _, asset := range AllAssets {
 		PegAssetNames = append(PegAssetNames, "p"+asset)
 		TestPegAssetNames = append(TestPegAssetNames, "t"+asset)
 	}
@@ -201,7 +202,7 @@ func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err 
 		return passet
 	}
 
-	for _, asset := range AssetNames {
+	for _, asset := range AllAssets {
 		assets = append(assets, cvt("p"+asset))
 		assets = append(assets, cvt("t"+asset))
 	}
