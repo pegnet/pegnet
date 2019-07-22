@@ -95,8 +95,8 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	// Validate there are no 0's
-	for _, v := range opr.Assets {
-		if v == 0 {
+	for k, v := range opr.Assets {
+		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
 			return false
 		}
 	}
