@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -14,6 +15,10 @@ import (
 	"github.com/FactomProject/factom"
 )
 
+func init() {
+	LX.Init(0xfafaececfafaecec, 25, 256, 5)
+}
+
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
 // the ID is the first character of the name
 func dopr(name string, difficulty uint64) *OraclePriceRecord {
@@ -22,6 +27,16 @@ func dopr(name string, difficulty uint64) *OraclePriceRecord {
 	o.FactomDigitalID = []string{string(name[0])}
 	o.Difficulty = difficulty
 	o.OPRChainID = name
+	var err error
+	o.Entry = new(factom.Entry)
+	o.Entry.ChainID = o.OPRChainID
+	o.Entry.ExtIDs = [][]byte{{}}
+	o.Entry.Content, err = json.Marshal(o)
+	if err != nil {
+		panic(err)
+	}
+	//fmt.Println(string(o.Entry.Content))
+	o.OPRHash = LX.Hash(o.Entry.Content)
 	return o
 }
 
@@ -48,23 +63,19 @@ func TestRemoveDuplicateMiningIDs(t *testing.T) {
 		args args
 		want []string
 	}{
-		{"middle test, keep last", args{dopr("a1", 1), dopr("b1", 50), dopr("a2", 2)}, []string{"a2", "b1"}},
+		{"keep all", args{dopr("a1", 1), dopr("b1", 50), dopr("a2", 2)}, []string{"a1", "a2", "b1"}},
 		{"no input", nil, []string{}},
 		{"empty input", args{}, []string{}},
 		{"one input", args{dopr("a1", 1)}, []string{"a1"}},
 		{"two normal inputs", args{dopr("a1", 1), dopr("b1", 1)}, []string{"a1", "b1"}},
-		{"dupe, equal copy", args{dopr("a1", 1), dopr("a2", 1)}, []string{"a1"}},
-		{"dupe, higher copy", args{dopr("a1", 1), dopr("a2", 2)}, []string{"a2"}},
-		{"dupe, lower copy", args{dopr("a1", 2), dopr("a2", 1)}, []string{"a1"}},
-		{"many dupes", args{dopr("a1", 2), dopr("a2", 1), dopr("a3", 5), dopr("a4", 0)}, []string{"a3"}},
-		{"mixed 1", args{dopr("b1", 50), dopr("a1", 2), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"middle test, keep first", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"two dupes", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1), dopr("b2", 100)}, []string{"a1", "b2"}},
+		{"equal id, different opr", args{dopr("a1", 1), dopr("a2", 1)}, []string{"a1", "a2"}},
+		{"dupe", args{dopr("a1", 1), dopr("a1", 2)}, []string{"a1"}},
+		{"dupe, reverse order", args{dopr("a1", 2), dopr("a1", 1)}, []string{"a1"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveDuplicateMiningIDs(tt.args)
-			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0][0] < got[j].FactomDigitalID[0][0] })
+			sort.Slice(got, func(i, j int) bool { return strings.Compare(got[i].FactomDigitalID[0], got[j].FactomDigitalID[0]) < 0 })
 			if err := dupeCheck(got, tt.want); err != nil {
 				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
 			}
@@ -201,6 +212,7 @@ func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest)
 
 		en.Entry = difficulty[diff].Entry
 		en.Difficulty = e.difficulty
+		en.OPRHash = []byte(strings.Join(en.FactomDigitalID, "-"))
 
 		gt.args = append(gt.args, en)
 	}
