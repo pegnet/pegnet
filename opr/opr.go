@@ -94,7 +94,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	if len(OPRChainID) == 0 {
-		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "OraclePriceRecords"}))
+		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 	}
 
 	if opr.OPRChainID != OPRChainID {
@@ -377,7 +377,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "OraclePriceRecords"}))
+	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 
 	opr.Dbht = dbht
 

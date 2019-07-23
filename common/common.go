@@ -24,6 +24,12 @@ const (
 	TEST_NETWORK
 )
 
+const (
+	TransactionChainTag = "Transactions"
+	MinerChainTag = "Miners"
+	OPRChainTag = "OraclePriceRecords"
+)
+
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
