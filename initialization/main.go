@@ -93,7 +93,7 @@ func main() {
 		"ProtocolChain":          {[]byte(protocol), []byte(network)},
 		"TransactionChain":       {[]byte(protocol), []byte(network), []byte("Transactions")},
 		"MinerChain":             {[]byte(protocol), []byte(network), []byte("Miners")},
-		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte("Oracle Price Records")},
+		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte("OraclePriceRecords")},
 	}
 	for tag, chainName := range chainNames {
 		chainID, txID, err := CreateChain(ecAddress, chainName)
