@@ -5,12 +5,17 @@ package cmd
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/pegnetMining"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +23,7 @@ func init() {
 	// Add commands to the root cmd
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
+	rootCmd.AddCommand(mine)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
@@ -170,5 +176,38 @@ var burn = &cobra.Command{
 
 		fmt.Println("Burn transaction sent to the network")
 		fmt.Printf("Transaction: %s\n", tx.TxID)
+	},
+}
+
+var mine = &cobra.Command{
+	Use:   "mine",
+	Short: "Starts the PegNet mining daemon",
+	Long: "Starts the PegNet mining daemon. Takes number of miners to use as an optional " +
+		"argument, if not specified it will use the default settings from " +
+		"the configuration file",
+	Args:    cobra.MaximumNArgs(1),
+	Example: "pegnet mine 20",
+	Run: func(cmd *cobra.Command, args []string) {
+		Miners = ArgParseMining(args)
+
+		// Initalize hashtable bytemap
+		opr.LX.Init(0xfafaececfafaecec, 25, 256, 5)
+
+		monitor := common.GetMonitor()
+		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+
+		go func() {
+			errListener := monitor.NewErrorListener()
+			err := <-errListener
+			panic("Monitor threw error: " + err.Error())
+		}()
+
+		grader := new(opr.Grader)
+		go grader.Run(Config, monitor)
+
+		http.Handle("/v1", api.RequestHandler{})
+		go http.ListenAndServe(":8099", nil)
+
+		pegnetMining.Mine(Miners, Config, monitor, grader)
 	},
 }

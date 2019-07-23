@@ -12,6 +12,7 @@ import (
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -170,4 +171,20 @@ func factoidToFactoshi(amt string) (uint64, error) {
 	}
 
 	return total, nil
+}
+
+func ArgParseMining(args []string) int {
+	if len(args) != 0 {
+		num, err := strconv.Atoi(args[0])
+		if err != nil || num == 0 {
+			log.Info("Invalid number of miners, using config default")
+		} else {
+			return num
+		}
+	}
+	configMiners, err := Config.Int("Miner.NumberOfMiners")
+	if err != nil {
+		log.WithError(err).Fatal("Failed to read number of miners from config")
+	}
+	return configMiners
 }

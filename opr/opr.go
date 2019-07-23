@@ -67,10 +67,6 @@ var LX lxr.LXRHash
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
 
-func init() {
-	LX.Init(0xfafaececfafaecec, 25, 256, 5)
-}
-
 // Token is a combination of currency code and value
 type Token struct {
 	code  string
