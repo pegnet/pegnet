@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"regexp"
 	"strings"
 	"time"
 
@@ -63,6 +64,16 @@ var rootCmd = &cobra.Command{
 		configMiners, err := Config.Int("Miner.NumberOfMiners")
 		if err != nil {
 			log.WithError(err).Fatal("Failed to read number of miners from config")
+		}
+
+		identity, err := Config.String("Miner.IdentityChain")
+		if err != nil {
+			log.WithError(err).Fatal("Failed to read the identity chain or miner id")
+		}
+
+		valid, _ := regexp.MatchString("^[a-zA-Z0-9,]+$", identity)
+		if !valid {
+			log.Fatal("Only alphanumeric characters and commas are allowed in the identity")
 		}
 
 		// Default to config options if cli flags aren't specified
