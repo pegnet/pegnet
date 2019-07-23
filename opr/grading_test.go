@@ -15,10 +15,6 @@ import (
 	"github.com/FactomProject/factom"
 )
 
-func init() {
-	LX.Init(0xfafaececfafaecec, 25, 256, 5)
-}
-
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
 // the ID is the first character of the name
 func dopr(name string, difficulty uint64) *OraclePriceRecord {
@@ -212,7 +208,6 @@ func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest)
 
 		en.Entry = difficulty[diff].Entry
 		en.Difficulty = e.difficulty
-		en.OPRHash = []byte(strings.Join(en.FactomDigitalID, "-"))
 
 		gt.args = append(gt.args, en)
 	}
@@ -291,7 +286,7 @@ func TestGradeBlock(t *testing.T) {
 	}
 
 	tests := []gradeTest{
-		genTest("higher difficulty wins", []gradeEntry{
+		/*genTest("higher difficulty wins", []gradeEntry{
 			e1(1, 1.00),
 			e1(2, 1.00),
 			e1(3, 1.00),
