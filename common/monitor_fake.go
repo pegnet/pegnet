@@ -16,6 +16,9 @@ func NewFakeMonitor() *FakeMonitor {
 }
 
 func (f *FakeMonitor) FakeNotify(dbht int, minute int) {
+	f.listenerMutex.Lock()
+	defer f.listenerMutex.Unlock()
+
 	fds := MonitorEvent{
 		Dbht:   int32(dbht),
 		Minute: int64(minute),

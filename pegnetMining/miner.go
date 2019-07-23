@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"sync/atomic"
 
 	"github.com/FactomProject/factom"
@@ -61,6 +62,7 @@ type PegnetMiner struct {
 
 	// miningContext can be passed around, if the context is canceled, everyone who owns this can
 	// be notified. If the context is cancelled, that means mining has stopped
+	contextMutex  sync.Mutex // Go race complaining about context access
 	miningContext context.Context
 	cancelMining  context.CancelFunc
 }
@@ -77,6 +79,8 @@ func NewPegnetMiner(config *config.Config, monitor common.IMonitor, grader opr.I
 
 // StopMining will halt all mining on this miner. It can be restarted
 func (p *PegnetMiner) StopMining() bool {
+	p.contextMutex.Lock()
+	defer p.contextMutex.Unlock()
 	if p.cancelMining == nil {
 		return false // Not mining
 	}
@@ -104,7 +108,10 @@ func (p *PegnetMiner) LaunchMiningThread(verbose bool) {
 	gAlert := p.OPRGrader.GetAlert(p.IDString())
 	// Tell OPR grader we are no longer listening
 	defer p.OPRGrader.StopAlert(p.IDString())
+
+	p.contextMutex.Lock()
 	p.miningContext, p.cancelMining = context.WithCancel(context.Background())
+	p.contextMutex.Unlock()
 
 	numMiners, _ := p.Config.Int("Miner.NumberOfMiners")
 	mining := false
