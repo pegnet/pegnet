@@ -8,6 +8,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -67,8 +69,29 @@ type Token struct {
 
 func check(e error) {
 	if e != nil {
-		log.WithError(e).Fatal("An error in OPR was encountered")
+		_, file, line, _ := runtime.Caller(1) // The line that called this function
+		shortFile := ShortenPegnetFilePath(file, "", 0)
+		log.WithField("caller", fmt.Sprintf("%s:%d", shortFile, line)).WithError(e).Fatal("An error in OPR was encountered")
 	}
+}
+
+// ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
+//	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
+//	This is nice for errors that print the file + line number
+//
+// 		!! Only use for error printing !!
+//
+func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
+	if depth > 5 || path == "." {
+		// Recursive base case
+		// If depth > 5 probably no pegnet dir exists
+		return filepath.Join(path, acc)
+	}
+	dir, base := filepath.Split(path)
+	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
+		return filepath.Join(base, acc)
+	}
+	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
