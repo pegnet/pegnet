@@ -26,8 +26,8 @@ const (
 
 const (
 	TransactionChainTag = "Transactions"
-	MinerChainTag = "Miners"
-	OPRChainTag = "OraclePriceRecords"
+	MinerChainTag       = "Miners"
+	OPRChainTag         = "OraclePriceRecords"
 )
 
 var (
