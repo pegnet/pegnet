@@ -94,7 +94,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 	if err1 != nil || err2 != nil {
 		t.Error("Should have protocol and network")
 	}
-	o.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	o.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 	o.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", common.RandomByteSliceOfLen(32))
 	if err != nil {
 		t.Error(err)
