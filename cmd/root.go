@@ -85,7 +85,7 @@ var rootCmd = &cobra.Command{
 		http.Handle("/v1", api.RequestHandler{})
 		go http.ListenAndServe(":8099", nil)
 
-		go controlPanel.ServeControlPanel(monitor)
+		go controlPanel.ServeControlPanel(Config, monitor)
 
 		if Miners > 0 {
 			pegnetMining.Mine(Miners, Config, monitor, grader)

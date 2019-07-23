@@ -25,6 +25,9 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 		"API Method": request.Method,
 		"Params":     request.Params}).Info("API Request")
 
+	// enable cors
+	w.Header().Set("Access-Control-Allow-Origin", "*")
+
 	switch request.Method {
 	case "all-oprs":
 		response(w, Result{OPRBlocks: opr.OPRBlocks})
