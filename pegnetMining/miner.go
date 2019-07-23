@@ -20,7 +20,15 @@ import (
 
 const MaxMiners = 50
 
-// InitMiners creates the miners requested not-started
+// Singleton counter
+var MinerID int64
+
+// GetNextMinerID just grabs the next minerid available
+func GetNextMinerID() int {
+	return int(atomic.AddInt64(&MinerID, 1))
+}
+
+// InitMiners creates the miners requested, not-started
 func InitMiners(numMiners int, config *config.Config, monitor *common.Monitor, grader *opr.Grader) []*PegnetMiner {
 	opr.InitLX() // We intend to use the LX hash
 	if numMiners > MaxMiners {
@@ -39,12 +47,6 @@ func InitMiners(numMiners int, config *config.Config, monitor *common.Monitor, g
 		miners[i] = NewPegnetMiner(config, monitor, grader)
 	}
 	return miners
-}
-
-var MinerID int64
-
-func GetNextMinerID() int {
-	return int(atomic.AddInt64(&MinerID, 1))
 }
 
 type PegnetMiner struct {

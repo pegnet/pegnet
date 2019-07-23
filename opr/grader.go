@@ -4,6 +4,8 @@
 package opr
 
 import (
+	"sync"
+
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -18,7 +20,8 @@ type IGrader interface {
 // determines who should be paid.
 // This also informs the miners which records should be included in their OPR records
 type Grader struct {
-	alerts map[string]chan *OPRs
+	alerts      map[string]chan *OPRs
+	alertsMutex sync.Mutex // Maps are not thread safe
 }
 
 func NewGrader() *Grader {
@@ -37,6 +40,9 @@ type OPRs struct {
 // GetAlert registers a new request for alerts.
 // Data will be sent when the grades from the last block are ready
 func (g *Grader) GetAlert(id string) (alert chan *OPRs) {
+	g.alertsMutex.Lock()
+	defer g.alertsMutex.Unlock()
+
 	// If the alert already exists for the id, close it.
 	// We only want 1 alert per id
 	alert, ok := g.alerts[id]
@@ -51,6 +57,9 @@ func (g *Grader) GetAlert(id string) (alert chan *OPRs) {
 
 // StopAlert allows cleanup of alerts that are no longer used
 func (g *Grader) StopAlert(id string) {
+	g.alertsMutex.Lock()
+	defer g.alertsMutex.Unlock()
+
 	alert, ok := g.alerts[id]
 	if ok {
 		close(alert)
@@ -69,6 +78,7 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 			tbp, all := GradeBlock(oprs)
 
 			// Alert followers that we have graded the previous block
+			g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
 			for _, a := range g.alerts {
 				var winners OPRs
 				winners.ToBePaid = tbp
@@ -79,6 +89,7 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 					// This means the channel is full
 				}
 			}
+			g.alertsMutex.Unlock()
 		}
 
 	}
