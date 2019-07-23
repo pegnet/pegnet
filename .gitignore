@@ -23,3 +23,6 @@ myconfig.ini
 
 # VSCode
 .vscode/*
+
+# Miner
+pegnet
