@@ -18,7 +18,8 @@ import (
 )
 
 // Avg computes the average answer for the price of each token reported
-func Avg(list []*OraclePriceRecord) (avg [20]float64) {
+func Avg(list []*OraclePriceRecord) (avg []float64) {
+	avg = make([]float64, len(common.AllAssets))
 
 	// Sum up all the prices
 	for _, opr := range list {
@@ -44,7 +45,7 @@ func Avg(list []*OraclePriceRecord) (avg [20]float64) {
 }
 
 // CalculateGrade takes the averages and grades the individual OPRs
-func CalculateGrade(avg [20]float64, opr *OraclePriceRecord) float64 {
+func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
 	for i, v := range tokens {
@@ -169,7 +170,7 @@ func GetEntryBlocks(config *config.Config) {
 				}
 
 				// Okay, it looks sort of okay.  Lets unmarshal the JSON
-				opr := new(OraclePriceRecord)
+				opr := NewOraclePriceRecord()
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}

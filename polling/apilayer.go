@@ -63,7 +63,7 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 	return APILayerResponse, err
 }
 
-func HandleAPILayer(response APILayerResponse, peg *PegAssets) {
+func HandleAPILayer(response APILayerResponse, peg PegAssets) {
 
 	// Handle Response Errors
 	if !response.Success {
@@ -77,7 +77,7 @@ func HandleAPILayer(response APILayerResponse, peg *PegAssets) {
 	UpdatePegAssets(response.Quotes, response.Timestamp, peg, "USD")
 }
 
-func APILayerInterface(config *config.Config, peg *PegAssets) {
+func APILayerInterface(config *config.Config, peg PegAssets) {
 	log.Debug("Pulling Asset data from APILayer")
 	APILayerResponse, err := CallAPILayer(config)
 	if err != nil {

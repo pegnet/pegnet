@@ -62,7 +62,7 @@ var getEncoding = &cobra.Command{
 
 // addGetEncodingCommands adds commands so the autocomplete can fill in the second param
 func addGetEncodingCommands() {
-	for _, ass := range append([]string{"all"}, common.AssetNames...) {
+	for _, ass := range append([]string{"all"}, common.AllAssets...) {
 		getEncoding.AddCommand(&cobra.Command{Use: strings.ToLower(ass), Run: func(cmd *cobra.Command, args []string) {}})
 	}
 }

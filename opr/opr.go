@@ -39,26 +39,14 @@ type OraclePriceRecord struct {
 	FactomDigitalID    []string   `json:"FactomDigitalID"` // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
-	PNT float64
-	USD float64
-	EUR float64
-	JPY float64
-	GBP float64
-	CAD float64
-	CHF float64
-	INR float64
-	SGD float64
-	CNY float64
-	HKD float64
-	XAU float64
-	XAG float64
-	XPD float64
-	XPT float64
-	XBT float64
-	ETH float64
-	LTC float64
-	XBC float64
-	FCT float64
+	Assets OraclePriceRecordAssetList `json:"assets"`
+}
+
+func NewOraclePriceRecord() *OraclePriceRecord {
+	o := new(OraclePriceRecord)
+	o.Assets = make(OraclePriceRecordAssetList)
+
+	return o
 }
 
 // LX holds an instance of lxrhash
@@ -106,26 +94,16 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		return false
 	}
 
-	if opr.USD == 0 ||
-		opr.EUR == 0 ||
-		opr.JPY == 0 ||
-		opr.GBP == 0 ||
-		opr.CAD == 0 ||
-		opr.CHF == 0 ||
-		opr.INR == 0 ||
-		opr.SGD == 0 ||
-		opr.CNY == 0 ||
-		opr.HKD == 0 ||
-		opr.XAU == 0 ||
-		opr.XAG == 0 ||
-		opr.XPD == 0 ||
-		opr.XPT == 0 ||
-		opr.XBT == 0 ||
-		opr.ETH == 0 ||
-		opr.LTC == 0 ||
-		opr.XBC == 0 ||
-		opr.FCT == 0 {
-		return false
+	// Validate there are no 0's
+	for k, v := range opr.Assets {
+		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
+			return false
+		}
+	}
+
+	// Validate all the Assets exists
+	if !opr.Assets.Contains(common.AllAssets) {
+		return false // Missing some assets!
 	}
 
 	return true
@@ -133,27 +111,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
-	tokens = append(tokens, Token{"PNT", opr.PNT})
-	tokens = append(tokens, Token{"USD", opr.USD})
-	tokens = append(tokens, Token{"EUR", opr.EUR})
-	tokens = append(tokens, Token{"JPY", opr.JPY})
-	tokens = append(tokens, Token{"GBP", opr.GBP})
-	tokens = append(tokens, Token{"CAD", opr.CAD})
-	tokens = append(tokens, Token{"CHF", opr.CHF})
-	tokens = append(tokens, Token{"INR", opr.INR})
-	tokens = append(tokens, Token{"SGD", opr.SGD})
-	tokens = append(tokens, Token{"CNY", opr.CNY})
-	tokens = append(tokens, Token{"HKD", opr.HKD})
-	tokens = append(tokens, Token{"XAU", opr.XAU})
-	tokens = append(tokens, Token{"XAG", opr.XAG})
-	tokens = append(tokens, Token{"XPD", opr.XPD})
-	tokens = append(tokens, Token{"XPT", opr.XPT})
-	tokens = append(tokens, Token{"XBT", opr.XBT})
-	tokens = append(tokens, Token{"ETH", opr.ETH})
-	tokens = append(tokens, Token{"LTC", opr.LTC})
-	tokens = append(tokens, Token{"XBC", opr.XBC})
-	tokens = append(tokens, Token{"FCT", opr.FCT})
-	return tokens
+	return opr.Assets.List()
 }
 
 // GetHash returns the LXHash over the OPR's json representation
@@ -249,26 +207,9 @@ func (opr *OraclePriceRecord) String() (str string) {
 	// Make a display string out of the Digital Identity.
 
 	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", strings.Join(opr.FactomDigitalID, "-"))
-	str = str + fmt.Sprintf("%32s %v\n", "PNT", opr.PNT)
-	str = str + fmt.Sprintf("%32s %v\n", "USD", opr.USD)
-	str = str + fmt.Sprintf("%32s %v\n", "EUR", opr.EUR)
-	str = str + fmt.Sprintf("%32s %v\n", "JPY", opr.JPY)
-	str = str + fmt.Sprintf("%32s %v\n", "GBP", opr.GBP)
-	str = str + fmt.Sprintf("%32s %v\n", "CAD", opr.CAD)
-	str = str + fmt.Sprintf("%32s %v\n", "CHF", opr.CHF)
-	str = str + fmt.Sprintf("%32s %v\n", "INR", opr.INR)
-	str = str + fmt.Sprintf("%32s %v\n", "SGD", opr.SGD)
-	str = str + fmt.Sprintf("%32s %v\n", "CNY", opr.CNY)
-	str = str + fmt.Sprintf("%32s %v\n", "HKD", opr.HKD)
-	str = str + fmt.Sprintf("%32s %v\n", "XAU", opr.XAU)
-	str = str + fmt.Sprintf("%32s %v\n", "XAG", opr.XAG)
-	str = str + fmt.Sprintf("%32s %v\n", "XPD", opr.XPD)
-	str = str + fmt.Sprintf("%32s %v\n", "XPT", opr.XPT)
-	str = str + fmt.Sprintf("%32s %v\n", "XBT", opr.XBT)
-	str = str + fmt.Sprintf("%32s %v\n", "ETH", opr.ETH)
-	str = str + fmt.Sprintf("%32s %v\n", "LTC", opr.LTC)
-	str = str + fmt.Sprintf("%32s %v\n", "XBC", opr.XBC)
-	str = str + fmt.Sprintf("%32s %v\n", "FCT", opr.FCT)
+	for _, asset := range opr.Assets.List() {
+		str = str + fmt.Sprintf("%32s %v\n", "PNT", asset)
+	}
 
 	str = str + fmt.Sprintf("\nWinners\n\n")
 
@@ -312,33 +253,16 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 
 // SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-	opr.PNT = assets.PNT.Value
-	opr.USD = assets.USD.Value
-	opr.EUR = assets.EUR.Value
-	opr.JPY = assets.JPY.Value
-	opr.GBP = assets.GBP.Value
-	opr.CAD = assets.CAD.Value
-	opr.CHF = assets.CHF.Value
-	opr.INR = assets.INR.Value
-	opr.SGD = assets.SGD.Value
-	opr.CNY = assets.CNY.Value
-	opr.HKD = assets.HKD.Value
-	opr.XAU = assets.XAU.Value
-	opr.XAG = assets.XAG.Value
-	opr.XPD = assets.XPD.Value
-	opr.XPT = assets.XPT.Value
-	opr.XBT = assets.XBT.Value
-	opr.ETH = assets.ETH.Value
-	opr.LTC = assets.LTC.Value
-	opr.XBC = assets.XBC.Value
-	opr.FCT = assets.FCT.Value
+	for asset, v := range assets {
+		opr.Assets[asset] = v.Value
+	}
 }
 
 // NewOpr collects all the information unique to this miner and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
 func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
-	opr := new(OraclePriceRecord)
+	opr := NewOraclePriceRecord()
 
 	// create the channel to stop pegnetMining
 	opr.StopMining = make(chan int, 1)

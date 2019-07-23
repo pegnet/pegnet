@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -42,6 +43,7 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 			log.WithError(err).Warning("Failed to get response from CoinCap")
 			return err
 		}
+
 		defer resp.Body.Close()
 		if body, err := ioutil.ReadAll(resp.Body); err != nil {
 			return err
@@ -55,52 +57,45 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 	return CoinCapResponse, err
 }
 
-func HandleCoinCap(response CoinCapResponse, peg *PegAssets) {
+func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 
 	var timestamp = response.Timestamp
 
 	for _, currency := range response.Data {
-		if currency.Symbol == "XBT" || currency.Symbol == "BTC" {
+		switch currency.Symbol {
+		case "BTC", "XBT":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg.XBT.Value = Round(value)
-			peg.XBT.When = timestamp
+			peg["XBT"] = PegItem{Value: Round(value), When: timestamp}
 			if err != nil {
 				continue
 			}
-		} else if currency.Symbol == "ETH" {
+		case "BCH", "XBC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg.ETH.Value = Round(value)
-			peg.ETH.When = timestamp
+			peg["XBC"] = PegItem{Value: Round(value), When: timestamp}
 			if err != nil {
 				continue
 			}
-		} else if currency.Symbol == "LTC" {
+		case "ZCASH", "ZEC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg.LTC.Value = Round(value)
-			peg.LTC.When = timestamp
+			peg["ZEC"] = PegItem{Value: Round(value), When: timestamp}
 			if err != nil {
 				continue
 			}
-		} else if currency.Symbol == "XBC" || currency.Symbol == "BCH" {
-			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg.XBC.Value = Round(value)
-			peg.XBC.When = timestamp
-			if err != nil {
-				continue
-			}
-		} else if currency.Symbol == "FCT" {
-			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg.FCT.Value = Round(value)
-			peg.FCT.When = timestamp
-			if err != nil {
-				continue
+		default:
+			// See if the ticker is in our crypto currency list
+			if common.AssetListContains(common.CryptoAssets, currency.Symbol) {
+				value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+				peg[currency.Symbol] = PegItem{Value: Round(value), When: timestamp}
+				if err != nil {
+					continue
+				}
 			}
 		}
 	}
 
 }
 
-func CoinCapInterface(config *config.Config, peg *PegAssets) {
+func CoinCapInterface(config *config.Config, peg PegAssets) {
 	log.Debug("Pulling Asset data from CoinCap")
 	CoinCapResponse, err := CallCoinCap(config)
 	if err != nil {

@@ -42,13 +42,13 @@ func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
 	return ExchangeRatesAPIResponse, err
 }
 
-func HandleExchangeRatesAPI(response ExchangeRatesAPIResponse, peg *PegAssets) {
+func HandleExchangeRatesAPI(response ExchangeRatesAPIResponse, peg PegAssets) {
 	// Exchange rates api does not return timestamp.
 	var timestamp = ConverToUnix("2006-01-02", response.Date)
 	UpdatePegAssets(response.Rates, timestamp, peg)
 }
 
-func ExchangeRatesAPIInterface(config *config.Config, peg *PegAssets) {
+func ExchangeRatesAPIInterface(config *config.Config, peg PegAssets) {
 	log.Debug("Pulling Asset data from ExchangeRatesAPI")
 	ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
 	if err != nil {

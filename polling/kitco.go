@@ -160,21 +160,27 @@ func ParseKitco(line string, kData *KitcoData) {
 	}
 }
 
-func HandleKitcoWeb(data KitcoData, peg *PegAssets) {
+func HandleKitcoWeb(data KitcoData, peg PegAssets) {
 	var format = "01/02/2006" // Kitco date format
 
-	peg.XAU.Value, _ = strconv.ParseFloat(data.Silver.Bid, 64)
-	peg.XAU.When = ConverToUnix(format, data.Silver.Date)
-	peg.XAG.Value, _ = strconv.ParseFloat(data.Gold.Bid, 64)
-	peg.XAG.When = ConverToUnix(format, data.Gold.Date)
-	peg.XPD.Value, _ = strconv.ParseFloat(data.Palladium.Bid, 64)
-	peg.XPD.When = ConverToUnix(format, data.Palladium.Date)
-	peg.XPT.Value, _ = strconv.ParseFloat(data.Platinum.Bid, 64)
-	peg.XPT.When = ConverToUnix(format, data.Platinum.Date)
+	silver := data.Silver
+	v, _ := strconv.ParseFloat(silver.Bid, 64)
+	peg["XAU"] = PegItem{Value: v, When: ConverToUnix(format, silver.Date)}
 
+	gold := data.Gold
+	v, _ = strconv.ParseFloat(gold.Bid, 64)
+	peg["XAG"] = PegItem{Value: v, When: ConverToUnix(format, gold.Date)}
+
+	palladium := data.Palladium
+	v, _ = strconv.ParseFloat(palladium.Bid, 64)
+	peg["XPD"] = PegItem{Value: v, When: ConverToUnix(format, palladium.Date)}
+
+	platinum := data.Platinum
+	v, _ = strconv.ParseFloat(platinum.Bid, 64)
+	peg["XPT"] = PegItem{Value: v, When: ConverToUnix(format, platinum.Date)}
 }
 
-func KitcoInterface(config *config.Config, peg *PegAssets) {
+func KitcoInterface(config *config.Config, peg PegAssets) {
 	log.Debug("Pulling Asset data from Kitco")
 	KitcoResponse, err := CallKitcoWeb()
 	if err != nil {

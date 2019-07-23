@@ -97,7 +97,7 @@ func ArgValidatorECAddress(cmd *cobra.Command, arg string) error {
 
 // ArgValidatorAssetAndAll checks for valid asset or 'all'
 func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
-	list := append([]string{"all"}, common.AssetNames...)
+	list := append([]string{"all"}, common.AllAssets...)
 	for _, an := range list {
 		if strings.ToLower(arg) == strings.ToLower(an) {
 			return nil
@@ -108,12 +108,12 @@ func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
 
 // ArgValidatorAsset checks for valid asset
 func ArgValidatorAsset(cmd *cobra.Command, arg string) error {
-	for _, an := range common.AssetNames {
+	for _, an := range common.AllAssets {
 		if strings.ToLower(arg) == strings.ToLower(an) {
 			return nil
 		}
 	}
-	return fmt.Errorf("Not a valid asset. Assets include: %v", common.AssetNames)
+	return fmt.Errorf("Not a valid asset. Assets include: %v", common.AllAssets)
 }
 
 // Custom Completion args

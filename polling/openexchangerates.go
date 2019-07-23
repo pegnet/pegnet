@@ -54,7 +54,7 @@ func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse
 	return OpenExchangeRatesResponse, err
 }
 
-func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets) {
+func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg PegAssets) {
 
 	// Handle Response Errors
 	if response.Error {
@@ -68,7 +68,7 @@ func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg *PegAssets)
 	UpdatePegAssets(response.Rates, response.Timestamp, peg)
 }
 
-func OpenExchangeRatesInterface(config *config.Config, peg *PegAssets) {
+func OpenExchangeRatesInterface(config *config.Config, peg PegAssets) {
 	log.Debug("Pulling Asset data from OpenExchangesRates")
 	OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
 	if err != nil {

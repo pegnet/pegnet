@@ -14,7 +14,7 @@ import (
 
 func TestOPR_JSON_Marshal(t *testing.T) {
 	LX.Init(0x123412341234, 25, 256, 5)
-	opr := new(OraclePriceRecord)
+	opr := NewOraclePriceRecord()
 
 	opr.Difficulty = 1
 	opr.Grade = 1
@@ -35,30 +35,30 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	}
 	opr.CoinbasePNTAddress = "pPNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
 	opr.FactomDigitalID = []string{"miner", "one"}
-	opr.PNT = 2
-	opr.USD = 20
-	opr.EUR = 200
-	opr.JPY = 11
-	opr.GBP = 12
-	opr.CAD = 13
-	opr.CHF = 14
-	opr.INR = 15
-	opr.SGD = 16
-	opr.CNY = 17
-	opr.HKD = 18
-	opr.XAU = 19
-	opr.XAG = 101
-	opr.XPD = 1012
-	opr.XPT = 10123
-	opr.XBT = 10124
-	opr.ETH = 10125
-	opr.LTC = 10126
-	opr.XBC = 10127
-	opr.FCT = 10128
+	opr.Assets["PNT"] = 2
+	opr.Assets["USD"] = 20
+	opr.Assets["EUR"] = 200
+	opr.Assets["JPY"] = 11
+	opr.Assets["GBP"] = 12
+	opr.Assets["CAD"] = 13
+	opr.Assets["CHF"] = 14
+	opr.Assets["INR"] = 15
+	opr.Assets["SGD"] = 16
+	opr.Assets["CNY"] = 17
+	opr.Assets["HKD"] = 18
+	opr.Assets["XAU"] = 19
+	opr.Assets["XAG"] = 101
+	opr.Assets["XPD"] = 1012
+	opr.Assets["XPT"] = 10123
+	opr.Assets["XBT"] = 10124
+	opr.Assets["ETH"] = 10125
+	opr.Assets["LTC"] = 10126
+	opr.Assets["XBC"] = 10127
+	opr.Assets["FCT"] = 10128
 
 	v, _ := json.Marshal(opr)
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
-	opr2 := new(OraclePriceRecord)
+	opr2 := NewOraclePriceRecord()
 	json.Unmarshal(v, &opr2)
 	v2, _ := json.Marshal(opr2)
 	fmt.Println("\n\n", string(v2))
