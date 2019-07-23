@@ -6,6 +6,7 @@ package opr
 import (
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"sort"
 	"strings"
 	"sync"
@@ -100,7 +101,7 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	highest := make(map[string]int)
 
 	for i, v := range list {
-		id := strings.Join(v.FactomDigitalID, "-")
+		id := fmt.Sprintf("%s|%s", v.CoinbasePNTAddress, strings.Join(v.FactomDigitalID, "-"))
 
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
