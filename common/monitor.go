@@ -37,8 +37,8 @@ type Monitor struct {
 
 // MonitorEvent is the data sent to all listeners when being notified
 type MonitorEvent struct {
-	Minute int64	`json:"minute"`
-	Dbht   int32	`json:"dbht"`
+	Minute int64 `json:"minute"`
+	Dbht   int32 `json:"dbht"`
 }
 
 // NewListener spawns a new listening channel that will receive updates of height or minute changes

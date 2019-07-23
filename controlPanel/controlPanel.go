@@ -1,21 +1,21 @@
 package controlPanel
 
 import (
-	"net/http"
 	"encoding/json"
+	"github.com/alexandrevicenzi/go-sse"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/alexandrevicenzi/go-sse"
-	"github.com/zpatrick/go-config"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
+	"net/http"
 )
 
 type CommonResponse struct {
-	Minute			int64 			`json:"minute"`
-	Dbht			int32 			`json:"dbht"`
-	Balance			int64			`json:"balance"`
-	HashRate     	uint64			`json:"hashRate"`
-	Difficulty     	uint64			`json:"difficulty"`
+	Minute     int64  `json:"minute"`
+	Dbht       int32  `json:"dbht"`
+	Balance    int64  `json:"balance"`
+	HashRate   uint64 `json:"hashRate"`
+	Difficulty uint64 `json:"difficulty"`
 }
 
 func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
@@ -34,7 +34,7 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
 	http.Handle("/events/", s)
 
 	// Dispatch messages to common channel
-	go func () {
+	go func() {
 		var CurrentHashRate uint64
 		var CurrentDifficulty uint64
 		var CoinbasePNTAddress string
@@ -47,7 +47,7 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
 
 		for {
 			select {
-			case e := <- alert:
+			case e := <-alert:
 
 				hr := common.Stats.GetHashRate()
 				diff := common.Stats.Difficulty
@@ -57,7 +57,7 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
 				if diff > 0 && diff != CurrentDifficulty {
 					CurrentDifficulty = diff
 				}
-								
+
 				r := CommonResponse{Minute: e.Minute, Dbht: e.Dbht, HashRate: CurrentHashRate, Difficulty: CurrentDifficulty}
 				r.Balance = opr.GetBalance(CoinbasePNTAddress)
 
@@ -69,5 +69,5 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
 
 	http.Handle("/", http.FileServer(http.Dir("./controlPanel/static")))
 	http.ListenAndServe(":8080", nil)
-	
+
 }
