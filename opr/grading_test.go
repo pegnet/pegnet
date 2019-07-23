@@ -127,6 +127,7 @@ func uniqID() string {
 var difficulty []*OraclePriceRecord
 
 func init() {
+	LX.Init(0x123412341234, 25, 256, 5)
 	// create difficulties that are in order and indexed in an array so I can assign them and compare
 	// them in the tests.
 	for i := 0; i < 100; i++ {
