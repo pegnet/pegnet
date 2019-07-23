@@ -6,13 +6,15 @@ import (
 	"github.com/go-ini/ini"
 )
 
-//
-type DefaultConfigProvider struct {
+// UnitTestConfigProvider is only used in unit tests.
+//	This way we don't have to deal with pathing to find the
+//	`defaultconfig.ini`.
+type UnitTestConfigProvider struct {
 	data string
 }
 
-func NewDefaultConfigProvider() *DefaultConfigProvider {
-	d := new(DefaultConfigProvider)
+func NewUnitTestConfigProvider() *UnitTestConfigProvider {
+	d := new(UnitTestConfigProvider)
 	d.data = `
 [Debug]
 # Randomize adds a random factor +/- the give percent.  3.1 for 3.1%
@@ -50,7 +52,7 @@ func NewDefaultConfigProvider() *DefaultConfigProvider {
 	return d
 }
 
-func (this *DefaultConfigProvider) Load() (map[string]string, error) {
+func (this *UnitTestConfigProvider) Load() (map[string]string, error) {
 	settings := map[string]string{}
 
 	file, err := ini.Load([]byte(this.data))

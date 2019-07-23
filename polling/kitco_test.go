@@ -11,7 +11,7 @@ import (
 
 // TestKitcoPeggedAssets tests all the metals assets are found on kitco
 func TestKitcoPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 	peg := make(PegAssets)
 
 	http.DefaultClient = &http.Client{}

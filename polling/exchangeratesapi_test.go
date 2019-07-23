@@ -11,7 +11,7 @@ import (
 
 // TestActualExchangeRatesPeggedAssets tests all the crypto assets are found on exchangerates over the net
 func TestActualExchangeRatesPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 	peg := make(PegAssets)
 
 	http.DefaultClient = &http.Client{}
@@ -27,7 +27,7 @@ func TestActualExchangeRatesPeggedAssets(t *testing.T) {
 
 // TestFixedExchangeRatesPeggedAssets tests all the crypto assets are found on exchangerates from fixed
 func TestFixedExchangeRatesPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
 	cl := GetClientWithFixedResp([]byte(exchangeRateResponse))

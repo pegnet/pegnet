@@ -11,7 +11,7 @@ import (
 
 // TestFixedApiLayerPeggedAssets tests all the crypto assets are found on ApiLayer
 func TestFixedApiLayerPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
 	cl := GetClientWithFixedResp([]byte(apiLayerReponse))

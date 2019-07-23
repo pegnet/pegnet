@@ -88,7 +88,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 		o.Assets[asset] = rand.Float64()
 	}
 
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 	protocol, err1 := c.String("Miner.Protocol")
 	network, err2 := c.String("Miner.Network")
 	if err1 != nil || err2 != nil {

@@ -11,7 +11,7 @@ import (
 
 // TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
 func TestFixedOpenExchangeRatesPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
 	cl := GetClientWithFixedResp([]byte(openExchangeRateResponse))

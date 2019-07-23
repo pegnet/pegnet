@@ -11,7 +11,7 @@ import (
 
 // TestCoinCapPeggedAssets tests all the crypto assets are found on coinmarket cap
 func TestCoinCapPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 	peg := make(PegAssets)
 
 	http.DefaultClient = &http.Client{}
@@ -27,7 +27,7 @@ func TestCoinCapPeggedAssets(t *testing.T) {
 
 // TestFixedCoinCapRatesPeggedAssets with fixed resp
 func TestFixedCoinCapRatesPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.UnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
 	cl := GetClientWithFixedResp([]byte(coincapResp))
