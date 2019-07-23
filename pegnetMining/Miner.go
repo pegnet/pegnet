@@ -14,6 +14,7 @@ const MaxMiners = 50
 
 // Mine runs a set of miners, as a network debugging aid
 func Mine(numMiners int, config *config.Config, monitor *common.Monitor, grader *opr.Grader) {
+	opr.InitLX() // We intend to use the LX hash
 	if numMiners > MaxMiners {
 		log.WithFields(log.Fields{
 			"attempted": numMiners,

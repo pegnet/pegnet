@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
@@ -51,13 +52,19 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 
 // LX holds an instance of lxrhash
 var LX lxr.LXRHash
+var lxInitializer sync.Once
+
+// The init function for LX is expensive. So we should explicitly call the init if we intend
+// to use it. Make the init call idempotent
+func InitLX() {
+	lxInitializer.Do(func() {
+		// This code will only be executed ONCE, no matter how often you call it
+		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+	})
+}
 
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
-
-func init() {
-	LX.Init(0xfafaececfafaecec, 25, 256, 5)
-}
 
 // Token is a combination of currency code and value
 type Token struct {

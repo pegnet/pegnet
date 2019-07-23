@@ -30,6 +30,7 @@ func (g *Grader) GetAlert() chan *OPRs {
 }
 
 func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
+	InitLX() // We intend to use the LX hash
 	fdAlert := monitor.NewListener()
 	for {
 		fds := <-fdAlert
