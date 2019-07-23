@@ -77,7 +77,7 @@ func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 			}
 		case "ZCASH", "ZEC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["ZCASH"] = PegItem{Value: Round(value), When: timestamp}
+			peg["ZEC"] = PegItem{Value: Round(value), When: timestamp}
 			if err != nil {
 				continue
 			}

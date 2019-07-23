@@ -37,7 +37,7 @@ package common
  *          Cardano                 ADA,        pADA
  *          Monero                  XMR,        pXMR
  *          Dash                    DASH,       pDASH
- *          Zcash                   ZCASH,      pZCASH
+ *          Zcash                   ZEC,      	pZEC
  *          Decred                  DCR,        pDCR
  */
 
@@ -84,7 +84,7 @@ var (
 		"ADA",
 		"XMR",
 		"DASH",
-		"ZCASH",
+		"ZEC",
 		"DCR",
 	}
 
