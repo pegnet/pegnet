@@ -34,8 +34,9 @@ func TestMinerCleanup(t *testing.T) {
 
 	g := opr.NewFakeGrader()
 	m := common.NewFakeMonitor()
+	c := common.NewUnitTestConfig()
 
-	p := NewPegnetMiner(common.NewUnitTestConfig(), m, g)
+	p := NewPegnetMiner(c, m, g, NewEntryWriter(c, 3))
 	t.Run("Before first event stop", func(t *testing.T) {
 		n := runtime.NumGoroutine()
 

@@ -33,6 +33,8 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 [Miner]
   NetworkType=LOCAL
   NumberOfMiners=15
+# The number of records to submit per block. The top N records are chosen, where N is the config value
+  RecordsPerBlock=10
   Protocol=PegNet 
   Network=TestNet
 

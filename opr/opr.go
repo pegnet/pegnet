@@ -27,13 +27,13 @@ import (
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Config     *config.Config    `json:"-"` //  The config of the miner using the record
-	Difficulty uint64            `json:"-"` // The difficulty of the given nonce
-	Grade      float64           `json:"-"` // The grade when OPR records are compared
-	OPRHash    []byte            `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	EC         *factom.ECAddress `json:"-"` // Entry Credit Address used by a miner
-	Entry      *factom.Entry     `json:"-"` // Entry to record this record
-	StopMining chan int          `json:"-"` // Bool that stops PegNet Mining this OPR
+	Config         *config.Config `json:"-"` //  The config of the miner using the record
+	Difficulty     uint64         `json:"-"` // The difficulty of the given nonce
+	Grade          float64        `json:"-"` // The grade when OPR records are compared
+	OPRHash        []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
+	Entry          *factom.Entry  `json:"-"` // Entry to record this record
+	StopMining     chan int       `json:"-"` // Bool that stops PegNet Mining this OPR
+	NonceAggregate *NonceRanking  `json:"-"` // The list of best nonces and their difficulties
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:"oprchainid"`      // [base58]  Chain ID of the chain used by the Oracle Miners
@@ -51,6 +51,21 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 	o.Assets = make(OraclePriceRecordAssetList)
 
 	return o
+}
+
+// CloneEntryData will clone the OPR data needed to make a factom entry.
+func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
+	n := new(OraclePriceRecord)
+	n.OPRChainID = c.OPRChainID
+	n.Dbht = c.Dbht
+	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
+	n.CoinbasePNTAddress = c.CoinbasePNTAddress
+	n.FactomDigitalID = append([]string{}, c.FactomDigitalID...)
+	n.Assets = make(OraclePriceRecordAssetList)
+	for k, v := range c.Assets {
+		n.Assets[k] = v
+	}
+	return n
 }
 
 // LX holds an instance of lxrhash
@@ -195,14 +210,16 @@ miningloop:
 		}
 		diff = opr.ComputeDifficulty(nonce)
 
-		if diff > opr.Difficulty {
-			opr.Difficulty = diff
+		if opr.NonceAggregate.AddNonce(nonce, diff, opr.FactomDigitalID) {
+			//opr.Difficulty = diff
 			// Copy over the previous nonce
-			opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
+			//opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
 			log.WithFields(log.Fields{
 				"opr_hash":   hex.EncodeToString(opr.OPRHash),
 				"difficulty": diff,
 				"nonce":      hex.EncodeToString(nonce),
+				"keep":       opr.NonceAggregate.Keep,
+				"have":       opr.NonceAggregate.taken,
 			}).Debug("Mined OPR")
 		}
 	}
@@ -301,16 +318,11 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	// Save the config object
 	opr.Config = c
 
-	// Get the Entry Credit Address that we need to write our OPR records.
-	if ecadrStr, err := c.String("Miner.ECAddress"); err != nil {
+	r, err := opr.Config.Int("Miner.RecordsPerBlock")
+	if err != nil {
 		return nil, err
-	} else {
-		ecAdr, err := factom.FetchECAddress(ecadrStr)
-		if err != nil {
-			return nil, err
-		}
-		opr.EC = ecAdr
 	}
+	opr.NonceAggregate = NewNonceRanking(r)
 
 	// Get the Identity Chain Specification
 	if chainID58, err := c.String("Miner.IdentityChain"); err != nil {
@@ -396,4 +408,18 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 		panic(err)
 	}
 	opr.OPRHash = LX.Hash(opr.Entry.Content)
+}
+
+// CreateOPREntry will create the entry from the EXISITING data.
+// It will not set the entry
+func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte) (*factom.Entry, error) {
+	var err error
+	e := new(factom.Entry)
+	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
+	e.ExtIDs = [][]byte{nonce}
+	e.Content, err = json.Marshal(opr)
+	if err != nil {
+		return nil, err
+	}
+	return e, nil
 }

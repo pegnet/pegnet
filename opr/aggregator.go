@@ -1,0 +1,111 @@
+package opr
+
+import "sort"
+
+// UniqueOPRData is the minimum set of information we need
+// to change for our OPR submissions
+type UniqueOPRData struct {
+	Nonce           []byte
+	Difficulty      uint64
+	FactomDigitalID []string
+
+	//Higher *UniqueOPRData
+}
+
+// NonceRanking is a sorted list of nonces and their difficulties.
+//
+type NonceRanking struct {
+	// Keep determines the depth of the list.
+	// If you wish to keep the top 10 OPRs, set the keep to 10.
+	Keep int
+
+	List []*UniqueOPRData
+
+	// Ability to set a minimum difficulty threshold
+	MinimumDifficulty uint64
+
+	WorstDiff  uint64 // Keep track of the worst difficulty to make the lookup cheap
+	WorstIndex int
+
+	taken int // The number of slots in the list taken. If we have space, accept it
+}
+
+func NewNonceRanking(keep int) *NonceRanking {
+	r := new(NonceRanking)
+	r.Keep = keep
+	r.List = make([]*UniqueOPRData, keep)
+
+	return r
+}
+
+// MergeNonceRankings will merge a set of rankings lists into 1
+func MergeNonceRankings(keep int, rankings ...*NonceRanking) *NonceRanking {
+	list := make([]*UniqueOPRData, 0)
+	for _, l := range rankings {
+		if l == nil {
+			continue // Do not append nil's
+		}
+		list = append(list, l.GetNonces()...)
+	}
+	list = SortNonceRanks(list)
+
+	n := NewNonceRanking(keep)
+	for _, v := range list {
+		n.AddNonce(v.Nonce, v.Difficulty, v.FactomDigitalID)
+	}
+	return n
+}
+
+func (r *NonceRanking) GetNonces() []*UniqueOPRData {
+	r.List = SortNonceRanks(r.List)
+	return r.List
+}
+
+func (r *NonceRanking) Full() bool {
+	return r.taken == len(r.List)
+}
+
+func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64, digitalID []string) bool {
+	if difficulty < r.MinimumDifficulty {
+		return false // Below min, we don't care
+	}
+
+	// If we have room, add it to the next avail slot
+	if r.taken < r.Keep {
+		newNonce := append([]byte{}, nonce...)
+		r.List[r.taken] = &UniqueOPRData{newNonce, difficulty, digitalID} // Add to empty slot
+		// If we have our first, or new worst. Set the worst
+		if r.taken == 0 || difficulty < r.WorstDiff {
+			r.WorstDiff = difficulty
+			r.WorstIndex = r.taken
+		}
+		r.taken++
+		return true
+	}
+
+	// If we are full, we check against the worst
+	if difficulty < r.WorstDiff {
+		return false // Our worst in the list is better
+	}
+
+	newNonce := append([]byte{}, nonce...)
+	// Replace the worst
+	r.List[r.WorstIndex] = &UniqueOPRData{newNonce, difficulty, digitalID}
+	r.WorstDiff = difficulty
+
+	// Update the worst
+	for i, v := range r.List {
+		if v.Difficulty < r.WorstDiff {
+			r.WorstDiff = v.Difficulty
+			r.WorstIndex = i
+		}
+	}
+	return true
+}
+
+func SortNonceRanks(list []*UniqueOPRData) []*UniqueOPRData {
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].Difficulty > list[j].Difficulty
+	})
+	return list
+}
