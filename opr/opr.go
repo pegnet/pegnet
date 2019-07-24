@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -268,7 +269,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 // NewOpr collects all the information unique to this miner and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
-func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
+func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := NewOraclePriceRecord()
 
 	// create the channel to stop pegnetMining
@@ -338,7 +339,14 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 			opr.CoinbasePNTAddress = str
 		}
 	}
-	winners := <-alert
+
+	var winners *OPRs
+	select {
+	case winners = <-alert: // Wait for winner
+	case <-ctx.Done(): // If we get cancelled
+		return nil, context.Canceled
+	}
+
 	for i, w := range winners.ToBePaid {
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
 	}

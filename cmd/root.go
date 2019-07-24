@@ -90,7 +90,7 @@ var rootCmd = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		grader := new(opr.Grader)
+		grader := opr.NewGrader()
 		go grader.Run(Config, monitor)
 
 		http.Handle("/v1", api.RequestHandler{})
@@ -99,7 +99,11 @@ var rootCmd = &cobra.Command{
 		go controlPanel.ServeControlPanel(Config, monitor)
 
 		if Miners > 0 {
-			pegnetMining.Mine(Miners, Config, monitor, grader)
+			miners := pegnetMining.InitMiners(Miners, Config, monitor, grader)
+			for _, m := range miners[:len(miners)-1] {
+				go m.LaunchMiningThread(false)
+			}
+			miners[len(miners)-1].LaunchMiningThread(true) // Launch last one to hog thread
 		}
 	},
 }

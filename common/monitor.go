@@ -25,6 +25,12 @@ func GetMonitor() *Monitor {
 	return monitor
 }
 
+type IMonitor interface {
+	NewListener() <-chan MonitorEvent
+	NewErrorListener() <-chan error
+	SetTimeout(timeout time.Duration)
+}
+
 // Monitor polls a factomd node and sends alerts whenever the block height or minute changes
 type Monitor struct {
 	timeout time.Duration

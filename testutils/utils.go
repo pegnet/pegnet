@@ -1,7 +1,8 @@
-package polling_test
+package testutils
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 )
@@ -37,4 +38,16 @@ func NewTestClient(fn RoundTripFunc) *http.Client {
 	return &http.Client{
 		Transport: RoundTripFunc(fn),
 	}
+}
+
+// NewHTTPServerWithFixedResp will only return the fixed reponse, always
+func NewHTTPServerWithFixedResp(port int, resp []byte) *http.Server {
+	handler := func(w http.ResponseWriter, r *http.Request) {
+		w.Write(resp)
+	}
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", handler)
+
+	srv := http.Server{Addr: fmt.Sprintf(":%d", port), Handler: mux}
+	return &srv
 }

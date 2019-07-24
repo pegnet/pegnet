@@ -3,8 +3,14 @@ package common
 import (
 	"fmt"
 
+	"github.com/zpatrick/go-config"
+
 	"github.com/go-ini/ini"
 )
+
+func NewUnitTestConfig() *config.Config {
+	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})
+}
 
 // UnitTestConfigProvider is only used in unit tests.
 //	This way we don't have to deal with pathing to find the

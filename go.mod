@@ -36,7 +36,7 @@ require (
 	github.com/codegangsta/cli v1.20.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/ghodss/yaml v1.0.0 // indirect
-	github.com/go-ini/ini v1.42.0 // indirect
+	github.com/go-ini/ini v1.42.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/hashicorp/go-plugin v1.0.1 // indirect
 	github.com/howeyc/fsnotify v0.9.0 // indirect
