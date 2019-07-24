@@ -1,2 +1,0 @@
-package polling_test
-
