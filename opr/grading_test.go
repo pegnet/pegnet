@@ -41,9 +41,18 @@ func dupeCheck(got []*OraclePriceRecord, want []string) error {
 		return fmt.Errorf("results are not the same length, got = %d, want = %d", len(got), len(want))
 	}
 
-	for i, o := range got {
-		if o.OPRChainID != want[i] {
-			return fmt.Errorf("wrong entry at position %d. got = %s, want = %s", i, o.OPRChainID, want[i])
+	in := func(s string, find []string) bool {
+		for _, i := range find {
+			if s == i {
+				return true
+			}
+		}
+		return false
+	}
+
+	for _, o := range got {
+		if !in(o.OPRChainID, want) {
+			return fmt.Errorf("%s is not in the expected results", o.OPRChainID)
 		}
 	}
 
