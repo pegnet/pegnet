@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -29,7 +30,10 @@ func GetNextMinerID() int {
 }
 
 // InitMiners creates the miners requested, not-started
-func InitMiners(numMiners int, config *config.Config, monitor *common.Monitor, grader *opr.Grader) []*PegnetMiner {
+func InitMiners(config *config.Config, monitor *common.Monitor, grader *opr.Grader) []*PegnetMiner {
+	numMiners, _ := config.Int("Miner.NumberOfMiners")
+	top, _ := config.Int("Miner.RecordsPerBlock")
+
 	opr.InitLX() // We intend to use the LX hash
 	if numMiners > MaxMiners {
 		log.WithFields(log.Fields{
@@ -40,11 +44,25 @@ func InitMiners(numMiners int, config *config.Config, monitor *common.Monitor, g
 	}
 	log.WithFields(log.Fields{
 		"miner_count": numMiners,
+		"records_per": top,
 	}).Info("Initializing miners")
+
+	keep, err := config.Int("Miner.RecordsPerBlock")
+	if err != nil {
+		panic(err)
+	}
+
+	// All miners share the same writer. As the writer will
+	// select the best `keep` records
+	writer := NewEntryWriter(config, keep)
+	err = writer.populateECAddress()
+	if err != nil {
+		panic(err)
+	}
 
 	miners := make([]*PegnetMiner, numMiners)
 	for i := range miners { // Init the miners
-		miners[i] = NewPegnetMiner(config, monitor, grader)
+		miners[i] = NewPegnetMiner(config, monitor, grader, writer)
 	}
 	return miners
 }
@@ -59,6 +77,8 @@ type PegnetMiner struct {
 	FactomMonitor common.IMonitor
 	OPRGrader     opr.IGrader
 
+	FactomEntryWriter *EntryWriter
+
 	// miningContext can be passed around, if the context is canceled, everyone who owns this can
 	// be notified. If the context is cancelled, that means mining has stopped
 	contextMutex  sync.Mutex // Go race complaining about context access
@@ -66,10 +86,11 @@ type PegnetMiner struct {
 	cancelMining  context.CancelFunc
 }
 
-func NewPegnetMiner(config *config.Config, monitor common.IMonitor, grader opr.IGrader) *PegnetMiner {
+func NewPegnetMiner(config *config.Config, monitor common.IMonitor, grader opr.IGrader, writer *EntryWriter) *PegnetMiner {
 	m := new(PegnetMiner)
 	m.FactomMonitor = monitor
 	m.OPRGrader = grader
+	m.FactomEntryWriter = writer
 	m.ID = GetNextMinerID()
 	m.Config = config
 
@@ -89,6 +110,7 @@ func (p *PegnetMiner) StopMining() bool {
 	// Set the cancel to nil so we know we are not running.
 	// We already called cancel, so it's safe to lose it's reference
 	p.cancelMining = nil
+	p.FactomEntryWriter.Cancel()
 	return true
 }
 
@@ -112,7 +134,8 @@ func (p *PegnetMiner) LaunchMiningThread(verbose bool) {
 	p.miningContext, p.cancelMining = context.WithCancel(context.Background())
 	p.contextMutex.Unlock()
 
-	numMiners, _ := p.Config.Int("Miner.NumberOfMiners")
+	var writeChannel chan<- *opr.NonceRanking
+
 	mining := false
 	var oprO *opr.OraclePriceRecord
 	var err error
@@ -136,6 +159,8 @@ MiningLoop:
 		case 1:
 			if !mining {
 				mining = true
+				p.FactomEntryWriter = p.FactomEntryWriter.NextBlockWriter()
+				writeChannel = p.FactomEntryWriter.AddMiner()
 				oprO, err = opr.NewOpr(p.miningContext, p.ID, fds.Dbht, p.Config, gAlert)
 				if err == context.Canceled {
 					continue MiningLoop // OPR cancelled
@@ -143,44 +168,18 @@ MiningLoop:
 				if err != nil {
 					log.WithError(err).Fatal("Error creating an OPR.  Likely a config file issue")
 				}
+				p.FactomEntryWriter.SetOPR(oprO) // Makes a copy of this opr for our final entry
 				go oprO.Mine(verbose)
 			}
 		case 9:
 			if mining {
 				close(oprO.StopMining)
 				mining = false
-				writeMiningRecord(oprO)
-				if verbose {
-					mineLog.WithFields(log.Fields{
-						"hashrate":    common.Stats.GetHashRate(),
-						"difficulty":  common.FormatDiff(common.Stats.Difficulty, 10),
-						"id":          oprO.FactomDigitalID,
-						"miner_count": numMiners,
-						"height":      fds.Dbht,
-					}).Info("OPR Block Mined")
-					common.Stats.Clear()
-				}
+				// Time to write
+				p.FactomEntryWriter.CollectAndWrite(false)
+				writeChannel <- oprO.NonceAggregate
 			}
 		}
 
-	}
-}
-
-func writeMiningRecord(opr *opr.OraclePriceRecord) {
-	operation := func() error {
-		var err1, err2 error
-		_, err1 = factom.CommitEntry(opr.Entry, opr.EC)
-		_, err2 = factom.RevealEntry(opr.Entry)
-		if err1 == nil && err2 == nil {
-			return nil
-		}
-		return errors.New("Unable to commit entry to factom")
-	}
-
-	err := backoff.Retry(operation, common.PegExponentialBackOff())
-	if err != nil {
-		// TODO: Handle error in retry
-		log.WithError(err).Error("Failed to write mining record")
-		return
 	}
 }
