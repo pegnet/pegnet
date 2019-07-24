@@ -13,13 +13,14 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
-// EntryWriter writes the best OPRs to factom
+// EntryWriter writes the best OPRs to factom once all the mining is done
 type EntryWriter struct {
 	Keep int
-	// We need an opr tempalate to make the entries
+	// We need an opr template to make the entries
 	oprTemplate *opr.OraclePriceRecord
-	ec          *factom.ECAddress
-	config      *config.Config
+
+	ec     *factom.ECAddress
+	config *config.Config
 
 	minerLists chan *opr.NonceRanking
 	miners     int

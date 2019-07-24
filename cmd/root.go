@@ -106,7 +106,8 @@ func Execute() {
 	}
 }
 
-// Do w/e config validation we want. We can check the error if we care about it
+// ValidateConfig will validate the config is up to snuff.
+// Do w/e config validation we want. Will fatal if it fails
 func ValidateConfig(config *config.Config) {
 	_, err := config.String("Miner.Protocol")
 	if err != nil {
@@ -150,6 +151,10 @@ func initFactomdLocs() {
 	factom.SetWalletServer(WalletdLocation)
 }
 
+// rootPreRunSetup is run before all cmd commands. It will:
+//		1: Parse the config
+//		2: Parse the cmd flags that overwrite the config
+//		3. Launch profiling if we have it enabled
 func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	// Config setup
 	u, err := user.Current()

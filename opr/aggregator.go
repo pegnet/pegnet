@@ -8,12 +8,10 @@ type UniqueOPRData struct {
 	Nonce           []byte
 	Difficulty      uint64
 	FactomDigitalID []string
-
-	//Higher *UniqueOPRData
 }
 
 // NonceRanking is a sorted list of nonces and their difficulties.
-//
+//	It allows us to only keep the top X oprs.
 type NonceRanking struct {
 	// Keep determines the depth of the list.
 	// If you wish to keep the top 10 OPRs, set the keep to 10.
@@ -22,6 +20,8 @@ type NonceRanking struct {
 	List []*UniqueOPRData
 
 	// Ability to set a minimum difficulty threshold
+	// TODO: Set the minimum difficulty based on the previous block.
+	//		 That way we don't submit oprs to the network if we know they will lose.
 	MinimumDifficulty uint64
 
 	WorstDiff  uint64 // Keep track of the worst difficulty to make the lookup cheap
@@ -43,28 +43,29 @@ func MergeNonceRankings(keep int, rankings ...*NonceRanking) *NonceRanking {
 	list := make([]*UniqueOPRData, 0)
 	for _, l := range rankings {
 		if l == nil {
-			continue // Do not append nil's
+			// Do not append nil's
+			// We get a nil from a cancelled miner
+			continue
 		}
 		list = append(list, l.GetNonces()...)
 	}
 	list = SortNonceRanks(list)
 
 	n := NewNonceRanking(keep)
-	for _, v := range list {
+	for _, v := range list { // Adding nonces will only keep the top `keep`
 		n.AddNonce(v.Nonce, v.Difficulty, v.FactomDigitalID)
 	}
 	return n
 }
 
+// GetNonces returns the sorted nonce list
 func (r *NonceRanking) GetNonces() []*UniqueOPRData {
 	r.List = SortNonceRanks(r.List)
 	return r.List
 }
 
-func (r *NonceRanking) Full() bool {
-	return r.taken == len(r.List)
-}
-
+// AddNonce will only add the nonce information if it is better than the current worst
+// or we have extra room that is not taken in the list.
 func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64, digitalID []string) bool {
 	if difficulty < r.MinimumDifficulty {
 		return false // Below min, we don't care

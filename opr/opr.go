@@ -54,6 +54,7 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 }
 
 // CloneEntryData will clone the OPR data needed to make a factom entry.
+//	This needs to be done because I need to marshal this into my factom entry.
 func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
 	n := new(OraclePriceRecord)
 	n.OPRChainID = c.OPRChainID
@@ -210,10 +211,8 @@ miningloop:
 		}
 		diff = opr.ComputeDifficulty(nonce)
 
+		// Add the unique fields to our aggregator
 		if opr.NonceAggregate.AddNonce(nonce, diff, opr.FactomDigitalID) {
-			//opr.Difficulty = diff
-			// Copy over the previous nonce
-			//opr.Entry.ExtIDs[0] = append(opr.Entry.ExtIDs[0][:0], nonce...)
 			log.WithFields(log.Fields{
 				"opr_hash":   hex.EncodeToString(opr.OPRHash),
 				"difficulty": diff,
@@ -400,7 +399,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.
-// It will not set the entry
+// It will not set any fields like in `GetOPRecord`
 func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte) (*factom.Entry, error) {
 	var err error
 	e := new(factom.Entry)
