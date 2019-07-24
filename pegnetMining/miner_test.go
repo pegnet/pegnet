@@ -10,6 +10,7 @@ import (
 	"github.com/pegnet/pegnet/opr"
 
 	. "github.com/pegnet/pegnet/pegnetMining"
+	"github.com/pegnet/pegnet/testutils"
 )
 
 func TestMinerID(t *testing.T) {
@@ -22,6 +23,15 @@ func TestMinerID(t *testing.T) {
 
 // TestMinerCleanup checks that stopping the miner actually stops all the threads
 func TestMinerCleanup(t *testing.T) {
+	// Fake the wallet server. Might want to make a good fake later?
+	// Have to run a server as the factom lib doesn't let us choose the http client
+	srv := testutils.NewHTTPServerWithFixedResp(8089, []byte(
+		`{"jsonrpc":"2.0","id":1,
+		"result":{"public":"EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg",
+		"secret":"Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq"}}`))
+	go srv.ListenAndServe()
+	defer srv.Close()
+
 	g := opr.NewFakeGrader()
 	m := common.NewFakeMonitor()
 

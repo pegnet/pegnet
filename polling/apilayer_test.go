@@ -6,15 +6,17 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
+	"github.com/pegnet/pegnet/testutils"
 	"github.com/zpatrick/go-config"
 )
 
 // TestFixedApiLayerPeggedAssets tests all the crypto assets are found on ApiLayer
 func TestFixedApiLayerPeggedAssets(t *testing.T) {
+	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
 	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
-	cl := GetClientWithFixedResp([]byte(apiLayerReponse))
+	cl := testutils.GetClientWithFixedResp([]byte(apiLayerReponse))
 	http.DefaultClient = cl
 
 	peg := make(PegAssets)
