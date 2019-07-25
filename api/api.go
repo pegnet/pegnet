@@ -180,10 +180,8 @@ func oprsByDigitalID(did string) []opr.OraclePriceRecord {
 	var subset []opr.OraclePriceRecord
 	for _, block := range opr.OPRBlocks {
 		for _, opr := range block.OPRs {
-			for _, digitalID := range opr.FactomDigitalID {
-				if digitalID == did {
-					subset = append(subset, *opr)
-				}
+			if opr.FactomDigitalID == did {
+				subset = append(subset, *opr)
 			}
 		}
 	}

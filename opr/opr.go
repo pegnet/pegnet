@@ -40,7 +40,7 @@ type OraclePriceRecord struct {
 	Dbht               int32      `json:"dbht"`            //           The Directory Block Height of the OPR.
 	WinPreviousOPR     [10]string `json:"winners"`         // First 8 bytes of the Entry Hashes of the previous winners
 	CoinbasePNTAddress string     `json:"coinbase"`        // [base58]  PNT Address to pay PNT
-	FactomDigitalID    []string   `json:"FactomDigitalID"` // [unicode] Digital Identity of the miner
+	FactomDigitalID    string     `json:"FactomDigitalID"` // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	Assets OraclePriceRecordAssetList `json:"assets"`
@@ -211,11 +211,8 @@ miningloop:
 
 // ShortString returns a human readable string with select data
 func (opr *OraclePriceRecord) ShortString() string {
-
-	fdid := strings.Join(opr.FactomDigitalID, "-")
-
 	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
-		fdid,
+		opr.FactomDigitalID,
 		opr.OPRHash,
 		opr.Entry.ExtIDs[0],
 		opr.Difficulty,
@@ -237,7 +234,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 
 	// Make a display string out of the Digital Identity.
 
-	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", strings.Join(opr.FactomDigitalID, "-"))
+	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", opr.FactomDigitalID)
 	for _, asset := range opr.Assets.List() {
 		str = str + fmt.Sprintf("%32s %v\n", "PNT", asset)
 	}
@@ -250,21 +247,15 @@ func (opr *OraclePriceRecord) String() (str string) {
 	// the software to detect them, and that we agree with their conclusions.
 	if pwin != nil {
 		for i, v := range opr.WinPreviousOPR {
-			fid := ""
-			for j, field := range pwin[i].FactomDigitalID {
-				if j > 0 {
-					fid = fid + "---"
-				}
-				fid = fid + field
-			}
 			balance := GetBalance(pwin[i].CoinbasePNTAddress)
 			hbal := humanize.Comma(balance)
 			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
 				v,
 				pwin[i].Entry.Hash()[:8],
-				fid,
-				pwin[i].
-					CoinbasePNTAddress, hbal)
+				pwin[i].FactomDigitalID,
+				pwin[i].CoinbasePNTAddress,
+				hbal,
+			)
 		}
 	}
 	return str
@@ -272,9 +263,8 @@ func (opr *OraclePriceRecord) String() (str string) {
 
 // LogFieldsShort returns a set of common fields to be included in logrus
 func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
-	did := strings.Join(opr.FactomDigitalID, "-")
 	return log.Fields{
-		"did":        did,
+		"did":        opr.FactomDigitalID,
 		"opr_hash":   hex.EncodeToString(opr.OPRHash),
 		"nonce":      hex.EncodeToString(opr.Entry.ExtIDs[0]),
 		"difficulty": opr.Difficulty,
@@ -313,14 +303,13 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	}
 
 	// Get the Identity Chain Specification
-	if chainID58, err := c.String("Miner.IdentityChain"); err != nil {
+	if did, err := c.String("Miner.IdentityChain"); err != nil {
 		return nil, errors.New("config file has no Miner.IdentityChain specified")
 	} else {
-		fields := strings.Split(chainID58, ",")
 		if minerNumber > 0 {
-			fields = append(fields, fmt.Sprintf("miner%03d", minerNumber))
+			did = fmt.Sprintf("%sminer%03d", did, minerNumber)
 		}
-		opr.FactomDigitalID = fields
+		opr.FactomDigitalID = did
 	}
 
 	// Get the protocol chain to be used for pegnetMining records
