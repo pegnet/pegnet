@@ -56,9 +56,10 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 	return opr.Grade
 }
 
-// GradeBlock takes all OPRs in a block and sorts them according to Grade and Difficulty.
-// The top ten entries are considered the winners.
-func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sortedlist []*OraclePriceRecord) {
+// GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
+// The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
+// sorted by difficulty.
+func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
 
 	list = RemoveDuplicateMiningIDs(list)
 
@@ -75,21 +76,22 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	// Note that we are sorting in descending order.
 	sort.SliceStable(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
 
+	var topDifficulty []*OraclePriceRecord
 	if len(list) > 50 {
-		list = list[:50]
+		topDifficulty = list[:50]
+	} else {
+		topDifficulty = list
 	}
-	for i := len(list); i >= 10; i-- {
-		avg := Avg(list[:i])
+	for i := len(topDifficulty); i >= 10; i-- {
+		avg := Avg(topDifficulty[:i])
 		for j := 0; j < i; j++ {
-			CalculateGrade(avg, list[j])
+			CalculateGrade(avg, topDifficulty[j])
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
-		sort.SliceStable(list[:i], func(i, j int) bool { return list[i].Grade < list[j].Grade })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > list[j].Difficulty })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < list[j].Grade })
 	}
-	tobepaid = append(tobepaid, list[:10]...)
-
-	return tobepaid, list
+	return topDifficulty, list // Return the top50 sorted by grade and then all sorted by difficulty
 }
 
 // RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
@@ -118,8 +120,9 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 
 // block data at a specific height
 type OprBlock struct {
-	OPRs []*OraclePriceRecord
-	Dbht int64
+	OPRs       []*OraclePriceRecord
+	GradedOPRs []*OraclePriceRecord
+	Dbht       int64
 }
 
 // OPRBlocks holds all the known OPRs
@@ -222,27 +225,17 @@ func GetEntryBlocks(config *config.Config) {
 		if len(validOPRs) < 10 { // Make sure we have at least 10 valid OPRs,
 			continue // and leave if we don't.
 		}
-		winners, _ := GradeBlock(validOPRs)
-		oprblocks[i].OPRs = winners
+		gradedOPRs, sortedOPRs := GradeBlock(validOPRs)
+		oprblocks[i].GradedOPRs = gradedOPRs
+		oprblocks[i].OPRs = sortedOPRs
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
+
 		// Update the balances for each winner
-		for place, win := range winners {
-			switch place {
-			// The Big Winner
-			case 0:
-				err := AddToBalance(win.CoinbasePNTAddress, 800)
-				if err != nil {
-					log.WithError(err).Fatal("Failed to update balance")
-				}
-			// Second Place
-			case 1:
-				err := AddToBalance(win.CoinbasePNTAddress, 600)
-				if err != nil {
-					log.WithError(err).Fatal("Failed to update balance")
-				}
-			default:
-				err := AddToBalance(win.CoinbasePNTAddress, 450)
+		for place, winner := range gradedOPRs[:10] {
+			reward := GetRewardFromPlace(place)
+			if reward > 0 {
+				err := AddToBalance(winner.CoinbasePNTAddress, 800)
 				if err != nil {
 					log.WithError(err).Fatal("Failed to update balance")
 				}
@@ -250,12 +243,12 @@ func GetEntryBlocks(config *config.Config) {
 			if i == 0 {
 				logger := log.WithFields(log.Fields{
 					"place":      place,
-					"id":         win.FactomDigitalID,
-					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
-					"grade":      common.FormatGrade(win.Grade, 4),
-					"difficulty": common.FormatDiff(win.Difficulty, 10),
-					"address":    win.CoinbasePNTAddress,
-					"balance":    humanize.Comma(GetBalance(win.CoinbasePNTAddress)),
+					"id":         winner.FactomDigitalID,
+					"entry_hash": hex.EncodeToString(winner.Entry.Hash()[:8]),
+					"grade":      common.FormatGrade(winner.Grade, 4),
+					"difficulty": common.FormatDiff(winner.Difficulty, 10),
+					"address":    winner.CoinbasePNTAddress,
+					"balance":    humanize.Comma(GetBalance(winner.CoinbasePNTAddress)),
 				})
 				if place == 0 {
 					logger.Info("New OPR Winner")
@@ -277,4 +270,18 @@ func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 		}
 	}
 	return nil
+}
+
+func GetRewardFromPlace(place int) int {
+	if place >= 10 {
+		return 0 // There's no participation trophy. Return zero.
+	}
+	switch place {
+	case 0:
+		return 800 // The Big Winner
+	case 1:
+		return 600 // Second Place
+	default:
+		return 450 // Consolation Prize
+	}
 }
