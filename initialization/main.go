@@ -91,9 +91,9 @@ func main() {
 	// Try to create the network chains
 	chainNames := map[string][][]byte{
 		"ProtocolChain":          {[]byte(protocol), []byte(network)},
-		"TransactionChain":       {[]byte(protocol), []byte(network), []byte("Transactions")},
-		"MinerChain":             {[]byte(protocol), []byte(network), []byte("Miners")},
-		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte("Oracle Price Records")},
+		"TransactionChain":       {[]byte(protocol), []byte(network), []byte(common.TransactionChainTag)},
+		"MinerChain":             {[]byte(protocol), []byte(network), []byte(common.MinerChainTag)},
+		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte(common.OPRChainTag)},
 	}
 	for tag, chainName := range chainNames {
 		chainID, txID, err := CreateChain(ecAddress, chainName)

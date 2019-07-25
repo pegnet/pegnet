@@ -11,9 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pegnet/pegnet/common"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 )
 
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
@@ -129,6 +128,7 @@ func uniqID() string {
 var difficulty []*OraclePriceRecord
 
 func init() {
+	InitLX()
 	// create difficulties that are in order and indexed in an array so I can assign them and compare
 	// them in the tests.
 	for i := 0; i < 100; i++ {

@@ -6,9 +6,8 @@ package polling
 import (
 	"time"
 
-	"github.com/pegnet/pegnet/common"
-
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -31,6 +31,9 @@ services:
     network_mode: host
     container_name: pegnet_container
     build: .
+    ports:
+      - "8080:8080"
+      - "8099:8099"
     volumes:
       - .:/go/src/github.com/pegnet/pegnet
       - ./myconfig.ini:/root/.pegnet/defaultconfig.ini:ro

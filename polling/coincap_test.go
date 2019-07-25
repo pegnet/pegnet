@@ -6,12 +6,15 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
+	"github.com/pegnet/pegnet/testutils"
 	"github.com/zpatrick/go-config"
 )
 
 // TestCoinCapPeggedAssets tests all the crypto assets are found on coinmarket cap
 func TestCoinCapPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
+
+	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	peg := make(PegAssets)
 
 	http.DefaultClient = &http.Client{}
@@ -27,10 +30,10 @@ func TestCoinCapPeggedAssets(t *testing.T) {
 
 // TestFixedCoinCapRatesPeggedAssets with fixed resp
 func TestFixedCoinCapRatesPeggedAssets(t *testing.T) {
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigProvider()})
+	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 
 	// Set default http client to return what we expect from apilayer
-	cl := GetClientWithFixedResp([]byte(coincapResp))
+	cl := testutils.GetClientWithFixedResp([]byte(coincapResp))
 	http.DefaultClient = cl
 
 	peg := make(PegAssets)

@@ -8,12 +8,14 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"regexp"
 	"strings"
 	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/controlPanel"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/pegnet/pegnet/pegnetMining"
 	log "github.com/sirupsen/logrus"
@@ -64,6 +66,16 @@ var rootCmd = &cobra.Command{
 			log.WithError(err).Fatal("Failed to read number of miners from config")
 		}
 
+		identity, err := Config.String("Miner.IdentityChain")
+		if err != nil {
+			log.WithError(err).Fatal("Failed to read the identity chain or miner id")
+		}
+
+		valid, _ := regexp.MatchString("^[a-zA-Z0-9,]+$", identity)
+		if !valid {
+			log.Fatal("Only alphanumeric characters and commas are allowed in the identity")
+		}
+
 		// Default to config options if cli flags aren't specified
 		if Miners == 0 {
 			Miners = configMiners
@@ -78,14 +90,20 @@ var rootCmd = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		grader := new(opr.Grader)
+		grader := opr.NewGrader()
 		go grader.Run(Config, monitor)
 
 		http.Handle("/v1", api.RequestHandler{})
 		go http.ListenAndServe(":8099", nil)
 
+		go controlPanel.ServeControlPanel(Config, monitor)
+
 		if Miners > 0 {
-			pegnetMining.Mine(Miners, Config, monitor, grader)
+			miners := pegnetMining.InitMiners(Miners, Config, monitor, grader)
+			for _, m := range miners[:len(miners)-1] {
+				go m.LaunchMiningThread(false)
+			}
+			miners[len(miners)-1].LaunchMiningThread(true) // Launch last one to hog thread
 		}
 	},
 }

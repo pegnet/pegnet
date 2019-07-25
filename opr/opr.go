@@ -4,11 +4,15 @@
 package opr
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
@@ -51,13 +55,19 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 
 // LX holds an instance of lxrhash
 var LX lxr.LXRHash
+var lxInitializer sync.Once
+
+// The init function for LX is expensive. So we should explicitly call the init if we intend
+// to use it. Make the init call idempotent
+func InitLX() {
+	lxInitializer.Do(func() {
+		// This code will only be executed ONCE, no matter how often you call it
+		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+	})
+}
 
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
-
-func init() {
-	LX.Init(0xfafaececfafaecec, 25, 256, 5)
-}
 
 // Token is a combination of currency code and value
 type Token struct {
@@ -67,8 +77,29 @@ type Token struct {
 
 func check(e error) {
 	if e != nil {
-		log.WithError(e).Fatal("An error in OPR was encountered")
+		_, file, line, _ := runtime.Caller(1) // The line that called this function
+		shortFile := ShortenPegnetFilePath(file, "", 0)
+		log.WithField("caller", fmt.Sprintf("%s:%d", shortFile, line)).WithError(e).Fatal("An error in OPR was encountered")
 	}
+}
+
+// ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
+//	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
+//	This is nice for errors that print the file + line number
+//
+// 		!! Only use for error printing !!
+//
+func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
+	if depth > 5 || path == "." {
+		// Recursive base case
+		// If depth > 5 probably no pegnet dir exists
+		return filepath.Join(path, acc)
+	}
+	dir, base := filepath.Split(path)
+	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
+		return filepath.Join(base, acc)
+	}
+	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
@@ -82,7 +113,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	if len(OPRChainID) == 0 {
-		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+		OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 	}
 
 	if opr.OPRChainID != OPRChainID {
@@ -95,8 +126,8 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	// Validate there are no 0's
-	for _, v := range opr.Assets {
-		if v == 0 {
+	for k, v := range opr.Assets {
+		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
 			return false
 		}
 	}
@@ -261,7 +292,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 // NewOpr collects all the information unique to this miner and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
-func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
+func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := NewOraclePriceRecord()
 
 	// create the channel to stop pegnetMining
@@ -301,7 +332,7 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 	if err2 != nil {
 		return nil, errors.New("config file has no Miner.Network specified")
 	}
-	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, "Oracle Price Records"}))
+	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 
 	opr.Dbht = dbht
 
@@ -331,7 +362,14 @@ func NewOpr(minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*O
 			opr.CoinbasePNTAddress = str
 		}
 	}
-	winners := <-alert
+
+	var winners *OPRs
+	select {
+	case winners = <-alert: // Wait for winner
+	case <-ctx.Done(): // If we get cancelled
+		return nil, context.Canceled
+	}
+
 	for i, w := range winners.ToBePaid {
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
 	}

@@ -9,9 +9,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/pegnet/pegnet/common"
-
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -78,7 +77,7 @@ func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 			}
 		case "ZCASH", "ZEC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["ZCASH"] = PegItem{Value: Round(value), When: timestamp}
+			peg["ZEC"] = PegItem{Value: Round(value), When: timestamp}
 			if err != nil {
 				continue
 			}

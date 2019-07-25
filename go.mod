@@ -27,6 +27,7 @@ require (
 	github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66 // indirect
 	github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb // indirect
 	github.com/FactomProject/web v0.1.0 // indirect
+	github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/btcsuitereleases/btcutil v0.0.0-20150612230727-f2b1058a8255 // indirect
