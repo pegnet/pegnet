@@ -66,7 +66,6 @@ func TestRemoveDuplicateMiningIDs(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveDuplicateMiningIDs(tt.args)
 			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0] < got[j].FactomDigitalID[0] })
-			fmt.Println(got)
 			if err := dupeCheck(got, tt.want); err != nil {
 				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
 			}
