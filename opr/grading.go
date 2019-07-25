@@ -230,7 +230,6 @@ func GetEntryBlocks(config *config.Config) {
 		oprblocks[i].OPRs = sortedOPRs
 		OPRBlocks = append(OPRBlocks, oprblocks[i])
 
-
 		// Update the balances for each winner
 		for place, winner := range gradedOPRs[:10] {
 			reward := GetRewardFromPlace(place)
