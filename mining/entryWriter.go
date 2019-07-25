@@ -129,8 +129,6 @@ GatherListLoop:
 	}
 
 	log.WithFields(log.Fields{
-		"hashrate":    common.Stats.GetHashRate(),
-		"difficulty":  common.FormatDiff(common.Stats.Difficulty, 10),
 		"miner_count": w.miners,
 		"height":      dbht,
 		"exp_records": w.Keep,
@@ -147,7 +145,7 @@ func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
 	operation := func() error {
 		var err1, err2 error
 		w.oprTemplate.FactomDigitalID = unique.FactomDigitalID
-		entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce)
+		entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce, unique.Difficulty)
 		if err != nil {
 			return err
 		}

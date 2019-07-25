@@ -25,6 +25,9 @@ type MiningCoordinator struct {
 
 	MinerSubmissions chan MinerSubmission
 
+	// Who we submit our stats too
+	StatTracker *GlobalStatTracker
+
 	// To unique ID miners
 	minerIDCounter int
 }
@@ -41,11 +44,12 @@ type MiningIdentity struct {
 	Best     *opr.NonceRanking
 }
 
-func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader) *MiningCoordinator {
+func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
 	c := new(MiningCoordinator)
 	c.config = config
 	c.FactomMonitor = monitor
 	c.OPRGrader = grader
+	c.StatTracker = s
 	k, err := config.Int("Miner.RecordsPerBlock")
 	if err != nil {
 		panic(err)
@@ -88,6 +92,7 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	var oprTemplate *opr.OraclePriceRecord
 	var oprHash []byte
 	var err error
+	var statsAggregate chan *SingleMinerStats
 
 	// Launch!
 	for _, m := range c.Miners {
@@ -124,23 +129,28 @@ MiningLoop:
 				// The consolidator that will write to the blockchain
 				c.FactomEntryWriter = c.FactomEntryWriter.NextBlockWriter()
 				c.FactomEntryWriter.SetOPR(oprTemplate)
+				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
 				command := BuildCommand().
-					Aggregator(c.FactomEntryWriter).
-					NewOPRHash(oprHash).
-					ResetNonce().
-					MinimumDifficulty(0). // TODO: Set this from the cfg?
-					ResumeMining().
+					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
+					StatsAggregator(statsAggregate). // Stat collection per block
+					ResetRecords().                  // Reset the miner's stats/difficulty/etc
+					NewOPRHash(oprHash).             // New OPR hash to mine
+					ResetNonce().                    // New nonce, as we have a new opr hash
+					MinimumDifficulty(0).            // TODO: Set this from the cfg?
+					ResumeMining().                  // Start mining
 					Build()
 				mineLog.Debug("Mining started")
 
 				// Need to send to our miners
 				for _, m := range c.Miners {
+					m.SendCommand(&MinerCommand{Command: ResumeMining})
 					m.SendCommand(command)
 				}
 
 			}
 		case 9:
 			if mining {
+				mining = false
 				command := BuildCommand().
 					SubmitNonces().
 					PauseMining().
@@ -152,6 +162,20 @@ MiningLoop:
 				}
 				// Write to blockchain
 				c.FactomEntryWriter.CollectAndWrite(false)
+
+				groupStats := NewGroupMinerStats()
+				groupStats.BlockHeight = int(fds.Dbht)
+				// Collect stats
+				cm := 0
+				for s := range statsAggregate {
+					groupStats.Miners[s.ID] = s
+					cm++
+					if cm == len(c.Miners) {
+						break
+					}
+				}
+				c.StatTracker.MiningStatsChannel <- groupStats
+
 			}
 		}
 	}
@@ -192,6 +216,11 @@ func (b *CommandBuilder) NewOPRHash(oprhash []byte) *CommandBuilder {
 	return b
 }
 
+func (b *CommandBuilder) ResetRecords() *CommandBuilder {
+	b.commands = append(b.commands, &MinerCommand{Command: ResetRecords, Data: nil})
+	return b
+}
+
 func (b *CommandBuilder) ResetNonce() *CommandBuilder {
 	b.commands = append(b.commands, &MinerCommand{Command: ResetNonce, Data: nil})
 	return b
@@ -219,6 +248,11 @@ func (b *CommandBuilder) ResumeMining() *CommandBuilder {
 
 func (b *CommandBuilder) Aggregator(w *EntryWriter) *CommandBuilder {
 	b.commands = append(b.commands, &MinerCommand{Command: RecordAggregator, Data: w})
+	return b
+}
+
+func (b *CommandBuilder) StatsAggregator(w chan *SingleMinerStats) *CommandBuilder {
+	b.commands = append(b.commands, &MinerCommand{Command: StatsAggregator, Data: w})
 	return b
 }
 

@@ -5,6 +5,7 @@ package opr
 
 import (
 	"context"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -27,13 +28,11 @@ import (
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Config         *config.Config `json:"-"` //  The config of the miner using the record
-	Difficulty     uint64         `json:"-"` // The difficulty of the given nonce
-	Grade          float64        `json:"-"` // The grade when OPR records are compared
-	OPRHash        []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	Entry          *factom.Entry  `json:"-"` // Entry to record this record
-	StopMining     chan int       `json:"-"` // Bool that stops PegNet Mining this OPR
-	NonceAggregate *NonceRanking  `json:"-"` // The list of best nonces and their difficulties
+	Config     *config.Config `json:"-"` //  The config of the miner using the record
+	Difficulty uint64         `json:"-"` // The difficulty of the given nonce
+	Grade      float64        `json:"-"` // The grade when OPR records are compared
+	OPRHash    []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
+	Entry      *factom.Entry  `json:"-"` // Entry to record this record
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:"oprchainid"`      // [base58]  Chain ID of the chain used by the Oracle Miners
@@ -200,45 +199,6 @@ func ComputeDifficulty(nonce []byte, oprhash []byte) (difficulty uint64) {
 	return difficulty
 }
 
-// Mine calculates difficulties with varying nonces, keeping track of the
-// highest difficulty achieved in the Difficulty and ExtID[0] fields
-// Stops when a signal is received on the StopMining channel.
-func (opr *OraclePriceRecord) Mine(verbose bool) {
-
-	// Pick a new nonce as a starting point.  Take time + last best nonce and hash that.
-	nonce := []byte{0, 0}
-	log.WithFields(log.Fields{"opr_hash": hex.EncodeToString(opr.OPRHash)}).Debug("Started mining")
-
-	var i uint64
-	var diff uint64
-miningloop:
-	for i = 0; ; i++ {
-		select {
-		case <-opr.StopMining:
-			break miningloop
-
-		default:
-		}
-		nonce = nonce[:0]
-		for j := i; j > 0; j = j >> 8 {
-			nonce = append(nonce, byte(j))
-		}
-		diff = opr.ComputeDifficulty(nonce)
-
-		// Add the unique fields to our aggregator
-		if opr.NonceAggregate.AddNonce(nonce, diff, opr.FactomDigitalID) {
-			log.WithFields(log.Fields{
-				"opr_hash":   hex.EncodeToString(opr.OPRHash),
-				"difficulty": diff,
-				"nonce":      hex.EncodeToString(nonce),
-				"keep":       opr.NonceAggregate.Keep,
-				"have":       opr.NonceAggregate.taken,
-			}).Debug("Mined OPR")
-		}
-	}
-	common.Stats.Update(i, opr.Difficulty)
-}
-
 // ShortString returns a human readable string with select data
 func (opr *OraclePriceRecord) ShortString() string {
 	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
@@ -315,17 +275,8 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := NewOraclePriceRecord()
 
-	// create the channel to stop pegnetMining
-	opr.StopMining = make(chan int, 1)
-
 	// Save the config object
 	opr.Config = c
-
-	r, err := opr.Config.Int("Miner.RecordsPerBlock")
-	if err != nil {
-		return nil, err
-	}
-	opr.NonceAggregate = NewNonceRanking(r)
 
 	// Get the Identity Chain Specification
 	if did, err := c.String("Miner.IdentityChain"); err != nil {
@@ -414,11 +365,15 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 
 // CreateOPREntry will create the entry from the EXISITING data.
 // It will not set any fields like in `GetOPRecord`
-func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte) (*factom.Entry, error) {
+func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*factom.Entry, error) {
 	var err error
 	e := new(factom.Entry)
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, difficulty)
+
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	e.ExtIDs = [][]byte{nonce}
+	e.ExtIDs = [][]byte{nonce, buf}
 	e.Content, err = json.Marshal(opr)
 	if err != nil {
 		return nil, err

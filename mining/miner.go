@@ -6,6 +6,7 @@ package mining
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
@@ -21,6 +22,7 @@ const (
 	MinimumAccept
 	RecordsToKeep
 	RecordAggregator
+	StatsAggregator
 	SubmitNonces
 
 	PauseMining
@@ -42,6 +44,8 @@ type PegnetMiner struct {
 	// Miner commands
 	commands <-chan *MinerCommand
 
+	// All the state variables PER oprhash.
+	//	Typically want to update these all in parallel
 	MiningState oprMiningState
 
 	// Tells us we are paused
@@ -60,9 +64,11 @@ type oprMiningState struct {
 
 	// Where we keep the top X nonces to be written
 	rankings *opr.NonceRanking
+	stats    *SingleMinerStats // Miner stats are tied to the rankings
 
 	// Where we will write our rankings too
 	writeChannel chan<- *opr.NonceRanking
+	statsChannel chan<- *SingleMinerStats
 
 	keep int
 }
@@ -136,15 +142,18 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 			p.HandleCommand(c)
 		default:
 		}
+
 		if p.paused {
 			p.waitForResume(ctx)
+			continue
 		}
 
 		p.MiningState.NextNonce()
 
+		p.MiningState.stats.TotalHashes++
 		diff := opr.ComputeDifficulty(p.MiningState.Nonce, p.MiningState.oprhash)
 		if p.MiningState.rankings.AddNonce(p.MiningState.Nonce, diff, []string{}) {
-			// Log?
+			p.MiningState.stats.NewDifficulty(diff)
 			mineLog.WithFields(log.Fields{
 				"oprhash": fmt.Sprintf("%x", p.MiningState.oprhash),
 				"Nonce":   fmt.Sprintf("%x", p.MiningState.Nonce),
@@ -168,6 +177,9 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 		p.ResetNonce()
 	case ResetRecords:
 		p.MiningState.rankings = opr.NewNonceRanking(p.MiningState.keep)
+		p.MiningState.stats = NewSingleMinerStats()
+		p.MiningState.stats.ID = p.ID
+		p.MiningState.stats.Start = time.Now()
 	case MinimumAccept:
 		p.MiningState.minimumDifficulty = c.Data.(uint64)
 	case RecordsToKeep:
@@ -175,8 +187,15 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 	case RecordAggregator:
 		w := c.Data.(*EntryWriter)
 		p.MiningState.writeChannel = w.AddMiner()
+	case StatsAggregator:
+		w := c.Data.(chan *SingleMinerStats)
+		p.MiningState.statsChannel = w
 	case SubmitNonces:
+		p.MiningState.stats.Stop = time.Now()
 		p.MiningState.writeChannel <- p.MiningState.rankings
+		if p.MiningState.statsChannel != nil {
+			p.MiningState.statsChannel <- p.MiningState.stats
+		}
 	case PauseMining:
 		// Pause until we get a new start
 		p.paused = true
@@ -184,7 +203,6 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 }
 
 func (p *PegnetMiner) waitForResume(ctx context.Context) {
-	defer log.Debug("resumed")
 	// Pause until we get a new start or are cancelled
 	for {
 		select {
@@ -195,17 +213,17 @@ func (p *PegnetMiner) waitForResume(ctx context.Context) {
 				p.paused = false
 				return
 			}
-			// If nested in batch
-			if c.Command == BatchCommand {
-				for _, ci := range c.Data.([]*MinerCommand) {
-					if ci.Command == ResumeMining {
-						p.paused = false
-						p.HandleCommand(c)
-						return
-					}
-				}
-			}
-			p.HandleCommand(c)
+			//// If nested in batch
+			//if c.Command == BatchCommand {
+			//	for _, ci := range c.Data.([]*MinerCommand) {
+			//		if ci.Command == ResumeMining {
+			//			p.paused = false
+			//			p.HandleCommand(c)
+			//			return
+			//		}
+			//	}
+			//}
+			//p.HandleCommand(c)
 		}
 	}
 }

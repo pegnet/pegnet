@@ -2,12 +2,14 @@ package controlPanel
 
 import (
 	"encoding/json"
+	"net/http"
+
 	"github.com/alexandrevicenzi/go-sse"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
-	"net/http"
 )
 
 type CommonResponse struct {
@@ -18,7 +20,7 @@ type CommonResponse struct {
 	Difficulty uint64 `json:"difficulty"`
 }
 
-func ServeControlPanel(config *config.Config, monitor *common.Monitor) {
+func ServeControlPanel(config *config.Config, monitor *common.Monitor, statTracker *mining.GlobalStatTracker) {
 	log.Info("Starting control panel on localhost:8080")
 
 	alert := monitor.NewListener()

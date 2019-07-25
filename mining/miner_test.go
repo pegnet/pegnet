@@ -1,19 +1,73 @@
 package mining_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
+	"time"
+
+	"github.com/pegnet/pegnet/opr"
 
 	. "github.com/pegnet/pegnet/mining"
 )
+
+var totalIter = 100
+var totalBytes = 40
+
+func BenchmarkHash(b *testing.B) {
+	b.Run("Sha256", benchmarkSha256)
+	b.Run("LXR", benchmarkLXR)
+}
+
+func benchmarkSha256(b *testing.B) {
+	data := make([]byte, totalBytes)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		for i := 0; i < totalIter; i++ {
+			sha256.Sum256(data)
+		}
+	}
+}
+
+func benchmarkLXR(b *testing.B) {
+	data := make([]byte, totalBytes)
+	opr.InitLX()
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		for i := 0; i < totalIter; i++ {
+			opr.LX.Hash(data)
+		}
+	}
+}
+
+func TestMinerAction(t *testing.T) {
+	var _ = t
+}
 
 // BenchmarkNonceRotate/simple_nonce_increment-8         	2000000000	         0.00 ns/op
 func BenchmarkNonceRotate(b *testing.B) {
 	b.Run("simple Nonce increment", testIncrement)
 }
 
+func TestRunitFast(t *testing.T) {
+	var _ = t
+	data := make([]byte, totalBytes)
+	opr.InitLX()
+
+	total := 10000
+	n := time.Now()
+	for i := 0; i < total; i++ {
+		for i := 0; i < totalIter; i++ {
+			opr.LX.Hash(data)
+		}
+	}
+
+	fmt.Println(time.Since(n).Nanoseconds() / int64(total))
+}
+
 func testIncrement(b *testing.B) {
 	ni := NewNonceIncrementer(1)
-	for i := 0; i < 255; i++ {
+	for i := 0; i < b.N; i++ {
 		ni.NextNonce()
 	}
 }

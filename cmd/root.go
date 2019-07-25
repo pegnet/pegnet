@@ -89,14 +89,21 @@ var rootCmd = &cobra.Command{
 		http.Handle("/v1", api.RequestHandler{})
 		go http.ListenAndServe(":8099", nil)
 
-		go controlPanel.ServeControlPanel(Config, monitor)
+		statTracker := mining.NewGlobalStatTracker()
+		go controlPanel.ServeControlPanel(Config, monitor, statTracker)
 
-		coord := mining.NewMiningCoordinatorFromConfig(Config, monitor, grader)
+		coord := mining.NewMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
 		err := coord.InitMinters()
 		if err != nil {
 			panic(err)
 		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		go statTracker.Collect(ctx) // Will stop collecting on ctx cancel
 		coord.LaunchMiners(context.Background())
+
+		// Calling cancel() will cancel the stat tracker collection AND the miners
+		var _ = cancel
 
 		//if miners > 0 {
 		//	miners := pegnetMining.InitMiners(Config, monitor, grader)
