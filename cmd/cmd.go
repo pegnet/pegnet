@@ -8,6 +8,9 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
+
+	"github.com/pegnet/pegnet/opr"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -18,6 +21,7 @@ func init() {
 	// Add commands to the root cmd
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
+	rootCmd.AddCommand(grader)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
@@ -170,5 +174,33 @@ var burn = &cobra.Command{
 
 		fmt.Println("Burn transaction sent to the network")
 		fmt.Printf("Transaction: %s\n", tx.TxID)
+	},
+}
+
+var grader = &cobra.Command{
+	Use: "grader ",
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		monitor := common.GetMonitor()
+		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+
+		go func() {
+			errListener := monitor.NewErrorListener()
+			err := <-errListener
+			panic("Monitor threw error: " + err.Error())
+		}()
+
+		grader := opr.NewGrader()
+		go grader.Run(Config, monitor)
+
+		alert := grader.GetAlert("cmd")
+
+		for {
+			select {
+			case a := <-alert:
+				fmt.Println(a)
+			}
+		}
 	},
 }

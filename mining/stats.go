@@ -13,6 +13,8 @@ import (
 )
 
 // GlobalStatTracker is the global tracker for the api's and whatnot
+//	It has threadsafe queryable stats for the miners and their blockheights.
+//	TODO: Garbage collect
 type GlobalStatTracker struct {
 	// The sorted listed for block heights
 	stats            sync.Mutex
@@ -28,6 +30,8 @@ func NewGlobalStatTracker() *GlobalStatTracker {
 	return g
 }
 
+// Collect listens for new stats, and manages them
+//	ctx can be cancelled
 func (t *GlobalStatTracker) Collect(ctx context.Context) {
 	for {
 		select {
@@ -40,6 +44,7 @@ func (t *GlobalStatTracker) Collect(ctx context.Context) {
 	}
 }
 
+// FetchAllStats is really for unit tests
 func (t *GlobalStatTracker) FetchAllStats() []*GroupMinerStats {
 	t.stats.Lock()
 	defer t.stats.Unlock()
@@ -77,6 +82,8 @@ func (t *GlobalStatTracker) fetch(height int) *GroupMinerStats {
 	return nil
 }
 
+// GroupMinerStats has the stats for all miners running from a
+// coordinator. It will do aggregation for simple global stats
 type GroupMinerStats struct {
 	Miners      map[int]*SingleMinerStats
 	BlockHeight int
@@ -89,6 +96,7 @@ func NewGroupMinerStats() *GroupMinerStats {
 	return g
 }
 
+// TotalHashPower is the sum of all miner's hashpower
 func (g *GroupMinerStats) TotalHashPower() float64 {
 	var totalDur time.Duration
 	var acc float64
@@ -124,6 +132,7 @@ func (g *GroupMinerStats) LogFields() log.Fields {
 	}
 }
 
+// SingleMinerStats is the stats of a single miner
 type SingleMinerStats struct {
 	ID             int
 	TotalHashes    int64

@@ -17,7 +17,6 @@ const (
 	_ = iota
 	BatchCommand
 	NewOPRHash
-	ResetNonce
 	ResetRecords
 	MinimumAccept
 	RecordsToKeep
@@ -173,9 +172,8 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 		}
 	case NewOPRHash:
 		p.MiningState.oprhash = c.Data.([]byte)
-	case ResetNonce:
-		p.ResetNonce()
 	case ResetRecords:
+		p.ResetNonce()
 		p.MiningState.rankings = opr.NewNonceRanking(p.MiningState.keep)
 		p.MiningState.stats = NewSingleMinerStats()
 		p.MiningState.stats.ID = p.ID

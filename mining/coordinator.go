@@ -135,7 +135,6 @@ MiningLoop:
 					StatsAggregator(statsAggregate). // Stat collection per block
 					ResetRecords().                  // Reset the miner's stats/difficulty/etc
 					NewOPRHash(oprHash).             // New OPR hash to mine
-					ResetNonce().                    // New nonce, as we have a new opr hash
 					MinimumDifficulty(0).            // TODO: Set this from the cfg?
 					ResumeMining().                  // Start mining
 					Build()
@@ -218,11 +217,6 @@ func (b *CommandBuilder) NewOPRHash(oprhash []byte) *CommandBuilder {
 
 func (b *CommandBuilder) ResetRecords() *CommandBuilder {
 	b.commands = append(b.commands, &MinerCommand{Command: ResetRecords, Data: nil})
-	return b
-}
-
-func (b *CommandBuilder) ResetNonce() *CommandBuilder {
-	b.commands = append(b.commands, &MinerCommand{Command: ResetNonce, Data: nil})
 	return b
 }
 

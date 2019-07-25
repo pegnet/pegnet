@@ -161,8 +161,10 @@ func GetEntryBlocks(config *config.Config) {
 				check(err)
 
 				// Do some quick collecting of data and checks of the entry.
-				// Can only have one ExtID which must be the nonce for the entry
-				if len(entry.ExtIDs) != 1 {
+				// Can only have two ExtIDs which must be:
+				//  [0] the nonce for the entry
+				//	[1] Self reported difficulty
+				if len(entry.ExtIDs) != 2 {
 					continue // keep looking if the entry has more than one extid
 				}
 
