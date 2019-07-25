@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/FactomProject/factom"
@@ -101,8 +100,7 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	highest := make(map[string]int)
 
 	for i, v := range list {
-		id := strings.Join(v.FactomDigitalID, "-")
-
+		id := v.FactomDigitalID
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
@@ -110,7 +108,6 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 		}
 		// Either the first record found for the identity,or a more difficult record... keep it
 		highest[id] = i
-
 	}
 	// Take all the best records, stick them in the list and return.
 	for _, idx := range highest {
@@ -250,14 +247,10 @@ func GetEntryBlocks(config *config.Config) {
 					log.WithError(err).Fatal("Failed to update balance")
 				}
 			}
-			fid := win.FactomDigitalID[0]
-			for _, f := range win.FactomDigitalID[1:] {
-				fid = fid + "-" + f
-			}
 			if i == 0 {
 				logger := log.WithFields(log.Fields{
 					"place":      place,
-					"id":         fid,
+					"id":         win.FactomDigitalID,
 					"entry_hash": hex.EncodeToString(win.Entry.Hash()[:8]),
 					"grade":      common.FormatGrade(win.Grade, 4),
 					"difficulty": common.FormatDiff(win.Difficulty, 10),

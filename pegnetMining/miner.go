@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -152,11 +151,10 @@ MiningLoop:
 				mining = false
 				writeMiningRecord(oprO)
 				if verbose {
-					did := strings.Join(oprO.FactomDigitalID[:len(oprO.FactomDigitalID)-1], "-")
 					mineLog.WithFields(log.Fields{
 						"hashrate":    common.Stats.GetHashRate(),
 						"difficulty":  common.FormatDiff(common.Stats.Difficulty, 10),
-						"id":          did,
+						"id":          oprO.FactomDigitalID,
 						"miner_count": numMiners,
 						"height":      fds.Dbht,
 					}).Info("OPR Block Mined")

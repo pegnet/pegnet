@@ -20,7 +20,7 @@ import (
 func dopr(name string, difficulty uint64) *OraclePriceRecord {
 	//split := strings.Split("name", "")
 	o := NewOraclePriceRecord()
-	o.FactomDigitalID = []string{string(name[0])}
+	o.FactomDigitalID = string(name[0])
 	o.Difficulty = difficulty
 	o.OPRChainID = name
 	return o
@@ -65,7 +65,8 @@ func TestRemoveDuplicateMiningIDs(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveDuplicateMiningIDs(tt.args)
-			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0][0] < got[j].FactomDigitalID[0][0] })
+			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0] < got[j].FactomDigitalID[0] })
+			fmt.Println(got)
 			if err := dupeCheck(got, tt.want); err != nil {
 				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
 			}
@@ -146,7 +147,7 @@ func init() {
 
 func genOPR(entry gradeEntry) *OraclePriceRecord {
 	opr := NewOraclePriceRecord()
-	opr.FactomDigitalID = []string{entry.id}
+	opr.FactomDigitalID = entry.id
 	for _, k := range common.AllAssets {
 		opr.Assets[k] = entry.data
 	}
@@ -201,7 +202,7 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 	exists := make(map[string]bool)
 	unique := make(map[string]uint64)
 	for _, e := range entries {
-		id := strings.Join(e.FactomDigitalID, "-")
+		id := e.FactomDigitalID
 		exists[fmt.Sprintf("%s-%d", id, e.Difficulty)] = true
 		if e.Difficulty >= unique[id] {
 			unique[id] = e.Difficulty
@@ -229,7 +230,7 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 
 	dupe := make(map[string]bool)
 	for i, e := range sorted {
-		id := strings.Join(e.FactomDigitalID, "-")
+		id := e.FactomDigitalID
 		if !exists[fmt.Sprintf("%s-%d", id, e.Difficulty)] {
 			return fmt.Errorf("unknown record showed up in sorted set: id=%s", id)
 		}
@@ -252,7 +253,7 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 
 func prettyPrint(a []*OraclePriceRecord) {
 	for _, e := range a {
-		fmt.Printf("[id=%s, grade=%f, diff=%d]", strings.Join(e.FactomDigitalID, "-"), e.Grade, e.Difficulty)
+		fmt.Printf("[id=%s, grade=%f, diff=%d]", e.FactomDigitalID, e.Grade, e.Difficulty)
 	}
 	fmt.Println()
 }

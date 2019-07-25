@@ -34,7 +34,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 		base58.Encode(LX.Hash([]byte("winner number 10"))),
 	}
 	opr.CoinbasePNTAddress = "pPNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
-	opr.FactomDigitalID = []string{"miner", "one"}
+	opr.FactomDigitalID = "minerone"
 	opr.Assets["PNT"] = 2
 	opr.Assets["USD"] = 20
 	opr.Assets["EUR"] = 200
