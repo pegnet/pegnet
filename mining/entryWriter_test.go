@@ -30,7 +30,7 @@ func TestEntryWriter(t *testing.T) {
 func randNonceRanking(keep, size int) *opr.NonceRanking {
 	n := opr.NewNonceRanking(keep)
 	for i := 0; i < size; i++ {
-		n.AddNonce([]byte{}, rand.Uint64(), []string{})
+		n.AddNonce([]byte{}, rand.Uint64())
 	}
 	return n
 }

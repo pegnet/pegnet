@@ -177,6 +177,7 @@ var burn = &cobra.Command{
 	},
 }
 
+// TODO: Flesh this out, just using it for testing the miner
 var grader = &cobra.Command{
 	Use: "grader ",
 	Run: func(cmd *cobra.Command, args []string) {

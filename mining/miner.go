@@ -211,17 +211,6 @@ func (p *PegnetMiner) waitForResume(ctx context.Context) {
 				p.paused = false
 				return
 			}
-			//// If nested in batch
-			//if c.Command == BatchCommand {
-			//	for _, ci := range c.Data.([]*MinerCommand) {
-			//		if ci.Command == ResumeMining {
-			//			p.paused = false
-			//			p.HandleCommand(c)
-			//			return
-			//		}
-			//	}
-			//}
-			//p.HandleCommand(c)
 		}
 	}
 }

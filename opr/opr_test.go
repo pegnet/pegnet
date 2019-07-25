@@ -114,15 +114,3 @@ func testPath(e ExpPath, t *testing.T) {
 		t.Errorf("Exp %s, found %s", e.Exp, f)
 	}
 }
-
-func TestMarshal(t *testing.T) {
-	j := `{"oprchainid":"HtnKdX6KXNnMv77StmUPrrHCWTCrWoEAYSRpMida8z67","dbht":917,"winners":["","","","","","","","","",""],"coinbase":"tPNT_mEU1i4M5rn7bnrxNKdVVf4HXLG15Q798oaVAMrXq7zdbhQ9pv","FactomDigitalID":"prototyp","assets":{"PNT":0,"USD":1.0171,"EUR":0.8799,"JPY":105.7501,"GBP":0.8031,"CAD":1.3237,"CHF":0.9661,"INR":71.5292,"SGD":1.371,"CNY":6.7092,"HKD":7.6939,"KRW":1193.8721,"BRL":3.7445,"PHP":50.7479,"MXN":18.5671,"XAU":16.4795,"XAG":1367.5927,"XPD":1487.2841,"XPT":865.4626,"XBT":9845.1248,"ETH":217.676,"LTC":93.0899,"RVN":0.0487,"XBC":301.6768,"FCT":4.0716,"BNB":30.3459,"XLM":0.0849,"ADA":0.0586,"XMR":79.7383,"DASH":115.7181,"ZEC":70.4885,"DCR":27.3995}}`
-
-	o := new(OraclePriceRecord)
-	err := json.Unmarshal([]byte(j), o)
-	if err != nil {
-		t.Error(err)
-	}
-
-	fmt.Println(o.Assets)
-}

@@ -1,8 +1,6 @@
 package mining_test
 
 import (
-	"fmt"
-	"sort"
 	"testing"
 
 	. "github.com/pegnet/pegnet/mining"
@@ -35,22 +33,6 @@ func TestStats(t *testing.T) {
 		t.Error("Item found when it should not")
 	}
 
-}
-
-func TestThe(t *testing.T) {
-	var _ = t
-	data := []int{27, 15, 8, 9, 12, 4, 17, 19, 21, 23, 25}
-	sort.Ints(data)
-	fmt.Println(data)
-	x := 9
-	notpresent := false
-	i := sort.Search(len(data), func(i int) bool { return data[i] >= x })
-	if i >= len(data) || data[i] != x {
-		// x is not present in data,
-		// but i is the index where it would be inserted.
-		notpresent = true
-	}
-	fmt.Println(x, notpresent)
 }
 
 func verifyOrder(gs []*GroupMinerStats) bool {
