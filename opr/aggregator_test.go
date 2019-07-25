@@ -14,7 +14,7 @@ func TestMergeRankings(t *testing.T) {
 		rs := make([]*NonceRanking, total)
 		for i := range rs {
 			rs[i] = NewNonceRanking(1)
-			rs[i].AddNonce([]byte{}, uint64(i+1), []string{})
+			rs[i].AddNonce([]byte{}, uint64(i+1))
 		}
 
 		m := MergeNonceRankings(10, rs...)
@@ -40,7 +40,7 @@ func TestAggregatorOrder(t *testing.T) {
 		}
 
 		for i := 0; i < len(vals); i++ {
-			list.AddNonce([]byte{}, vals[i], []string{})
+			list.AddNonce([]byte{}, vals[i])
 		}
 
 		l := list.GetNonces()
@@ -55,7 +55,7 @@ func TestAggregatorOrder(t *testing.T) {
 		list := NewNonceRanking(10)
 		total := 100
 		for i := total; i >= 0; i-- {
-			list.AddNonce([]byte{}, uint64(i), []string{})
+			list.AddNonce([]byte{}, uint64(i))
 		}
 
 		l := list.GetNonces()
@@ -120,18 +120,18 @@ func benchmarkAlwaysAddingNonce(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		list.AddNonce([]byte{}, diffs[i], []string{})
+		list.AddNonce([]byte{}, diffs[i])
 	}
 }
 
 // benchmarkAlwaysAddingNonce will be the best case where we do no-ops
 func benchmarkNeverAddingNonce(b *testing.B) {
 	list := NewNonceRanking(1)
-	list.AddNonce([]byte{}, math.MaxUint64, []string{})
+	list.AddNonce([]byte{}, math.MaxUint64)
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		list.AddNonce([]byte{}, uint64(i), []string{})
+		list.AddNonce([]byte{}, uint64(i))
 	}
 }
 
@@ -145,6 +145,6 @@ func benchmarkRandomlyAddingNonce(b *testing.B) {
 
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		list.AddNonce([]byte{}, diffs[i], []string{})
+		list.AddNonce([]byte{}, diffs[i])
 	}
 }

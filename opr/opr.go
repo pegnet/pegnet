@@ -60,7 +60,7 @@ func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
 	n.Dbht = c.Dbht
 	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
 	n.CoinbasePNTAddress = c.CoinbasePNTAddress
-	n.FactomDigitalID = append([]string{}, c.FactomDigitalID...)
+	n.FactomDigitalID = c.FactomDigitalID
 	n.Assets = make(OraclePriceRecordAssetList)
 	for k, v := range c.Assets {
 		n.Assets[k] = v

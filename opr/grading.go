@@ -100,7 +100,8 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	highest := make(map[string]int)
 
 	for i, v := range list {
-		id := v.FactomDigitalID
+		// Nonce + OPRHash == unique record
+		id := string(append(v.Entry.ExtIDs[0], v.OPRHash...))
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
@@ -171,6 +172,8 @@ func GetEntryBlocks(config *config.Config) {
 				// Okay, it looks sort of okay.  Lets unmarshal the JSON
 				opr := NewOraclePriceRecord()
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
+					d := string(entry.Content)
+					var _ = d
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
 

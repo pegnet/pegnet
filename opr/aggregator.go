@@ -5,9 +5,8 @@ import "sort"
 // UniqueOPRData is the minimum set of information we need
 // to change for our OPR submissions
 type UniqueOPRData struct {
-	Nonce           []byte
-	Difficulty      uint64
-	FactomDigitalID []string
+	Nonce      []byte
+	Difficulty uint64
 }
 
 // NonceRanking is a sorted list of nonces and their difficulties.
@@ -53,7 +52,7 @@ func MergeNonceRankings(keep int, rankings ...*NonceRanking) *NonceRanking {
 
 	n := NewNonceRanking(keep)
 	for _, v := range list { // Adding nonces will only keep the top `keep`
-		n.AddNonce(v.Nonce, v.Difficulty, v.FactomDigitalID)
+		n.AddNonce(v.Nonce, v.Difficulty)
 	}
 	return n
 }
@@ -66,7 +65,7 @@ func (r *NonceRanking) GetNonces() []*UniqueOPRData {
 
 // AddNonce will only add the nonce information if it is better than the current worst
 // or we have extra room that is not taken in the list.
-func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64, digitalID []string) bool {
+func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64) bool {
 	if difficulty < r.MinimumDifficulty {
 		return false // Below min, we don't care
 	}
@@ -74,7 +73,7 @@ func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64, digitalID []str
 	// If we have room, add it to the next avail slot
 	if r.taken < r.Keep {
 		newNonce := append([]byte{}, nonce...)
-		r.List[r.taken] = &UniqueOPRData{newNonce, difficulty, digitalID} // Add to empty slot
+		r.List[r.taken] = &UniqueOPRData{newNonce, difficulty} // Add to empty slot
 		// If we have our first, or new worst. Set the worst
 		if r.taken == 0 || difficulty < r.WorstDiff {
 			r.WorstDiff = difficulty
@@ -91,7 +90,7 @@ func (r *NonceRanking) AddNonce(nonce []byte, difficulty uint64, digitalID []str
 
 	newNonce := append([]byte{}, nonce...)
 	// Replace the worst
-	r.List[r.WorstIndex] = &UniqueOPRData{newNonce, difficulty, digitalID}
+	r.List[r.WorstIndex] = &UniqueOPRData{newNonce, difficulty}
 	r.WorstDiff = difficulty
 
 	// Update the worst

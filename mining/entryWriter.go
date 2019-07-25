@@ -144,7 +144,6 @@ func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
 
 	operation := func() error {
 		var err1, err2 error
-		w.oprTemplate.FactomDigitalID = unique.FactomDigitalID
 		entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce, unique.Difficulty)
 		if err != nil {
 			return err
