@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -12,12 +13,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pegnet/pegnet/mining"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/controlPanel"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/pegnet/pegnet/pegnetMining"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/zpatrick/go-config"
@@ -70,7 +72,7 @@ var rootCmd = &cobra.Command{
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		// Default to config options if cli flags aren't specified
-		miners, _ := Config.Int("Miner.NumberOfMiners")
+		//miners, _ := Config.Int("Miner.NumberOfMiners")
 
 		monitor := common.GetMonitor()
 		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
@@ -89,13 +91,20 @@ var rootCmd = &cobra.Command{
 
 		go controlPanel.ServeControlPanel(Config, monitor)
 
-		if miners > 0 {
-			miners := pegnetMining.InitMiners(Config, monitor, grader)
-			for _, m := range miners[:len(miners)-1] {
-				go m.LaunchMiningThread(false)
-			}
-			miners[len(miners)-1].LaunchMiningThread(true) // Launch last one to hog thread
+		coord := mining.NewMiningCoordinatorFromConfig(Config, monitor, grader)
+		err := coord.InitMinters()
+		if err != nil {
+			panic(err)
 		}
+		coord.LaunchMiners(context.Background())
+
+		//if miners > 0 {
+		//	miners := pegnetMining.InitMiners(Config, monitor, grader)
+		//	for _, m := range miners[:len(miners)-1] {
+		//		go m.LaunchMiningThread(false)
+		//	}
+		//	miners[len(miners)-1].LaunchMiningThread(true) // Launch last one to hog thread
+		//}
 	},
 }
 

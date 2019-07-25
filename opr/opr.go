@@ -186,6 +186,20 @@ func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64
 	return difficulty
 }
 
+func ComputeDifficulty(nonce []byte, oprhash []byte) (difficulty uint64) {
+	no := append(oprhash, nonce...)
+	h := LX.Hash(no)
+
+	// The high eight bytes of the hash(hash(entry.Content) + nonce) is the difficulty.
+	// Because we don't have a difficulty bar, we can define difficulty as the greatest
+	// value, rather than the minimum value.  Our bar is the greatest difficulty found
+	// within a 10 minute period.  We compute difficulty as Big Endian.
+	for i := uint64(0); i < 8; i++ {
+		difficulty = difficulty<<8 + uint64(h[i])
+	}
+	return difficulty
+}
+
 // Mine calculates difficulties with varying nonces, keeping track of the
 // highest difficulty achieved in the Difficulty and ExtID[0] fields
 // Stops when a signal is received on the StopMining channel.

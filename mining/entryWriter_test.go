@@ -1,4 +1,4 @@
-package pegnetMining_test
+package mining
 
 import (
 	"math/rand"
@@ -6,8 +6,6 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-
-	. "github.com/pegnet/pegnet/pegnetMining"
 )
 
 func TestEntryWriter(t *testing.T) {

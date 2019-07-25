@@ -60,7 +60,7 @@ func MergeNonceRankings(keep int, rankings ...*NonceRanking) *NonceRanking {
 
 // GetNonces returns the sorted nonce list
 func (r *NonceRanking) GetNonces() []*UniqueOPRData {
-	r.List = SortNonceRanks(r.List)
+	r.List = SortNonceRanks(r.List[:r.taken])
 	return r.List
 }
 

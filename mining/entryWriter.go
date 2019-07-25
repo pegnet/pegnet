@@ -1,4 +1,4 @@
-package pegnetMining
+package mining
 
 import (
 	"errors"
@@ -40,8 +40,8 @@ func NewEntryWriter(config *config.Config, keep int) *EntryWriter {
 	return w
 }
 
-// populateECAddress only needs to be called once
-func (w *EntryWriter) populateECAddress() error {
+// PopulateECAddress only needs to be called once
+func (w *EntryWriter) PopulateECAddress() error {
 	// Get the Entry Credit Address that we need to write our OPR records.
 	if ecadrStr, err := w.config.String("Miner.ECAddress"); err != nil {
 		return err
