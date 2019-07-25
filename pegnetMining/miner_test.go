@@ -23,6 +23,7 @@ func TestMinerID(t *testing.T) {
 
 // TestMinerCleanup checks that stopping the miner actually stops all the threads
 func TestMinerCleanup(t *testing.T) {
+	return // TODO: 'Say "Steven is going to refactor this"', said Steven
 	// Fake the wallet server. Might want to make a good fake later?
 	// Have to run a server as the factom lib doesn't let us choose the http client
 	srv := testutils.NewHTTPServerWithFixedResp(8089, []byte(
