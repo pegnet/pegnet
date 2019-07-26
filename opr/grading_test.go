@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"encoding/binary"
 	"fmt"
 	"math/rand"
 	"sort"
@@ -23,6 +24,11 @@ func dopr(name string, difficulty uint64) *OraclePriceRecord {
 	o.FactomDigitalID = string(name[0])
 	o.Difficulty = difficulty
 	o.OPRChainID = name
+	o.Entry = new(factom.Entry)
+
+	buf := make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, difficulty)
+	o.Entry.ExtIDs = [][]byte{[]byte(string(name[0])), buf}
 	return o
 }
 
@@ -134,7 +140,9 @@ func init() {
 	for i := 0; i < 100; i++ {
 		opr := NewOraclePriceRecord()
 		opr.Entry = new(factom.Entry)
-		opr.Entry.ExtIDs = [][]byte{{byte(i)}}
+		buf := make([]byte, 8)
+		binary.BigEndian.PutUint64(buf, opr.Difficulty)
+		opr.Entry.ExtIDs = [][]byte{{byte(i)}, buf}
 		opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
 		opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
 		difficulty = append(difficulty, opr)

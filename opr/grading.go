@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"sort"
@@ -70,6 +71,10 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
 		v.Difficulty = v.ComputeDifficulty(v.Entry.ExtIDs[0])
+		if binary.BigEndian.Uint64(v.Entry.ExtIDs[1]) != v.Difficulty {
+			// This is a falsely reported difficulty. There is nothing we can
+			// really do. Maybe we should log.warn how many per block are 'malicious'?
+		}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
@@ -102,7 +107,8 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 	highest := make(map[string]int)
 
 	for i, v := range list {
-		id := v.FactomDigitalID
+		// Nonce + OPRHash == unique record
+		id := string(append(v.Entry.ExtIDs[0], v.OPRHash...))
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
@@ -164,8 +170,10 @@ func GetEntryBlocks(config *config.Config) {
 				check(err)
 
 				// Do some quick collecting of data and checks of the entry.
-				// Can only have one ExtID which must be the nonce for the entry
-				if len(entry.ExtIDs) != 1 {
+				// Can only have two ExtIDs which must be:
+				//	[0] the nonce for the entry
+				//	[1] Self reported difficulty
+				if len(entry.ExtIDs) != 2 {
 					continue // keep looking if the entry has more than one extid
 				}
 
