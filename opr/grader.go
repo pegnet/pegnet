@@ -82,6 +82,9 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 			for _, a := range g.alerts {
 				var winners OPRs
 				winners.ToBePaid = gradedOPRs[:10]
+				if len(gradedOPRs) > 10 {
+					winners.ToBePaid = gradedOPRs[:10]
+				}
 				winners.AllOPRs = sortedOPRs
 				select { // Don't block if someone isn't pulling from the winner channel
 				case a <- &winners:
