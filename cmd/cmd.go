@@ -4,7 +4,9 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/pegnet/pegnet/api"
 	"os"
 	"sort"
 	"strings"
@@ -14,6 +16,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	blockRangeStart int64
+	blockRangeEnd   int64
+)
+
 func init() {
 	// Add commands to the root cmd
 	rootCmd.AddCommand(getEncoding)
@@ -21,6 +28,13 @@ func init() {
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
+
+	// RPC Wrappers
+	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
+		"(negative numbers are interpreted relative to current block head)")
+	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
+		"(negative numbers are ignored)")
+	rootCmd.AddCommand(getPerformance)
 }
 
 var getEncoding = &cobra.Command{
@@ -170,5 +184,44 @@ var burn = &cobra.Command{
 
 		fmt.Println("Burn transaction sent to the network")
 		fmt.Printf("Transaction: %s\n", tx.TxID)
+	},
+}
+
+// -------------------------------------------------------------
+// RPC Wrapper Commands
+
+// sendRequestAndPrintResults does exactly what it says, prints in JSON for now (pipe output to jq manually)
+// TODO: pretty print instead
+func sendRequestAndPrintResults(req *api.PostRequest) {
+	response, err := api.SendRequest(req)
+	if err != nil {
+		fmt.Printf("Failed to make request: %v\n", err)
+	}
+	responseJSON, _ := json.Marshal(response)
+	fmt.Println(string(responseJSON))
+}
+
+var getPerformance = &cobra.Command{
+	Use:   "performance <miner identifier> [--start START_BLOCK] [--end END_BLOCK]",
+	Short: "Returns the performance of the miner at the specified identifier.",
+	Long: "Every block, miners submissions are first ranked according to hash-power/difficulty computed, then by " +
+		"the quality of their pricing estimates.\nThis function returns statistics to evaluate where a given miner " +
+		"stands in the rankings for both categories over a specific range of blocks.",
+	Example: "pegnet performance prototypeminer001 --start=-144",
+	Args:    cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		id := args[0]
+		blockRange := api.BlockRange{Start: &blockRangeStart}
+		if blockRangeEnd > 0 {
+			blockRange.End = &blockRangeEnd
+		}
+		req := api.PostRequest{
+			Method: "performance",
+			Params: api.PerformanceParameters{
+				BlockRange: blockRange,
+				DigitalID:  id,
+			},
+		}
+		sendRequestAndPrintResults(&req)
 	},
 }
