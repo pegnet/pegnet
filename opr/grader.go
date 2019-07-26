@@ -75,14 +75,14 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 		if fds.Minute == 1 {
 			GetEntryBlocks(config)
 			oprs := GetPreviousOPRs(fds.Dbht)
-			tbp, all := GradeBlock(oprs)
+			gradedOPRs, sortedOPRs := GradeBlock(oprs)
 
 			// Alert followers that we have graded the previous block
 			g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
 			for _, a := range g.alerts {
 				var winners OPRs
-				winners.ToBePaid = tbp
-				winners.AllOPRs = all
+				winners.ToBePaid = gradedOPRs[:10]
+				winners.AllOPRs = sortedOPRs
 				select { // Don't block if someone isn't pulling from the winner channel
 				case a <- &winners:
 				default:

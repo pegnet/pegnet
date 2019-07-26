@@ -15,6 +15,7 @@ import (
 // 1: Method Not Found
 // 2: Parameter Not Found
 // 3: Error Decoding JSON
+// 4: Internal Error
 type Error struct {
 	Code   int    `json:"code"`
 	Reason string `json:"reason"`
@@ -22,7 +23,7 @@ type Error struct {
 
 // errorResponse is a wrapper around all errors to be served
 func errorResponse(w http.ResponseWriter, err Error) {
-	json.NewEncoder(w).Encode(PostResponse{Err: err})
+	json.NewEncoder(w).Encode(PostResponse{Err: &err})
 }
 
 // methodNotAllowed returns a 405 status when an invalid HTTP request methid is used
@@ -31,14 +32,22 @@ func methodNotAllowed(w http.ResponseWriter) {
 	http.Error(w, http.StatusText(405), http.StatusMethodNotAllowed)
 }
 
-// invalidParameterError returns when the method is valid but the parameter is not
-func invalidParameterError(w http.ResponseWriter, params Parameters) {
-	log.WithFields(log.Fields{"Params": params}).Error("Post Parameters Error")
-	errorResponse(w, Error{Code: 2, Reason: "Parameter Not Found"})
+// NewMethodNotFoundError returns when the specified RPC method is not found
+func NewMethodNotFoundError() *Error {
+	return &Error{Code: 1, Reason: "Method Not Found"}
 }
 
-// jsonDecodingError returns when the request body is unable to be parsed
-func jsonDecodingError(w http.ResponseWriter) {
-	log.Error("Error Decoding JSON request")
-	errorResponse(w, Error{Code: 3, Reason: "Unable to parse JSON body"})
+// NewInvalidParameterError returns when the method is valid but the parameter is not
+func NewInvalidParametersError() *Error {
+	return &Error{Code: 2, Reason: "Invalid parameters"}
+}
+
+// NewJSONDecodingError returns when the request body is unable to be parsed
+func NewJSONDecodingError() *Error {
+	return &Error{Code: 3, Reason: "Unable to parse JSON body"}
+}
+
+// NewInternalError returns when a bug creeps in
+func NewInternalError() *Error {
+	return &Error{Code: 4, Reason: "Internal error"}
 }

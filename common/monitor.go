@@ -100,6 +100,7 @@ func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
 	for {
 		info, err := f.getMinute()
+		info.DirectoryBlockHeight += 1 // Add one so that the height represents the block being built
 
 		if err != nil {
 			return factom.CurrentMinuteInfo{}, err
