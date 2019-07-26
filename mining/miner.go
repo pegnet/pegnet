@@ -85,6 +85,8 @@ func NewNonceIncrementer(id int) *NonceIncrementer {
 	return n
 }
 
+// NextNonce is just counting to get the next nonce. We preserve
+// the first byte, as that is our ID and give us our nonce space
 func (i *NonceIncrementer) NextNonce() {
 	idx := len(i.Nonce) - 1
 	for {
@@ -143,6 +145,7 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 		}
 
 		if p.paused {
+			// When we are resumed, we typically have a command waiting
 			p.waitForResume(ctx)
 			continue
 		}
@@ -197,6 +200,8 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 	case PauseMining:
 		// Pause until we get a new start
 		p.paused = true
+	case ResumeMining:
+		p.paused = false
 	}
 }
 
@@ -207,8 +212,8 @@ func (p *PegnetMiner) waitForResume(ctx context.Context) {
 		case <-ctx.Done(): // Mining cancelled
 			return
 		case c := <-p.commands:
-			if c.Command == ResumeMining {
-				p.paused = false
+			p.HandleCommand(c)
+			if !p.paused {
 				return
 			}
 		}

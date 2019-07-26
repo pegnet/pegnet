@@ -9,6 +9,12 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+// MiningCoordinator can coordinate multiple miners. This object will
+// poll data from exchange sources, make an OPR, get the OPR hash, and send
+// it to miners for them to work on. Once the miners get a top X records, we
+// will aggregate and submit.
+//	TODO: Make the coordinator look at the difficulties in the last block, and determine
+//			a minimum based on that.
 type MiningCoordinator struct {
 	config *config.Config
 
@@ -16,19 +22,15 @@ type MiningCoordinator struct {
 	FactomMonitor common.IMonitor
 	OPRGrader     opr.IGrader
 
-	// Identities holds all the identities we can mine with.
-	//	The more identities we have, the more records we can submit
-	//Identities []MiningIdentity
-
-	Miners            []*ControlledMiner
+	// Miners mine the opr hashes
+	Miners []*ControlledMiner
+	// FactomEntryWriter writes the oprs to chain
 	FactomEntryWriter *EntryWriter
-
-	MinerSubmissions chan MinerSubmission
 
 	// Who we submit our stats too
 	StatTracker *GlobalStatTracker
 
-	// To unique ID miners
+	// To give miners unique IDs
 	minerIDCounter int
 }
 
@@ -60,8 +62,6 @@ func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonit
 	if err != nil {
 		panic(err)
 	}
-
-	c.MinerSubmissions = make(chan MinerSubmission, 100)
 
 	return c
 }
@@ -129,7 +129,10 @@ MiningLoop:
 				// The consolidator that will write to the blockchain
 				c.FactomEntryWriter = c.FactomEntryWriter.NextBlockWriter()
 				c.FactomEntryWriter.SetOPR(oprTemplate)
+
+				// We aggregate mining stats per block
 				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
+
 				command := BuildCommand().
 					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
 					StatsAggregator(statsAggregate). // Stat collection per block
@@ -138,11 +141,10 @@ MiningLoop:
 					MinimumDifficulty(0).            // TODO: Set this from the cfg?
 					ResumeMining().                  // Start mining
 					Build()
-				mineLog.Debug("Mining started")
 
 				// Need to send to our miners
 				for _, m := range c.Miners {
-					m.SendCommand(&MinerCommand{Command: ResumeMining})
+					m.SendCommand(&MinerCommand{Command: ResumeMining}) // Must be sent separately
 					m.SendCommand(command)
 				}
 
@@ -151,15 +153,16 @@ MiningLoop:
 			if mining {
 				mining = false
 				command := BuildCommand().
-					SubmitNonces().
-					PauseMining().
+					SubmitNonces(). // Submit nonces to aggregator
+					PauseMining().  // Pause mining until further notice
 					Build()
 
 				// Need to send to our miners
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
-				// Write to blockchain
+
+				// Write to blockchain (this is non blocking)
 				c.FactomEntryWriter.CollectAndWrite(false)
 
 				groupStats := NewGroupMinerStats()
@@ -173,6 +176,8 @@ MiningLoop:
 						break
 					}
 				}
+
+				// groupStats is the stats for all the miners for this block
 				c.StatTracker.MiningStatsChannel <- groupStats
 
 			}
@@ -198,6 +203,7 @@ func (c *ControlledMiner) SendCommand(command *MinerCommand) {
 	c.CommandChannel <- command
 }
 
+// CommandBuilder just let's me use building syntax to build commands
 type CommandBuilder struct {
 	command  *MinerCommand
 	commands []*MinerCommand

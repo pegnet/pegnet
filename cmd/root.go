@@ -13,12 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pegnet/pegnet/mining"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/controlPanel"
+	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -71,9 +70,6 @@ var rootCmd = &cobra.Command{
 
 		ValidateConfig(Config) // Will fatal log if it fails
 
-		// Default to config options if cli flags aren't specified
-		//miners, _ := Config.Int("Miner.NumberOfMiners")
-
 		monitor := common.GetMonitor()
 		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
 
@@ -99,19 +95,11 @@ var rootCmd = &cobra.Command{
 		}
 
 		ctx, cancel := context.WithCancel(context.Background())
-		go statTracker.Collect(ctx) // Will stop collecting on ctx cancel
-		coord.LaunchMiners(context.Background())
+		go statTracker.Collect(ctx)              // Will stop collecting on ctx cancel
+		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
-
-		//if miners > 0 {
-		//	miners := pegnetMining.InitMiners(Config, monitor, grader)
-		//	for _, m := range miners[:len(miners)-1] {
-		//		go m.LaunchMiningThread(false)
-		//	}
-		//	miners[len(miners)-1].LaunchMiningThread(true) // Launch last one to hog thread
-		//}
 	},
 }
 

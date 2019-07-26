@@ -17,11 +17,13 @@ func BenchmarkHash(b *testing.B) {
 }
 
 func benchmarkSha256(b *testing.B) {
-	data := make([]byte, totalBytes)
+	data := make([]byte, 32)
+	n := NewNonceIncrementer(0)
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		for i := 0; i < totalIter; i++ {
-			sha256.Sum256(data)
+			n.NextNonce()
+			sha256.Sum256(append(n.Nonce, data...))
 		}
 	}
 }

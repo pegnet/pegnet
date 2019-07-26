@@ -47,6 +47,8 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor, statTrack
 			CoinbasePNTAddress = str
 		}
 
+		// TODO: Include states from statTracker
+
 		for {
 			select {
 			case e := <-alert:

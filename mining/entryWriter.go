@@ -56,8 +56,7 @@ func (w *EntryWriter) PopulateECAddress() error {
 }
 
 // NextBlockWriter gets the next block writer to use for the miner.
-//	Because all miners will share a block writer, all miners will call
-//	this function. We make all shared entry writers share the next one.
+//	Because all miners will share a block writer, we make this call idempotent
 func (w *EntryWriter) NextBlockWriter() *EntryWriter {
 	w.Lock()
 	defer w.Unlock()
@@ -79,7 +78,6 @@ func (w *EntryWriter) AddMiner() chan<- *opr.NonceRanking {
 }
 
 // SetOPR is here because we need an opr to create the entry.
-// In reality the mining shouldn't couple the mining and entry creation so closely.
 func (w *EntryWriter) SetOPR(opr *opr.OraclePriceRecord) {
 	w.Lock()
 	defer w.Unlock()
@@ -104,7 +102,7 @@ func (w *EntryWriter) CollectAndWrite(blocking bool) {
 func (w *EntryWriter) collectAndWrite() {
 	var aggregate []*opr.NonceRanking
 GatherListLoop:
-	for {
+	for { // Collect all the miner submissions
 		select {
 		case list := <-w.minerLists:
 			aggregate = append(aggregate, list)
@@ -114,10 +112,11 @@ GatherListLoop:
 		}
 	}
 
+	// Merge miner submissions
 	final := opr.MergeNonceRankings(w.Keep, aggregate...)
 	nonces := final.GetNonces()
 	for _, u := range nonces {
-		err := w.writeMiningRecord(u)
+		err := w.writeMiningRecord(u) // Write to blockchain
 		if err != nil {
 			log.WithError(err).Error("Failed to write mining record")
 		}
@@ -134,9 +133,9 @@ GatherListLoop:
 		"exp_records": w.Keep,
 		"records":     len(nonces),
 	}).Info("OPR Block Mined")
-	common.Stats.Clear()
 }
 
+// writeMiningRecord writes an opr and it's nonce to the blockchain
 func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
 	if w.oprTemplate == nil {
 		return fmt.Errorf("no opr template")
