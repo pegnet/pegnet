@@ -144,7 +144,6 @@ MiningLoop:
 
 				// Need to send to our miners
 				for _, m := range c.Miners {
-					m.SendCommand(&MinerCommand{Command: ResumeMining}) // Must be sent separately
 					m.SendCommand(command)
 				}
 
