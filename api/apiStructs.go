@@ -27,13 +27,13 @@ type PostRequest struct {
 type GenericParameters struct {
 	Address   *string `json:"address,omitempty"`
 	Height    *int64  `json:"height,omitempty"`
-	DigitalID string  `json:"digital-id,omitempty"`
+	DigitalID string  `json:"miner_id,omitempty"`
 	Hash      string  `json:"hash,omitempty"`
 }
 
 type PerformanceParameters struct {
 	BlockRange BlockRange `json:"block_range"`
-	DigitalID  string     `json:"digital-id,omitempty"`
+	DigitalID  string     `json:"miner_id,omitempty"`
 }
 
 // -------------------------------------------------------------
@@ -50,12 +50,12 @@ type PostResponse struct {
 type GenericResult struct {
 	Balance      int64                         `json:"balance,omitempty"`
 	Balances     map[string]map[[32]byte]int64 `json:"balances,omitempty"`
-	ChainID      string                        `json:"chainid,omitempty"`
-	LeaderHeight int64                         `json:"leaderheight,omitempty"`
-	OPRBlocks    []*opr.OprBlock               `json:"oprblocks,omitempty"`
+	ChainID      string                        `json:"chain_id,omitempty"`
+	LeaderHeight int64                         `json:"leader_height,omitempty"`
+	OPRBlocks    []*opr.OprBlock               `json:"opr_blocks,omitempty"`
 	Winners      []string                      `json:"winners,omitempty"`
 	Winner       string                        `json:"winner,omitempty"`
-	OPRBlock     *opr.OprBlock                 `json:"oprblock,omitempty"`
+	OPRBlock     *opr.OprBlock                 `json:"opr_block,omitempty"`
 	OPRs         []opr.OraclePriceRecord       `json:"oprs,omitempty"`
 	OPR          *opr.OraclePriceRecord        `json:"opr,omitempty"`
 }
