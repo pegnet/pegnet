@@ -185,7 +185,7 @@ func (opr *OraclePriceRecord) ComputeDifficulty(nonce []byte) (difficulty uint64
 	return difficulty
 }
 
-func ComputeDifficulty(nonce []byte, oprhash []byte) (difficulty uint64) {
+func ComputeDifficulty(oprhash, nonce []byte) (difficulty uint64) {
 	no := append(oprhash, nonce...)
 	h := LX.Hash(no)
 

@@ -155,7 +155,7 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 		p.MiningState.NextNonce()
 
 		p.MiningState.stats.TotalHashes++
-		diff := opr.ComputeDifficulty(p.MiningState.Nonce, p.MiningState.oprhash)
+		diff := opr.ComputeDifficulty(p.MiningState.oprhash, p.MiningState.Nonce)
 		if diff > p.MiningState.minimumDifficulty && p.MiningState.rankings.AddNonce(p.MiningState.Nonce, diff) {
 			p.MiningState.stats.NewDifficulty(diff)
 			mineLog.WithFields(log.Fields{

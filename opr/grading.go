@@ -168,7 +168,7 @@ func GetEntryBlocks(config *config.Config) {
 
 				// Do some quick collecting of data and checks of the entry.
 				// Can only have two ExtIDs which must be:
-				//  [0] the nonce for the entry
+				//	[0] the nonce for the entry
 				//	[1] Self reported difficulty
 				if len(entry.ExtIDs) != 2 {
 					continue // keep looking if the entry has more than one extid
@@ -177,8 +177,6 @@ func GetEntryBlocks(config *config.Config) {
 				// Okay, it looks sort of okay.  Lets unmarshal the JSON
 				opr := NewOraclePriceRecord()
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
-					d := string(entry.Content)
-					var _ = d
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
 
