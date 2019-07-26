@@ -87,6 +87,7 @@ func NewNonceIncrementer(id int) *NonceIncrementer {
 
 // NextNonce is just counting to get the next nonce. We preserve
 // the first byte, as that is our ID and give us our nonce space
+//	So []byte(ID, 255) -> []byte(ID, 1, 0) -> []byte(ID, 1, 1)
 func (i *NonceIncrementer) NextNonce() {
 	idx := len(i.Nonce) - 1
 	for {
@@ -129,6 +130,7 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 	mineLog := log.WithFields(log.Fields{"miner": p.ID})
 	select {
 	// Wait for the first command to start
+	// We start 'paused'. Any command will knock us out of this init phase
 	case c := <-p.commands:
 		p.HandleCommand(c)
 	case <-ctx.Done():
@@ -145,7 +147,7 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 		}
 
 		if p.paused {
-			// When we are resumed, we typically have a command waiting
+			// Waiting on a resume command
 			p.waitForResume(ctx)
 			continue
 		}
@@ -154,7 +156,7 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 
 		p.MiningState.stats.TotalHashes++
 		diff := opr.ComputeDifficulty(p.MiningState.Nonce, p.MiningState.oprhash)
-		if p.MiningState.rankings.AddNonce(p.MiningState.Nonce, diff) {
+		if diff > p.MiningState.minimumDifficulty && p.MiningState.rankings.AddNonce(p.MiningState.Nonce, diff) {
 			p.MiningState.stats.NewDifficulty(diff)
 			mineLog.WithFields(log.Fields{
 				"oprhash": fmt.Sprintf("%x", p.MiningState.oprhash),

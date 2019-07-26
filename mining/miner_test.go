@@ -41,7 +41,7 @@ func benchmarkLXR(b *testing.B) {
 	}
 }
 
-// BenchmarkNonceRotate/simple_nonce_increment-8         	2000000000	         0.00 ns/op
+// BenchmarkNonceRotate/simple_nonce_increment-8         	200000000	         7.94 ns/op
 func BenchmarkNonceRotate(b *testing.B) {
 	b.Run("simple Nonce increment", testIncrement)
 }
