@@ -100,6 +100,7 @@ func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
 	for {
 		info, err := f.getMinute()
+		info.DirectoryBlockHeight += 1 // HACK: in response to the PNT-128 issue https://github.com/pegnet/pegnet/issues/128
 
 		if err != nil {
 			return factom.CurrentMinuteInfo{}, err
