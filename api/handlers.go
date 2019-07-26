@@ -55,20 +55,14 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 	// Aggregate the stats
 	submissions := int64(0)
 	rewards := int64(0)
+	difficultyPlacementsCount := int64(0)
 	difficultyPlacementsSum := int64(0)
 	difficultyPlacements := map[int]int64{
-		1:     0,
-		5:     0,
-		10:    0,
-		25:    0,
-		50:    0,
-		100:   0,
-		250:   0,
-		500:   0,
-		1000:  0,
-		2500:  0,
-		5000:  0,
-		10000: 0,
+		1:  0,
+		5:  0,
+		10: 0,
+		25: 0,
+		50: 0,
 	}
 
 	gradingPlacementsCount := int64(0)
@@ -86,10 +80,13 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 		for i, record := range block.OPRs {
 			if record.FactomDigitalID == performanceParams.DigitalID {
 				submissions += 1
-				difficultyPlacementsSum += int64(i + 1)
-				for k, _ := range difficultyPlacements {
-					if i <= k {
-						difficultyPlacements[k] += 1
+				if i <= 50 {
+					difficultyPlacementsCount += 1
+					difficultyPlacementsSum += int64(i + 1)
+					for k, _ := range difficultyPlacements {
+						if i <= k {
+							difficultyPlacements[k] += 1
+						}
 					}
 				}
 			}
@@ -110,7 +107,7 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 	}
 
 	fullDifficultyPlacements := map[string]int64{
-		"count": submissions,
+		"count": difficultyPlacementsCount,
 		"sum":   difficultyPlacementsSum,
 	}
 	for k, v := range difficultyPlacements {
