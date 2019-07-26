@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"sort"
@@ -69,6 +70,10 @@ func GradeBlock(list []*OraclePriceRecord) (tobepaid []*OraclePriceRecord, sorte
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
 		v.Difficulty = v.ComputeDifficulty(v.Entry.ExtIDs[0])
+		if binary.BigEndian.Uint64(v.Entry.ExtIDs[1]) != v.Difficulty {
+			// This is a falsely reported difficulty. There is nothing we can
+			// really do. Maybe we should log.warn how many per block are 'malicious'?
+		}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
