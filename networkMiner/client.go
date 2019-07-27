@@ -129,7 +129,7 @@ func (c *MiningClient) Listen() {
 			id, _ := c.config.String("Miner.IdentityChain")
 			evt.FactomDigitalID = id
 
-			addr, _ := c.config.String("Miner.CoinbasePNTAddress")
+			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
 			evt.CoinbasePNTAddress = addr
 
 			c.OPRMaker.RecOPR(&evt)

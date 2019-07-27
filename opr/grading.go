@@ -71,10 +71,11 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
 		v.Difficulty = v.ComputeDifficulty(v.Nonce)
-		if binary.BigEndian.Uint64(v.SelfReportedDifficulty) != v.Difficulty {
+		f := binary.BigEndian.Uint64(v.SelfReportedDifficulty)
+		if f != v.Difficulty {
 			//This is a falsely reported difficulty. There is nothing we can
 			//really do. Maybe we should log.warn how many per block are 'malicious'?
-			log.Errorf("Diff mistmatch")
+			log.Errorf("Diff mistmatch. Exp %d, found %d", v.Difficulty, f)
 		}
 	}
 
