@@ -29,32 +29,32 @@ func TestConvertFctToPegAssets(t *testing.T) {
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
-		fct := ConvertFctAddressToUser(raw)
+		fct := ConvertRawToFCT(raw)
 		fmt.Println(fct)
 		raw = factoid.ConvertUserStrToAddress(fct)
 		fmt.Printf("%x\n", raw)
-		pnt, err := ConvertRawAddrToPeg("pPNT", raw)
+		pnt, err := ConvertRawToPegNetAsset("pPNT", raw)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
 		fmt.Println(pnt)
-		pre, raw2, err := ConvertPegAddrToRaw(pnt)
-		if pre != "pPNT" || bytes.Compare(raw, raw2) != 0 || err != nil {
+		pre, raw2, err := ConvertPegNetAssetToRaw(pnt)
+		if pre != "pPNT" || !bytes.Equal(raw, raw2) || err != nil {
 			t.Fatal("Round trip failed with pPNT")
 		}
 		fmt.Printf("%x\n", raw2)
-		tpnt, err := ConvertRawAddrToPeg("tPNT", raw)
+		tpnt, err := ConvertRawToPegNetAsset("tPNT", raw)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
 		fmt.Println(tpnt)
-		pre, raw2, err = ConvertPegAddrToRaw(tpnt)
-		if pre != "tPNT" || bytes.Compare(raw, raw2) != 0 || err != nil {
+		pre, raw2, err = ConvertPegNetAssetToRaw(tpnt)
+		if pre != "tPNT" || !bytes.Equal(raw, raw2) || err != nil {
 			t.Fatal("Round trip failed with tPNT")
 		}
 		fmt.Printf("%x\n", raw2)
 
-		assets, err := ConvertUserFctToUserPegNetAssets(fct)
+		assets, err := ConvertFCTtoAllPegNetAssets(fct)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
@@ -66,20 +66,19 @@ func TestConvertFctToPegAssets(t *testing.T) {
 
 func TestBurnECAddress(t *testing.T) {
 	ecAdd := "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1oooo1oo"
-	raw, err := ConvertUserStrFctEcToAddress(ecAdd)
+	raw, err := ConvertAnyFactomAdrToRaw(ecAdd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	raw2, _ := hex.DecodeString(raw)
-	burn := ConvertECAddressToUser(raw2)
+	burn := ConvertRawToEC(raw)
 	fmt.Printf("Suggested Address %s\n", ecAdd)
-	fmt.Printf("Raw Address       %s\n", raw)
+	fmt.Printf("Raw Address       %s\n", hex.EncodeToString(raw))
 	fmt.Printf("Suggested+csum    %s\n", burn)
-	raw, err = ConvertUserStrFctEcToAddress(burn)
+	raw, err = ConvertAnyFactomAdrToRaw(burn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("Back again        %s\n", raw)
+	fmt.Printf("Back again        %s\n", hex.EncodeToString(raw))
 }
 
 func TestConvertRawAddrToPegT(t *testing.T) {
@@ -99,7 +98,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	var err error
 
 	ConvertToHuman := func(prefix string) error {
-		HumanAdr, err = ConvertRawAddrToPeg(prefix, RawAddress[:])
+		HumanAdr, err = ConvertRawToPegNetAsset(prefix, RawAddress[:])
 		if err != nil {
 			return err
 		}
@@ -109,16 +108,16 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	}
 
 	ConvertToRaw := func() error {
-		pre, raw, err := ConvertPegAddrToRaw(HumanAdr)
+		pre, raw, err := ConvertPegNetAssetToRaw(HumanAdr)
 		if err != nil {
 			return err
 		}
 		if CheckPrefix(pre) != true {
 			return errors.New("The Prefix " + pre + " returned by ConvertTo Raw is invalid")
 		}
-		if bytes.Compare(raw, RawAddress[:]) != 0 {
-			return errors.New(fmt.Sprintf("Expected Raw address %x and got %x",
-				RawAddress, raw))
+		if !bytes.Equal(raw, RawAddress[:]) {
+			return fmt.Errorf("Expected Raw address %x and got %x",
+				RawAddress, raw)
 		}
 		return nil
 	}
@@ -126,7 +125,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -136,7 +135,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pUSD"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -146,7 +145,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pEUR"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -160,7 +159,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pJPY"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -170,7 +169,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -180,7 +179,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pFCT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -205,7 +204,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {
@@ -217,7 +216,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("pPNT"); err != nil {
 		t.Error(err)
 	}
-	if err := PegTAdrIsValid(HumanAdr); err != nil {
+	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
 		t.Error(err)
 	}
 	if err := ConvertToRaw(); err != nil {

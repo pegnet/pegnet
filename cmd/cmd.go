@@ -59,7 +59,7 @@ var getEncoding = &cobra.Command{
 		if len(args) == 2 {
 			asset = strings.ToLower(args[1])
 		}
-		assets, err := common.ConvertUserFctToUserPegNetAssets(os.Args[2])
+		assets, err := common.ConvertFCTtoAllPegNetAssets(os.Args[2])
 		if err != nil {
 			// TODO: Verify this error message?
 			fmt.Println("Must provide a valid FCT public key")
@@ -99,7 +99,7 @@ var newAddress = &cobra.Command{
 			return
 		}
 		fmt.Print(fa.String(), "\n\n")
-		assets, err := common.ConvertUserFctToUserPegNetAssets(fa.String())
+		assets, err := common.ConvertFCTtoAllPegNetAssets(fa.String())
 		if err != nil {
 			fmt.Println(err)
 			return

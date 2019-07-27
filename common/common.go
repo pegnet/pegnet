@@ -3,7 +3,6 @@
 package common
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"sync"
@@ -51,11 +50,10 @@ func init() {
 	for network, add := range BurnAddresses {
 		if !factom.IsValidAddress(add) {
 			// If it is not valid, could be checksum related
-			newAddr, err := ConvertUserStrFctEcToAddress(add)
+			raw, err := ConvertAnyFactomAdrToRaw(add)
 			if err == nil {
 				// Try and fix it, then suggest the new checksum
-				raw, _ := hex.DecodeString(newAddr)
-				burn := ConvertECAddressToUser(raw)
+				burn := ConvertRawToEC(raw)
 				if factom.IsValidAddress(burn) {
 					panic(fmt.Sprintf("[%s] %s is not a valid address, but %s is", network, add, burn))
 				}

@@ -125,7 +125,7 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
 func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
-	
+
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
 		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
@@ -134,11 +134,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	// Validate all the Assets exists
-	if !opr.Assets.Contains(common.AllAssets) {
-		return false // Missing some assets!
-	}
-
-	return true
+	return opr.Assets.Contains(common.AllAssets)
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
@@ -330,8 +326,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	opr.Config = c
 	//get asset values
-	var Peg polling.PegAssets
-	Peg = polling.PullPEGAssets(c)
+	Peg := polling.PullPEGAssets(c)
 	opr.SetPegValues(Peg)
 
 	var err error

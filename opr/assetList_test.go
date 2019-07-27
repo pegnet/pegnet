@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/FactomProject/btcutil/base58"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
@@ -89,15 +88,10 @@ func TestOPRJsonMarshal(t *testing.T) {
 	}
 
 	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
-	protocol, err1 := c.String("Miner.Protocol")
-	network, err2 := c.String("Miner.Network")
-	if err1 != nil || err2 != nil {
-		t.Error("Should have protocol and network")
-	}
-	o.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
-	o.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", common.RandomByteSliceOfLen(32))
-	if err != nil {
-		t.Error(err)
+	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
+
+	for _, asset := range common.AllAssets {
+		o.Assets[asset] = rand.Float64() * 1000
 	}
 
 	if !o.Validate(c) {
