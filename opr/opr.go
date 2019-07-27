@@ -28,16 +28,15 @@ import (
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Protocol           string         `json:"-"` // The Protocol we are running on (PegNet)
-	Network            string         `json:"-"` // The network we are running on (TestNet vs MainNet)
-	Config             *config.Config `json:"-"` //  The config of the miner using the record
-	Difficulty         uint64         `json:"-"` // The difficulty of the given nonce
-	Grade              float64        `json:"-"` // The grade when OPR records are compared
-	OPRHash            []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	Entry              *factom.Entry  `json:"-"` // Entry to record this record
-	OPRChainID         string         `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
-	CoinbasePNTAddress string         `json:"-"` // [base58]  PNT Address to pay PNT
-	// TODO: Why are these not exported?
+	Protocol           string  `json:"-"` // The Protocol we are running on (PegNet)
+	Network            string  `json:"-"` // The network we are running on (TestNet vs MainNet)
+	Difficulty         uint64  `json:"-"` // The difficulty of the given nonce
+	Grade              float64 `json:"-"` // The grade when OPR records are compared
+	OPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
+	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
+	CoinbasePNTAddress string  `json:"-"` // [base58]  PNT Address to pay PNT
+
+	// Factom Entry data
 	EntryHash              []byte `json:"-"` // Entry to record this record
 	Nonce                  []byte `json:"-"` // Nonce used with OPR
 	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty
