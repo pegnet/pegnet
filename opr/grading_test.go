@@ -24,11 +24,11 @@ func dopr(name string, difficulty uint64) *OraclePriceRecord {
 	o.FactomDigitalID = string(name[0])
 	o.Difficulty = difficulty
 	o.OPRChainID = name
-	o.Entry = new(factom.Entry)
 
 	buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, difficulty)
-	o.Entry.ExtIDs = [][]byte{[]byte(string(name[0])), buf}
+	o.Nonce = []byte(string(name[0]))
+	o.SelfReportedDifficulty = buf
 	return o
 }
 
@@ -139,12 +139,12 @@ func init() {
 	// them in the tests.
 	for i := 0; i < 100; i++ {
 		opr := NewOraclePriceRecord()
-		opr.Entry = new(factom.Entry)
 		buf := make([]byte, 8)
 		binary.BigEndian.PutUint64(buf, opr.Difficulty)
-		opr.Entry.ExtIDs = [][]byte{{byte(i)}, buf}
-		opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
-		opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
+		opr.Nonce = []byte{byte(i)}
+		opr.SelfReportedDifficulty = buf
+		//opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		difficulty = append(difficulty, opr)
 	}
 	sort.Slice(difficulty, func(i, j int) bool {
@@ -187,7 +187,8 @@ func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest)
 		diff := e.difficulty
 		en := genOPR(e)
 
-		en.Entry = difficulty[diff].Entry
+		en.Nonce = difficulty[diff].Nonce
+		en.SelfReportedDifficulty = difficulty[diff].SelfReportedDifficulty
 		en.Difficulty = e.difficulty
 
 		gt.args = append(gt.args, en)
