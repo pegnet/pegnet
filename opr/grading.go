@@ -270,7 +270,6 @@ func GetEntryBlocks(config *config.Config) {
 			}
 		}
 	}
-	return
 }
 
 // GetPreviousOPRs returns the OPRs in highest-known block less than dbht.

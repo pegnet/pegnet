@@ -27,7 +27,7 @@ func init() {
 
 // ConvertAddress takes a human-readable address and extracts the prefix and RCD hash
 func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
-	prefix, adr2, err := common.ConvertPegAddrToRaw(address)
+	prefix, adr2, err := common.ConvertPegNetAssetToRaw(address)
 	if err != nil {
 		return
 	}
