@@ -39,6 +39,7 @@ func init() {
 	gob.Register(opr.OraclePriceRecord{})
 }
 
+// MiningServer is the coordinator to emit events to anyone listening
 type MiningServer struct {
 	config *config.Config
 
@@ -77,6 +78,7 @@ func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.
 		s.EC = ecAdr
 	}
 
+	// Set our callbacks
 	s.Server = NewTCPServer(s.Host)
 	s.Server.onNewClientCallback = s.onNewClient
 	s.Server.onNewMessage = s.onNewMessage
@@ -89,6 +91,7 @@ func (s *MiningServer) Listen() {
 	s.Server.Listen()
 }
 
+// ForwardMonitorEvents will forward all the events we get to anyone listening
 func (c *MiningServer) ForwardMonitorEvents() {
 	fLog := log.WithFields(log.Fields{"func": "ForwardMonitorEvents"})
 	alert := c.FactomMonitor.NewListener()
@@ -96,7 +99,7 @@ func (c *MiningServer) ForwardMonitorEvents() {
 	var last common.MonitorEvent
 	for {
 		select {
-		case fds := <-alert:
+		case fds := <-alert: // Push factom events straight to miners
 			m := new(NetworkMessage)
 			m.NetworkCommand = FactomEvent
 			m.Data = fds
@@ -115,19 +118,6 @@ func (c *MiningServer) ForwardMonitorEvents() {
 				"minute": fds.Minute,
 			}).Debug("server sent alert")
 		case g := <-gAlerts:
-			//m := new(NetworkMessage)
-			//m.NetworkCommand = GraderEvent
-			//m.Data = *g
-			//
-			//c.clientsLock.Lock()
-			//for _, c := range c.clients {
-			//	err := c.SendNetworkCommand(m)
-			//	if err != nil {
-			//		fLog.WithField("evt", "grader").WithError(err).Error("failed to send")
-			//	}
-			//}
-			//c.clientsLock.Unlock()
-
 			tmpChan := make(chan *opr.OPRs, 1)
 			tmpChan <- g
 			oprobject, err := opr.NewOpr(context.Background(), 0, last.Dbht, c.config, tmpChan)
@@ -162,7 +152,7 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 		if err != nil {
 			log.WithFields(n.Fields()).WithError(err).Errorf("failed to pong")
 		}
-	case FactomEntry:
+	case FactomEntry: // They want us to write an entry
 		b, ok := message.Data.(GobbedEntry)
 		if !ok {
 			log.WithFields(n.Fields()).Errorf("client did not send a proper entry")
@@ -173,6 +163,9 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 		e.ExtIDs = b.ExtIDs
 		e.Content = b.Content
 		e.ChainID = b.ChainID
+
+		// Note: we could take the self reported difficulty and do some filtering
+		// Right now we just submit directly
 
 		// Thread the write
 		go func() {
@@ -225,6 +218,6 @@ func (s *MiningServer) WriteEntry(entry *factom.Entry) error {
 }
 
 func (s *MiningServer) Fields() log.Fields {
-	// TODO: Is this threasafe?
+	// TODO: Is this threadsafe?
 	return log.Fields{"clients": len(s.clients)}
 }

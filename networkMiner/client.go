@@ -14,10 +14,12 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+// MiningClient talks to a coordinator. It receives events and trys to maintain
+// a connection
 type MiningClient struct {
 	config *config.Config
 
-	Host string
+	Host string // Coordinator Location
 
 	Monitor  *common.FakeMonitor
 	Grader   *opr.FakeGrader
@@ -41,6 +43,7 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	}
 
 	s.entryChannel = make(chan *factom.Entry, 25)
+	// The "Fakes" allow us to emit events
 	s.Monitor = common.NewFakeMonitor()
 	s.Grader = opr.NewFakeGrader()
 	s.OPRMaker = mining.NewBlockingOPRMaker()
@@ -66,6 +69,7 @@ func (c *MiningClient) Connect() error {
 	return nil
 }
 
+// ConnectionLost will put us into a holding pattern to reconnect
 func (c *MiningClient) ConnectionLost(err error) {
 	log.WithTime(time.Now()).WithFields(log.Fields{"host": c.Host, "time": time.Now().Format("15:04:05")}).WithError(err).Errorf("lost connection to host, retrying...")
 
@@ -83,6 +87,7 @@ func (c *MiningClient) ConnectionLost(err error) {
 	}
 }
 
+// RunForwardEntries will forward our factom entries to the coordinator
 func (c *MiningClient) RunForwardEntries() {
 	fLog := log.WithField("func", "MiningClient.RunForwardEntries()")
 	for {
@@ -102,6 +107,7 @@ func (c *MiningClient) RunForwardEntries() {
 	}
 }
 
+// Listen for server events
 func (c *MiningClient) Listen() {
 	fLog := log.WithField("func", "MiningClient.Listen()")
 	for {
