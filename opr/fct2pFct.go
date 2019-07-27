@@ -7,7 +7,7 @@ import (
 	"github.com/golangci/golangci-lint/pkg/config"
 )
 
-var FctDbht int64
+git mervar FctDbht int64
 
 func UpdateBurns(config *config.Config) {
 	GetEntryBlocks(config)			// make sure we are up to date on Entry Blocks
