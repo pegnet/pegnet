@@ -33,14 +33,14 @@ func TestConvertFctToPegAssets(t *testing.T) {
 		fmt.Println(fct)
 		raw = factoid.ConvertUserStrToAddress(fct)
 		fmt.Printf("%x\n", raw)
-		pnt, err := ConvertRawToPegNetAsset("pPNT", raw)
+		pnt, err := ConvertRawToPegNetAsset("PNT", raw)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
 		fmt.Println(pnt)
 		pre, raw2, err := ConvertPegNetAssetToRaw(pnt)
-		if pre != "pPNT" || !bytes.Equal(raw, raw2) || err != nil {
-			t.Fatal("Round trip failed with pPNT")
+		if pre != "PNT" || !bytes.Equal(raw, raw2) || err != nil {
+			t.Fatal("Round trip failed with PNT")
 		}
 		fmt.Printf("%x\n", raw2)
 		tpnt, err := ConvertRawToPegNetAsset("tPNT", raw)
@@ -122,7 +122,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		return nil
 	}
 
-	if err := ConvertToHuman("pPNT"); err != nil {
+	if err := ConvertToHuman("PNT"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -166,7 +166,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := ConvertToHuman("pPNT"); err != nil {
+	if err := ConvertToHuman("PNT"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -195,13 +195,13 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("YEN"); err == nil {
 		t.Error(err)
 	}
-	if err := ConvertToHuman("PNT"); err == nil {
+	if err := ConvertToHuman("pPNT"); err == nil {
 		t.Error(err)
 	}
 
 	setAdr("2222222222222222222222222222222222222222222222222222222222222222")
 
-	if err := ConvertToHuman("pPNT"); err != nil {
+	if err := ConvertToHuman("PNT"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -213,7 +213,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 
 	setAdr("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
-	if err := ConvertToHuman("pPNT"); err != nil {
+	if err := ConvertToHuman("PNT"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
