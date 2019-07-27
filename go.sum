@@ -48,7 +48,9 @@ github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb h1:qU
 github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb/go.mod h1:qPNpznGlx4PdRmEL7I25U/zQHrbMK1h0Az8FYahuYdo=
 github.com/FactomProject/web v0.1.0 h1:M136UkW3h/V8hH7h+s7qqm3GGSrKGKyXi6p94Z/AgPw=
 github.com/FactomProject/web v0.1.0/go.mod h1:wiLhlN8amF4dalkSy+u75C3xsXaesSHy2cph6b/8PrI=
+github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc h1:cAKDfWh5VpdgMhJosfJnn5/FoN2SRZ4p7fJNX58YPaU=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
+github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf h1:qet1QNfXsQxTZqLG4oE62mJzwPIB8+Tee4RNCL9ulrY=
 github.com/alecthomas/units v0.0.0-20151022065526-2efee857e7cf/go.mod h1:ybxpYRFXyAe+OPACYpWeL0wqObRcbAqCMya13uyzqw0=
 github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7 h1:HF2BoTaOEJzRl1WV+epnYM+kGi4DD87mVyQlWbkVLgA=
 github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7/go.mod h1:BLBuvd1uY9dCX660zu1fzsmr0Cqt3VPqK1e5fPfV6wc=
@@ -228,6 +230,7 @@ google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8 h1:Nw54tB0rB7hY/N0
 google.golang.org/genproto v0.0.0-20180817151627-c66870c02cf8/go.mod h1:JiN7NxoALGmiZfu7CAH4rXhgtRTLTxftemlI0sWmxmc=
 google.golang.org/grpc v1.14.0 h1:ArxJuB1NWfPY6r9Gp9gqwplT0Ge7nqv9msgu03lHLmo=
 google.golang.org/grpc v1.14.0/go.mod h1:yo6s7OP7yaDglbqo1J04qKzAhqBH6lvTonzMVmEdcZw=
+gopkg.in/alecthomas/kingpin.v2 v2.2.6 h1:jMFz6MfLP0/4fUyZle81rXUoxOBFi19VUFKVDOQfozc=
 gopkg.in/alecthomas/kingpin.v2 v2.2.6/go.mod h1:FMv+mEhP44yOT+4EoQTLFTRgOQ1FBLkstjWtayDeSgw=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405 h1:yhCVgyC4o1eVCa2tZl7eS0r+SDo693bJlVdllGtEeKM=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/prometheus/common/log"
+
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
@@ -173,6 +175,29 @@ func ConvertECAddressToUser(addr []byte) string {
 	return base58.Encode(userd)
 }
 
+// Convert a User facing Factoid address
+// to the raw form.  We do what validation we can here, and
+// return an error if the Factoid address is not valid
+func ConvertFctAddressToRaw(userFAddr string) (raw []byte, err error) {
+	if len(userFAddr) != 52 {
+		return nil, errors.New("invalid length of a factoid address")
+	}
+	v := base58.Decode(userFAddr)
+	switch {
+	case bytes.Equal(v[:2], fcPubPrefix):
+	default:
+		return nil, errors.New("wrong format for a factoid address")
+	}
+	rcd := v[:34]
+	hash := sha256.Sum256(rcd)
+	hash = sha256.Sum256(hash[:])
+	cksum := v[34:]
+	if !bytes.Equal(hash[:4], cksum[:]) {
+		return nil, errors.New("")
+	}
+	return v[2:34], nil
+}
+
 // Convert a User facing Factoid or Entry Credit address
 // or their Private Key representations
 // to the regular form.  Note validation must be done
@@ -208,4 +233,22 @@ func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err 
 	}
 
 	return assets, nil
+}
+
+func ConvertFCTtoPNT(network string, userFAdr string) (pnt string, err error) {
+	raw, err := ConvertFctAddressToRaw(userFAdr)
+	if err != nil {
+		return "", err
+	}
+
+	switch network {
+	case "TestNet":
+		pnt, err = ConvertRawAddrToPeg("tPNT", raw)
+	case "MainNet":
+		pnt, err = ConvertRawAddrToPeg("pPNT", raw)
+	}
+	if err != nil {
+		log.Errorf("Invalid RCD, could not create PNT address")
+	}
+	return
 }
