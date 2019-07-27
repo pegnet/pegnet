@@ -140,7 +140,10 @@ var ebMutex sync.Mutex
 // GetEntryBlocks creates the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
 	ebMutex.Lock()
-	defer ebMutex.Unlock()
+	defer func() {
+		ebMutex.Unlock()
+		UpdateBurns(config)
+	}()
 
 	network, err := config.String("Miner.Network")
 	check(err)
@@ -232,6 +235,12 @@ func GetEntryBlocks(config *config.Config) {
 					continue
 				}
 				opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
+				f := binary.BigEndian.Uint64(opr.Entry.ExtIDs[1])
+				if f != opr.Difficulty {
+					//This is a falsely reported difficulty. There is nothing we can
+					//really do. Maybe we should log.warn how many per block are 'malicious'?
+					log.Errorf("Diff mistmatch. Exp %d, found %d", opr.Difficulty, f)
+				}
 			}
 			validOPRs = append(validOPRs, opr) // Add to my valid list if all the winners are right
 		}

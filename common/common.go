@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"sync"
-
-	"github.com/FactomProject/factom"
 )
 
 var PointMultiple float64 = 100000000
@@ -32,35 +30,15 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"main": "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
-		"test": "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1on1iNDk",
+		"main":    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
+		"test":    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
+		"mainRCD": "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
+		"testRCD": "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
 	}
 )
 
 func PegnetBurnAddress(network string) string {
 	return BurnAddresses[strings.ToLower(network)]
-}
-
-// TODO: Remove this, when the final main and test burn addresses are determined.
-//		Once they are determined, then we don't need to check if they are valid on init.
-//  	This code is put here to ensure the chosen burn addresses are actually valid.
-//		If the address is invalid, it will panic with a corrected checksum, so you can
-//		update the burn address you put here. So it makes changing the burn addresses easy.
-func init() {
-	for network, add := range BurnAddresses {
-		if !factom.IsValidAddress(add) {
-			// If it is not valid, could be checksum related
-			raw, err := ConvertAnyFactomAdrToRaw(add)
-			if err == nil {
-				// Try and fix it, then suggest the new checksum
-				burn := ConvertRawToEC(raw)
-				if factom.IsValidAddress(burn) {
-					panic(fmt.Sprintf("[%s] %s is not a valid address, but %s is", network, add, burn))
-				}
-			}
-			panic(fmt.Sprintf("[%s] %s is not a valid address.", network, add))
-		}
-	}
 }
 
 var (
