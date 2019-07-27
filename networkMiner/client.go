@@ -60,12 +60,9 @@ func (c *MiningClient) Connect() error {
 	if err != nil {
 		return err
 	}
-	log.WithTime(time.Now()).Infof("Connected to %s", c.Host)
+	log.Infof("Connected to %s", c.Host)
 	c.conn = conn
 	c.initCoders()
-	if err != nil {
-		panic(err)
-	}
 	return nil
 }
 

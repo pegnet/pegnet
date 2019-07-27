@@ -198,7 +198,6 @@ func (opr *OraclePriceRecord) ShortString() string {
 // String returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
 	str = fmt.Sprintf("Nonce %x\n", opr.Nonce)
-	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	str = str + fmt.Sprintf("%32s %v\n", "WinningPreviousOPRs", "")
@@ -326,19 +325,14 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	//get asset values
-	var Peg polling.PegAssets
-	Peg = polling.PullPEGAssets(c)
+	Peg := polling.PullPEGAssets(c)
 	opr.SetPegValues(Peg)
 
-	var err error
-	entry := new(factom.Entry)
-	entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	entry.ExtIDs = [][]byte{{}}
-	entry.Content, err = json.Marshal(opr)
+	data, err := json.Marshal(opr)
 	if err != nil {
 		panic(err)
 	}
-	opr.OPRHash = LX.Hash(entry.Content)
+	opr.OPRHash = LX.Hash(data)
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.
