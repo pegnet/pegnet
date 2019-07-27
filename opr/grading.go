@@ -4,7 +4,6 @@
 package opr
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"sort"
@@ -70,11 +69,12 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
-		v.Difficulty = v.ComputeDifficulty(v.Entry.ExtIDs[0])
-		if binary.BigEndian.Uint64(v.Entry.ExtIDs[1]) != v.Difficulty {
-			// This is a falsely reported difficulty. There is nothing we can
-			// really do. Maybe we should log.warn how many per block are 'malicious'?
-		}
+		v.Difficulty = v.ComputeDifficulty(v.Nonce)
+		// TODO: Fix
+		//if binary.BigEndian.Uint64(v.Entry.ExtIDs[1]) != v.Difficulty {
+		// This is a falsely reported difficulty. There is nothing we can
+		// really do. Maybe we should log.warn how many per block are 'malicious'?
+		//}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
@@ -108,7 +108,7 @@ func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRe
 
 	for i, v := range list {
 		// Nonce + OPRHash == unique record
-		id := string(append(v.Entry.ExtIDs[0], v.OPRHash...))
+		id := string(append(v.Nonce, v.OPRHash...))
 		if dupe, ok := highest[id]; ok { // look for duplicates
 			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
 				continue
@@ -188,7 +188,9 @@ func GetEntryBlocks(config *config.Config) {
 					continue
 				}
 				// Keep this entry
-				opr.Entry = entry
+				opr.EntryHash = entry.Hash()
+				opr.Nonce = entry.ExtIDs[0]
+				// TODO: Put difficulty in too
 
 				// Looking good.  Go ahead and compute the OPRHash
 				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
@@ -226,7 +228,7 @@ func GetEntryBlocks(config *config.Config) {
 					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinPreviousOPR[j]) {
 					continue
 				}
-				opr.Difficulty = opr.ComputeDifficulty(opr.Entry.ExtIDs[0])
+				opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 			}
 			validOPRs = append(validOPRs, opr) // Add to my valid list if all the winners are right
 		}
@@ -251,7 +253,7 @@ func GetEntryBlocks(config *config.Config) {
 				logger := log.WithFields(log.Fields{
 					"place":      place,
 					"id":         winner.FactomDigitalID,
-					"entry_hash": hex.EncodeToString(winner.Entry.Hash()[:8]),
+					"entry_hash": hex.EncodeToString(winner.EntryHash[:8]),
 					"grade":      common.FormatGrade(winner.Grade, 4),
 					"difficulty": common.FormatDiff(winner.Difficulty, 10),
 					"address":    winner.CoinbasePNTAddress,

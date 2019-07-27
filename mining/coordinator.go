@@ -30,6 +30,9 @@ type MiningCoordinator struct {
 	// Who we submit our stats too
 	StatTracker *GlobalStatTracker
 
+	// Used when going over the network
+	OPRMaker IOPRMaker
+
 	// To give miners unique IDs
 	minerIDCounter int
 }
@@ -57,6 +60,8 @@ func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonit
 		panic(err)
 	}
 
+	c.OPRMaker = NewOPRMaker()
+
 	c.FactomEntryWriter = NewEntryWriter(config, k)
 	err = c.FactomEntryWriter.PopulateECAddress()
 	if err != nil {
@@ -81,6 +86,7 @@ func (c *MiningCoordinator) InitMinters() error {
 }
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
+	opr.InitLX()
 	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
@@ -118,7 +124,7 @@ MiningLoop:
 			if !mining {
 				mining = true
 				// Need to get an OPR record
-				oprTemplate, err = opr.NewOpr(ctx, 0, fds.Dbht, c.config, gAlert)
+				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
 					continue MiningLoop // OPR cancelled
 				}
@@ -195,7 +201,6 @@ func (c *MiningCoordinator) NewMiner(id int) *ControlledMiner {
 	m.Miner = NewPegnetMinerFromConfig(c.config, id, channel)
 	m.CommandChannel = channel
 	return m
-
 }
 
 func (c *ControlledMiner) SendCommand(command *MinerCommand) {

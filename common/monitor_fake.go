@@ -15,14 +15,9 @@ func NewFakeMonitor() *FakeMonitor {
 	return f
 }
 
-func (f *FakeMonitor) FakeNotify(dbht int, minute int) {
+func (f *FakeMonitor) FakeNotifyEvt(fds MonitorEvent) {
 	f.listenerMutex.Lock()
 	defer f.listenerMutex.Unlock()
-
-	fds := MonitorEvent{
-		Dbht:   int32(dbht),
-		Minute: int64(minute),
-	}
 
 	for _, l := range f.listeners {
 		select {
@@ -30,4 +25,12 @@ func (f *FakeMonitor) FakeNotify(dbht int, minute int) {
 		default:
 		}
 	}
+}
+
+func (f *FakeMonitor) FakeNotify(dbht int, minute int) {
+	fds := MonitorEvent{
+		Dbht:   int32(dbht),
+		Minute: int64(minute),
+	}
+	f.FakeNotifyEvt(fds)
 }

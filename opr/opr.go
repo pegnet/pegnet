@@ -28,11 +28,12 @@ import (
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Config     *config.Config `json:"-"` //  The config of the miner using the record
-	Difficulty uint64         `json:"-"` // The difficulty of the given nonce
-	Grade      float64        `json:"-"` // The grade when OPR records are compared
-	OPRHash    []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	Entry      *factom.Entry  `json:"-"` // Entry to record this record
+	Difficulty uint64  `json:"-"` // The difficulty of the given nonce
+	Grade      float64 `json:"-"` // The grade when OPR records are compared
+	OPRHash    []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
+	// TODO: Why are these not exported?
+	EntryHash []byte `json:"-"` // Entry to record this record
+	Nonce     []byte `json:"-"` // Nonce used with OPR
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:"oprchainid"`      // [base58]  Chain ID of the chain used by the Oracle Miners
@@ -204,7 +205,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
 		opr.FactomDigitalID,
 		opr.OPRHash,
-		opr.Entry.ExtIDs[0],
+		opr.Nonce,
 		opr.Difficulty,
 		opr.Grade)
 	return str
@@ -212,7 +213,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 
 // String returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
-	str = fmt.Sprintf("Nonce %x\n", opr.Entry.ExtIDs[0])
+	str = fmt.Sprintf("Nonce %x\n", opr.Nonce)
 	str = str + fmt.Sprintf("%32s %v\n", "OPRChainID", opr.OPRChainID)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
@@ -241,7 +242,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 			hbal := humanize.Comma(balance)
 			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
 				v,
-				pwin[i].Entry.Hash()[:8],
+				pwin[i].EntryHash[:8],
 				pwin[i].FactomDigitalID,
 				pwin[i].CoinbasePNTAddress,
 				hbal,
@@ -256,7 +257,7 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 	return log.Fields{
 		"did":        opr.FactomDigitalID,
 		"opr_hash":   hex.EncodeToString(opr.OPRHash),
-		"nonce":      hex.EncodeToString(opr.Entry.ExtIDs[0]),
+		"nonce":      hex.EncodeToString(opr.Nonce),
 		"difficulty": opr.Difficulty,
 		"grade":      opr.Grade,
 	}
@@ -272,14 +273,11 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 // NewOpr collects all the information unique to this miner and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this OPR
-func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
+func NewOpr(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *OPRs) (*OraclePriceRecord, error) {
 	opr := NewOraclePriceRecord()
 
-	// Save the config object
-	opr.Config = c
-
 	// Get the Identity Chain Specification
-	if did, err := c.String("Miner.IdentityChain"); err != nil {
+	if did, err := config.String("Miner.IdentityChain"); err != nil {
 		return nil, errors.New("config file has no Miner.IdentityChain specified")
 	} else {
 		if minerNumber > 0 {
@@ -289,8 +287,8 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	}
 
 	// Get the protocol chain to be used for pegnetMining records
-	protocol, err1 := c.String("Miner.Protocol")
-	network, err2 := c.String("Miner.Network")
+	protocol, err1 := config.String("Miner.Protocol")
+	network, err2 := config.String("Miner.Network")
 	if err1 != nil {
 		return nil, errors.New("config file has no Miner.Protocol specified")
 	}
@@ -321,7 +319,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 			return nil, err
 		}
 	} else {
-		if str, err := c.String("Miner.CoinbasePNTAddress"); err != nil {
+		if str, err := config.String("Miner.CoinbasePNTAddress"); err != nil {
 			return nil, errors.New("config file has no Coinbase PNT Address")
 		} else {
 			opr.CoinbasePNTAddress = str
@@ -336,31 +334,96 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	}
 
 	for i, w := range winners.ToBePaid {
-		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
+		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
-	opr.GetOPRecord(c)
+	opr.GetOPRecord(config)
+
+	return opr, nil
+}
+
+// NewOpr collects all the information unique to this miner and its configuration, and also
+// goes and gets the oracle data.  Also collects the winners from the prior block and
+// puts their entry hashes (base58) into this OPR
+// TODO: REMOVE DUPLICATE CODE
+func NewOprFromWinners(ctx context.Context, minerNumber int, dbht int32, config *config.Config, winners *OPRs) (*OraclePriceRecord, error) {
+	opr := NewOraclePriceRecord()
+
+	// Get the Identity Chain Specification
+	if did, err := config.String("Miner.IdentityChain"); err != nil {
+		return nil, errors.New("config file has no Miner.IdentityChain specified")
+	} else {
+		if minerNumber > 0 {
+			did = fmt.Sprintf("%sminer%03d", did, minerNumber)
+		}
+		opr.FactomDigitalID = did
+	}
+
+	// Get the protocol chain to be used for pegnetMining records
+	protocol, err1 := config.String("Miner.Protocol")
+	network, err2 := config.String("Miner.Network")
+	if err1 != nil {
+		return nil, errors.New("config file has no Miner.Protocol specified")
+	}
+	if err2 != nil {
+		return nil, errors.New("config file has no Miner.Network specified")
+	}
+	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
+
+	opr.Dbht = dbht
+
+	// If this is a test network, then give multiple miners their own tPNT address
+	// because that is way more useful debugging than giving all miners the same
+	// PNT address.  Otherwise, give all miners the same PNT address because most
+	// users really doing mining will mostly be happen sending rewards to a single
+	// address.
+	if network == "TestNet" && minerNumber != 0 {
+		fct := common.DebugFCTaddresses[minerNumber][1]
+		sraw, err := common.ConvertUserStrFctEcToAddress(fct)
+		if err != nil {
+			return nil, err
+		}
+		raw, err := hex.DecodeString(sraw)
+		if err != nil {
+			return nil, err
+		}
+		opr.CoinbasePNTAddress, err = common.ConvertRawAddrToPeg("tPNT", raw)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		if str, err := config.String("Miner.CoinbasePNTAddress"); err != nil {
+			return nil, errors.New("config file has no Coinbase PNT Address")
+		} else {
+			opr.CoinbasePNTAddress = str
+		}
+	}
+
+	for i, w := range winners.ToBePaid {
+		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+	}
+
+	opr.GetOPRecord(config)
 
 	return opr, nil
 }
 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
-	opr.Config = c
 	//get asset values
 	var Peg polling.PegAssets
 	Peg = polling.PullPEGAssets(c)
 	opr.SetPegValues(Peg)
 
 	var err error
-	opr.Entry = new(factom.Entry)
-	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	opr.Entry.ExtIDs = [][]byte{{}}
-	opr.Entry.Content, err = json.Marshal(opr)
+	entry := new(factom.Entry)
+	entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
+	entry.ExtIDs = [][]byte{{}}
+	entry.Content, err = json.Marshal(opr)
 	if err != nil {
 		panic(err)
 	}
-	opr.OPRHash = LX.Hash(opr.Entry.Content)
+	opr.OPRHash = LX.Hash(entry.Content)
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.
