@@ -32,5 +32,10 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 		settings["Miner.RecordsPerBlock"] = fmt.Sprintf("%d", top)
 	}
 
+	id, _ := c.cmd.Flags().GetString("identity")
+	if id != "" {
+		settings["Miner.IdentityChain"] = id
+	}
+
 	return settings, nil
 }

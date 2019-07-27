@@ -48,6 +48,7 @@ func init() {
 	// Flags that affect the config file. Should not be loaded into globals
 	rootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
 	rootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
+	rootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
 
 	// Persist flags that run in PreRun, and not in the config
 	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")

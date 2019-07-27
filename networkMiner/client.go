@@ -82,6 +82,10 @@ func (c *MiningClient) Listen() {
 			c.Grader.EmitFakeEvent(evt)
 		case ConstructedOPR:
 			evt := m.Data.(opr.OraclePriceRecord)
+			// We need to put our data in it
+			id, _ := c.config.String("Miner.IdentityChain")
+			evt.FactomDigitalID = id
+
 			c.OPRMaker.RecOPR(&evt)
 		case Ping:
 			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: Pong})
