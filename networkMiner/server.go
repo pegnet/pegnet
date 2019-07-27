@@ -128,7 +128,9 @@ func (c *MiningServer) ForwardMonitorEvents() {
 			//}
 			//c.clientsLock.Unlock()
 
-			oprobject, err := opr.NewOprFromWinners(context.Background(), 0, last.Dbht, c.config, g)
+			tmpChan := make(chan *opr.OPRs, 1)
+			tmpChan <- g
+			oprobject, err := opr.NewOpr(context.Background(), 0, last.Dbht, c.config, tmpChan)
 			if err != nil {
 				fLog.WithField("evt", "grader").WithError(err).Error("failed to make opr")
 			}

@@ -108,7 +108,7 @@ func (s *TCPServer) Listen() {
 		listener, err = tls.Listen("tcp", s.Host, s.config)
 	}
 	if err != nil {
-		log.Fatal("Error starting TCP server.")
+		log.WithError(err).Fatal("Error starting TCP server.")
 	}
 	log.Info("Listening on ", s.Host)
 	defer listener.Close()

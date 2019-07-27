@@ -16,7 +16,10 @@ func ComputeChainIDFromFields(fields [][]byte) []byte {
 	hs := sha256.New()
 	for _, id := range fields {
 		h := sha256.Sum256(id)
-		hs.Write(h[:])
+		_, err := hs.Write(h[:])
+		if err != nil {
+			panic("Unexpected write failure")
+		}
 	}
 	chainID := hs.Sum(nil)
 	return chainID

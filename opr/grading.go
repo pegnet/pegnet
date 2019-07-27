@@ -142,6 +142,8 @@ func GetEntryBlocks(config *config.Config) {
 	ebMutex.Lock()
 	defer ebMutex.Unlock()
 
+	network, err := config.String("Miner.Network")
+	check(err)
 	p, err := config.String("Miner.Protocol")
 	check(err)
 	n, err := config.String("Miner.Network")
@@ -183,7 +185,9 @@ func GetEntryBlocks(config *config.Config) {
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
-
+				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress); err != nil {
+					continue
+				}
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry
 				if !opr.Validate(config) {
 					continue
@@ -268,7 +272,6 @@ func GetEntryBlocks(config *config.Config) {
 			}
 		}
 	}
-	return
 }
 
 // GetPreviousOPRs returns the OPRs in highest-known block less than dbht.

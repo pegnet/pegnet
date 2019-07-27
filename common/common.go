@@ -3,7 +3,6 @@
 package common
 
 import (
-	"encoding/hex"
 	"fmt"
 	"strings"
 	"sync"
@@ -33,7 +32,7 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"main": "EC1moooFCT2mainoooo1oooo1oooo1oooo1oooo1oooo1opfDJqF",
+		"main": "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
 		"test": "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1on1iNDk",
 	}
 )
@@ -51,11 +50,10 @@ func init() {
 	for network, add := range BurnAddresses {
 		if !factom.IsValidAddress(add) {
 			// If it is not valid, could be checksum related
-			newAddr, err := ConvertUserStrFctEcToAddress(add)
+			raw, err := ConvertAnyFactomAdrToRaw(add)
 			if err == nil {
 				// Try and fix it, then suggest the new checksum
-				raw, _ := hex.DecodeString(newAddr)
-				burn := ConvertECAddressToUser(raw)
+				burn := ConvertRawToEC(raw)
 				if factom.IsValidAddress(burn) {
 					panic(fmt.Sprintf("[%s] %s is not a valid address, but %s is", network, add, burn))
 				}

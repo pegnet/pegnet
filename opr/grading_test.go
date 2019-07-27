@@ -174,11 +174,6 @@ func e1(difficulty uint64, data float64) gradeEntry {
 	return gradeEntry{id: uniqID(), difficulty: difficulty, data: data}
 }
 
-// entry with set id
-func e2(difficulty uint64, data float64, id string) gradeEntry {
-	return gradeEntry{id: id, difficulty: difficulty, data: data}
-}
-
 // generate the OPR test case from input and outcome
 func genTest(name string, entries []gradeEntry, results []string) (gt gradeTest) {
 	id = 0 // reset uniq id
@@ -256,13 +251,6 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 	}
 
 	return nil
-}
-
-func prettyPrint(a []*OraclePriceRecord) {
-	for _, e := range a {
-		fmt.Printf("[id=%s, grade=%f, diff=%d]", e.FactomDigitalID, e.Grade, e.Difficulty)
-	}
-	fmt.Println()
 }
 
 func TestGradeBlock(t *testing.T) {

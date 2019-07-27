@@ -1,3 +1,5 @@
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package common
 
 import (
@@ -11,7 +13,7 @@ import (
 // Config names
 const (
 	ConfigCoordinatorListen   = "Miner.MiningCoordinatorPort"
-	ConfigCoordinatorLocation = "MiningCoordinatorHost"
+	ConfigCoordinatorLocation = "Miner.MiningCoordinatorHost"
 )
 
 func NewUnitTestConfig() *config.Config {

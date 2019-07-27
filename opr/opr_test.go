@@ -33,7 +33,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 		base58.Encode(LX.Hash([]byte("winner number 9"))),
 		base58.Encode(LX.Hash([]byte("winner number 10"))),
 	}
-	opr.CoinbasePNTAddress = "pPNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
+	opr.CoinbasePNTAddress = "PNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
 	opr.FactomDigitalID = "minerone"
 	opr.Assets["PNT"] = 2
 	opr.Assets["USD"] = 20
@@ -59,7 +59,10 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	v, _ := json.Marshal(opr)
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := NewOraclePriceRecord()
-	json.Unmarshal(v, &opr2)
+	err := json.Unmarshal(v, &opr2)
+	if err != nil {
+		t.Fail()
+	}
 	v2, _ := json.Marshal(opr2)
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {

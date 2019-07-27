@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/prometheus/common/log"
+
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -22,7 +23,11 @@ var TestPegAssetNames []string
 
 func init() {
 	for _, asset := range AllAssets {
-		PegAssetNames = append(PegAssetNames, "p"+asset)
+		if asset != "PNT" {
+			PegAssetNames = append(PegAssetNames, "p"+asset)
+		} else {
+			PegAssetNames = append(PegAssetNames, asset)
+		}
 		TestPegAssetNames = append(TestPegAssetNames, "t"+asset)
 	}
 }
@@ -63,12 +68,12 @@ func CheckPrefix(name string) bool {
 
 }
 
-// ConvertRawAddrToPeg()
+// ConvertRawToPegNetAsset()
 // Converts a raw RCD1 address into a wallet friendly address that can be used to
 // convert assets, check balances, and send tokens.  While the underlying private key can be
 // used to hold Factoids or any token in the PegNet, users need addresses that create a
 // barrier to mistakes that can lead to sending the wrong tokens to the wrong addresses
-func ConvertRawAddrToPeg(prefix string, adr []byte) (string, error) {
+func ConvertRawToPegNetAsset(prefix string, adr []byte) (string, error) {
 
 	// Make sure the prefix is valid.
 	if !CheckPrefix(prefix) {
@@ -84,23 +89,31 @@ func ConvertRawAddrToPeg(prefix string, adr []byte) (string, error) {
 	return b58, nil
 }
 
+func GetPrefix(address string) (length int, prefix string) {
+	idx := strings.Index(address, "_")
+	if idx < 0 {
+		return -1, ""
+	}
+	return idx, address[:idx]
+}
+
 // ConvertPegTAddrToRaw()
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
 //
-func ConvertPegAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
+func ConvertPegNetAssetToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 	adrLen := len(adr)
 	if adrLen < 42 || len(adr) > 56 {
-		return "", nil, errors.New(
-			fmt.Sprintf("valid pegNet token addresses are 44 to 56 characters in length. len(adr)=%d ", adrLen))
+		return "", nil,
+			fmt.Errorf("valid pegNet token addresses are 44 to 56 characters in length. len(adr)=%d ", adrLen)
 	}
-
-	prefix = adr[:4]
+	var prefixLen int
+	prefixLen, prefix = GetPrefix(adr)
 	if !CheckPrefix(prefix) {
 		return "", nil, errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
-	b58 := adr[5:]
+	b58 := adr[prefixLen+1:]
 	raw := base58.Decode(b58)
 	if len(raw) == 0 {
 		return "", nil, errors.New("invalid base58 encoding")
@@ -110,7 +123,7 @@ func ConvertPegAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 
 	hash := sha256.Sum256(append(append([]byte(prefix), '_'), rawAdr...))
 	hash = sha256.Sum256(hash[:])
-	if bytes.Compare(hash[:4], chksum) != 0 {
+	if !bytes.Equal(hash[:4], chksum) {
 		return "", nil, errors.New("checksum failure")
 	}
 
@@ -118,10 +131,10 @@ func ConvertPegAddrToRaw(adr string) (prefix string, rawAdr []byte, err error) {
 
 }
 
-// PegTAdrIsValid()
+// ValidatePegNetAssetAddress()
 // Check that the given human/wallet PegNet address is valid.
-func PegTAdrIsValid(adr string) error {
-	_, _, err := ConvertPegAddrToRaw(adr)
+func ValidatePegNetAssetAddress(adr string) error {
+	_, _, err := ConvertPegNetAssetToRaw(adr)
 	return err
 }
 
@@ -144,15 +157,13 @@ func RandomByteSliceOfLen(sliceLen int) []byte {
 //
 //  Creates the binary form.  Just needs the conversion to base58
 //  for display.
-func ConvertFctAddressToUser(addr []byte) string {
+func ConvertRawToFCT(addr []byte) string {
 	dat := make([]byte, 0, 64)
-	dat = append(dat, 0x5f, 0xb1)
+	dat = append(dat, fcPubPrefix...)
 	dat = append(dat, addr...)
 	hash := sha256.Sum256(dat)
 	sha256d := sha256.Sum256(hash[:])
-	userd := []byte{0x5f, 0xb1}
-	userd = append(userd, addr...)
-	userd = append(userd, sha256d[:4]...)
+	userd := append(dat, sha256d[:4]...)
 	return base58.Encode(userd)
 }
 
@@ -161,41 +172,62 @@ func ConvertFctAddressToUser(addr []byte) string {
 //
 //  Creates the binary form.  Just needs the conversion to base58
 //  for display.
-func ConvertECAddressToUser(addr []byte) string {
+func ConvertRawToEC(addr []byte) string {
 	dat := make([]byte, 0, 64)
-	dat = append(dat, 0x59, 0x2a)
+	dat = append(dat, ecPubPrefix...)
 	dat = append(dat, addr...)
 	hash := sha256.Sum256(dat)
 	sha256d := sha256.Sum256(hash[:])
-	userd := []byte{0x59, 0x2a}
-	userd = append(userd, addr...)
-	userd = append(userd, sha256d[:4]...)
+	userd := append(dat, sha256d[:4]...)
 	return base58.Encode(userd)
+}
+
+// Convert a User facing Factoid address
+// to the raw form.  We do what validation we can here, and
+// return an error if the Factoid address is not valid
+func ConvertFCTtoRaw(userFAddr string) (raw []byte, err error) {
+	if len(userFAddr) != 52 {
+		return nil, errors.New("invalid length of a factoid address")
+	}
+	v := base58.Decode(userFAddr)
+	switch {
+	case bytes.Equal(v[:2], fcPubPrefix):
+	default:
+		return nil, errors.New("wrong format for a factoid address")
+	}
+	rcd := v[:34]
+	hash := sha256.Sum256(rcd)
+	hash = sha256.Sum256(hash[:])
+	cksum := v[34:]
+	if !bytes.Equal(hash[:4], cksum[:]) {
+		return nil, errors.New("")
+	}
+	return v[2:34], nil
 }
 
 // Convert a User facing Factoid or Entry Credit address
 // or their Private Key representations
 // to the regular form.  Note validation must be done
 // separately!
-func ConvertUserStrFctEcToAddress(userFAddr string) (string, error) {
+func ConvertAnyFactomAdrToRaw(userFAddr string) ([]byte, error) {
 	v := base58.Decode(userFAddr)
 	switch {
-	case bytes.Compare(v[:2], fcPubPrefix) == 0:
-	case bytes.Compare(v[:2], fcSecPrefix) == 0:
-	case bytes.Compare(v[:2], ecPubPrefix) == 0:
-	case bytes.Compare(v[:2], ecSecPrefix) == 0:
+	case bytes.Equal(v[:2], fcPubPrefix):
+	case bytes.Equal(v[:2], fcSecPrefix):
+	case bytes.Equal(v[:2], ecPubPrefix):
+	case bytes.Equal(v[:2], ecSecPrefix):
 	default:
-		return "", errors.New("unknown prefix")
+		return nil, errors.New("unknown prefix")
 	}
-	return hex.EncodeToString(v[2:34]), nil
+	return v[2:34], nil
 }
 
 // Convert a User facing FCT address to all of its PegNet
 // asset token User facing forms.
-func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err error) {
+func ConvertFCTtoAllPegNetAssets(userFctAddr string) (assets []string, err error) {
 	raw := base58.Decode(userFctAddr)[2:34]
 	cvt := func(asset string) (passet string) {
-		passet, err = ConvertRawAddrToPeg(asset, raw)
+		passet, err = ConvertRawToPegNetAsset(asset, raw)
 		if err != nil {
 			panic(err)
 		}
@@ -203,9 +235,31 @@ func ConvertUserFctToUserPegNetAssets(userFctAddr string) (assets []string, err 
 	}
 
 	for _, asset := range AllAssets {
-		assets = append(assets, cvt("p"+asset))
+		pAsset := "p" + asset
+		if asset == "PNT" {
+			pAsset = "PNT"
+		}
+		assets = append(assets, cvt(pAsset))
 		assets = append(assets, cvt("t"+asset))
 	}
 
 	return assets, nil
+}
+
+func ConvertFCTtoPNT(network string, userFAdr string) (pnt string, err error) {
+	raw, err := ConvertFCTtoRaw(userFAdr)
+	if err != nil {
+		return "", err
+	}
+
+	switch network {
+	case "TestNet":
+		pnt, err = ConvertRawToPegNetAsset("tPNT", raw)
+	case "MainNet":
+		pnt, err = ConvertRawToPegNetAsset("PNT", raw)
+	}
+	if err != nil {
+		log.Errorf("Invalid RCD, could not create PNT address")
+	}
+	return
 }

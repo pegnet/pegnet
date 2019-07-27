@@ -1,7 +1,10 @@
+// Copyright (c) of parts are held by the various contributors (see the CLA)
+// Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package controlPanel
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/alexandrevicenzi/go-sse"
@@ -35,18 +38,27 @@ func ServeControlPanel(config *config.Config, monitor common.IMonitor, statTrack
 	// Register with /events endpoint.
 	http.Handle("/events/", s)
 
+	network, err := config.String("Miner.Network")
+	if err != nil {
+		panic(fmt.Sprintf("Do not have a proper network in the config file: %v", err))
+	}
+
 	// Dispatch messages to common channel
 	go func() {
 		var CurrentHashRate uint64
 		var CurrentDifficulty uint64
-		var CoinbasePNTAddress string
+		var CoinbaseAddress string
 
-		if str, err := config.String("Miner.CoinbasePNTAddress"); err != nil {
-			log.Fatal("config file has no Coinbase PNT Address")
+		if str, err := config.String("Miner.CoinbaseAddress"); err != nil {
+			log.Fatal("config file has no Coinbase Address")
 		} else {
-			CoinbasePNTAddress = str
+			CoinbaseAddress = str
 		}
 
+		CoinbasePNTAddress, err := common.ConvertFCTtoPNT(network, CoinbaseAddress)
+		if err != nil {
+			panic("no valid coinbase address in the config file")
+		}
 		// TODO: Include states from statTracker
 
 		for {
