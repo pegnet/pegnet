@@ -23,7 +23,11 @@ var TestPegAssetNames []string
 
 func init() {
 	for _, asset := range AllAssets {
-		PegAssetNames = append(PegAssetNames, "p"+asset)
+		if asset != "PNT" {
+			PegAssetNames = append(PegAssetNames, "p"+asset)
+		} else {
+			PegAssetNames = append(PegAssetNames, asset)
+		}
 		TestPegAssetNames = append(TestPegAssetNames, "t"+asset)
 	}
 }
@@ -85,6 +89,14 @@ func ConvertRawToPegNetAsset(prefix string, adr []byte) (string, error) {
 	return b58, nil
 }
 
+func GetPrefix(address string) (length int, prefix string) {
+	idx := strings.Index(address, "_")
+	if idx < 0 {
+		return -1, ""
+	}
+	return idx, address[:idx]
+}
+
 // ConvertPegTAddrToRaw()
 // Convert a human/wallet address to the raw underlying address.  Verifies the checksum and
 // the validity of the prefix.  Returns the prefix, the raw address, and error.
@@ -95,13 +107,13 @@ func ConvertPegNetAssetToRaw(adr string) (prefix string, rawAdr []byte, err erro
 		return "", nil,
 			fmt.Errorf("valid pegNet token addresses are 44 to 56 characters in length. len(adr)=%d ", adrLen)
 	}
-
-	prefix = adr[:4]
+	var prefixLen int
+	prefixLen, prefix = GetPrefix(adr)
 	if !CheckPrefix(prefix) {
 		return "", nil, errors.New(prefix + " is not a valid PegNet prefix")
 	}
 
-	b58 := adr[5:]
+	b58 := adr[prefixLen+1:]
 	raw := base58.Decode(b58)
 	if len(raw) == 0 {
 		return "", nil, errors.New("invalid base58 encoding")
@@ -223,7 +235,11 @@ func ConvertFCTtoAllPegNetAssets(userFctAddr string) (assets []string, err error
 	}
 
 	for _, asset := range AllAssets {
-		assets = append(assets, cvt("p"+asset))
+		pAsset := "p" + asset
+		if asset == "PNT" {
+			pAsset = "PNT"
+		}
+		assets = append(assets, cvt(pAsset))
 		assets = append(assets, cvt("t"+asset))
 	}
 
@@ -240,7 +256,7 @@ func ConvertFCTtoPNT(network string, userFAdr string) (pnt string, err error) {
 	case "TestNet":
 		pnt, err = ConvertRawToPegNetAsset("tPNT", raw)
 	case "MainNet":
-		pnt, err = ConvertRawToPegNetAsset("pPNT", raw)
+		pnt, err = ConvertRawToPegNetAsset("PNT", raw)
 	}
 	if err != nil {
 		log.Errorf("Invalid RCD, could not create PNT address")
