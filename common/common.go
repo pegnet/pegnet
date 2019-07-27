@@ -32,7 +32,7 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"main": "EC1moooFCT2mainoooo1oooo1oooo1oooo1oooo1oooo1opfDJqF",
+		"main": "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
 		"test": "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1on1iNDk",
 	}
 )

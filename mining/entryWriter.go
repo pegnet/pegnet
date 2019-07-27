@@ -13,6 +13,14 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+type IEntryWriter interface {
+	PopulateECAddress() error
+	NextBlockWriter() IEntryWriter
+	AddMiner() chan<- *opr.NonceRanking
+	SetOPR(opr *opr.OraclePriceRecord)
+	CollectAndWrite(blocking bool)
+}
+
 // EntryWriter writes the best OPRs to factom once all the mining is done
 type EntryWriter struct {
 	Keep int
@@ -27,6 +35,8 @@ type EntryWriter struct {
 
 	Next *EntryWriter
 
+	EntryWritingFunction func(unique *opr.UniqueOPRData) error
+
 	sync.Mutex
 	sync.Once
 }
@@ -36,6 +46,7 @@ func NewEntryWriter(config *config.Config, keep int) *EntryWriter {
 	w.Keep = keep
 	w.minerLists = make(chan *opr.NonceRanking, keep)
 	w.config = config
+	w.EntryWritingFunction = w.writeMiningRecord
 
 	return w
 }
@@ -57,7 +68,7 @@ func (w *EntryWriter) PopulateECAddress() error {
 
 // NextBlockWriter gets the next block writer to use for the miner.
 //	Because all miners will share a block writer, we make this call idempotent
-func (w *EntryWriter) NextBlockWriter() *EntryWriter {
+func (w *EntryWriter) NextBlockWriter() IEntryWriter {
 	w.Lock()
 	defer w.Unlock()
 	if w.Next == nil {
@@ -116,7 +127,7 @@ GatherListLoop:
 	final := opr.MergeNonceRankings(w.Keep, aggregate...)
 	nonces := final.GetNonces()
 	for _, u := range nonces {
-		err := w.writeMiningRecord(u) // Write to blockchain
+		err := w.EntryWritingFunction(u) // Write to blockchain
 		if err != nil {
 			log.WithError(err).Error("Failed to write mining record")
 		}
@@ -169,4 +180,46 @@ func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
 func (w *EntryWriter) Cancel() {
 	w.miners--
 	w.minerLists <- nil
+}
+
+type EntryForwarder struct {
+	*EntryWriter
+	Next *EntryForwarder
+
+	entryChannel chan *factom.Entry
+}
+
+func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *factom.Entry) *EntryForwarder {
+	n := new(EntryForwarder)
+	n.EntryWriter = NewEntryWriter(config, keep)
+	n.entryChannel = entryChannel
+	n.EntryWritingFunction = n.forwardMiningRecord
+
+	return n
+
+}
+
+// NextBlockWriter gets the next block writer to use for the miner.
+//	Because all miners will share a block writer, we make this call idempotent
+func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
+	w.Lock()
+	defer w.Unlock()
+	if w.Next == nil {
+		w.Next = NewEntryForwarder(w.config, w.Keep, w.entryChannel)
+	}
+	return w.Next
+}
+
+func (w *EntryForwarder) forwardMiningRecord(unique *opr.UniqueOPRData) error {
+	if w.oprTemplate == nil {
+		return fmt.Errorf("no opr template")
+	}
+
+	entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce, unique.Difficulty)
+	if err != nil {
+		return err
+	}
+
+	w.entryChannel <- entry
+	return nil
 }

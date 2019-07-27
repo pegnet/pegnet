@@ -4,12 +4,17 @@
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pegnet/pegnet/mining"
+
+	"github.com/pegnet/pegnet/networkMiner"
 
 	"github.com/pegnet/pegnet/api"
 
@@ -29,6 +34,8 @@ func init() {
 	rootCmd.AddCommand(getEncoding)
 	rootCmd.AddCommand(newAddress)
 	rootCmd.AddCommand(grader)
+	rootCmd.AddCommand(networkCoordinator)
+	rootCmd.AddCommand(networkMinerCmd)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
@@ -256,5 +263,71 @@ var getPerformance = &cobra.Command{
 			},
 		}
 		sendRequestAndPrintResults(&req)
+	},
+}
+
+var networkCoordinator = &cobra.Command{
+	Use:   "netcoordinator",
+	Short: "Enables running of remote miners against this machine",
+	Long: "The net coordinator will facilitate all communication with factomd and remote data sources. " +
+		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
+	Run: func(cmd *cobra.Command, args []string) {
+
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		monitor := common.GetMonitor()
+		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+
+		go func() {
+			errListener := monitor.NewErrorListener()
+			err := <-errListener
+			panic("Monitor threw error: " + err.Error())
+		}()
+
+		grader := opr.NewGrader()
+		go grader.Run(Config, monitor)
+
+		srv := networkMiner.NewMiningServer(Config, monitor, grader)
+		go srv.Listen()
+		srv.ForwardMonitorEvents()
+	},
+}
+
+var networkMinerCmd = &cobra.Command{
+	Use: "netminer",
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		cl := networkMiner.NewMiningClient(Config)
+		err := cl.Connect()
+		if err != nil {
+			panic(err)
+		}
+		go cl.Listen()
+		go cl.RunForwardEntries()
+		monitor, grader, oprMaker := cl.Listeners()
+
+		go func() {
+			errListener := monitor.NewErrorListener()
+			err := <-errListener
+			panic("Monitor threw error: " + err.Error())
+		}()
+
+		statTracker := mining.NewGlobalStatTracker()
+
+		coord := mining.NewNetworkedMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
+		coord.OPRMaker = oprMaker
+		coord.FactomEntryWriter = cl.NewEntryForwarder()
+		err = coord.InitMinters()
+		if err != nil {
+			panic(err)
+		}
+
+		ctx, cancel := context.WithCancel(context.Background())
+		go statTracker.Collect(ctx)              // Will stop collecting on ctx cancel
+		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
+
+		// Calling cancel() will cancel the stat tracker collection AND the miners
+		var _ = cancel
 	},
 }

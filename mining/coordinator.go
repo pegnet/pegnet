@@ -25,10 +25,13 @@ type MiningCoordinator struct {
 	// Miners mine the opr hashes
 	Miners []*ControlledMiner
 	// FactomEntryWriter writes the oprs to chain
-	FactomEntryWriter *EntryWriter
+	FactomEntryWriter IEntryWriter
 
 	// Who we submit our stats too
 	StatTracker *GlobalStatTracker
+
+	// Used when going over the network
+	OPRMaker IOPRMaker
 
 	// To give miners unique IDs
 	minerIDCounter int
@@ -46,6 +49,18 @@ type MiningIdentity struct {
 	Best     *opr.NonceRanking
 }
 
+func NewNetworkedMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
+	c := new(MiningCoordinator)
+	c.config = config
+	c.FactomMonitor = monitor
+	c.OPRGrader = grader
+	c.StatTracker = s
+
+	// OPRMaker and writer set by client
+
+	return c
+}
+
 func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
 	c := new(MiningCoordinator)
 	c.config = config
@@ -56,6 +71,8 @@ func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonit
 	if err != nil {
 		panic(err)
 	}
+
+	c.OPRMaker = NewOPRMaker()
 
 	c.FactomEntryWriter = NewEntryWriter(config, k)
 	err = c.FactomEntryWriter.PopulateECAddress()
@@ -81,6 +98,7 @@ func (c *MiningCoordinator) InitMinters() error {
 }
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
+	opr.InitLX()
 	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
@@ -118,7 +136,7 @@ MiningLoop:
 			if !mining {
 				mining = true
 				// Need to get an OPR record
-				oprTemplate, err = opr.NewOpr(ctx, 0, fds.Dbht, c.config, gAlert)
+				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
 					continue MiningLoop // OPR cancelled
 				}
@@ -195,7 +213,6 @@ func (c *MiningCoordinator) NewMiner(id int) *ControlledMiner {
 	m.Miner = NewPegnetMinerFromConfig(c.config, id, channel)
 	m.CommandChannel = channel
 	return m
-
 }
 
 func (c *ControlledMiner) SendCommand(command *MinerCommand) {
@@ -245,7 +262,7 @@ func (b *CommandBuilder) ResumeMining() *CommandBuilder {
 	return b
 }
 
-func (b *CommandBuilder) Aggregator(w *EntryWriter) *CommandBuilder {
+func (b *CommandBuilder) Aggregator(w IEntryWriter) *CommandBuilder {
 	b.commands = append(b.commands, &MinerCommand{Command: RecordAggregator, Data: w})
 	return b
 }
