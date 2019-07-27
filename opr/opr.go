@@ -32,8 +32,9 @@ type OraclePriceRecord struct {
 	Grade      float64 `json:"-"` // The grade when OPR records are compared
 	OPRHash    []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
 	// TODO: Why are these not exported?
-	EntryHash []byte `json:"-"` // Entry to record this record
-	Nonce     []byte `json:"-"` // Nonce used with OPR
+	EntryHash              []byte `json:"-"` // Entry to record this record
+	Nonce                  []byte `json:"-"` // Nonce used with OPR
+	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	OPRChainID         string     `json:"oprchainid"`      // [base58]  Chain ID of the chain used by the Oracle Miners

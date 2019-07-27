@@ -25,7 +25,7 @@ type MiningCoordinator struct {
 	// Miners mine the opr hashes
 	Miners []*ControlledMiner
 	// FactomEntryWriter writes the oprs to chain
-	FactomEntryWriter *EntryWriter
+	FactomEntryWriter IEntryWriter
 
 	// Who we submit our stats too
 	StatTracker *GlobalStatTracker
@@ -47,6 +47,18 @@ type MinerSubmission struct {
 type MiningIdentity struct {
 	Identity string
 	Best     *opr.NonceRanking
+}
+
+func NewNetworkedMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
+	c := new(MiningCoordinator)
+	c.config = config
+	c.FactomMonitor = monitor
+	c.OPRGrader = grader
+	c.StatTracker = s
+
+	// OPRMaker and writer set by client
+
+	return c
 }
 
 func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
@@ -250,7 +262,7 @@ func (b *CommandBuilder) ResumeMining() *CommandBuilder {
 	return b
 }
 
-func (b *CommandBuilder) Aggregator(w *EntryWriter) *CommandBuilder {
+func (b *CommandBuilder) Aggregator(w IEntryWriter) *CommandBuilder {
 	b.commands = append(b.commands, &MinerCommand{Command: RecordAggregator, Data: w})
 	return b
 }

@@ -114,7 +114,10 @@ func (s *TCPServer) Listen() {
 	defer listener.Close()
 
 	for {
-		conn, _ := listener.Accept()
+		conn, err := listener.Accept()
+		if err != nil {
+			log.WithError(err).Error("failed to accept client")
+		}
 		client := NewTCPClient(conn, s)
 		client.init()
 		go client.listen()

@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"sort"
@@ -70,11 +71,11 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	// Make sure we have the difficulty calculated for all items in the list.
 	for _, v := range list {
 		v.Difficulty = v.ComputeDifficulty(v.Nonce)
-		// TODO: Fix
-		//if binary.BigEndian.Uint64(v.Entry.ExtIDs[1]) != v.Difficulty {
-		// This is a falsely reported difficulty. There is nothing we can
-		// really do. Maybe we should log.warn how many per block are 'malicious'?
-		//}
+		if binary.BigEndian.Uint64(v.SelfReportedDifficulty) != v.Difficulty {
+			//This is a falsely reported difficulty. There is nothing we can
+			//really do. Maybe we should log.warn how many per block are 'malicious'?
+			log.Errorf("Diff mistmatch")
+		}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
@@ -190,7 +191,7 @@ func GetEntryBlocks(config *config.Config) {
 				// Keep this entry
 				opr.EntryHash = entry.Hash()
 				opr.Nonce = entry.ExtIDs[0]
-				// TODO: Put difficulty in too
+				opr.SelfReportedDifficulty = entry.ExtIDs[1]
 
 				// Looking good.  Go ahead and compute the OPRHash
 				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash

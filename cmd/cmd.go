@@ -7,13 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"sort"
 	"strings"
 	"time"
 
-	"github.com/pegnet/pegnet/controlPanel"
 	"github.com/pegnet/pegnet/mining"
 
 	"github.com/pegnet/pegnet/networkMiner"
@@ -298,8 +296,12 @@ var networkMinerCmd = &cobra.Command{
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
-		cl.Connect()
+		err := cl.Connect()
+		if err != nil {
+			panic(err)
+		}
 		go cl.Listen()
+		go cl.RunForwardEntries()
 		monitor, grader, oprMaker := cl.Listeners()
 
 		go func() {
@@ -308,15 +310,12 @@ var networkMinerCmd = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		http.Handle("/v1", api.RequestHandler{})
-		go http.ListenAndServe(":8099", nil)
-
 		statTracker := mining.NewGlobalStatTracker()
-		go controlPanel.ServeControlPanel(Config, monitor, statTracker)
 
-		coord := mining.NewMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
+		coord := mining.NewNetworkedMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
 		coord.OPRMaker = oprMaker
-		err := coord.InitMinters()
+		coord.FactomEntryWriter = cl.NewEntryForwarder()
+		err = coord.InitMinters()
 		if err != nil {
 			panic(err)
 		}
