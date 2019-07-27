@@ -42,6 +42,7 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pegnet/LXRHash v0.0.0-20190726144200-a35b17bbf85c
 	github.com/prometheus/client_golang v1.0.0 // indirect
+	github.com/prometheus/common v0.4.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/spf13/cobra v0.0.5

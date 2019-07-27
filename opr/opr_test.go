@@ -59,7 +59,10 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	v, _ := json.Marshal(opr)
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := NewOraclePriceRecord()
-	json.Unmarshal(v, &opr2)
+	err := json.Unmarshal(v, &opr2)
+	if err != nil {
+		t.Fail()
+	}
 	v2, _ := json.Marshal(opr2)
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
