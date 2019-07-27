@@ -267,7 +267,10 @@ var getPerformance = &cobra.Command{
 }
 
 var networkCoordinator = &cobra.Command{
-	Use: "netcoordinator",
+	Use:   "netcoordinator",
+	Short: "Enables running of remote miners against this machine",
+	Long: "The net coordinator will facilitate all communication with factomd and remote data sources. " +
+		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		ValidateConfig(Config) // Will fatal log if it fails

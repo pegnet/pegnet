@@ -8,6 +8,12 @@ import (
 	"github.com/go-ini/ini"
 )
 
+// Config names
+const (
+	ConfigCoordinatorListen   = "Miner.MiningCoordinatorPort"
+	ConfigCoordinatorLocation = "MiningCoordinatorHost"
+)
+
 func NewUnitTestConfig() *config.Config {
 	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})
 }

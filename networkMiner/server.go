@@ -62,7 +62,7 @@ func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.
 	s.FactomMonitor = monitor
 	s.OPRGrader = grader
 
-	s.Host, err = config.String("Miner.MiningCoordinator")
+	s.Host, err = config.String(common.ConfigCoordinatorListen)
 	if err != nil {
 		panic(err)
 	}

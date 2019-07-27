@@ -35,7 +35,7 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	s := new(MiningClient)
 	s.config = config
 
-	s.Host, err = config.String("Miner.MiningCoordinator")
+	s.Host, err = config.String(common.ConfigCoordinatorLocation)
 	if err != nil {
 		panic(err)
 	}
