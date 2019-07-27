@@ -55,7 +55,6 @@ func (c *MiningClient) Listeners() (common.IMonitor, opr.IGrader, mining.IOPRMak
 func (c *MiningClient) Connect() error {
 	conn, err := net.Dial("tcp", c.Host)
 	if err != nil {
-		conn.Close()
 		return err
 	}
 	log.WithTime(time.Now()).Infof("Connected to %s", c.Host)
@@ -68,14 +67,14 @@ func (c *MiningClient) Connect() error {
 }
 
 func (c *MiningClient) ConnectionLost(err error) {
-	log.WithTime(time.Now()).WithFields(log.Fields{"host": c.Host}).WithError(err).Errorf("lost connection to host, retrying...")
+	log.WithTime(time.Now()).WithFields(log.Fields{"host": c.Host, "time": time.Now().Format("15:04:05")}).WithError(err).Errorf("lost connection to host, retrying...")
 
 	// Endless try to reconnect
 	for {
 		time.Sleep(1 * time.Second)
 		err := c.Connect()
 		if err != nil {
-			log.WithTime(time.Now()).WithFields(log.Fields{"host": c.Host}).WithError(err).Errorf("failed to reconnect, retrying...")
+			log.WithFields(log.Fields{"host": c.Host, "time": time.Now().Format("15:04:05")}).WithError(err).Errorf("failed to reconnect, retrying...")
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -140,6 +139,7 @@ func (c *MiningClient) Listen() {
 				fLog.WithField("evt", "ping").WithError(err).Error("failed to pong")
 			}
 		case Pong:
+			// Do nothing
 		default:
 			fLog.WithField("evt", "??").WithField("cmd", m.NetworkCommand).Warn("unrecognized message")
 		}

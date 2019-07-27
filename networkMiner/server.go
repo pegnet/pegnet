@@ -18,7 +18,6 @@ const (
 	_ = iota
 	Ping
 	Pong
-
 	FactomEvent
 	GraderEvent
 	ConstructedOPR
@@ -129,14 +128,14 @@ func (c *MiningServer) ForwardMonitorEvents() {
 			//}
 			//c.clientsLock.Unlock()
 
-			opr, err := opr.NewOprFromWinners(context.Background(), 0, last.Dbht, c.config, g)
+			oprobject, err := opr.NewOprFromWinners(context.Background(), 0, last.Dbht, c.config, g)
 			if err != nil {
 				fLog.WithField("evt", "grader").WithError(err).Error("failed to make opr")
 			}
 
 			m := new(NetworkMessage)
 			m.NetworkCommand = ConstructedOPR
-			m.Data = *opr
+			m.Data = *oprobject
 			c.clientsLock.Lock()
 			for _, c := range c.clients {
 				err := c.SendNetworkCommand(m)
