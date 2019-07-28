@@ -18,17 +18,11 @@ import (
 
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
 // the ID is the first character of the name
-func dopr(name string, difficulty uint64) *OraclePriceRecord {
+func dopr(oprhash, nonce string) *OraclePriceRecord {
 	//split := strings.Split("name", "")
 	o := NewOraclePriceRecord()
-	o.FactomDigitalID = string(name[0])
-	o.Difficulty = difficulty
-	o.OPRChainID = name
-
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, difficulty)
-	o.Nonce = []byte(string(name[0]))
-	o.SelfReportedDifficulty = buf
+	o.OPRHash = []byte(oprhash)
+	o.Nonce = []byte(nonce)
 	return o
 }
 
@@ -38,8 +32,9 @@ func dupeCheck(got []*OraclePriceRecord, want []string) error {
 	}
 
 	for i, o := range got {
-		if o.OPRChainID != want[i] {
-			return fmt.Errorf("wrong entry at position %d. got = %s, want = %s", i, o.OPRChainID, want[i])
+		name := string(o.OPRHash) + string(o.Nonce)
+		if name != want[i] {
+			return fmt.Errorf("pos %d. got = %s, want = %s", i, name, want[i])
 		}
 	}
 
@@ -55,23 +50,18 @@ func TestRemoveDuplicateMiningIDs(t *testing.T) {
 		args args
 		want []string
 	}{
-		{"middle test, keep last", args{dopr("a1", 1), dopr("b1", 50), dopr("a2", 2)}, []string{"a2", "b1"}},
 		{"no input", nil, []string{}},
 		{"empty input", args{}, []string{}},
-		{"one input", args{dopr("a1", 1)}, []string{"a1"}},
-		{"two normal inputs", args{dopr("a1", 1), dopr("b1", 1)}, []string{"a1", "b1"}},
-		{"dupe, equal copy", args{dopr("a1", 1), dopr("a2", 1)}, []string{"a1"}},
-		{"dupe, higher copy", args{dopr("a1", 1), dopr("a2", 2)}, []string{"a2"}},
-		{"dupe, lower copy", args{dopr("a1", 2), dopr("a2", 1)}, []string{"a1"}},
-		{"many dupes", args{dopr("a1", 2), dopr("a2", 1), dopr("a3", 5), dopr("a4", 0)}, []string{"a3"}},
-		{"mixed 1", args{dopr("b1", 50), dopr("a1", 2), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"middle test, keep first", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"two dupes", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1), dopr("b2", 100)}, []string{"a1", "b2"}},
+		{"one input", args{dopr("a", "1")}, []string{"a1"}},
+		{"two normal inputs", args{dopr("a", "1"), dopr("b", "1")}, []string{"a1", "b1"}},
+		{"1 dupe", args{dopr("a", "1"), dopr("a", "1")}, []string{"a1"}},
+		{"1 dupe, 1 normal", args{dopr("a", "1"), dopr("a", "1"), dopr("b", "1")}, []string{"a1", "b1"}},
+		{"double dupes", args{dopr("a", "1"), dopr("a", "1"), dopr("a", "2"), dopr("a", "2")}, []string{"a1", "a2"}},
+		{"3 dupes", args{dopr("a", "1"), dopr("a", "1"), dopr("a", "1"), dopr("a", "2")}, []string{"a1", "a2"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := RemoveDuplicateMiningIDs(tt.args)
-			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0] < got[j].FactomDigitalID[0] })
 			if err := dupeCheck(got, tt.want); err != nil {
 				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
 			}
