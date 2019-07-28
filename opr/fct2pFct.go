@@ -16,14 +16,6 @@ func UpdateBurns(c *config.Config) {
 	if err != nil {
 		panic("cannot find the network designation for updating burn txs")
 	}
-	net := "test"
-
-	if network == "MainNet" {
-		net = "main"
-	} else if network != "TestNet" {
-		panic("unknown network found when updating burn txs")
-	}
-	_ = net
 
 	if len(OPRBlocks) == 0 {
 		return // There is nothing to do if there is no OPR chain with valid OPR blocks
@@ -47,7 +39,7 @@ func UpdateBurns(c *config.Config) {
 			case len(ftx["inputs"].([]interface{})) != 1, // This is ugly as I code around some issues in the
 				len(ftx["outputs"].([]interface{})) != 0, // factom go library
 				len(ftx["outecs"].([]interface{})) != 1,
-				ftx["outecs"].([]interface{})[0].(map[string]interface{})["useraddress"] != common.BurnAddresses[net]:
+				ftx["outecs"].([]interface{})[0].(map[string]interface{})["useraddress"] != common.BurnAddresses[network]:
 			default:
 				fct := ftx["inputs"].([]interface{})[0].(map[string]interface{})["useraddress"].(string)
 				amt := ftx["inputs"].([]interface{})[0].(map[string]interface{})["amount"].(float64)
@@ -57,10 +49,10 @@ func UpdateBurns(c *config.Config) {
 				if err != nil {
 					continue
 				}
-				if net == "main" {
+				if network == "MainNet" {
 					_ = AddToBalance(pFct, int64(amt))
 
-				} else if net == "test" {
+				} else if network == "TestNet" {
 					_ = AddToBalance(pFct, int64(amt)*1000)
 				}
 				//log.Printf("Updated address %s balance == %f\n", pFct, float64(GetBalance(pFct))/100000000)

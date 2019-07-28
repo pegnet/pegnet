@@ -30,10 +30,10 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"main":    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
-		"test":    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
-		"mainRCD": "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
-		"testRCD": "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
+		"MainNet":    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
+		"TestNet":    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
+		"MainNetRCD": "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
+		"TestNetRCD": "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
 	}
 )
 
