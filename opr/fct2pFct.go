@@ -32,17 +32,24 @@ func UpdateBurns(c *config.Config) {
 		FctDbht = OPRBlocks[0].Dbht
 	}
 	for i := FctDbht + 1; ; i++ {
-		fc, _, err := factom.GetFBlockByHeight(i)
+		db, _, err := factom.GetDBlockByHeight(i)
+		if err != nil || db == nil {
+			break
+		}
+		fc, _, err := factom.GetFBlock(db.DBEntries[2].KeyMR)
 		if err != nil || fc == nil {
 			break
 		}
-		for _, tx := range fc.Transactions {
+		for _, txid := range fc.Transactions {
+			txb, _ := factom.GetTransaction(txid.TxID)
+			tx := txb.FactoidTransaction.(*factom.Transaction)
 			fmt.Println(tx.String())
 			switch {
-			case len(tx.Inputs) != 1,
-				len(tx.Outputs) != 0,
+			case
+				//case len(tx.Inputs) != 1,
+				//	len(tx.Outputs) != 0,
 				len(tx.ECOutputs) != 1,
-				tx.ECOutputs[0].Amount != 0,
+				//	tx.ECOutputs[0].Amount != 0,
 				tx.ECOutputs[0].Address != common.BurnAddresses[net+"RCD"]:
 			default:
 				address := tx.Inputs[0].Address
