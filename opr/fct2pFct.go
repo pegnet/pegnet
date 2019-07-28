@@ -3,8 +3,6 @@
 package opr
 
 import (
-	"fmt"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
@@ -19,11 +17,13 @@ func UpdateBurns(c *config.Config) {
 		panic("cannot find the network designation for updating burn txs")
 	}
 	net := "test"
+
 	if network == "MainNet" {
 		net = "main"
 	} else if network != "TestNet" {
 		panic("unknown network found when updating burn txs")
 	}
+	_ = net
 
 	if len(OPRBlocks) == 0 {
 		return // There is nothing to do if there is no OPR chain with valid OPR blocks
@@ -31,38 +31,61 @@ func UpdateBurns(c *config.Config) {
 	if FctDbht == 0 {
 		FctDbht = OPRBlocks[0].Dbht
 	}
-	for i := FctDbht + 1; ; i++ {
-		db, _, err := factom.GetDBlockByHeight(i)
-		if err != nil || db == nil {
-			break
-		}
-		fc, _, err := factom.GetFBlock(db.DBEntries[2].KeyMR)
-		if err != nil || fc == nil {
+	for i := 1; ; i++ {
+		fc, _, _ := factom.GetFBlockByHeight(int64(i))
+		if fc == nil {
 			break
 		}
 		for _, txid := range fc.Transactions {
-			txb, _ := factom.GetTransaction(txid.TxID)
-			tx := txb.FactoidTransaction.(*factom.Transaction)
-			fmt.Println(tx.String())
-			switch {
-			case
-				//case len(tx.Inputs) != 1,
-				//	len(tx.Outputs) != 0,
-				len(tx.ECOutputs) != 1,
-				//	tx.ECOutputs[0].Amount != 0,
-				tx.ECOutputs[0].Address != common.BurnAddresses[net+"RCD"]:
-			default:
-				address := tx.Inputs[0].Address
-				pFCT, err := common.ConvertFCTtoPNT(network, address)
-				if err != nil {
-					panic("FCT address conversion to pFCT error should not happen")
-				}
-				err = AddToBalance(pFCT, int64(tx.Inputs[0].Amount))
-				if err != nil {
-					panic("pFCT balance update errors should not happen")
-				}
+			tx, _ := factom.GetTransaction(txid.TxID)
+			ftx := tx.FactoidTransaction.(map[string]interface{})
+			if ftx == nil {
+				continue
 			}
+
+			switch {
+			case len(ftx["inputs"].([]interface{})) != 1,
+				len(ftx["outputs"].([]interface{})) != 0,
+				len(ftx["outecs"].([]interface{})) != 1,
+				ftx["outecs"].([]interface{})[0].(map[string]interface{})["useraddress"] != common.BurnAddresses[net]:
+				continue
+			default:
+				break
+			}
+			//     tx.FactoidTransaction["inputs"] !=nil,
+			//
+			//len(tx.Inputs) != 1,
+			//	//	len(tx.Outputs) != 0,
+			//	len(tx.ECOutputs) != 1,
+			//	//	tx.ECOutputs[0].Amount != 0,
+			//	tx.ECOutputs[0].Address != common.BurnAddresses[net+"RCD"]:
+			//default:
+			//	address := tx.Inputs[0].Address
+			//	pFCT, err := common.ConvertFCTtoPNT(network, address)
+			//	if err != nil {
+			//		panic("FCT address conversion to pFCT error should not happen")
+			//	}
+			//	err = AddToBalance(pFCT, int64(tx.Inputs[0].Amount))
+			//	if err != nil {
+			//		panic("pFCT balance update errors should not happen")
+			//	}
+			//}
+
+			//BlockHeight    uint32          `json:"blockheight,omitempty"`
+			//FeesPaid       uint64          `json:"feespaid,omitempty"`
+			//FeesRequired   uint64          `json:"feesrequired,omitempty"`
+			//IsSigned       bool            `json:"signed"`
+			//Name           string          `json:"name,omitempty"`
+			//Timestamp      time.Time       `json:"timestamp"`
+			//TotalECOutputs uint64          `json:"totalecoutputs"`
+			//TotalInputs    uint64          `json:"totalinputs"`
+			//TotalOutputs   uint64          `json:"totaloutputs"`
+			//Inputs         []*TransAddress `json:"inputs"`
+			//Outputs        []*TransAddress `json:"outputs"`
+			//ECOutputs      []*TransAddress `json:"ecoutputs"`
+			//TxID           string          `json:"txid,omitempty"`
+
 		}
-		FctDbht = i
+		FctDbht = int64(i)
 	}
 }
