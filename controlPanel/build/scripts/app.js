@@ -72,8 +72,8 @@
     // Statistics table, only will show things when you are on the page? But better than nothing.
     stats = $('#mining-statistics').DataTable({
       columns: [
-        {title: "ID", data: "id"},
         {title: "Block Height", data: "blockheight"},
+        {title: "ID", data: "id"},
         {title:"Tags", data:"tags", render: function (data, type, row) {
               return JSON.stringify(data)
           }
