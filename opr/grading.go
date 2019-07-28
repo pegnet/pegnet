@@ -62,7 +62,7 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 // sorted by difficulty.
 func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
 
-	list = RemoveDuplicateMiningIDs(list)
+	list = RemoveDuplicateSubmissions(list)
 
 	if len(list) < 10 {
 		return nil, nil
@@ -101,27 +101,17 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	return topDifficulty, list // Return the top50 sorted by grade and then all sorted by difficulty
 }
 
-// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
-// The entry with higher difficulty is kept.
-// Two passes are used to avoid slice deletion logic
-func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRecord) {
-	// miner id => slice index of highest difficulty entry
-	highest := make(map[string]int)
-
-	for i, v := range list {
-		// Nonce + OPRHash == unique record
+// RemoveDuplicateSubmissions filters out any duplicate OPR (same nonce and OPRHash)
+func RemoveDuplicateSubmissions(list []*OraclePriceRecord) []*OraclePriceRecord {
+	// nonce+oprhash => exists
+	added := make(map[string]bool)
+	nlist := make([]*OraclePriceRecord, 0)
+	for _, v := range list {
 		id := string(append(v.Nonce, v.OPRHash...))
-		if dupe, ok := highest[id]; ok { // look for duplicates
-			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
-				continue
-			}
+		if !added[id] {
+			nlist = append(nlist, v)
+			added[id] = true
 		}
-		// Either the first record found for the identity,or a more difficult record... keep it
-		highest[id] = i
-	}
-	// Take all the best records, stick them in the list and return.
-	for _, idx := range highest {
-		nlist = append(nlist, list[idx])
 	}
 	return nlist
 }
