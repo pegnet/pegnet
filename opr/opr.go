@@ -301,7 +301,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		}
 	}
 
-	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress)
+	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress)
 	if err != nil {
 		log.Errorf("invalid fct address in config file: %v", err)
 	}

@@ -48,9 +48,24 @@ func UpdateBurns(c *config.Config) {
 				len(ftx["outputs"].([]interface{})) != 0,
 				len(ftx["outecs"].([]interface{})) != 1,
 				ftx["outecs"].([]interface{})[0].(map[string]interface{})["useraddress"] != common.BurnAddresses[net]:
-				continue
 			default:
-				break
+				fct := ftx["inputs"].([]interface{})[0].(map[string]interface{})["useraddress"].(string)
+				amt := ftx["inputs"].([]interface{})[0].(map[string]interface{})["amount"].(float64)
+				_ = fct
+				_ = amt
+				var pFct string
+
+				pFct, err := common.ConvertFCTtoPegNetAsset(network, fct, "FCT")
+
+				if err != nil {
+					continue
+				}
+				if net == "main" {
+					_ = AddToBalance(pFct, int64(amt))
+
+				} else if net == "test" {
+					_ = AddToBalance(pFct, int64(amt)*1000)
+				}
 			}
 			//     tx.FactoidTransaction["inputs"] !=nil,
 			//

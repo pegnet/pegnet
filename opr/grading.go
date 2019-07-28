@@ -188,7 +188,7 @@ func GetEntryBlocks(config *config.Config) {
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
-				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress); err != nil {
+				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress); err != nil {
 					continue
 				}
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry

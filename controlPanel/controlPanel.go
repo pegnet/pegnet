@@ -55,7 +55,7 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor, statTrack
 			CoinbaseAddress = str
 		}
 
-		CoinbasePNTAddress, err := common.ConvertFCTtoPNT(network, CoinbaseAddress)
+		CoinbasePNTAddress, err := common.ConvertFCTtoPegNetAsset(network, "PNT", CoinbaseAddress)
 		if err != nil {
 			panic("no valid coinbase address in the config file")
 		}
@@ -84,6 +84,6 @@ func ServeControlPanel(config *config.Config, monitor *common.Monitor, statTrack
 	}()
 
 	http.Handle("/", http.FileServer(http.Dir("./controlPanel/static")))
-	http.ListenAndServe(":8080", nil)
+	_ = http.ListenAndServe(":8080", nil)
 
 }

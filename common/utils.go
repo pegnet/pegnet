@@ -246,7 +246,7 @@ func ConvertFCTtoAllPegNetAssets(userFctAddr string) (assets []string, err error
 	return assets, nil
 }
 
-func ConvertFCTtoPNT(network string, userFAdr string) (pnt string, err error) {
+func ConvertFCTtoPegNetAsset(network string, userFAdr string, asset string) (PegNetAsset string, err error) {
 	raw, err := ConvertFCTtoRaw(userFAdr)
 	if err != nil {
 		return "", err
@@ -254,9 +254,13 @@ func ConvertFCTtoPNT(network string, userFAdr string) (pnt string, err error) {
 
 	switch network {
 	case "TestNet":
-		pnt, err = ConvertRawToPegNetAsset("tPNT", raw)
+		PegNetAsset, err = ConvertRawToPegNetAsset("t"+asset, raw)
 	case "MainNet":
-		pnt, err = ConvertRawToPegNetAsset("PNT", raw)
+		if asset != "PNT" {
+			PegNetAsset, err = ConvertRawToPegNetAsset("p"+asset, raw)
+		} else {
+			PegNetAsset, err = ConvertRawToPegNetAsset(asset, raw)
+		}
 	}
 	if err != nil {
 		log.Errorf("Invalid RCD, could not create PNT address")
