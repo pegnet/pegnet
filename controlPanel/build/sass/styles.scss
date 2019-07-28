@@ -10,3 +10,8 @@
   font-size: $sizeValue + px;
   font-size: ($sizeValue / 16) + em;
 }
+
+
+.paginate_button {
+    padding: 5px;
+}

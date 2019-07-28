@@ -28,6 +28,7 @@
     "fancy-log": "^1.3.3"
   },
   "dependencies": {
-    "datatables": "^1.10.18"
+    "datatables": "^1.10.18",
+    "moment": "^2.24.0"
   }
 }
