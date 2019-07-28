@@ -634,6 +634,9 @@ func BenchmarkGradeBlock(b *testing.B) {
 }
 
 func BenchmarkOPRHash(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+
 	var oprs []*OraclePriceRecord
 	for i := 0; i < 10000; i++ {
 		oprs = append(oprs, makeBenchmarkOPR())
