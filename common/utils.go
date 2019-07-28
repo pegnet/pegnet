@@ -246,7 +246,7 @@ func ConvertFCTtoAllPegNetAssets(userFctAddr string) (assets []string, err error
 	return assets, nil
 }
 
-func ConvertFCTtoPegNetAsset(network string, userFAdr string, asset string) (PegNetAsset string, err error) {
+func ConvertFCTtoPegNetAsset(network string, asset string, userFAdr string) (PegNetAsset string, err error) {
 	raw, err := ConvertFCTtoRaw(userFAdr)
 	if err != nil {
 		return "", err

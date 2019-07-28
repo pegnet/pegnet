@@ -4,6 +4,7 @@ package opr
 
 import (
 	"github.com/FactomProject/factom"
+	"github.com/FactomProject/factomd/log"
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -31,8 +32,8 @@ func UpdateBurns(c *config.Config) {
 	if FctDbht == 0 {
 		FctDbht = OPRBlocks[0].Dbht
 	}
-	for i := 1; ; i++ {
-		fc, _, _ := factom.GetFBlockByHeight(int64(i))
+	for i := FctDbht; ; i++ {
+		fc, _, _ := factom.GetFBlockByHeight(i)
 		if fc == nil {
 			break
 		}
@@ -44,18 +45,15 @@ func UpdateBurns(c *config.Config) {
 			}
 
 			switch {
-			case len(ftx["inputs"].([]interface{})) != 1,
-				len(ftx["outputs"].([]interface{})) != 0,
+			case len(ftx["inputs"].([]interface{})) != 1, // This is ugly as I code around some issues in the
+				len(ftx["outputs"].([]interface{})) != 0, // factom go library
 				len(ftx["outecs"].([]interface{})) != 1,
 				ftx["outecs"].([]interface{})[0].(map[string]interface{})["useraddress"] != common.BurnAddresses[net]:
 			default:
 				fct := ftx["inputs"].([]interface{})[0].(map[string]interface{})["useraddress"].(string)
 				amt := ftx["inputs"].([]interface{})[0].(map[string]interface{})["amount"].(float64)
-				_ = fct
-				_ = amt
-				var pFct string
 
-				pFct, err := common.ConvertFCTtoPegNetAsset(network, fct, "FCT")
+				pFct, err := common.ConvertFCTtoPegNetAsset(network, "FCT", fct)
 
 				if err != nil {
 					continue
@@ -66,41 +64,9 @@ func UpdateBurns(c *config.Config) {
 				} else if net == "test" {
 					_ = AddToBalance(pFct, int64(amt)*1000)
 				}
+				log.Printf("Updated address %s balance == %f\n", pFct, float64(GetBalance(pFct))/100000000)
 			}
-			//     tx.FactoidTransaction["inputs"] !=nil,
-			//
-			//len(tx.Inputs) != 1,
-			//	//	len(tx.Outputs) != 0,
-			//	len(tx.ECOutputs) != 1,
-			//	//	tx.ECOutputs[0].Amount != 0,
-			//	tx.ECOutputs[0].Address != common.BurnAddresses[net+"RCD"]:
-			//default:
-			//	address := tx.Inputs[0].Address
-			//	pFCT, err := common.ConvertFCTtoPNT(network, address)
-			//	if err != nil {
-			//		panic("FCT address conversion to pFCT error should not happen")
-			//	}
-			//	err = AddToBalance(pFCT, int64(tx.Inputs[0].Amount))
-			//	if err != nil {
-			//		panic("pFCT balance update errors should not happen")
-			//	}
-			//}
-
-			//BlockHeight    uint32          `json:"blockheight,omitempty"`
-			//FeesPaid       uint64          `json:"feespaid,omitempty"`
-			//FeesRequired   uint64          `json:"feesrequired,omitempty"`
-			//IsSigned       bool            `json:"signed"`
-			//Name           string          `json:"name,omitempty"`
-			//Timestamp      time.Time       `json:"timestamp"`
-			//TotalECOutputs uint64          `json:"totalecoutputs"`
-			//TotalInputs    uint64          `json:"totalinputs"`
-			//TotalOutputs   uint64          `json:"totaloutputs"`
-			//Inputs         []*TransAddress `json:"inputs"`
-			//Outputs        []*TransAddress `json:"outputs"`
-			//ECOutputs      []*TransAddress `json:"ecoutputs"`
-			//TxID           string          `json:"txid,omitempty"`
-
 		}
-		FctDbht = int64(i)
+		FctDbht = i
 	}
 }

@@ -141,6 +141,7 @@ var ebMutex sync.Mutex
 // GetEntryBlocks creates the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
 	ebMutex.Lock()
+	defer UpdateBurns(config)
 	defer ebMutex.Unlock()
 
 	network, err := config.String("Miner.Network")
