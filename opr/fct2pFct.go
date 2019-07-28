@@ -4,7 +4,6 @@ package opr
 
 import (
 	"github.com/FactomProject/factom"
-	"github.com/FactomProject/factomd/log"
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -64,7 +63,7 @@ func UpdateBurns(c *config.Config) {
 				} else if net == "test" {
 					_ = AddToBalance(pFct, int64(amt)*1000)
 				}
-				log.Printf("Updated address %s balance == %f\n", pFct, float64(GetBalance(pFct))/100000000)
+				//log.Printf("Updated address %s balance == %f\n", pFct, float64(GetBalance(pFct))/100000000)
 			}
 		}
 		FctDbht = i
