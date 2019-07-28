@@ -18,7 +18,7 @@ import (
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	"github.com/pegnet/LXRHash"
+	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
@@ -85,7 +85,7 @@ var lxInitializer sync.Once
 func InitLX() {
 	lxInitializer.Do(func() {
 		// This code will only be executed ONCE, no matter how often you call it
-		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+		LX.Init(0xfafaececfafaecec, 30, 256, 5)
 	})
 }
 
