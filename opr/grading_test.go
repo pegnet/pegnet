@@ -5,12 +5,14 @@ package opr
 
 import (
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -562,4 +564,124 @@ func TestGradeBlock(t *testing.T) {
 			}
 		})
 	}
+}
+
+// for BENCHMARKING grading, it's not important what the data is, we just need data
+// we need ASSETS, OPRHASH, DIFFICULTY, and SELFREPORTEDDIFFICULTY
+func makeBenchmarkOPR() *OraclePriceRecord {
+	o := new(OraclePriceRecord)
+	o.Assets = make(OraclePriceRecordAssetList)
+	for _, a := range common.AllAssets {
+		o.Assets[a] = rand.Float64() * 50
+	}
+	o.Nonce = make([]byte, 8) // random nonce
+	rand.Read(o.Nonce)
+	json, _ := json.Marshal(o)
+	o.OPRHash = LX.Hash(json)
+	o.EntryHash = json // FOR BENCHMARK ONLY
+	difficulty := ComputeDifficulty(o.OPRHash, o.Nonce)
+	o.SelfReportedDifficulty = make([]byte, 8)
+	binary.BigEndian.PutUint64(o.SelfReportedDifficulty, difficulty)
+
+	return o
+}
+
+func BenchmarkGradeBlock(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+
+	var oprs []*OraclePriceRecord
+	for i := 0; i < 10000; i++ {
+		oprs = append(oprs, makeBenchmarkOPR())
+	}
+
+	b.Run("ten", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:10])
+		}
+	})
+	b.Run("fifty", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:50])
+		}
+	})
+	b.Run("200", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:200])
+		}
+	})
+	b.Run("500", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:500])
+		}
+	})
+	b.Run("1000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:1000])
+		}
+	})
+	b.Run("5000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:5000])
+		}
+	})
+	b.Run("10000", func(b *testing.B) { // 10k OPRs = ~17 tps on factom
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:10000])
+		}
+	})
+
+}
+
+func BenchmarkOPRHash(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+
+	var oprs []*OraclePriceRecord
+	for i := 0; i < 10000; i++ {
+		oprs = append(oprs, makeBenchmarkOPR())
+	}
+	b.Run("opr hash for 10", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:10] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 50", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:50] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 200", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:200] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+
+	b.Run("opr hash for 500", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:500] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 1000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:1000] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 10000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:10000] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
 }
