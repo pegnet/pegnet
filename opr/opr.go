@@ -85,6 +85,7 @@ var lxInitializer sync.Once
 func InitLX() {
 	lxInitializer.Do(func() {
 		// This code will only be executed ONCE, no matter how often you call it
+		LX.Verbose(true)
 		LX.Init(0xfafaececfafaecec, 30, 256, 5)
 	})
 }
