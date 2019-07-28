@@ -6,19 +6,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"os/user"
 	"regexp"
 	"strings"
-	"time"
 
 	"github.com/FactomProject/factom"
-	"github.com/pegnet/pegnet/api"
-	"github.com/pegnet/pegnet/common"
-	"github.com/pegnet/pegnet/controlPanel"
-	"github.com/pegnet/pegnet/mining"
-	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/zpatrick/go-config"
@@ -69,39 +62,23 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// TODO: Do we really want to init the miner by default?
 		//  	 Not like `pegnet -service=miner` or something?
+		ctx, cancel := context.WithCancel(context.Background())
 
 		ValidateConfig(Config) // Will fatal log if it fails
 
-		monitor := common.GetMonitor()
-		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+		grader := LaunchGrader(Config, monitor)
+		statTracker := LaunchStatistics(Config, ctx)
+		apiserver := LaunchAPI(Config, statTracker)
+		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		var _ = apiserver
 
-		go func() {
-			errListener := monitor.NewErrorListener()
-			err := <-errListener
-			panic("Monitor threw error: " + err.Error())
-		}()
-
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
-
-		http.Handle("/v1", api.RequestHandler{})
-		go http.ListenAndServe(":8099", nil)
-
-		statTracker := mining.NewGlobalStatTracker()
-		go controlPanel.ServeControlPanel(Config, monitor, statTracker)
-
-		coord := mining.NewMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
-		err := coord.InitMinters()
-		if err != nil {
-			panic(err)
-		}
-
-		ctx, cancel := context.WithCancel(context.Background())
-		go statTracker.Collect(ctx)              // Will stop collecting on ctx cancel
-		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
+		// This is a blocking call
+		coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
-		var _ = cancel
+		var _, _ = cancel, coord
 	},
 }
 

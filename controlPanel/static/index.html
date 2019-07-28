@@ -6,6 +6,8 @@
     <meta name="description" content="">
     <title>PegNet ControlPanel</title>
     <link rel="stylesheet" href="/styles/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
   </head>
   <body>
     <nav class="navbar navbar-light bg-light flex-md-nowrap p-0 pt-4 pb-4">
@@ -47,6 +49,20 @@
                 <div class="col-sm-9">
                   <input type="text" readonly class="form-control-plaintext" id="balance" value="0">
                 </div>
+              </div>
+
+              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h2 class="h3">Miner Statistics</h2>
+              </div>
+              <div class="form-group row">
+
+
+                <table id="mining-statistics" class="table table-striped table-bordered" style="width:100%">
+                </table>
+
+
+
+
               </div>
               
               <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">

@@ -25,7 +25,8 @@ type MiningClient struct {
 	Grader   *opr.FakeGrader
 	OPRMaker *mining.BlockingOPRMaker
 
-	entryChannel chan *factom.Entry
+	entryChannel  chan *factom.Entry
+	UpstreamStats chan *mining.GroupMinerStats
 
 	conn    net.Conn
 	encoder *gob.Encoder
@@ -84,9 +85,9 @@ func (c *MiningClient) ConnectionLost(err error) {
 	}
 }
 
-// RunForwardEntries will forward our factom entries to the coordinator
-func (c *MiningClient) RunForwardEntries() {
-	fLog := log.WithField("func", "MiningClient.RunForwardEntries()")
+// Forwarder will forward our channels to the coordinator
+func (c *MiningClient) Forwarder() {
+	fLog := log.WithField("func", "MiningClient.Forwarder()")
 	for {
 		select {
 		case ent := <-c.entryChannel:
@@ -99,6 +100,13 @@ func (c *MiningClient) RunForwardEntries() {
 				fLog.WithField("evt", "entry").WithError(err).Error("failed to send entry")
 			} else {
 				fLog.WithField("evt", "entry").WithField("entry", fmt.Sprintf("%x", ent.Hash())).Debugf("sent entry")
+			}
+		case s := <-c.UpstreamStats:
+			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: MiningStatistics, Data: *s})
+			if err != nil {
+				fLog.WithField("evt", "entry").WithError(err).Error("failed to send stats")
+			} else {
+				fLog.WithField("evt", "entry").Debugf("sent entry")
 			}
 		}
 	}
@@ -127,7 +135,9 @@ func (c *MiningClient) Listen() {
 			evt := m.Data.(opr.OPRs)
 			c.Grader.EmitFakeEvent(evt)
 		case ConstructedOPR:
-			evt := m.Data.(opr.OraclePriceRecord)
+			devt := m.Data.(opr.OraclePriceRecord)
+			evt := &devt
+
 			// We need to put our data in it
 			id, _ := c.config.String("Miner.IdentityChain")
 			evt.FactomDigitalID = id
@@ -135,7 +145,7 @@ func (c *MiningClient) Listen() {
 			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
 			evt.CoinbasePNTAddress = addr
 
-			c.OPRMaker.RecOPR(&evt)
+			c.OPRMaker.RecOPR(evt)
 		case Ping:
 			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: Pong})
 			if err != nil {

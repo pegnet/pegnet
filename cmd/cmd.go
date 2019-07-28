@@ -272,30 +272,29 @@ var networkCoordinator = &cobra.Command{
 	Long: "The net coordinator will facilitate all communication with factomd and remote data sources. " +
 		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
 
-		monitor := common.GetMonitor()
-		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+		grader := LaunchGrader(Config, monitor)
+		statTracker := LaunchStatistics(Config, ctx)
+		apiserver := LaunchAPI(Config, statTracker)
+		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		var _ = apiserver
 
-		go func() {
-			errListener := monitor.NewErrorListener()
-			err := <-errListener
-			panic("Monitor threw error: " + err.Error())
-		}()
-
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
-
-		srv := networkMiner.NewMiningServer(Config, monitor, grader)
+		srv := networkMiner.NewMiningServer(Config, monitor, grader, statTracker)
 		go srv.Listen()
 		srv.ForwardMonitorEvents()
+
+		var _ = cancel
 	},
 }
 
 var networkMinerCmd = &cobra.Command{
 	Use: "netminer",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
@@ -304,7 +303,7 @@ var networkMinerCmd = &cobra.Command{
 			panic(err)
 		}
 		go cl.Listen()
-		go cl.RunForwardEntries()
+		go cl.Forwarder()
 		monitor, grader, oprMaker := cl.Listeners()
 
 		go func() {
@@ -313,7 +312,14 @@ var networkMinerCmd = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		statTracker := mining.NewGlobalStatTracker()
+		// Services
+		statTracker := LaunchStatistics(Config, ctx)
+		// TODO: Api on remote? CP on remote?
+		//apiserver := LaunchAPI(Config, statTracker)
+		//LaunchControlPanel(Config, ctx, monitor, statTracker)
+		//var _ = apiserver
+
+		cl.UpstreamStats = statTracker.GetUpstream("netcoord") // Send stats upstream
 
 		coord := mining.NewNetworkedMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
 		coord.OPRMaker = oprMaker
@@ -323,8 +329,6 @@ var networkMinerCmd = &cobra.Command{
 			panic(err)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		go statTracker.Collect(ctx)              // Will stop collecting on ctx cancel
 		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners

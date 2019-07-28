@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
@@ -42,7 +43,15 @@ func (b *BlockingOPRMaker) RecOPR(opr *opr.OraclePriceRecord) {
 func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *opr.OPRs) (*opr.OraclePriceRecord, error) {
 	o := <-b.n
 	if o.Dbht != dbht {
-		return b.NewOPR(ctx, minerNumber, dbht, config, alert)
+	DrainOPRLoop:
+		for { // Drain anything remaining
+			select {
+			case <-b.n:
+			default:
+				break DrainOPRLoop
+			}
+		}
+		return nil, fmt.Errorf("not the right height, exp %d found %d", o.Dbht, dbht)
 	}
 	return o, nil
 }

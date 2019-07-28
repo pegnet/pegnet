@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/gob"
 	"errors"
+	"fmt"
 	"sync"
+
+	"github.com/pegnet/pegnet/mining"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
@@ -22,6 +25,7 @@ const (
 	GraderEvent
 	ConstructedOPR
 	FactomEntry
+	MiningStatistics
 )
 
 // Idk why the factom.entry does not work
@@ -37,6 +41,7 @@ func init() {
 	gob.Register(GobbedEntry{})
 	gob.Register([][]byte{})
 	gob.Register(opr.OraclePriceRecord{})
+	gob.Register(mining.GroupMinerStats{})
 }
 
 // MiningServer is the coordinator to emit events to anyone listening
@@ -50,11 +55,13 @@ type MiningServer struct {
 	Server *TCPServer
 	EC     *factom.ECAddress
 
+	Stats *mining.GlobalStatTracker
+
 	clientsLock sync.Mutex
 	clients     map[int]*TCPClient
 }
 
-func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.IGrader) *MiningServer {
+func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *MiningServer {
 	var err error
 	s := new(MiningServer)
 	s.config = config
@@ -62,6 +69,7 @@ func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.
 	s.clients = make(map[int]*TCPClient)
 	s.FactomMonitor = monitor
 	s.OPRGrader = grader
+	s.Stats = stats
 
 	s.Host, err = config.String(common.ConfigCoordinatorListen)
 	if err != nil {
@@ -128,6 +136,7 @@ func (c *MiningServer) ForwardMonitorEvents() {
 			m := new(NetworkMessage)
 			m.NetworkCommand = ConstructedOPR
 			m.Data = *oprobject
+
 			c.clientsLock.Lock()
 			for _, c := range c.clients {
 				err := c.SendNetworkCommand(m)
@@ -176,6 +185,18 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 				log.WithFields(n.Fields()).WithField("client", c.id).Debugf("submitted entry %x", e.Hash())
 			}
 		}()
+	case MiningStatistics:
+		g, ok := message.Data.(mining.GroupMinerStats)
+		if !ok {
+			log.WithFields(n.Fields()).Errorf("client did not send a proper entry")
+			return
+		}
+
+		// Modify the stats so we know it came from us
+		g.ID = fmt.Sprintf("Net-%d", c.id)
+		g.Tags["src"] = c.conn.RemoteAddr().String()
+
+		n.Stats.MiningStatsChannel <- &g
 	default:
 		log.WithFields(n.Fields()).WithField("cmd", message.NetworkCommand).Warn("command not recognized from client")
 	}

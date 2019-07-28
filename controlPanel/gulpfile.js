@@ -44,6 +44,7 @@ function scripts() {
   return gulp.src([
       './node_modules/jquery/dist/jquery.min.js',
       './node_modules/bootstrap/dist/js/bootstrap.min.js',
+      './node_modules/datatables/media/js/jquery.dataTables.min.js',
       PATHS.SCRIPTS + '/*.js'
     ])
     .pipe(sourcemaps.init())

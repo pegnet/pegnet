@@ -140,6 +140,11 @@ MiningLoop:
 				if err == context.Canceled {
 					continue MiningLoop // OPR cancelled
 				}
+				if err != nil {
+					mineLog.WithError(err).Errorf("OPR is incorrect")
+					mining = false
+					continue
+				}
 
 				// Get the OPRHash for miners to mine.
 				oprHash = oprTemplate.GetHash()
@@ -182,8 +187,7 @@ MiningLoop:
 				// Write to blockchain (this is non blocking)
 				c.FactomEntryWriter.CollectAndWrite(false)
 
-				groupStats := NewGroupMinerStats()
-				groupStats.BlockHeight = int(fds.Dbht)
+				groupStats := NewGroupMinerStats("main", int(fds.Dbht))
 				// Collect stats
 				cm := 0
 				for s := range statsAggregate {
