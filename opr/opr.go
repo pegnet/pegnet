@@ -18,7 +18,7 @@ import (
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	"github.com/pegnet/LXRHash"
+	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
@@ -116,11 +116,11 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 	if depth > 5 || path == "." {
 		// Recursive base case
 		// If depth > 5 probably no pegnet dir exists
-		return filepath.Join(path, acc)
+		return filepath.ToSlash(filepath.Join(path, acc))
 	}
 	dir, base := filepath.Split(path)
 	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
-		return filepath.Join(base, acc)
+		return filepath.ToSlash(filepath.Join(base, acc))
 	}
 	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
