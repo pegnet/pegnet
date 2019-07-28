@@ -10,6 +10,13 @@ import (
 	"github.com/go-ini/ini"
 )
 
+// Config names
+const (
+	ConfigCoordinatorListen   = "Miner.MiningCoordinatorPort"
+	ConfigCoordinatorLocation = "Miner.MiningCoordinatorHost"
+	ConfigCoinbaseAddress     = "Miner.CoinbaseAddress"
+)
+
 func NewUnitTestConfig() *config.Config {
 	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})
 }

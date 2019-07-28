@@ -23,7 +23,7 @@ type CommonResponse struct {
 	Difficulty uint64 `json:"difficulty"`
 }
 
-func ServeControlPanel(config *config.Config, monitor *common.Monitor, statTracker *mining.GlobalStatTracker) {
+func ServeControlPanel(config *config.Config, monitor common.IMonitor, statTracker *mining.GlobalStatTracker) {
 	log.Info("Starting control panel on localhost:8080")
 
 	alert := monitor.NewListener()

@@ -188,7 +188,7 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 	case RecordsToKeep:
 		p.MiningState.keep = c.Data.(int)
 	case RecordAggregator:
-		w := c.Data.(*EntryWriter)
+		w := c.Data.(IEntryWriter)
 		p.MiningState.writeChannel = w.AddMiner()
 	case StatsAggregator:
 		w := c.Data.(chan *SingleMinerStats)

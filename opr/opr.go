@@ -18,7 +18,7 @@ import (
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	lxr "github.com/pegnet/LXRHash"
+	"github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
@@ -28,15 +28,18 @@ import (
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
-	Protocol           string         `json:"-"` // The Protocol we are running on (PegNet)
-	Network            string         `json:"-"` // The network we are running on (TestNet vs MainNet)
-	Config             *config.Config `json:"-"` //  The config of the miner using the record
-	Difficulty         uint64         `json:"-"` // The difficulty of the given nonce
-	Grade              float64        `json:"-"` // The grade when OPR records are compared
-	OPRHash            []byte         `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	Entry              *factom.Entry  `json:"-"` // Entry to record this record
-	OPRChainID         string         `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
-	CoinbasePNTAddress string         `json:"-"` // [base58]  PNT Address to pay PNT
+	Protocol           string  `json:"-"` // The Protocol we are running on (PegNet)
+	Network            string  `json:"-"` // The network we are running on (TestNet vs MainNet)
+	Difficulty         uint64  `json:"-"` // The difficulty of the given nonce
+	Grade              float64 `json:"-"` // The grade when OPR records are compared
+	OPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
+	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
+	CoinbasePNTAddress string  `json:"-"` // [base58]  PNT Address to pay PNT
+
+	// Factom Entry data
+	EntryHash              []byte `json:"-"` // Entry to record this record
+	Nonce                  []byte `json:"-"` // Nonce used with OPR
+	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	CoinbaseAddress string     `json:"coinbase"` // [base58]  PNT Address to pay PNT
@@ -186,7 +189,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 	str := fmt.Sprintf("DID %30x OPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
 		opr.FactomDigitalID,
 		opr.OPRHash,
-		opr.Entry.ExtIDs[0],
+		opr.Nonce,
 		opr.Difficulty,
 		opr.Grade)
 	return str
@@ -194,7 +197,7 @@ func (opr *OraclePriceRecord) ShortString() string {
 
 // String returns a human readable string for the Oracle Record
 func (opr *OraclePriceRecord) String() (str string) {
-	str = fmt.Sprintf("Nonce %x\n", opr.Entry.ExtIDs[0])
+	str = fmt.Sprintf("Nonce %x\n", opr.Nonce)
 	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", opr.Difficulty)
 	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", opr.Dbht)
 	str = str + fmt.Sprintf("%32s %v\n", "WinningPreviousOPRs", "")
@@ -222,7 +225,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 			hbal := humanize.Comma(balance)
 			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
 				v,
-				pwin[i].Entry.Hash()[:8],
+				pwin[i].EntryHash[:8],
 				pwin[i].FactomDigitalID,
 				pwin[i].CoinbasePNTAddress,
 				hbal,
@@ -237,7 +240,7 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 	return log.Fields{
 		"did":        opr.FactomDigitalID,
 		"opr_hash":   hex.EncodeToString(opr.OPRHash),
-		"nonce":      hex.EncodeToString(opr.Entry.ExtIDs[0]),
+		"nonce":      hex.EncodeToString(opr.Nonce),
 		"difficulty": opr.Difficulty,
 		"grade":      opr.Grade,
 	}
@@ -255,9 +258,6 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 // puts their entry hashes (base58) into this OPR
 func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, alert chan *OPRs) (opr *OraclePriceRecord, err error) {
 	opr = NewOraclePriceRecord()
-
-	// Save the config object
-	opr.Config = c
 
 	// Get the Identity Chain Specification
 	if did, err := c.String("Miner.IdentityChain"); err != nil {
@@ -314,7 +314,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	}
 
 	for i, w := range winners.ToBePaid {
-		opr.WinPreviousOPR[i] = hex.EncodeToString(w.Entry.Hash()[:8])
+		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
 	opr.GetOPRecord(c)
@@ -324,20 +324,15 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
-	opr.Config = c
 	//get asset values
 	Peg := polling.PullPEGAssets(c)
 	opr.SetPegValues(Peg)
 
-	var err error
-	opr.Entry = new(factom.Entry)
-	opr.Entry.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	opr.Entry.ExtIDs = [][]byte{{}}
-	opr.Entry.Content, err = json.Marshal(opr)
+	data, err := json.Marshal(opr)
 	if err != nil {
 		panic(err)
 	}
-	opr.OPRHash = LX.Hash(opr.Entry.Content)
+	opr.OPRHash = LX.Hash(data)
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.

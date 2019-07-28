@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/spf13/cobra"
 )
 
@@ -30,6 +32,18 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 	top, _ := c.cmd.Flags().GetInt("top")
 	if top != -1 {
 		settings["Miner.RecordsPerBlock"] = fmt.Sprintf("%d", top)
+	}
+
+	id, _ := c.cmd.Flags().GetString("identity")
+	if id != "" {
+		settings["Miner.IdentityChain"] = id
+	}
+
+	// Use the same flag for the client and server.
+	addr, _ := c.cmd.Flags().GetString("caddr")
+	if addr != "" {
+		settings[common.ConfigCoordinatorListen] = addr
+		settings[common.ConfigCoordinatorListen] = addr
 	}
 
 	return settings, nil
