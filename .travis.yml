@@ -5,15 +5,18 @@ go:
 - 1.x
 
 os: 
-  - linux
   - osx
   - windows
 
+# Run gofmt only on linux
 matrix:
   fast_finish: true
-  exclude:
-  - os: windows
-    script: ./.gofmt.sh
+  include:
+    - os: linux
+      script:
+        - ./.gofmt.sh 
+        - go test -timeout 45m ./...
+        - go test -race -timeout 45m ./...
   allow_failures:
     - os: windows
 
@@ -28,7 +31,6 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - ./.gofmt.sh
   - go test -timeout 45m ./...
   - go test -race -timeout 45m ./...
 
