@@ -29,19 +29,19 @@ func TestBurnAddresses(t *testing.T) {
 		return nil
 	}
 
-	if err := CheckAdr("main", "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err != nil {
+	if err := CheckAdr("MainNet", "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err != nil {
 		t.Error(err)
 	}
-	if err := CheckAdr("test", "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err != nil {
+	if err := CheckAdr("TestNet", "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err != nil {
 		t.Error(err)
 	}
 
-	if err := CheckAdr("main", "EC3BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err == nil {
+	if err := CheckAdr("MainNet", "EC3BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo1CCCCCC"); err == nil {
 		t.Error(err)
 	} else {
 		fmt.Println("        no match")
 	}
-	if err := CheckAdr("test", "EC2BURNFCT2TESTxooooiooooiooooiooooiooooiooooiCCCCCC"); err == nil {
+	if err := CheckAdr("TestNet", "EC2BURNFCT2TESTxooooiooooiooooiooooiooooiooooiCCCCCC"); err == nil {
 		t.Error(err)
 	} else {
 		fmt.Println("        no match")
