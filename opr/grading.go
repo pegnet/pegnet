@@ -51,7 +51,7 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 	for i, v := range tokens {
 		if avg[i] > 0 {
 			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
-			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the squares of the differences
+			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the square of the square of the differences
 		}
 	}
 	return opr.Grade
@@ -60,8 +60,10 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 // GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
 // The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
 // sorted by difficulty.
-func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
+func GradeBlock(OPRlist []*OraclePriceRecord) (graded []*OraclePriceRecord) {
 
+	list := append([]*OraclePriceRecord,OPRlist...)
+	
 	list = RemoveDuplicateSubmissions(list)
 
 	if len(list) < 10 {
