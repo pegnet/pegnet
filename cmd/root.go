@@ -31,7 +31,6 @@ var (
 	FactomdLocation string
 	WalletdLocation string
 	Timeout         uint
-	Network         string
 )
 
 func init() {
@@ -43,7 +42,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
 	rootCmd.PersistentFlags().StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
 	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
-	rootCmd.PersistentFlags().StringVar(&Network, "network", "test", "The pegnet network to target. <Main|Test>")
 
 	// Flags that affect the config file. Should not be loaded into globals
 	rootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
@@ -54,6 +52,7 @@ func init() {
 	// Persist flags that run in PreRun, and not in the config
 	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
 	rootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
+	rootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
 
 	// Initialize the config file with the config, then with cmd flags
 	rootCmd.PersistentPreRunE = rootPreRunSetup
