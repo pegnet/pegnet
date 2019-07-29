@@ -205,7 +205,10 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 		}
 	}
 
-	if !sort.SliceIsSorted(winners, func(i, j int) bool {
+	// Only check the top 10 graded, as anything over the 10 won't necessarily be in graded order.
+	//		Each grading pass changes the grades relative to the new avg. So the grades 'jiggle' as we
+	//		close in on 10.
+	if !sort.SliceIsSorted(winners[:10], func(i, j int) bool {
 		// i is before j when:
 		// grade is smaller (better)
 		//  or difficulty higher
