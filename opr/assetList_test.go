@@ -50,9 +50,23 @@ func TestAssetListJSONMarshal(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !a.Contains(common.AllAssets) {
+	if !a.ContainsExactly(common.AllAssets) {
 		t.Error("Missing items in the set")
 	}
+
+	// Test adding a new one
+	a["random"] = 0
+	if a.ContainsExactly(common.AllAssets) {
+		t.Error("Should fail but did not")
+	}
+
+	// Test missing one
+	delete(a, "random")
+	delete(a, "PNT")
+	if a.ContainsExactly(common.AllAssets) {
+		t.Error("Should fail but did not")
+	}
+
 }
 
 func TestAssetListUnmarshal(t *testing.T) {
