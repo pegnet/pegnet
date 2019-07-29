@@ -15,7 +15,6 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh 
-        - go test -timeout 45m ./...
         - go test -race -timeout 45m ./...
   allow_failures:
     - os: windows
@@ -31,7 +30,6 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - go test -timeout 45m ./...
   - go test -race -timeout 45m ./...
 
 # GO111MODULE will force Go modules
