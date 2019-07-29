@@ -122,7 +122,6 @@ func (c *ControlPanel) ServeControlPanel() {
 				data, _ := json.Marshal(r)
 				c.SSEServer.SendMessage("/events/common", sse.SimpleMessage(string(data)))
 			case s := <-statsUpStream:
-				fmt.Println("Stats sent")
 				data, _ := json.Marshal(s)
 				c.SSEServer.SendMessage("/events/gstats", sse.SimpleMessage(string(data)))
 			}
