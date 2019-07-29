@@ -205,27 +205,40 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 		}
 	}
 
+	// Only check the top 10 graded, as anything over the 10 won't necessarily be in graded order.
+	//		Each grading pass changes the grades relative to the new avg. So the grades 'jiggle' as we
+	//		close in on 10.
+	if !sort.SliceIsSorted(winners[:10], func(i, j int) bool {
+		// i is before j when:
+		// grade is smaller (better)
+		//  or difficulty higher
+		return winners[i].Grade < winners[j].Grade || (winners[i].Grade == winners[j].Grade && winners[i].Difficulty > winners[j].Difficulty)
+	}) {
+		return fmt.Errorf("the graded results are not sorted")
+	}
+
 	if !sort.SliceIsSorted(sorted, func(i, j int) bool {
 		// i is before j when:
 		// grade is smaller (better)
 		//  or difficulty higher
-		return sorted[i].Grade < sorted[j].Grade || (sorted[i].Grade == sorted[j].Grade && sorted[i].Difficulty > sorted[j].Difficulty)
+		return sorted[i].Difficulty > sorted[j].Difficulty
 	}) {
-		return fmt.Errorf("the results are not sorted")
+		return fmt.Errorf("the difficulty results are not sorted")
 	}
 
 	if len(winners) < 10 {
 		return fmt.Errorf("there are fewer than 10 winners")
 	}
 
-	for i := range winners {
-		if winners[i] != sorted[i] {
-			return fmt.Errorf("winners and sorted are not the same at index %d", i)
-		}
-	}
+	// TODO: Why was this a test? The lists are sorted differently.
+	//for i := range winners {
+	//	if winners[i] != sorted[i] {
+	//		return fmt.Errorf("winners and sorted are not the same at index %d", i)
+	//	}
+	//}
 
 	dupe := make(map[string]bool)
-	for i, e := range sorted {
+	for i, e := range winners {
 		id := e.FactomDigitalID
 		if !exists[fmt.Sprintf("%s-%d", id, e.Difficulty)] {
 			return fmt.Errorf("unknown record showed up in sorted set: id=%s", id)
