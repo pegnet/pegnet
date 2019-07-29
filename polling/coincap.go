@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
@@ -54,16 +55,14 @@ var CoinCapIOCryptoAssetNames = map[string]string{
 func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 	var CoinCapResponse CoinCapResponse
 
-	ids := ""
-	sep := ""
+	var ids []string
 	// Need to append all the ids we care about for the call
 	for _, a := range common.CryptoAssets {
-		ids += sep + CoinCapIOCryptoAssetNames[a]
-		sep = ","
+		ids = append(ids, CoinCapIOCryptoAssetNames[a])
 	}
 
 	operation := func() error {
-		url := "http://api.coincap.io/v2/assets?ids=" + ids
+		url := "http://api.coincap.io/v2/assets?ids=" + strings.Join(ids, ",")
 		resp, err := http.Get(url)
 		if err != nil {
 			log.WithError(err).Warning("Failed to get response from CoinCap")
