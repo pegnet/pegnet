@@ -15,6 +15,7 @@ const (
 	ConfigCoordinatorListen   = "Miner.MiningCoordinatorPort"
 	ConfigCoordinatorLocation = "Miner.MiningCoordinatorHost"
 	ConfigCoinbaseAddress     = "Miner.CoinbaseAddress"
+	ConfigPegnetNetwork       = "Miner.Network"
 )
 
 func NewUnitTestConfig() *config.Config {

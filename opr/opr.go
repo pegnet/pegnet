@@ -271,7 +271,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	// Get the protocol chain to be used for pegnetMining records
 	protocol, err1 := c.String("Miner.Protocol")
-	network, err2 := c.String("Miner.Network")
+	network, err2 := common.LoadConfigNetwork(c)
 	opr.Network = network
 	opr.Protocol = protocol
 
@@ -290,7 +290,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	// PNT address.  Otherwise, give all miners the same PNT address because most
 	// users really doing mining will mostly be happen sending rewards to a single
 	// address.
-	if network == "TestNet" && minerNumber != 0 {
+	if network == common.TestNetwork && minerNumber != 0 {
 		fct := common.DebugFCTaddresses[minerNumber][1]
 		opr.CoinbaseAddress = fct
 	} else {
@@ -301,7 +301,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		}
 	}
 
-	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress)
+	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress)
 	if err != nil {
 		log.Errorf("invalid fct address in config file: %v", err)
 	}

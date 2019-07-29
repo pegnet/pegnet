@@ -131,13 +131,14 @@ var ebMutex sync.Mutex
 // GetEntryBlocks creates the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
 	ebMutex.Lock()
+	defer UpdateBurns(config)
 	defer ebMutex.Unlock()
 
-	network, err := config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(config)
 	check(err)
 	p, err := config.String("Miner.Protocol")
 	check(err)
-	n, err := config.String("Miner.Network")
+	n, err := common.LoadConfigNetwork(config)
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
@@ -176,7 +177,7 @@ func GetEntryBlocks(config *config.Config) {
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
-				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress); err != nil {
+				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress); err != nil {
 					continue
 				}
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry

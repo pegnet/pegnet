@@ -22,6 +22,7 @@ func NewCmdFlagProvider(cmd *cobra.Command) *CmdFlagProvider {
 }
 
 func (c *CmdFlagProvider) Load() (map[string]string, error) {
+	var err error
 	settings := map[string]string{}
 
 	miners, _ := c.cmd.Flags().GetInt("miners")
@@ -44,6 +45,14 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 	if addr != "" {
 		settings[common.ConfigCoordinatorListen] = addr
 		settings[common.ConfigCoordinatorListen] = addr
+	}
+
+	network, _ := c.cmd.Flags().GetString("network")
+	if network != "" {
+		settings[common.ConfigPegnetNetwork], err = common.GetNetwork(network)
+		if err != nil {
+			return settings, err
+		}
 	}
 
 	return settings, nil
