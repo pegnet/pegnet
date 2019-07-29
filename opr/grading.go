@@ -74,7 +74,6 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	var topDifficulty []*OraclePriceRecord
 	if len(list) > 50 {
 		topDifficulty = make([]*OraclePriceRecord, 50)
-		//topDifficulty = list[:50]
 		copy(topDifficulty[:50], list[:50])
 	} else {
 		topDifficulty = make([]*OraclePriceRecord, len(list))
