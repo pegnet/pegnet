@@ -42,8 +42,8 @@ const (
 	MainNetwork = "MainNet"
 	TestNetwork = "TestNet"
 
-	MainNetworkRCD = MainNetwork + "rcd"
-	TestNetworkRCD = TestNetwork + "rcd"
+	MainNetworkRCD = MainNetwork + "RCD"
+	TestNetworkRCD = TestNetwork + "RCD"
 )
 
 const (
