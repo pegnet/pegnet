@@ -60,25 +60,11 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 // GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
 // The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
 // sorted by difficulty.
-func GradeBlock(OPRlist []*OraclePriceRecord) (graded []*OraclePriceRecord) {
-
-	list := append([]*OraclePriceRecord,OPRlist...)
-	
+func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
 	list = RemoveDuplicateSubmissions(list)
 
 	if len(list) < 10 {
 		return nil, nil
-	}
-
-	// Make sure we have the difficulty calculated for all items in the list.
-	for _, v := range list {
-		v.Difficulty = v.ComputeDifficulty(v.Nonce)
-		f := binary.BigEndian.Uint64(v.SelfReportedDifficulty)
-		if f != v.Difficulty {
-			//This is a falsely reported difficulty. There is nothing we can
-			//really do. Maybe we should log.warn how many per block are 'malicious'?
-			log.Errorf("Diff mistmatch. Exp %d, found %d", v.Difficulty, f)
-		}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
@@ -87,9 +73,12 @@ func GradeBlock(OPRlist []*OraclePriceRecord) (graded []*OraclePriceRecord) {
 
 	var topDifficulty []*OraclePriceRecord
 	if len(list) > 50 {
-		topDifficulty = list[:50]
+		topDifficulty = make([]*OraclePriceRecord, 50)
+		//topDifficulty = list[:50]
+		copy(topDifficulty[:50], list[:50])
 	} else {
-		topDifficulty = list
+		topDifficulty = make([]*OraclePriceRecord, len(list))
+		copy(topDifficulty, list)
 	}
 	for i := len(topDifficulty); i >= 10; i-- {
 		avg := Avg(topDifficulty[:i])
@@ -97,8 +86,8 @@ func GradeBlock(OPRlist []*OraclePriceRecord) (graded []*OraclePriceRecord) {
 			CalculateGrade(avg, topDifficulty[j])
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > list[j].Difficulty })
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < list[j].Grade })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > topDifficulty[j].Difficulty })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < topDifficulty[j].Grade })
 	}
 	return topDifficulty, list // Return the top50 sorted by grade and then all sorted by difficulty
 }
@@ -228,6 +217,15 @@ func GetEntryBlocks(config *config.Config) {
 					continue
 				}
 				opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+
+				// TODO: Enforce this?
+				f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+				if f != opr.Difficulty {
+					//This is a falsely reported difficulty. There is nothing we can
+					//really do. Maybe we should log.warn how many per block are 'malicious'?
+					log.Errorf("Diff mistmatch. Exp %d, found %d", opr.Difficulty, f)
+				}
+
 			}
 			validOPRs = append(validOPRs, opr) // Add to my valid list if all the winners are right
 		}
