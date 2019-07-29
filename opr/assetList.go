@@ -20,6 +20,14 @@ func (o OraclePriceRecordAssetList) Contains(list []string) bool {
 	return true
 }
 
+func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {
+	if len(o) != len(list) {
+		return false // Different number of assets
+	}
+
+	return o.Contains(list) // Check every asset in list is in ours
+}
+
 // List returns the list of assets in the global order
 func (o OraclePriceRecordAssetList) List() []Token {
 	tokens := make([]Token, len(common.AllAssets))
