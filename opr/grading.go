@@ -134,11 +134,11 @@ func GetEntryBlocks(config *config.Config) {
 	defer UpdateBurns(config)
 	defer ebMutex.Unlock()
 
-	network, err := config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(config)
 	check(err)
 	p, err := config.String("Miner.Protocol")
 	check(err)
-	n, err := config.String("Miner.Network")
+	n, err := common.LoadConfigNetwork(config)
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))

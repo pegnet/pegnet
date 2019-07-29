@@ -12,7 +12,7 @@ var FctDbht int64
 
 func UpdateBurns(c *config.Config) {
 
-	network, err := c.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(c)
 	if err != nil {
 		panic("cannot find the network designation for updating burn txs")
 	}
@@ -49,10 +49,10 @@ func UpdateBurns(c *config.Config) {
 				if err != nil {
 					continue
 				}
-				if network == "MainNet" {
+				if network == common.MainNetwork {
 					_ = AddToBalance(pFct, int64(amt))
 
-				} else if network == "TestNet" {
+				} else if network == common.TestNetwork {
 					_ = AddToBalance(pFct, int64(amt)*1000)
 				}
 				//log.Printf("Updated address %s balance == %f\n", pFct, float64(GetBalance(pFct))/100000000)

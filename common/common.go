@@ -6,19 +6,44 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/zpatrick/go-config"
 )
 
 var PointMultiple float64 = 100000000
 
-type NetworkType int
+type NetworkType string
+
+// LoadConfigNetwork handles the different casings of `MainNet`.
+//	So: `mainnet`, `Mainnet`, and other stuff is all valid
+func LoadConfigNetwork(c *config.Config) (string, error) {
+	network, err := c.String(ConfigPegnetNetwork)
+	if err != nil {
+		return "", err
+	}
+	return GetNetwork(network)
+}
+
+func GetNetwork(network string) (string, error) {
+	switch strings.ToLower(network) {
+	case strings.ToLower(MainNetwork):
+		return MainNetwork, nil
+	case strings.ToLower(TestNetwork):
+		return TestNetwork, nil
+	default:
+		return "", fmt.Errorf("'%s' is not a valid network", network)
+	}
+}
 
 // Stats contains the hashrate and difficulty of the last mined block
 var Stats MiningStats
 
 const (
-	INVALID NetworkType = iota + 1
-	MAIN_NETWORK
-	TEST_NETWORK
+	MainNetwork = "MainNet"
+	TestNetwork = "TestNet"
+
+	MainNetworkRCD = MainNetwork + "rcd"
+	TestNetworkRCD = TestNetwork + "rcd"
 )
 
 const (
@@ -30,15 +55,15 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"MainNet":    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
-		"TestNet":    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
-		"MainNetRCD": "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
-		"TestNetRCD": "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
+		MainNetwork:    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
+		TestNetwork:    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
+		MainNetworkRCD: "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
+		TestNetworkRCD: "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
 	}
 )
 
 func PegnetBurnAddress(network string) string {
-	return BurnAddresses[strings.ToLower(network)]
+	return BurnAddresses[network]
 }
 
 var (

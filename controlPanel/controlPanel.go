@@ -38,7 +38,7 @@ func ServeControlPanel(config *config.Config, monitor common.IMonitor, statTrack
 	// Register with /events endpoint.
 	http.Handle("/events/", s)
 
-	network, err := config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(config)
 	if err != nil {
 		panic(fmt.Sprintf("Do not have a proper network in the config file: %v", err))
 	}

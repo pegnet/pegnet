@@ -47,7 +47,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	network, err := Config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(Config)
 	if err != nil {
 		panic(err)
 	}

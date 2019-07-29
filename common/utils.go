@@ -253,9 +253,9 @@ func ConvertFCTtoPegNetAsset(network string, asset string, userFAdr string) (Peg
 	}
 
 	switch network {
-	case "TestNet":
+	case TestNetwork:
 		PegNetAsset, err = ConvertRawToPegNetAsset("t"+asset, raw)
-	case "MainNet":
+	case MainNetwork:
 		if asset != "PNT" {
 			PegNetAsset, err = ConvertRawToPegNetAsset("p"+asset, raw)
 		} else {
