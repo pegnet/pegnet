@@ -165,7 +165,7 @@ var completionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "!EXPERIMENTAL! Generates bash completion scripts.",
 	Long: `!EXPERIMENTAL! Generates bash completion scripts. You can store something like this in your bashrc: 
-pncli completion > /tmp/ntc && source /tmp/ntc`,
+pegnet completion > /tmp/ntc && source /tmp/ntc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addGetEncodingCommands()
 		rootCmd.GenBashCompletion(os.Stdout)

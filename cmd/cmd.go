@@ -51,7 +51,7 @@ func init() {
 var getEncoding = &cobra.Command{
 	Use:     "getencoding <fct address> [encoding]",
 	Short:   "Takes a FCT address and returns an asset encoding (or all encodings) for that FCT address",
-	Example: "pegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
+	Example: "pegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
 	// TODO: Verify this functionality.
 	ValidArgs: ValidOwnedFCTAddresses(),
 
