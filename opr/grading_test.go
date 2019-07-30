@@ -5,6 +5,7 @@ package opr
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -688,4 +689,81 @@ func BenchmarkOPRHash(b *testing.B) {
 			}
 		}
 	})
+}
+
+type winner struct {
+	opr     *OraclePriceRecord
+	winners []*OraclePriceRecord
+}
+
+func genWinnerOPR(prev [10]string, winners []string) winner {
+	opr := new(OraclePriceRecord)
+	opr.WinPreviousOPR = prev
+
+	if winners == nil {
+		return winner{opr, nil}
+	}
+	win := make([]*OraclePriceRecord, len(winners))
+	for i := range win {
+		win[i] = new(OraclePriceRecord)
+		h, err := hex.DecodeString(winners[i])
+		if err != nil {
+			panic("developer error by putting invalid hex into list of winners: " + err.Error())
+		}
+		win[i].EntryHash = h
+	}
+	return winner{opr, win}
+}
+
+func TestVerifyWinners(t *testing.T) {
+	var empty [10]string
+
+	base := [10]string{
+		"0000000000000000",
+		"1111111111111111",
+		"2222222222222222",
+		"3333333333333333",
+		"4444444444444444",
+		"5555555555555555",
+		"6666666666666666",
+		"7777777777777777",
+		"8888888888888888",
+		"9999999999999999",
+	}
+
+	onewrong := base
+	onewrong[0] = "ffffffffffffffff"
+
+	oneempty := base
+	oneempty[3] = ""
+
+	wrongorder := base
+	wrongorder[3], wrongorder[8] = wrongorder[8], wrongorder[3]
+
+	oneshort := base
+	oneshort[9] = "999999999999999"
+	onelong := base
+	onelong[9] = "99999999999999999"
+
+	tests := []struct {
+		name string
+		args winner
+		want bool
+	}{
+		{"empty, empty", genWinnerOPR(empty, nil), true},
+		{"not empty, empty", genWinnerOPR(base, nil), false},
+		{"matching", genWinnerOPR(base, base[:]), true},
+		{"one wrong", genWinnerOPR(onewrong, base[:]), false},
+		{"one empty", genWinnerOPR(oneempty, base[:]), false},
+		{"wrong order", genWinnerOPR(wrongorder, base[:]), false},
+		{"one short", genWinnerOPR(oneshort, base[:]), false},
+		{"one long", genWinnerOPR(onelong, base[:]), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := VerifyWinners(tt.args.opr, tt.args.winners); got != tt.want {
+				t.Errorf("VerifyWinners() = %v, want %v", got, tt.want)
+			}
+		})
+	}
 }

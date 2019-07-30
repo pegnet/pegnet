@@ -207,27 +207,30 @@ func GetEntryBlocks(config *config.Config) {
 	// the next block we are going to process.
 	// Ignore opr blocks that don't get 10 winners.
 	for i := len(oprblocks) - 1; i >= 0; i-- { // Okay, go through these backwards
-		prevOPRBlock := GetPreviousOPRs(int32(oprblocks[i].Dbht)) // Get the previous OPRBlock
-		var validOPRs []*OraclePriceRecord                        // Collect the valid OPRPriceRecords here
-		for _, opr := range oprblocks[i].OPRs {                   // Go through this block
-			for j, eh := range opr.WinPreviousOPR { // Make sure the winning records are valid
-				if (prevOPRBlock == nil && eh != "") ||
-					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinPreviousOPR[j]) {
-					continue
-				}
-				opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		var validOPRs []*OraclePriceRecord // Collect the valid OPRPriceRecords here
 
-				// TODO: Enforce this?
-				f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
-				if f != opr.Difficulty {
-					//This is a falsely reported difficulty. There is nothing we can
-					//really do. Maybe we should log.warn how many per block are 'malicious'?
-					log.Errorf("Diff mistmatch. Exp %d, found %d", opr.Difficulty, f)
-				}
+		var previousWinners []*OraclePriceRecord
+		prevblock := GetPreviousOPRBlock(int32(oprblocks[i].Dbht))
+		if prevblock != nil {
+			previousWinners = prevblock.GradedOPRs
+		}
 
+		for _, opr := range oprblocks[i].OPRs { // Go through this block
+			if !VerifyWinners(opr, previousWinners) {
+				continue
 			}
+			opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+
+			f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+			if f != opr.Difficulty {
+				// TODO Maybe we should log.warn how many per block are 'malicious'?
+				log.Errorf("Diff mistmatch. Exp %d, found %d", opr.Difficulty, f)
+				continue
+			}
+
 			validOPRs = append(validOPRs, opr) // Add to my valid list if all the winners are right
 		}
+
 		if len(validOPRs) < 10 { // Make sure we have at least 10 valid OPRs,
 			continue // and leave if we don't.
 		}
@@ -265,13 +268,35 @@ func GetEntryBlocks(config *config.Config) {
 	}
 }
 
+// VerifyWinners takes an opr and compares its list of winners to the winners of previousHeight
+func VerifyWinners(opr *OraclePriceRecord, winners []*OraclePriceRecord) bool {
+	for i, w := range opr.WinPreviousOPR {
+		if winners == nil && w != "" {
+			return false
+		}
+		if len(winners) > 0 && w != hex.EncodeToString(winners[i].EntryHash[:8]) { // short hash
+			return false
+		}
+	}
+	return true
+}
+
+// GetPreviousOPRBlock returns the winners of the previous OPR block
+func GetPreviousOPRBlock(dbht int32) *OprBlock {
+	for i := len(OPRBlocks) - 1; i >= 0; i-- {
+		if OPRBlocks[i].Dbht < int64(dbht) {
+			return OPRBlocks[i]
+		}
+	}
+	return nil
+}
+
 // GetPreviousOPRs returns the OPRs in highest-known block less than dbht.
 // Returns nil if the dbht is the first dbht in the chain.
 func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
-	for i := len(OPRBlocks) - 1; i >= 0; i-- {
-		if OPRBlocks[i].Dbht < int64(dbht) {
-			return OPRBlocks[i].OPRs
-		}
+	block := GetPreviousOPRBlock(dbht)
+	if block != nil {
+		return block.OPRs
 	}
 	return nil
 }
