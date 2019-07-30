@@ -52,7 +52,7 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 	var request PostRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		respond(w, PostResponse{Err: NewJSONDecodingError()})
+		Respond(w, PostResponse{Err: NewJSONDecodingError()})
 		return
 	}
 	log.WithFields(log.Fields{
@@ -122,14 +122,14 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response = PostResponse{Res: result}
 	}
-	respond(w, response)
+	Respond(w, response)
 }
 
-func respond(w http.ResponseWriter, response PostResponse) {
+func Respond(w http.ResponseWriter, response PostResponse) {
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.WithError(err).Error("Failed to write response JSON")
 		// Potential infinite recursion, but the error message should always encode properly:
-		respond(w, PostResponse{Err: NewInternalError()})
+		Respond(w, PostResponse{Err: NewInternalError()})
 	}
 }

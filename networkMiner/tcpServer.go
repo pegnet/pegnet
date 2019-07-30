@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"math/rand"
 	"net"
+	"sync"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -23,7 +24,12 @@ type TCPClient struct {
 	// Miner related fields
 	//PegnetMinerFields
 
-	id      int // Random
+	id int // Random
+
+	// Tags for stats
+	tagLock sync.Mutex
+	tags    map[string]string
+
 	conn    net.Conn
 	encoder *gob.Encoder
 	decoder *gob.Decoder
@@ -36,6 +42,7 @@ func NewTCPClient(conn net.Conn, s *TCPServer) *TCPClient {
 	m.Server = s
 	m.init()
 	m.id = rand.Int()
+	m.tags = make(map[string]string)
 
 	return m
 }

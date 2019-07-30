@@ -12,6 +12,16 @@
     });
   }
 
+  // GET Requests tot he CP
+  var request_controlpanel = function(data, cb) {
+    $.ajax({
+      url: 'http://localhost:8080/cp',
+      type: 'GET',
+      dataType: 'json',
+      success: cb
+    });
+  }
+
   var request_oprs_by_height = function(height, cb) {
     request_api({'method': 'oprs-by-height', 'params': {'height': height}}, cb);
   }
@@ -63,14 +73,30 @@
   
     };
 
-
-    //data: "auth_core.efficiency", render: function (data, type, row) {
-    //                 return (data/100) + "%"
-    //             }
-
-
     // Statistics table, only will show things when you are on the page? But better than nothing.
     stats = $('#mining-statistics').DataTable({
+      order: [[ 1, "desc" ]],
+      ajax:{
+        url: "http://localhost:8080/cp/miningstats",
+        dataSrc: function(d) {
+          if(d.error != null) {
+            console.log(d.error)
+            return []
+          }
+          let stats = []
+          let result = d.result
+          for(var i = 0; i < result.length; i++) {
+            var ks = Object.keys(result[i].allgroupstats)
+            for(var k = 0; k < ks.length; k++) {
+                  stats.push(result[i].allgroupstats[ks[k]])
+            }
+          }
+          return stats
+      }
+      },
+      columnDefs: [
+          // { width: '40%', targets: 0 }
+      ],
       columns: [
         {title: "Block Height", data: "blockheight"},
         {title: "ID", data: "id"},
@@ -83,19 +109,50 @@
           }
         },
         {title:"Hash Power", data:"miners", render: function (data, type, row) {
-            let k = Object.keys(data)
+          let k = Object.keys(data)
 
-            let totalDur = moment.duration()
+          let totalDur = moment.duration()
+          let acc = 0
+          for(let i = 0; i < k.length; i ++) {
+            // TODO: follow format 2019-07-27T19:40:23.065954969-05:00
+            let start = moment(data[k[i]].start)
+            let stop = moment(data[k[i]].stop)
+            let dur = moment.duration(stop.diff(start))
+            acc = acc + (data[k[i]].totalhashes / dur.asSeconds())
+            totalDur.add(dur)
+          }
+
+          return `${acc.toFixed(2).toLocaleString()} h/s`
+          }
+        },
+        {title:"Hash Power Per Miner", data:"miners", render: function (data, type, row) {
+            let k = Object.keys(data);
+
+            let totalDur = moment.duration();
             let acc = 0
             for(let i = 0; i < k.length; i ++) {
               // TODO: follow format 2019-07-27T19:40:23.065954969-05:00
-              let start = moment(data[k[i]].start)
-              let stop = moment(data[k[i]].stop)
-              let dur = moment.duration(stop.diff(start))
-              acc = acc + (data[k[i]].totalhashes / dur.asSeconds())
+              let start = moment(data[k[i]].start);
+              let stop = moment(data[k[i]].stop);
+              let dur = moment.duration(stop.diff(start));
+              acc = acc + dur.asSeconds() * (data[k[i]].totalhashes / dur.asSeconds());
               totalDur.add(dur)
             }
+            acc = acc/totalDur.asSeconds();
             return `${acc.toFixed(2).toLocaleString()} h/s`
+          }
+        },
+        {title: "Best Difficulty", data: "miners", render:function(data, type, row) {
+            let best = 0;
+            let k = Object.keys(data);
+            console.log(data)
+            for(let i = 0; i < k.length; i ++) {
+              let m = data[k[i]];
+              if(m.bestdifficulty > best) {
+                best = m.bestdifficulty;
+              }
+              return best.toString(16);
+            }
           }
         }
       ],
@@ -104,9 +161,9 @@
 
     statsEvents = new EventSource('/events/gstats');
     statsEvents.onmessage = function(event) {
-      console.log(event)
+      console.log(event);
       var data = JSON.parse(event.data);
-      console.log(data)
+      console.log(data);
 
       stats.rows.add([data]).draw()
     };

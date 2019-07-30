@@ -30,8 +30,8 @@ type GlobalStatTracker struct {
 
 type StatisticBucket struct {
 	// A statistic collection of each group
-	GroupStats  map[string]*GroupMinerStats
-	BlockHeight int
+	GroupStats  map[string]*GroupMinerStats `json:"allgroupstats"`
+	BlockHeight int                         `json:"blockheight"`
 }
 
 func NewGlobalStatTracker() *GlobalStatTracker {

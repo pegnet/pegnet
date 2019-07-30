@@ -19,7 +19,8 @@ import (
 type MiningClient struct {
 	config *config.Config
 
-	Host string // Coordinator Location
+	Host            string // Coordinator Location
+	FactomDigitalID string
 
 	Monitor  *common.FakeMonitor
 	Grader   *opr.FakeGrader
@@ -49,6 +50,13 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	s.Grader = opr.NewFakeGrader()
 	s.OPRMaker = mining.NewBlockingOPRMaker()
 
+	// We need to put our data in it
+	id, err := config.String("Miner.IdentityChain")
+	if err != nil {
+		panic(err)
+	}
+	s.FactomDigitalID = id
+
 	return s
 }
 
@@ -64,6 +72,17 @@ func (c *MiningClient) Connect() error {
 	log.Infof("Connected to %s", c.Host)
 	c.conn = conn
 	c.initCoders()
+
+	// Send over our tags
+	err = c.encoder.Encode(&NetworkMessage{NetworkCommand: AddTag, Data: Tag{
+		Key:   "id",
+		Value: c.FactomDigitalID,
+	}})
+	if err != nil {
+		log.WithField("evt", "entry").WithError(err).Error("failed to send stats")
+	} else {
+		log.WithField("evt", "entry").Debugf("sent entry")
+	}
 	return nil
 }
 

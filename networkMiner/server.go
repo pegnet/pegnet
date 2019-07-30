@@ -26,6 +26,7 @@ const (
 	ConstructedOPR
 	FactomEntry
 	MiningStatistics
+	AddTag
 )
 
 // Idk why the factom.entry does not work
@@ -35,6 +36,11 @@ type GobbedEntry struct {
 	Content []byte   `json:"content"`
 }
 
+type Tag struct {
+	Key   string
+	Value string
+}
+
 func init() {
 	gob.Register(common.MonitorEvent{})
 	gob.Register(opr.OPRs{})
@@ -42,6 +48,7 @@ func init() {
 	gob.Register([][]byte{})
 	gob.Register(opr.OraclePriceRecord{})
 	gob.Register(mining.GroupMinerStats{})
+	gob.Register(Tag{})
 }
 
 // MiningServer is the coordinator to emit events to anyone listening
@@ -155,6 +162,16 @@ func (c *MiningServer) ForwardMonitorEvents() {
 // onNewMessage is when the client messages us.
 func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 	switch message.NetworkCommand {
+	case AddTag:
+		b, ok := message.Data.(Tag)
+		if !ok {
+			log.WithFields(n.Fields()).Errorf("client did not send a proper tag")
+			return
+		}
+
+		c.tagLock.Lock()
+		c.tags[b.Key] = b.Value
+		c.tagLock.Unlock()
 	case Pong:
 	case Ping:
 		err := c.SendNetworkCommand(&NetworkMessage{NetworkCommand: Pong})
@@ -195,6 +212,12 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 		// Modify the stats so we know it came from us
 		g.ID = fmt.Sprintf("Net-%d", c.id)
 		g.Tags["src"] = c.conn.RemoteAddr().String()
+
+		c.tagLock.Lock()
+		for k, v := range c.tags {
+			g.Tags[k] = v
+		}
+		c.tagLock.Unlock()
 
 		n.Stats.MiningStatsChannel <- &g
 	default:

@@ -25,6 +25,14 @@ type ControlPanel struct {
 	SSEServer *sse.Server
 }
 
+func corsHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Our middleware logic goes here...
+		next.ServeHTTP(w, r)
+	})
+}
+
 func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker *mining.GlobalStatTracker) *ControlPanel {
 	c := new(ControlPanel)
 	c.Config = config
@@ -45,7 +53,9 @@ func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker
 	// Register with /events endpoint.
 	mux.Handle("/events/", c.SSEServer)
 	mux.Handle("/", http.FileServer(http.Dir("./controlPanel/static")))
-	c.Server.Handler = mux
+	// GET requests for the CP
+	mux.HandleFunc("/cp/miningstats", c.HandleControlPanelRequest)
+	c.Server.Handler = corsHeader(mux)
 
 	return c
 }
