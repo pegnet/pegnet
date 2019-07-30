@@ -91,7 +91,7 @@ func (c *ControlPanel) ServeControlPanel() {
 	alert := c.Monitor.NewListener()
 	statsUpStream := c.Statistics.GetUpstream("control-panel")
 
-	network, err := c.Config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(config)
 	if err != nil {
 		panic(fmt.Sprintf("Do not have a proper network in the config file: %v", err))
 	}
@@ -108,7 +108,7 @@ func (c *ControlPanel) ServeControlPanel() {
 			CoinbaseAddress = str
 		}
 
-		CoinbasePNTAddress, err := common.ConvertFCTtoPNT(network, CoinbaseAddress)
+		CoinbasePNTAddress, err := common.ConvertFCTtoPegNetAsset(network, "PNT", CoinbaseAddress)
 		if err != nil {
 			panic("no valid coinbase address in the config file")
 		}
@@ -117,6 +117,7 @@ func (c *ControlPanel) ServeControlPanel() {
 		for {
 			select {
 			case e := <-alert:
+
 				hr := common.Stats.GetHashRate()
 				diff := common.Stats.Difficulty
 				if hr > 0 && hr != CurrentHashRate {

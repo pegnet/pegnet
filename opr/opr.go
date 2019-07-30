@@ -10,15 +10,17 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
 	"github.com/dustin/go-humanize"
-	"github.com/pegnet/LXRHash"
+	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
@@ -85,7 +87,12 @@ var lxInitializer sync.Once
 func InitLX() {
 	lxInitializer.Do(func() {
 		// This code will only be executed ONCE, no matter how often you call it
-		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+		if size, err := strconv.Atoi(os.Getenv("LXRBITSIZE")); err == nil && size >= 8 && size <= 30 {
+			LX.Init(0xfafaececfafaecec, uint64(size), 256, 5)
+		} else {
+			LX.Init(0xfafaececfafaecec, 30, 256, 5)
+		}
+
 	})
 }
 
@@ -116,18 +123,18 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 	if depth > 5 || path == "." {
 		// Recursive base case
 		// If depth > 5 probably no pegnet dir exists
-		return filepath.Join(path, acc)
+		return filepath.ToSlash(filepath.Join(path, acc))
 	}
 	dir, base := filepath.Split(path)
 	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
-		return filepath.Join(base, acc)
+		return filepath.ToSlash(filepath.Join(base, acc))
 	}
 	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
-func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
+func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
@@ -136,8 +143,12 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 		}
 	}
 
+	if int64(opr.Dbht) != dbht {
+		return false // DBHeight is not reported correctly
+	}
+
 	// Validate all the Assets exists
-	return opr.Assets.Contains(common.AllAssets)
+	return opr.Assets.ContainsExactly(common.AllAssets)
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
@@ -271,7 +282,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	// Get the protocol chain to be used for pegnetMining records
 	protocol, err1 := c.String("Miner.Protocol")
-	network, err2 := c.String("Miner.Network")
+	network, err2 := common.LoadConfigNetwork(c)
 	opr.Network = network
 	opr.Protocol = protocol
 
@@ -290,7 +301,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	// PNT address.  Otherwise, give all miners the same PNT address because most
 	// users really doing mining will mostly be happen sending rewards to a single
 	// address.
-	if network == "TestNet" && minerNumber != 0 {
+	if network == common.TestNetwork && minerNumber != 0 {
 		fct := common.DebugFCTaddresses[minerNumber][1]
 		opr.CoinbaseAddress = fct
 	} else {
@@ -301,7 +312,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		}
 	}
 
-	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress)
+	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress)
 	if err != nil {
 		log.Errorf("invalid fct address in config file: %v", err)
 	}

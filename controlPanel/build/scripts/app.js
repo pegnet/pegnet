@@ -1,22 +1,11 @@
 (function(){
 
 
-
   var request_api = function(data, cb) {
     $.ajax({
       url: 'http://localhost:8099/v1',
       data: JSON.stringify(data),
       type: 'POST',
-      dataType: 'json',
-      success: cb
-    });
-  }
-
-  // GET Requests tot he CP
-  var request_controlpanel = function(data, cb) {
-    $.ajax({
-      url: 'http://localhost:8080/cp',
-      type: 'GET',
       dataType: 'json',
       success: cb
     });
@@ -54,7 +43,7 @@
           $tr.attr('data-addr', addr);
           $('.address-balance-table-js tbody').append($tr);
         }
-        $tr.find('td').eq(1).text(formatNumber(balance));
+        $tr.find('td').eq(1).text(balance/1e8);
 
         $('.address-balance-table-js').removeClass('d-none');
         $("#tpnt_address").val("");
@@ -69,7 +58,7 @@
       $("#current_minute").val(data.minute);
       $("#hash_rate").val(data.hashRate);
       $("#difficulty").val(data.difficulty);
-      $("#balance").val(formatNumber(data.balance));
+      $("#balance").val(data.balance/1e8);
   
     };
 
@@ -171,11 +160,4 @@
 
   });
 
-
 })();
-
-// For debugging
-var stats
-
-var d = JSON.parse(`{"miners":{"0":{"ID":0,"TotalHashes":56151,"BestDifficulty":18446695452556821197,"Start":"2019-07-27T19:05:08.192391284-05:00","Stop":"2019-07-27T19:05:20.153448502-05:00"},"1":{"ID":1,"TotalHashes":59196,"BestDifficulty":18446725004250009971,"Start":"2019-07-27T19:05:08.192399764-05:00","Stop":"2019-07-27T19:05:20.153438987-05:00"},"10":{"ID":10,"TotalHashes":56721,"BestDifficulty":18446360745704785966,"Start":"2019-07-27T19:05:08.240455129-05:00","Stop":"2019-07-27T19:05:20.15344892-05:00"},"11":{"ID":11,"TotalHashes":57648,"BestDifficulty":18446705486092468714,"Start":"2019-07-27T19:05:08.192427259-05:00","Stop":"2019-07-27T19:05:20.153385731-05:00"},"12":{"ID":12,"TotalHashes":59253,"BestDifficulty":18446600880769865823,"Start":"2019-07-27T19:05:08.208410791-05:00","Stop":"2019-07-27T19:05:20.153510572-05:00"},"13":{"ID":13,"TotalHashes":56175,"BestDifficulty":18446534717622478873,"Start":"2019-07-27T19:05:08.220329018-05:00","Stop":"2019-07-27T19:05:20.153474816-05:00"},"14":{"ID":14,"TotalHashes":56374,"BestDifficulty":18446380315606909278,"Start":"2019-07-27T19:05:08.192390329-05:00","Stop":"2019-07-27T19:05:20.153448888-05:00"},"2":{"ID":2,"TotalHashes":57186,"BestDifficulty":18446445259243670435,"Start":"2019-07-27T19:05:08.19238835-05:00","Stop":"2019-07-27T19:05:20.1535267-05:00"},"3":{"ID":3,"TotalHashes":55307,"BestDifficulty":18446664771463705622,"Start":"2019-07-27T19:05:08.220332355-05:00","Stop":"2019-07-27T19:05:20.153380705-05:00"},"4":{"ID":4,"TotalHashes":56038,"BestDifficulty":18446444764336979663,"Start":"2019-07-27T19:05:08.240456582-05:00","Stop":"2019-07-27T19:05:20.153470553-05:00"},"5":{"ID":5,"TotalHashes":55081,"BestDifficulty":18446569131831191410,"Start":"2019-07-27T19:05:08.192420358-05:00","Stop":"2019-07-27T19:05:20.153438799-05:00"},"6":{"ID":6,"TotalHashes":57126,"BestDifficulty":18446412691676508188,"Start":"2019-07-27T19:05:08.192433052-05:00","Stop":"2019-07-27T19:05:20.153502232-05:00"},"7":{"ID":7,"TotalHashes":58637,"BestDifficulty":18446107566532885558,"Start":"2019-07-27T19:05:08.220331556-05:00","Stop":"2019-07-27T19:05:20.153632793-05:00"},"8":{"ID":8,"TotalHashes":58392,"BestDifficulty":18446637020880195285,"Start":"2019-07-27T19:05:08.19240877-05:00","Stop":"2019-07-27T19:05:20.153531922-05:00"},"9":{"ID":9,"TotalHashes":57932,"BestDifficulty":18445246488631056733,"Start":"2019-07-27T19:05:08.220333021-05:00","Stop":"2019-07-27T19:05:20.153531206-05:00"}},"blockheight":828,"id":"Net-5577006791947779410","tags":{"src":"127.0.0.1:46444"}}
-`)

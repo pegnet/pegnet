@@ -51,7 +51,7 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 	for i, v := range tokens {
 		if avg[i] > 0 {
 			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
-			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the squares of the differences
+			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the square of the square of the differences
 		}
 	}
 	return opr.Grade
@@ -61,22 +61,10 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 // The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
 // sorted by difficulty.
 func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
-
-	list = RemoveDuplicateMiningIDs(list)
+	list = RemoveDuplicateSubmissions(list)
 
 	if len(list) < 10 {
 		return nil, nil
-	}
-
-	// Make sure we have the difficulty calculated for all items in the list.
-	for _, v := range list {
-		v.Difficulty = v.ComputeDifficulty(v.Nonce)
-		f := binary.BigEndian.Uint64(v.SelfReportedDifficulty)
-		if f != v.Difficulty {
-			//This is a falsely reported difficulty. There is nothing we can
-			//really do. Maybe we should log.warn how many per block are 'malicious'?
-			log.Errorf("Diff mistmatch. Exp %d, found %d", v.Difficulty, f)
-		}
 	}
 
 	// Throw away all the entries but the top 50 on pure difficulty alone.
@@ -85,9 +73,11 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 
 	var topDifficulty []*OraclePriceRecord
 	if len(list) > 50 {
-		topDifficulty = list[:50]
+		topDifficulty = make([]*OraclePriceRecord, 50)
+		copy(topDifficulty[:50], list[:50])
 	} else {
-		topDifficulty = list
+		topDifficulty = make([]*OraclePriceRecord, len(list))
+		copy(topDifficulty, list)
 	}
 	for i := len(topDifficulty); i >= 10; i-- {
 		avg := Avg(topDifficulty[:i])
@@ -95,33 +85,23 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 			CalculateGrade(avg, topDifficulty[j])
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > list[j].Difficulty })
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < list[j].Grade })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > topDifficulty[j].Difficulty })
+		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < topDifficulty[j].Grade })
 	}
 	return topDifficulty, list // Return the top50 sorted by grade and then all sorted by difficulty
 }
 
-// RemoveDuplicateMiningIDs runs a two-pass filter on the list to remove any duplicate entries.
-// The entry with higher difficulty is kept.
-// Two passes are used to avoid slice deletion logic
-func RemoveDuplicateMiningIDs(list []*OraclePriceRecord) (nlist []*OraclePriceRecord) {
-	// miner id => slice index of highest difficulty entry
-	highest := make(map[string]int)
-
-	for i, v := range list {
-		// Nonce + OPRHash == unique record
+// RemoveDuplicateSubmissions filters out any duplicate OPR (same nonce and OPRHash)
+func RemoveDuplicateSubmissions(list []*OraclePriceRecord) []*OraclePriceRecord {
+	// nonce+oprhash => exists
+	added := make(map[string]bool)
+	nlist := make([]*OraclePriceRecord, 0)
+	for _, v := range list {
 		id := string(append(v.Nonce, v.OPRHash...))
-		if dupe, ok := highest[id]; ok { // look for duplicates
-			if v.Difficulty <= list[dupe].Difficulty { // less then, we ignore
-				continue
-			}
+		if !added[id] {
+			nlist = append(nlist, v)
+			added[id] = true
 		}
-		// Either the first record found for the identity,or a more difficult record... keep it
-		highest[id] = i
-	}
-	// Take all the best records, stick them in the list and return.
-	for _, idx := range highest {
-		nlist = append(nlist, list[idx])
 	}
 	return nlist
 }
@@ -141,13 +121,14 @@ var ebMutex sync.Mutex
 // GetEntryBlocks creates the OPR Records at a given dbht
 func GetEntryBlocks(config *config.Config) {
 	ebMutex.Lock()
+	defer UpdateBurns(config)
 	defer ebMutex.Unlock()
 
-	network, err := config.String("Miner.Network")
+	network, err := common.LoadConfigNetwork(config)
 	check(err)
 	p, err := config.String("Miner.Protocol")
 	check(err)
-	n, err := config.String("Miner.Network")
+	n, err := common.LoadConfigNetwork(config)
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
@@ -186,11 +167,11 @@ func GetEntryBlocks(config *config.Config) {
 				if err := json.Unmarshal(entry.Content, opr); err != nil {
 					continue // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 				}
-				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress); err != nil {
+				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress); err != nil {
 					continue
 				}
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry
-				if !opr.Validate(config) {
+				if !opr.Validate(config, oprblk.Dbht) {
 					continue
 				}
 				// Keep this entry
@@ -226,18 +207,30 @@ func GetEntryBlocks(config *config.Config) {
 	// the next block we are going to process.
 	// Ignore opr blocks that don't get 10 winners.
 	for i := len(oprblocks) - 1; i >= 0; i-- { // Okay, go through these backwards
-		prevOPRBlock := GetPreviousOPRs(int32(oprblocks[i].Dbht)) // Get the previous OPRBlock
-		var validOPRs []*OraclePriceRecord                        // Collect the valid OPRPriceRecords here
-		for _, opr := range oprblocks[i].OPRs {                   // Go through this block
-			for j, eh := range opr.WinPreviousOPR { // Make sure the winning records are valid
-				if (prevOPRBlock == nil && eh != "") ||
-					(prevOPRBlock != nil && eh != prevOPRBlock[0].WinPreviousOPR[j]) {
-					continue
-				}
-				opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		var validOPRs []*OraclePriceRecord // Collect the valid OPRPriceRecords here
+
+		var previousWinners []*OraclePriceRecord
+		prevblock := GetPreviousOPRBlock(int32(oprblocks[i].Dbht))
+		if prevblock != nil {
+			previousWinners = prevblock.GradedOPRs
+		}
+
+		for _, opr := range oprblocks[i].OPRs { // Go through this block
+			if !VerifyWinners(opr, previousWinners) {
+				continue
 			}
+			opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+
+			f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+			if f != opr.Difficulty {
+				// TODO Maybe we should log.warn how many per block are 'malicious'?
+				log.Errorf("Diff mistmatch. Exp %d, found %d", opr.Difficulty, f)
+				continue
+			}
+
 			validOPRs = append(validOPRs, opr) // Add to my valid list if all the winners are right
 		}
+
 		if len(validOPRs) < 10 { // Make sure we have at least 10 valid OPRs,
 			continue // and leave if we don't.
 		}
@@ -250,7 +243,7 @@ func GetEntryBlocks(config *config.Config) {
 		for place, winner := range gradedOPRs[:10] {
 			reward := GetRewardFromPlace(place)
 			if reward > 0 {
-				err := AddToBalance(winner.CoinbasePNTAddress, 800)
+				err := AddToBalance(winner.CoinbasePNTAddress, reward)
 				if err != nil {
 					log.WithError(err).Fatal("Failed to update balance")
 				}
@@ -275,27 +268,49 @@ func GetEntryBlocks(config *config.Config) {
 	}
 }
 
-// GetPreviousOPRs returns the OPRs in highest-known block less than dbht.
-// Returns nil if the dbht is the first dbht in the chain.
-func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
+// VerifyWinners takes an opr and compares its list of winners to the winners of previousHeight
+func VerifyWinners(opr *OraclePriceRecord, winners []*OraclePriceRecord) bool {
+	for i, w := range opr.WinPreviousOPR {
+		if winners == nil && w != "" {
+			return false
+		}
+		if len(winners) > 0 && w != hex.EncodeToString(winners[i].EntryHash[:8]) { // short hash
+			return false
+		}
+	}
+	return true
+}
+
+// GetPreviousOPRBlock returns the winners of the previous OPR block
+func GetPreviousOPRBlock(dbht int32) *OprBlock {
 	for i := len(OPRBlocks) - 1; i >= 0; i-- {
 		if OPRBlocks[i].Dbht < int64(dbht) {
-			return OPRBlocks[i].OPRs
+			return OPRBlocks[i]
 		}
 	}
 	return nil
 }
 
-func GetRewardFromPlace(place int) int {
+// GetPreviousOPRs returns the OPRs in highest-known block less than dbht.
+// Returns nil if the dbht is the first dbht in the chain.
+func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
+	block := GetPreviousOPRBlock(dbht)
+	if block != nil {
+		return block.OPRs
+	}
+	return nil
+}
+
+func GetRewardFromPlace(place int) int64 {
 	if place >= 10 {
 		return 0 // There's no participation trophy. Return zero.
 	}
 	switch place {
 	case 0:
-		return 800 // The Big Winner
+		return 800 * 1e8 // The Big Winner
 	case 1:
-		return 600 // Second Place
+		return 600 * 1e8 // Second Place
 	default:
-		return 450 // Consolation Prize
+		return 450 * 1e8 // Consolation Prize
 	}
 }

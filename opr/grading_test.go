@@ -5,12 +5,15 @@ package opr
 
 import (
 	"encoding/binary"
+	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"sort"
 	"strconv"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -18,17 +21,12 @@ import (
 
 // "dupe opr". hijacks OPRChainID to store the full name to use while testing
 // the ID is the first character of the name
-func dopr(name string, difficulty uint64) *OraclePriceRecord {
+func dopr(oprhash, nonce, index string) *OraclePriceRecord {
 	//split := strings.Split("name", "")
 	o := NewOraclePriceRecord()
-	o.FactomDigitalID = string(name[0])
-	o.Difficulty = difficulty
-	o.OPRChainID = name
-
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, difficulty)
-	o.Nonce = []byte(string(name[0]))
-	o.SelfReportedDifficulty = buf
+	o.OPRHash = []byte(oprhash)
+	o.Nonce = []byte(nonce)
+	o.OPRChainID = index // NOT A REAL VALUE, only used to track indices for unit test
 	return o
 }
 
@@ -38,15 +36,16 @@ func dupeCheck(got []*OraclePriceRecord, want []string) error {
 	}
 
 	for i, o := range got {
-		if o.OPRChainID != want[i] {
-			return fmt.Errorf("wrong entry at position %d. got = %s, want = %s", i, o.OPRChainID, want[i])
+		name := string(o.OPRHash) + string(o.Nonce) + o.OPRChainID
+		if name != want[i] {
+			return fmt.Errorf("pos %d. got = %s, want = %s", i, name, want[i])
 		}
 	}
 
 	return nil
 }
 
-func TestRemoveDuplicateMiningIDs(t *testing.T) {
+func TestRemoveDuplicateSubmissions(t *testing.T) {
 	// dopr() uses the FIRST CHARACTER as id, and the full name as identifier
 	// eg "a1" and "a2" are duplicate entries
 	type args []*OraclePriceRecord
@@ -55,25 +54,20 @@ func TestRemoveDuplicateMiningIDs(t *testing.T) {
 		args args
 		want []string
 	}{
-		{"middle test, keep last", args{dopr("a1", 1), dopr("b1", 50), dopr("a2", 2)}, []string{"a2", "b1"}},
 		{"no input", nil, []string{}},
 		{"empty input", args{}, []string{}},
-		{"one input", args{dopr("a1", 1)}, []string{"a1"}},
-		{"two normal inputs", args{dopr("a1", 1), dopr("b1", 1)}, []string{"a1", "b1"}},
-		{"dupe, equal copy", args{dopr("a1", 1), dopr("a2", 1)}, []string{"a1"}},
-		{"dupe, higher copy", args{dopr("a1", 1), dopr("a2", 2)}, []string{"a2"}},
-		{"dupe, lower copy", args{dopr("a1", 2), dopr("a2", 1)}, []string{"a1"}},
-		{"many dupes", args{dopr("a1", 2), dopr("a2", 1), dopr("a3", 5), dopr("a4", 0)}, []string{"a3"}},
-		{"mixed 1", args{dopr("b1", 50), dopr("a1", 2), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"middle test, keep first", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1)}, []string{"a1", "b1"}},
-		{"two dupes", args{dopr("a1", 2), dopr("b1", 50), dopr("a2", 1), dopr("b2", 100)}, []string{"a1", "b2"}},
+		{"one input", args{dopr("a", "1", "0")}, []string{"a10"}},
+		{"two normal inputs", args{dopr("a", "1", "0"), dopr("b", "1", "0")}, []string{"a10", "b10"}},
+		{"1 dupe", args{dopr("a", "1", "0"), dopr("a", "1", "1")}, []string{"a10"}},
+		{"1 dupe, 1 normal", args{dopr("a", "1", "0"), dopr("a", "1", "1"), dopr("b", "1", "0")}, []string{"a10", "b10"}},
+		{"double dupes", args{dopr("a", "1", "0"), dopr("a", "1", "1"), dopr("a", "2", "0"), dopr("a", "2", "1")}, []string{"a10", "a20"}},
+		{"3 dupes", args{dopr("a", "1", "0"), dopr("a", "1", "1"), dopr("a", "1", "2"), dopr("a", "2", "0")}, []string{"a10", "a20"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := RemoveDuplicateMiningIDs(tt.args)
-			sort.Slice(got, func(i, j int) bool { return got[i].FactomDigitalID[0] < got[j].FactomDigitalID[0] })
+			got := RemoveDuplicateSubmissions(tt.args)
 			if err := dupeCheck(got, tt.want); err != nil {
-				t.Errorf("RemoveDuplicateMiningIDs() = %v", err)
+				t.Errorf("RemoveDuplicateSubmissions() = %v", err)
 			}
 		})
 	}
@@ -212,27 +206,40 @@ func gradeCompare(ids []string, entries, winners, sorted []*OraclePriceRecord) e
 		}
 	}
 
+	// Only check the top 10 graded, as anything over the 10 won't necessarily be in graded order.
+	//		Each grading pass changes the grades relative to the new avg. So the grades 'jiggle' as we
+	//		close in on 10.
+	if !sort.SliceIsSorted(winners[:10], func(i, j int) bool {
+		// i is before j when:
+		// grade is smaller (better)
+		//  or difficulty higher
+		return winners[i].Grade < winners[j].Grade || (winners[i].Grade == winners[j].Grade && winners[i].Difficulty > winners[j].Difficulty)
+	}) {
+		return fmt.Errorf("the graded results are not sorted")
+	}
+
 	if !sort.SliceIsSorted(sorted, func(i, j int) bool {
 		// i is before j when:
 		// grade is smaller (better)
 		//  or difficulty higher
-		return sorted[i].Grade < sorted[j].Grade || (sorted[i].Grade == sorted[j].Grade && sorted[i].Difficulty > sorted[j].Difficulty)
+		return sorted[i].Difficulty > sorted[j].Difficulty
 	}) {
-		return fmt.Errorf("the results are not sorted")
+		return fmt.Errorf("the difficulty results are not sorted")
 	}
 
 	if len(winners) < 10 {
 		return fmt.Errorf("there are fewer than 10 winners")
 	}
 
-	for i := range winners {
-		if winners[i] != sorted[i] {
-			return fmt.Errorf("winners and sorted are not the same at index %d", i)
-		}
-	}
+	// TODO: Why was this a test? The lists are sorted differently.
+	//for i := range winners {
+	//	if winners[i] != sorted[i] {
+	//		return fmt.Errorf("winners and sorted are not the same at index %d", i)
+	//	}
+	//}
 
 	dupe := make(map[string]bool)
-	for i, e := range sorted {
+	for i, e := range winners {
 		id := e.FactomDigitalID
 		if !exists[fmt.Sprintf("%s-%d", id, e.Difficulty)] {
 			return fmt.Errorf("unknown record showed up in sorted set: id=%s", id)
@@ -559,6 +566,203 @@ func TestGradeBlock(t *testing.T) {
 			winners, sorted := GradeBlock(tt.args)
 			if err := gradeCompare(tt.sorted, tt.args, winners, sorted); err != nil {
 				t.Error(err)
+			}
+		})
+	}
+}
+
+// for BENCHMARKING grading, it's not important what the data is, we just need data
+// we need ASSETS, OPRHASH, DIFFICULTY, and SELFREPORTEDDIFFICULTY
+func makeBenchmarkOPR() *OraclePriceRecord {
+	o := new(OraclePriceRecord)
+	o.Assets = make(OraclePriceRecordAssetList)
+	for _, a := range common.AllAssets {
+		o.Assets[a] = rand.Float64() * 50
+	}
+	o.Nonce = make([]byte, 8) // random nonce
+	rand.Read(o.Nonce)
+	json, _ := json.Marshal(o)
+	o.OPRHash = LX.Hash(json)
+	o.EntryHash = json // FOR BENCHMARK ONLY
+	difficulty := ComputeDifficulty(o.OPRHash, o.Nonce)
+	o.SelfReportedDifficulty = make([]byte, 8)
+	binary.BigEndian.PutUint64(o.SelfReportedDifficulty, difficulty)
+
+	return o
+}
+
+func BenchmarkGradeBlock(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+
+	var oprs []*OraclePriceRecord
+	for i := 0; i < 10000; i++ {
+		oprs = append(oprs, makeBenchmarkOPR())
+	}
+
+	b.Run("ten", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:10])
+		}
+	})
+	b.Run("fifty", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:50])
+		}
+	})
+	b.Run("200", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:200])
+		}
+	})
+	b.Run("500", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:500])
+		}
+	})
+	b.Run("1000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:1000])
+		}
+	})
+	b.Run("5000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:5000])
+		}
+	})
+	b.Run("10000", func(b *testing.B) { // 10k OPRs = ~17 tps on factom
+		for i := 0; i < b.N; i++ {
+			GradeBlock(oprs[:10000])
+		}
+	})
+
+}
+
+func BenchmarkOPRHash(b *testing.B) {
+	rand.Seed(time.Now().UnixNano())
+	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+
+	var oprs []*OraclePriceRecord
+	for i := 0; i < 10000; i++ {
+		oprs = append(oprs, makeBenchmarkOPR())
+	}
+	b.Run("opr hash for 10", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:10] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 50", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:50] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 200", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:200] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+
+	b.Run("opr hash for 500", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:500] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 1000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:1000] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+	b.Run("opr hash for 10000", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+			for _, o := range oprs[:10000] {
+				LX.Hash(o.EntryHash) // contains json
+			}
+		}
+	})
+}
+
+type winner struct {
+	opr     *OraclePriceRecord
+	winners []*OraclePriceRecord
+}
+
+func genWinnerOPR(prev [10]string, winners []string) winner {
+	opr := new(OraclePriceRecord)
+	opr.WinPreviousOPR = prev
+
+	if winners == nil {
+		return winner{opr, nil}
+	}
+	win := make([]*OraclePriceRecord, len(winners))
+	for i := range win {
+		win[i] = new(OraclePriceRecord)
+		h, err := hex.DecodeString(winners[i])
+		if err != nil {
+			panic("developer error by putting invalid hex into list of winners: " + err.Error())
+		}
+		win[i].EntryHash = h
+	}
+	return winner{opr, win}
+}
+
+func TestVerifyWinners(t *testing.T) {
+	var empty [10]string
+
+	base := [10]string{
+		"0000000000000000",
+		"1111111111111111",
+		"2222222222222222",
+		"3333333333333333",
+		"4444444444444444",
+		"5555555555555555",
+		"6666666666666666",
+		"7777777777777777",
+		"8888888888888888",
+		"9999999999999999",
+	}
+
+	onewrong := base
+	onewrong[0] = "ffffffffffffffff"
+
+	oneempty := base
+	oneempty[3] = ""
+
+	wrongorder := base
+	wrongorder[3], wrongorder[8] = wrongorder[8], wrongorder[3]
+
+	oneshort := base
+	oneshort[9] = "999999999999999"
+	onelong := base
+	onelong[9] = "99999999999999999"
+
+	tests := []struct {
+		name string
+		args winner
+		want bool
+	}{
+		{"empty, empty", genWinnerOPR(empty, nil), true},
+		{"not empty, empty", genWinnerOPR(base, nil), false},
+		{"matching", genWinnerOPR(base, base[:]), true},
+		{"one wrong", genWinnerOPR(onewrong, base[:]), false},
+		{"one empty", genWinnerOPR(oneempty, base[:]), false},
+		{"wrong order", genWinnerOPR(wrongorder, base[:]), false},
+		{"one short", genWinnerOPR(oneshort, base[:]), false},
+		{"one long", genWinnerOPR(onelong, base[:]), false},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := VerifyWinners(tt.args.opr, tt.args.winners); got != tt.want {
+				t.Errorf("VerifyWinners() = %v, want %v", got, tt.want)
 			}
 		})
 	}

@@ -134,11 +134,17 @@ var burn = &cobra.Command{
 	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress, ArgValidatorFCTAmount)),
 	Run: func(cmd *cobra.Command, args []string) {
 		name := "burn"                       // The tmp tx name in the wallet.
+		factom.DeleteTransaction(name)       // Delete if existing tmp tx
 		defer factom.DeleteTransaction(name) // Any cleanup from errors
+
+		network, err := common.LoadConfigNetwork(Config)
+		if err != nil {
+			CmdError(cmd, err.Error())
+		}
 
 		ownedAddress, fctBurnAmount := args[0], args[1]
 		// First see if we own the specified FCT address
-		_, err := factom.FetchFactoidAddress(ownedAddress)
+		_, err = factom.FetchFactoidAddress(ownedAddress)
 		if err != nil {
 			CmdError(cmd, err.Error())
 		}
@@ -162,7 +168,8 @@ var burn = &cobra.Command{
 		if _, err := factom.AddTransactionInput(name, ownedAddress, factoshiBurn); err != nil {
 			CmdError(cmd, err.Error())
 		}
-		if _, err := factom.AddTransactionECOutput(name, common.PegnetBurnAddress(Network), 0); err != nil {
+
+		if _, err := factom.AddTransactionECOutput(name, common.PegnetBurnAddress(network), 0); err != nil {
 			CmdError(cmd, err.Error())
 		}
 

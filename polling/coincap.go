@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
@@ -34,11 +35,35 @@ type CoinCapRecord struct {
 	VWAP24Hr          string `json:"vwap24Hr"`
 }
 
+// CoinCapIOCryptoAssetNames is used by coincapio to query for the crypto we care about
+var CoinCapIOCryptoAssetNames = map[string]string{
+	"XBT":  "bitcoin",
+	"ETH":  "ethereum",
+	"LTC":  "litecoin",
+	"RVN":  "ravencoin",
+	"XBC":  "bitcoin-cash",
+	"FCT":  "factom",
+	"BNB":  "binance-coin",
+	"XLM":  "stellar",
+	"ADA":  "cardano",
+	"XMR":  "monero",
+	"DASH": "dash",
+	"ZEC":  "zcash",
+	"DCR":  "decred",
+}
+
 func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 	var CoinCapResponse CoinCapResponse
 
+	var ids []string
+	// Need to append all the ids we care about for the call
+	for _, a := range common.CryptoAssets {
+		ids = append(ids, CoinCapIOCryptoAssetNames[a])
+	}
+
 	operation := func() error {
-		resp, err := http.Get("http://api.coincap.io/v2/assets?limit=500")
+		url := "http://api.coincap.io/v2/assets?ids=" + strings.Join(ids, ",")
+		resp, err := http.Get(url)
 		if err != nil {
 			log.WithError(err).Warning("Failed to get response from CoinCap")
 			return err
