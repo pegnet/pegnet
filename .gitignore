@@ -1,5 +1,6 @@
 vendor
 myconfig.ini
+bin
 
 # Binaries for programs and plugins
 *.exe
