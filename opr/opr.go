@@ -127,13 +127,17 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
-func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
+func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
 		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
 			return false
 		}
+	}
+
+	if int64(opr.Dbht) != dbht {
+		return false // DBHeight is not reported correctly
 	}
 
 	// Validate all the Assets exists

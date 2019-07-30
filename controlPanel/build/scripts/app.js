@@ -44,7 +44,7 @@
           $tr.attr('data-addr', addr);
           $('.address-balance-table-js tbody').append($tr);
         }
-        $tr.find('td').eq(1).text(formatNumber(balance));
+        $tr.find('td').eq(1).text(balance/1e8);
 
         $('.address-balance-table-js').removeClass('d-none');
         $("#tpnt_address").val("");
@@ -59,11 +59,10 @@
       $("#current_minute").val(data.minute);
       $("#hash_rate").val(data.hashRate);
       $("#difficulty").val(data.difficulty);
-      $("#balance").val(formatNumber(data.balance));
+      $("#balance").val(data.balance/1e8);
   
     };
   
   });
-
 
 })();

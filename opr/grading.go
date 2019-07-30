@@ -171,7 +171,7 @@ func GetEntryBlocks(config *config.Config) {
 					continue
 				}
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry
-				if !opr.Validate(config) {
+				if !opr.Validate(config, oprblk.Dbht) {
 					continue
 				}
 				// Keep this entry
@@ -240,7 +240,7 @@ func GetEntryBlocks(config *config.Config) {
 		for place, winner := range gradedOPRs[:10] {
 			reward := GetRewardFromPlace(place)
 			if reward > 0 {
-				err := AddToBalance(winner.CoinbasePNTAddress, 800)
+				err := AddToBalance(winner.CoinbasePNTAddress, reward)
 				if err != nil {
 					log.WithError(err).Fatal("Failed to update balance")
 				}
@@ -276,16 +276,16 @@ func GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	return nil
 }
 
-func GetRewardFromPlace(place int) int {
+func GetRewardFromPlace(place int) int64 {
 	if place >= 10 {
 		return 0 // There's no participation trophy. Return zero.
 	}
 	switch place {
 	case 0:
-		return 800 // The Big Winner
+		return 800 * 1e8 // The Big Winner
 	case 1:
-		return 600 // Second Place
+		return 600 * 1e8 // Second Place
 	default:
-		return 450 // Consolation Prize
+		return 450 * 1e8 // Consolation Prize
 	}
 }
