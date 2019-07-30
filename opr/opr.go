@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -85,7 +87,12 @@ var lxInitializer sync.Once
 func InitLX() {
 	lxInitializer.Do(func() {
 		// This code will only be executed ONCE, no matter how often you call it
-		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+		if size, err := strconv.Atoi(os.Getenv("LXRBITSIZE")); err == nil && size >= 8 && size <= 30 {
+			LX.Init(0xfafaececfafaecec, uint64(size), 256, 5)
+		} else {
+			LX.Init(0xfafaececfafaecec, 30, 256, 5)
+		}
+
 	})
 }
 

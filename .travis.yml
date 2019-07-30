@@ -35,7 +35,7 @@ script:
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
 env:
-  - GO111MODULE=on
+  - GO111MODULE=on LXRBITSIZE=25
 
 # Modifies go get flags
 # Can be removed when factom@v1-rollup is merged into master 
