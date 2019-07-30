@@ -5,19 +5,32 @@ go:
 - 1.x
 
 os: 
-  - linux
   - osx
   - windows
 
+# Run gofmt only on linux
 matrix:
   fast_finish: true
+  include:
+    - os: linux
+      script:
+        - ./.gofmt.sh 
+        - go test -race -timeout 45m ./...
   allow_failures:
     - os: windows
 
+before_cache:
+  - mkdir $HOME/.lxrhash
+  - chmod -R -v 555 $HOME/.lxrhash
+
+cache:
+  directories:
+    - $HOME/.lxrhash/
+    - $HOME/.cache/go-build
+    - $HOME/gopath/pkg/mod
+
 script:
-  - ./.gofmt.sh
-  - go test ./...
-  - go test -race ./...
+  - go test -race -timeout 45m ./...
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
