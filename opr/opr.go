@@ -10,8 +10,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -85,7 +87,12 @@ var lxInitializer sync.Once
 func InitLX() {
 	lxInitializer.Do(func() {
 		// This code will only be executed ONCE, no matter how often you call it
-		LX.Init(0xfafaececfafaecec, 25, 256, 5)
+		if size, err := strconv.Atoi(os.Getenv("LXRBITSIZE")); err == nil && size >= 8 && size <= 30 {
+			LX.Init(0xfafaececfafaecec, uint64(size), 256, 5)
+		} else {
+			LX.Init(0xfafaececfafaecec, 30, 256, 5)
+		}
+
 	})
 }
 
@@ -137,7 +144,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config) bool {
 	}
 
 	// Validate all the Assets exists
-	return opr.Assets.Contains(common.AllAssets)
+	return opr.Assets.ContainsExactly(common.AllAssets)
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
@@ -271,7 +278,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	// Get the protocol chain to be used for pegnetMining records
 	protocol, err1 := c.String("Miner.Protocol")
-	network, err2 := c.String("Miner.Network")
+	network, err2 := common.LoadConfigNetwork(c)
 	opr.Network = network
 	opr.Protocol = protocol
 
@@ -290,7 +297,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	// PNT address.  Otherwise, give all miners the same PNT address because most
 	// users really doing mining will mostly be happen sending rewards to a single
 	// address.
-	if network == "TestNet" && minerNumber != 0 {
+	if network == common.TestNetwork && minerNumber != 0 {
 		fct := common.DebugFCTaddresses[minerNumber][1]
 		opr.CoinbaseAddress = fct
 	} else {
@@ -301,7 +308,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		}
 	}
 
-	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPNT(network, opr.CoinbaseAddress)
+	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress)
 	if err != nil {
 		log.Errorf("invalid fct address in config file: %v", err)
 	}

@@ -7,20 +7,43 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/FactomProject/factom"
+	"github.com/zpatrick/go-config"
 )
 
 var PointMultiple float64 = 100000000
 
-type NetworkType int
+type NetworkType string
+
+// LoadConfigNetwork handles the different casings of `MainNet`.
+//	So: `mainnet`, `Mainnet`, and other stuff is all valid
+func LoadConfigNetwork(c *config.Config) (string, error) {
+	network, err := c.String(ConfigPegnetNetwork)
+	if err != nil {
+		return "", err
+	}
+	return GetNetwork(network)
+}
+
+func GetNetwork(network string) (string, error) {
+	switch strings.ToLower(network) {
+	case strings.ToLower(MainNetwork):
+		return MainNetwork, nil
+	case strings.ToLower(TestNetwork):
+		return TestNetwork, nil
+	default:
+		return "", fmt.Errorf("'%s' is not a valid network", network)
+	}
+}
 
 // Stats contains the hashrate and difficulty of the last mined block
 var Stats MiningStats
 
 const (
-	INVALID NetworkType = iota + 1
-	MAIN_NETWORK
-	TEST_NETWORK
+	MainNetwork = "MainNet"
+	TestNetwork = "TestNet"
+
+	MainNetworkRCD = MainNetwork + "RCD"
+	TestNetworkRCD = TestNetwork + "RCD"
 )
 
 const (
@@ -32,35 +55,15 @@ const (
 var (
 	// Pegnet Burn Addresses
 	BurnAddresses = map[string]string{
-		"main": "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
-		"test": "EC1moooFCT2TESToooo1oooo1oooo1oooo1oooo1oooo1on1iNDk",
+		MainNetwork:    "EC2BURNFCT2PEGNETooo1oooo1oooo1oooo1oooo1oooo19wthin",
+		TestNetwork:    "EC2BURNFCT2TESTxoooo1oooo1oooo1oooo1oooo1oooo1EoyM6d",
+		MainNetworkRCD: "37399721298d77984585040ea61055377039a4c3f3e2cd48c46ff643d50fd64f",
+		TestNetworkRCD: "37399721298d8b92934b4f767a56be38ad8a30cf0b7ed9d9fd2eb0919905c4af",
 	}
 )
 
 func PegnetBurnAddress(network string) string {
-	return BurnAddresses[strings.ToLower(network)]
-}
-
-// TODO: Remove this, when the final main and test burn addresses are determined.
-//		Once they are determined, then we don't need to check if they are valid on init.
-//  	This code is put here to ensure the chosen burn addresses are actually valid.
-//		If the address is invalid, it will panic with a corrected checksum, so you can
-//		update the burn address you put here. So it makes changing the burn addresses easy.
-func init() {
-	for network, add := range BurnAddresses {
-		if !factom.IsValidAddress(add) {
-			// If it is not valid, could be checksum related
-			raw, err := ConvertAnyFactomAdrToRaw(add)
-			if err == nil {
-				// Try and fix it, then suggest the new checksum
-				burn := ConvertRawToEC(raw)
-				if factom.IsValidAddress(burn) {
-					panic(fmt.Sprintf("[%s] %s is not a valid address, but %s is", network, add, burn))
-				}
-			}
-			panic(fmt.Sprintf("[%s] %s is not a valid address.", network, add))
-		}
-	}
+	return BurnAddresses[network]
 }
 
 var (
