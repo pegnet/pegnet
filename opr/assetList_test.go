@@ -108,7 +108,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 		o.Assets[asset] = rand.Float64() * 1000
 	}
 
-	if !o.Validate(c) {
+	if !o.Validate(c, int64(o.Dbht)) {
 		t.Error("Should be valid")
 	}
 

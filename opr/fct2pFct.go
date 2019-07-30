@@ -23,7 +23,7 @@ func UpdateBurns(c *config.Config) {
 	if FctDbht == 0 {
 		FctDbht = OPRBlocks[0].Dbht
 	}
-	for i := FctDbht; ; i++ {
+	for i := FctDbht + 1; ; i++ {
 		fc, _, _ := factom.GetFBlockByHeight(i)
 		if fc == nil {
 			break
