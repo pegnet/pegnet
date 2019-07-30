@@ -4,17 +4,12 @@ import (
 	"context"
 	"time"
 
-	"github.com/pegnet/pegnet/controlPanel"
-
 	"github.com/pegnet/pegnet/api"
-
-	"github.com/pegnet/pegnet/mining"
-
-	"github.com/zpatrick/go-config"
-
-	"github.com/pegnet/pegnet/opr"
-
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/controlPanel"
+	"github.com/pegnet/pegnet/mining"
+	"github.com/pegnet/pegnet/opr"
+	"github.com/zpatrick/go-config"
 )
 
 func LaunchFactomMonitor(config *config.Config) *common.Monitor {
