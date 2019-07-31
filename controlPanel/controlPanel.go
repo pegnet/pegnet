@@ -91,7 +91,7 @@ func (c *ControlPanel) ServeControlPanel() {
 	alert := c.Monitor.NewListener()
 	statsUpStream := c.Statistics.GetUpstream("control-panel")
 
-	network, err := common.LoadConfigNetwork(config)
+	network, err := common.LoadConfigNetwork(c.Config)
 	if err != nil {
 		panic(fmt.Sprintf("Do not have a proper network in the config file: %v", err))
 	}
