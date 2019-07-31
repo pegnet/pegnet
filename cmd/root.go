@@ -12,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"path/filepath"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
@@ -48,6 +49,7 @@ func init() {
 	rootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
 	rootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
 	rootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
+	rootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
 
 	// Persist flags that run in PreRun, and not in the config
 	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
@@ -66,9 +68,6 @@ var rootCmd = &cobra.Command{
 	Use:   "pegnet",
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: Do we really want to init the miner by default?
-		//  	 Not like `pegnet -service=miner` or something?
-
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		monitor := common.GetMonitor()
@@ -166,8 +165,17 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
-	userPath := u.HomeDir
-	configFile := fmt.Sprintf("%s/.%s/defaultconfig.ini", userPath, "pegnet")
+ 
+	configFile := fmt.Sprintf("%s/.pegnet/defaultconfig.ini", u.HomeDir)
+	customPath, _ := cmd.Flags().GetString("config")
+	if customPath != "" {
+		absPath, err := filepath.Abs(customPath)
+		if err == nil {
+			configFile = absPath
+			log.Info("Using config file: ", configFile)
+		}
+	}
+	
 	iniFile := config.NewINIFile(configFile)
 	flags := NewCmdFlagProvider(cmd)
 	Config = config.NewConfig([]config.Provider{iniFile, flags})
