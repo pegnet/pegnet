@@ -81,7 +81,7 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 			g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
 			for _, a := range g.alerts {
 				var winners OPRs
-				if len(gradedOPRs) > 10 {
+				if len(gradedOPRs) >= 10 {
 					winners.ToBePaid = gradedOPRs[:10]
 				}
 				winners.AllOPRs = sortedOPRs

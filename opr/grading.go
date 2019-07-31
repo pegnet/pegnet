@@ -147,7 +147,8 @@ func GetEntryBlocks(config *config.Config) {
 		eb.Header.DBHeight > OPRBlocks[len(OPRBlocks)-1].Dbht) {
 
 		// Go through the Entry Block and collect all the valid OPR records
-		if len(eb.EntryList) > 10 {
+		// To have even a chance of being good, we need 10 records in the Entry Block
+    if len(eb.EntryList) >= 10 {
 			oprblk := new(OprBlock)
 			oprblk.Dbht = eb.Header.DBHeight
 			for _, ebentry := range eb.EntryList {
