@@ -40,7 +40,7 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
-	github.com/pegnet/LXRHash v0.0.0-20190729193922-452b32b2d231
+	github.com/pegnet/LXRHash v0.0.0-20190731141927-92e9af0747c8
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/prometheus/common v0.4.1
 	github.com/sirupsen/logrus v1.4.2
