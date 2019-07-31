@@ -79,9 +79,9 @@ func (c *MiningClient) Connect() error {
 		Value: c.FactomDigitalID,
 	}})
 	if err != nil {
-		log.WithField("evt", "entry").WithError(err).Error("failed to send stats")
+		log.WithField("evt", "tag").WithError(err).Error("failed to send tag")
 	} else {
-		log.WithField("evt", "entry").Debugf("sent entry")
+		log.WithField("evt", "tag").Debugf("sent tag")
 	}
 	return nil
 }
@@ -138,7 +138,7 @@ func (c *MiningClient) Listen() {
 		var m NetworkMessage
 		err := c.decoder.Decode(&m)
 		if err != nil {
-			c.ConnectionLost(err)
+			c.ConnectionLost(fmt.Errorf("decode: %s", err.Error()))
 		}
 
 		switch m.NetworkCommand {

@@ -43,7 +43,7 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 	// Use the same flag for the client and server.
 	addr, _ := c.cmd.Flags().GetString("caddr")
 	if addr != "" {
-		settings[common.ConfigCoordinatorListen] = addr
+		settings[common.ConfigCoordinatorLocation] = addr
 		settings[common.ConfigCoordinatorListen] = addr
 	}
 

@@ -244,7 +244,7 @@ h.each(n,function(a,b){h.fn.DataTable[a]=b});return h.fn.dataTable});
     stats = $('#mining-statistics').DataTable({
       order: [[ 1, "desc" ]],
       ajax:{
-        url: "http://localhost:8080/cp/miningstats",
+        url: "/cp/miningstats",
         dataSrc: function(d) {
           if(d.error != null) {
             console.log(d.error)
