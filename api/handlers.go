@@ -83,7 +83,7 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 				if i <= 50 {
 					difficultyPlacementsCount += 1
 					difficultyPlacementsSum += int64(i + 1)
-					for k, _ := range difficultyPlacements {
+					for k := range difficultyPlacements {
 						if i <= k {
 							difficultyPlacements[k] += 1
 						}
@@ -97,7 +97,7 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 				rewards += int64(opr.GetRewardFromPlace(i))
 				gradingPlacementsCount += 1
 				gradingPlacementsSum += int64(i + 1)
-				for k, _ := range gradingPlacements {
+				for k := range gradingPlacements {
 					if i+1 <= k {
 						gradingPlacements[k] += 1
 					}
