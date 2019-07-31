@@ -6,7 +6,7 @@
 
 [![Build Status](https://travis-ci.com/pegnet/pegnet.svg?branch=develop)](https://travis-ci.com/pegnet/pegnet)
 [![Discord](https://img.shields.io/discord/550312670528798755.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.gg/V6T7mCW)
-![Coveralls develop branch](https://img.shields.io/coveralls/github/pegnet/pegnet/develop)
+[![Coverage Status](https://coveralls.io/repos/github/pegent/pegnet/badge.svg?develop)](https://coveralls.io/github/pegnet/pegnet?branch=develop)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/pegnet/pegnet/blob/master/LICENSE)
 
 
