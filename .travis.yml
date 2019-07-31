@@ -15,7 +15,7 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh 
-        - go test -race -timeout 45m ./...
+        - travis_wait 50 go test -race -timeout 45m ./...
   allow_failures:
     - os: windows
 
@@ -30,12 +30,12 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - go test -race -timeout 45m ./...
+  - travis_wait 50 go test -race -timeout 45m ./...
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
 env:
-  - GO111MODULE=on LXRBITSIZE=25
+  - GO111MODULE=on
 
 # Modifies go get flags
 # Can be removed when factom@v1-rollup is merged into master 
