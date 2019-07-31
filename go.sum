@@ -156,6 +156,10 @@ github.com/pegnet/LXRHash v0.0.0-20190726144200-a35b17bbf85c h1:/3H7wWMIg/X/vvnk
 github.com/pegnet/LXRHash v0.0.0-20190726144200-a35b17bbf85c/go.mod h1:0zBp9GFy9F77zuQbPkAmdUBRiptMaJ1V96eVFdMnXZA=
 github.com/pegnet/LXRHash v0.0.0-20190729140347-d2f14f305498 h1:ZgjNdJ13H5DEHDP2tixorcDed4CPDH1/S3dsUUv2xBo=
 github.com/pegnet/LXRHash v0.0.0-20190729140347-d2f14f305498/go.mod h1:0zBp9GFy9F77zuQbPkAmdUBRiptMaJ1V96eVFdMnXZA=
+github.com/pegnet/LXRHash v0.0.0-20190729193922-452b32b2d231 h1:/kqjIK3ufejdrpUwWdk0hdALErfY/37uEffjFE5Pa0Q=
+github.com/pegnet/LXRHash v0.0.0-20190729193922-452b32b2d231/go.mod h1:0zBp9GFy9F77zuQbPkAmdUBRiptMaJ1V96eVFdMnXZA=
+github.com/pegnet/LXRHash v0.0.0-20190731141927-92e9af0747c8 h1:J5zdT/G6SwMU0+4YhpXJqF5lhGmNVkToHJudHlm9q1Y=
+github.com/pegnet/LXRHash v0.0.0-20190731141927-92e9af0747c8/go.mod h1:0zBp9GFy9F77zuQbPkAmdUBRiptMaJ1V96eVFdMnXZA=
 github.com/pegnet/OracleRecord v0.0.2/go.mod h1:VrY7Shn4oSCli47CsUYBFjH68IenGYtnLaXaaivepu4=
 github.com/pegnet/pegnet v0.0.2/go.mod h1:FUyEs8fyLOzPXZgyqXcqiOhQi58loNtujykIbxxoKbQ=
 github.com/pelletier/go-toml v1.2.0/go.mod h1:5z9KED0ma1S8pY6P1sdut58dfprrGBbd/94hg7ilaic=
