@@ -154,7 +154,7 @@
       var data = JSON.parse(event.data);
       console.log(data);
 
-      stats.rows.add([data]).draw()
+      stats.rows.add([data]).draw(false)
     };
 
 

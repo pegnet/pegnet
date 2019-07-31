@@ -12,9 +12,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	// MaxGlobalStatsBuckets tells us when to garbage collect
+	MaxGlobalStatsBuckets = 250
+)
+
 // GlobalStatTracker is the global tracker for the api's and whatnot
 //	It has threadsafe queryable stats for the miners and their blockheights.
-//	TODO: Garbage collect
 type GlobalStatTracker struct {
 	// The sorted listed for block heights
 	stats            sync.Mutex
@@ -124,6 +128,14 @@ func (t *GlobalStatTracker) insert(g *GroupMinerStats) {
 		t.miningStatistics = append(t.miningStatistics, bucket)
 		sort.SliceStable(t.miningStatistics,
 			func(i, j int) bool { return t.miningStatistics[i].BlockHeight > t.miningStatistics[j].BlockHeight })
+
+		// TODO: Optimize this a bit better. Maybe used a fixed slice?
+		//		Currently it is not that huge of an issue to do.
+		if len(t.miningStatistics) > MaxGlobalStatsBuckets {
+			tmp := make([]*StatisticBucket, MaxGlobalStatsBuckets)
+			copy(tmp, t.miningStatistics[:MaxGlobalStatsBuckets])
+			t.miningStatistics = tmp
+		}
 	}
 
 }
