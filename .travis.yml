@@ -15,7 +15,8 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh 
-        - go test -race -timeout 45m ./...
+        - go test -timeout 45m ./...
+        - goveralls -v -service=travis-ci
   allow_failures:
     - os: windows
 
@@ -30,8 +31,7 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - $HOME/gopath/bin/goveralls -v -service=travis-ci
-  - go test -race -timeout 45m ./...
+  - go test -timeout 45m ./...
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
