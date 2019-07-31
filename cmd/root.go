@@ -9,10 +9,10 @@ import (
 	"net/http"
 	"os"
 	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
-	"path/filepath"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
@@ -165,7 +165,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
- 
+
 	configFile := fmt.Sprintf("%s/.pegnet/defaultconfig.ini", u.HomeDir)
 	customPath, _ := cmd.Flags().GetString("config")
 	if customPath != "" {
@@ -175,7 +175,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 			log.Info("Using config file: ", configFile)
 		}
 	}
-	
+
 	iniFile := config.NewINIFile(configFile)
 	flags := NewCmdFlagProvider(cmd)
 	Config = config.NewConfig([]config.Provider{iniFile, flags})
