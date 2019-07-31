@@ -28,7 +28,7 @@ func GetNetwork(network string) (string, error) {
 	switch strings.ToLower(network) {
 	case strings.ToLower(MainNetwork):
 		return MainNetwork, nil
-	case strings.ToLower(TestNetwork):
+	case strings.ToLower(TestNetwork), strings.ToLower("TestNet"):
 		return TestNetwork, nil
 	default:
 		return "", fmt.Errorf("'%s' is not a valid network", network)
@@ -40,7 +40,7 @@ var Stats MiningStats
 
 const (
 	MainNetwork = "MainNet"
-	TestNetwork = "TestNet"
+	TestNetwork = "TestNet-pM1"
 
 	MainNetworkRCD = MainNetwork + "RCD"
 	TestNetworkRCD = TestNetwork + "RCD"
