@@ -30,6 +30,7 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
+  - $HOME/gopath/bin/goveralls -v -service=travis-ci
   - go test -race -timeout 45m ./...
 
 # GO111MODULE will force Go modules
@@ -37,13 +38,13 @@ script:
 env:
   - GO111MODULE=on LXRBITSIZE=25
 
+# Coveralls testing
+before_install:
+  - go get github.com/mattn/goveralls
+
 # Modifies go get flags
 # Can be removed when factom@v1-rollup is merged into master 
 install: true
-
-# Get gox cross-compilation library
-before_install:
-  - go get github.com/mitchellh/gox
 
 # No spam
 notifications:
@@ -51,6 +52,7 @@ notifications:
 
 # Build with gox
 before_deploy:
+  - go get github.com/mitchellh/gox
   - gox -os="linux darwin windows freebsd" -arch="amd64"
   - gox -osarch="linux/arm"
 
