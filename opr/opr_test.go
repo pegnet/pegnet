@@ -6,6 +6,7 @@ package opr_test
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -116,4 +117,89 @@ func testPath(e ExpPath, t *testing.T) {
 	if f := ShortenPegnetFilePath(e.Path, "", 0); f != e.Exp {
 		t.Errorf("Exp %s, found %s", e.Exp, f)
 	}
+}
+
+func TestPriceConversions(t *testing.T) {
+	// Simple round numbers
+	t.Run("simple numbers", func(t *testing.T) {
+		assets := make(OraclePriceRecordAssetList)
+		assets["FCT"] = 100   // $100 per FCT. Woah
+		assets["BTC"] = 10000 // $10,000 per BTC
+
+		if r, err := assets.ExchangeRate("FCT", "BTC"); err != nil || r != 0.01 {
+			t.Errorf("rate is incorrect. found %f", r)
+		}
+
+		if a, err := assets.ExchangeFrom("FCT", 100, "BTC"); err != nil || a != 1 {
+			t.Errorf("amt is incorrect. found %d", a)
+		}
+
+		if a, err := assets.ExchangeTo("FCT", "BTC", 1); err != nil || a != 100 {
+			t.Errorf("amt is incorrect. found %d", a)
+		}
+	})
+
+	// This unit test is checking that the conversions where you choose the FROM or the TO.
+	// The math should work out, that the tx amounts should be the same, no matter which way you choose.
+	// The equation:
+	//		f = from amt
+	//		t = to amt
+	//		r = from->to exchrate
+	//		Solve for t or for f
+	//		t = f * r
+	t.Run("random", func(t *testing.T) {
+		// Create random prices, and check the exchage from matches the to
+		for i := 0; i < 100; i++ {
+			assets := make(OraclePriceRecordAssetList)
+			// Random prices up to 100K usd per coin
+			assets["from"] = rand.Float64() * float64(rand.Int63n(100e3))
+			assets["to"] = rand.Float64() * float64(rand.Int63n(100e3))
+
+			// Random amount up to 100K*1e8
+			have := rand.Int63n(1000 * 1e8)
+			amt, err := assets.ExchangeFrom("from", have, "to")
+			if err != nil {
+				t.Error(err)
+			}
+
+			// The amt you get should match the amount to
+			get, err := assets.ExchangeTo("from", "to", amt)
+			if err != nil {
+				t.Error(err)
+			}
+
+			if have != get {
+				t.Errorf("Precision err. have %d, exp %d. Diff %d", have, get, have-get)
+			}
+
+		}
+	})
+
+}
+
+func TestIntCast(t *testing.T) {
+	type Expected struct {
+		V   float64
+		Exp int64
+	}
+
+	testingfunc := func(t *testing.T, e Expected) {
+		if i := Int64RoundedCast(e.V); i != e.Exp {
+			t.Errorf("Exp %d, found %d with %f", i, e.Exp, e.V)
+		}
+	}
+
+	testingfunc(t, Expected{V: 0.1, Exp: 0})
+	testingfunc(t, Expected{V: 0.2, Exp: 0})
+	testingfunc(t, Expected{V: 0.3, Exp: 0})
+	testingfunc(t, Expected{V: 0.4, Exp: 0})
+	testingfunc(t, Expected{V: 0.5, Exp: 1})
+	testingfunc(t, Expected{V: 0.6, Exp: 1})
+	testingfunc(t, Expected{V: 0.7, Exp: 1})
+	testingfunc(t, Expected{V: 0.8, Exp: 1})
+	testingfunc(t, Expected{V: 0.9, Exp: 1})
+
+	testingfunc(t, Expected{V: 15.6, Exp: 16})
+	testingfunc(t, Expected{V: 22.49, Exp: 22})
+
 }
