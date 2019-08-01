@@ -10,9 +10,9 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/pegnet/pegnet/polling"
 	"github.com/FactomProject/btcutil/base58"
 	. "github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/polling"
 )
 
 func TestOPR_JSON_Marshal(t *testing.T) {
@@ -234,6 +234,8 @@ func TestPriceConversions(t *testing.T) {
 				have - need,
 			})
 
+			// A 200 'sat' tolerance. I'm not sure how else to test and know the expected error.
+			// If you turn down this tolerance, you can get some more vector tests.
 			if math.Abs(float64(have-need)) > 200 {
 				t.Errorf(string(d))
 				t.Errorf("Precision err. have %d, exp %d. Diff %d", have, need, have-need)

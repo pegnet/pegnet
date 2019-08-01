@@ -35,7 +35,6 @@ func (o OraclePriceRecordAssetList) ExchangeTo(from string, to string, want int6
 		return 0, fmt.Errorf("exchrate is 0")
 	}
 
-	// TODO: Should we truncate vs round?
 	return Int64RoundedCast(float64(want) / rate), err
 }
 
@@ -45,7 +44,6 @@ func (o OraclePriceRecordAssetList) ExchangeTo(from string, to string, want int6
 func (o OraclePriceRecordAssetList) ExchangeFrom(from string, have int64, to string) (int64, error) {
 	rate, err := o.ExchangeRate(from, to)
 	// The have is in 'sats'.
-	// TODO: Should we truncate vs round?
 	return Int64RoundedCast(float64(have) * rate), err
 }
 
