@@ -4,6 +4,7 @@
 package polling
 
 import (
+	"math"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -35,7 +36,7 @@ func PollingExponentialBackOff() *backoff.ExponentialBackOff {
 }
 
 func Round(v float64) float64 {
-	return float64(int64(v*10000)) / 10000
+	return math.Round(v*10000) / 10000
 }
 
 func ConverToUnix(format string, value string) (timestamp int64) {
