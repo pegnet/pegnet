@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pegnet/pegnet/polling"
+
 	"github.com/pegnet/pegnet/common"
 )
 
@@ -70,7 +72,8 @@ func (o OraclePriceRecordAssetList) ExchangeRate(from, to string) (float64, erro
 		return 0, fmt.Errorf("did not find a rate for %s", to)
 	}
 
-	return fromRate / toRate, nil
+	// TODO: Should I round this?
+	return polling.Round(fromRate / toRate), nil
 }
 
 func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {

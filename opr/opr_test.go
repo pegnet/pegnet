@@ -201,7 +201,7 @@ func TestPriceConversions(t *testing.T) {
 	// 	to create reference vectors.
 	t.Run("random", func(t *testing.T) {
 		// Create random prices, and check the exchage from matches the to
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 1000; i++ {
 			assets := make(OraclePriceRecordAssetList)
 			// Random prices up to 100K usd per coin
 			assets["from"] = rand.Float64() * float64(rand.Int63n(100e3))
@@ -236,7 +236,7 @@ func TestPriceConversions(t *testing.T) {
 
 			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
 			// If you turn down this tolerance, you can get some more vector tests.
-			if math.Abs(float64(have-need)) > 400 {
+			if math.Abs(float64(have-need)) > 500 {
 				t.Errorf(string(d))
 				t.Errorf("Precision err. have %d, exp %d. Diff %d", have, need, have-need)
 			}
@@ -316,33 +316,27 @@ func TestIntCast(t *testing.T) {
 	testingfunc(t, Expected{V: 22.49, Exp: 22})
 }
 
-const conversionVector = `[{"FromRate":7401.2406,"ToRate":12554.2132,"Have":83311134652,"Get":49115443747,"Need":83311134651,"Difference":1},
-{"FromRate":4185.0348,"ToRate":8681.0241,"Have":1706343734,"Get":822611229,"Need":1706343733,"Difference":1},
-{"FromRate":971.9422,"ToRate":58891.8337,"Have":60983331750,"Get":1006459978,"Need":60983331776,"Difference":-26},
-{"FromRate":7840.49,"ToRate":59324.0861,"Have":77372812453,"Get":10225876237,"Need":77372812456,"Difference":-3},
-{"FromRate":17132.7037,"ToRate":28481.7391,"Have":64269878397,"Get":38660447648,"Need":64269878396,"Difference":1},
-{"FromRate":1013.5703,"ToRate":12352.8003,"Have":3139208989,"Get":257577952,"Need":3139208995,"Difference":-6},
-{"FromRate":8870.8259,"ToRate":44734.7877,"Have":63252345915,"Get":12542823544,"Need":63252345917,"Difference":-2},
-{"FromRate":1247.14,"ToRate":8919.7312,"Have":72122742700,"Get":10084065911,"Need":72122742699,"Difference":1},
-{"FromRate":363.0484,"ToRate":21587.7816,"Have":60614313135,"Get":1019369651,"Need":60614313120,"Difference":15},
-{"FromRate":879.7282,"ToRate":26859.0372,"Have":1432260190,"Get":46911573,"Need":1432260196,"Difference":-6},
-{"FromRate":7475.8643,"ToRate":19388.1319,"Have":39528292143,"Get":15241702996,"Need":39528292142,"Difference":1},
-{"FromRate":16171.8423,"ToRate":48167.1005,"Have":77579800709,"Get":26046996595,"Need":77579800708,"Difference":1},
-{"FromRate":349.8949,"ToRate":57311.6149,"Have":48154650895,"Get":293990438,"Need":48154650916,"Difference":-21},
-{"FromRate":336.5728,"ToRate":6696.3206,"Have":26627778270,"Get":1338374673,"Need":26627778280,"Difference":-10},
-{"FromRate":14241.8855,"ToRate":65514.1814,"Have":70914539462,"Get":15415849358,"Need":70914539460,"Difference":2},
-{"FromRate":10691.0145,"ToRate":76022.3443,"Have":578986641,"Get":81422832,"Need":578986640,"Difference":1},
-{"FromRate":4291.5717,"ToRate":14962.5347,"Have":10658231531,"Get":3057006432,"Need":10658231532,"Difference":-1},
-{"FromRate":3199.0859,"ToRate":70556.5703,"Have":32527976373,"Get":1474841962,"Need":32527976374,"Difference":-1},
-{"FromRate":24785.8749,"ToRate":70201.2528,"Have":11335423860,"Get":4002184954,"Need":11335423859,"Difference":1},
-{"FromRate":6820.1745,"ToRate":16517.0497,"Have":22127172750,"Get":9136691000,"Need":22127172749,"Difference":1},
-{"FromRate":889.5808,"ToRate":21820.7544,"Have":91911834437,"Get":3747029168,"Need":91911834433,"Difference":4},
-{"FromRate":16434.0194,"ToRate":41816.5483,"Have":52175362199,"Get":20505061978,"Need":52175362200,"Difference":-1},
-{"FromRate":10916.4124,"ToRate":61329.0005,"Have":65879719289,"Get":11726429237,"Need":65879719288,"Difference":1},
-{"FromRate":4773.2617,"ToRate":39510.005,"Have":83423015425,"Get":10078456948,"Need":83423015421,"Difference":4},
-{"FromRate":6103.3095,"ToRate":35477.0073,"Have":23730213087,"Get":4082442291,"Need":23730213085,"Difference":2},
-{"FromRate":7837.9481,"ToRate":39901.8512,"Have":33983192302,"Get":6675341858,"Need":33983192301,"Difference":1},
-{"FromRate":13091.4518,"ToRate":14054.2312,"Have":64640301018,"Get":60212143451,"Need":64640301017,"Difference":1},
-{"FromRate":2793.6353,"ToRate":40680.3512,"Have":68712918070,"Get":4718711315,"Need":68712918077,"Difference":-7},
-{"FromRate":91.2847,"ToRate":68768.2046,"Have":14656271046,"Get":19455115,"Need":14656271301,"Difference":-255}]
+const conversionVector = `[{"FromRate":7401.2406,"ToRate":12554.2132,"Have":83311134652,"Get":49111913877,"Need":83311134651,"Difference":1},
+{"FromRate":971.9422,"ToRate":58891.8338,"Have":60983331750,"Get":1006224974,"Need":60983331758,"Difference":-8},
+{"FromRate":7840.4901,"ToRate":59324.0861,"Have":77372812453,"Get":10228685806,"Need":77372812451,"Difference":2},
+{"FromRate":32570.8436,"ToRate":38708.8151,"Have":81437551529,"Get":68521555857,"Need":81437551530,"Difference":-1},
+{"FromRate":1247.1401,"ToRate":8919.7313,"Have":72122742700,"Get":10082759429,"Need":72122742697,"Difference":3},
+{"FromRate":363.0485,"ToRate":21587.7816,"Have":60614313135,"Get":1018320461,"Need":60614313155,"Difference":-20},
+{"FromRate":879.7282,"ToRate":26859.0372,"Have":1432260190,"Get":46978134,"Need":1432260183,"Difference":7},
+{"FromRate":7475.8643,"ToRate":19388.1319,"Have":39528292143,"Get":15242109450,"Need":39528292142,"Difference":1},
+{"FromRate":349.895,"ToRate":57311.615,"Have":48154650895,"Get":293743370,"Need":48154650820,"Difference":75},
+{"FromRate":10691.0146,"ToRate":76022.3443,"Have":578986641,"Get":81405522,"Need":578986643,"Difference":-2},
+{"FromRate":3762.2321,"ToRate":41476.6813,"Have":29564889229,"Get":2681535453,"Need":29564889228,"Difference":1},
+{"FromRate":33879.3138,"ToRate":64319.8167,"Have":68471983631,"Get":36064193778,"Need":68471983630,"Difference":1},
+{"FromRate":7250.799,"ToRate":28106.2177,"Have":42639110966,"Get":11000890629,"Need":42639110965,"Difference":1},
+{"FromRate":3199.0859,"ToRate":70556.5703,"Have":32527976373,"Get":1473517330,"Need":32527976380,"Difference":-7},
+{"FromRate":6820.1745,"ToRate":16517.0497,"Have":22127172750,"Get":9136309628,"Need":22127172749,"Difference":1},
+{"FromRate":889.5809,"ToRate":21820.7544,"Have":91911834437,"Get":3750002845,"Need":91911834436,"Difference":1},
+{"FromRate":16434.0195,"ToRate":41816.5483,"Have":52175362199,"Get":20504917344,"Need":52175362198,"Difference":1},
+{"FromRate":10916.4125,"ToRate":61329.0005,"Have":65879719289,"Get":11726590033,"Need":65879719287,"Difference":2},
+{"FromRate":4773.2617,"ToRate":39510.0051,"Have":83423015425,"Get":10077500263,"Need":83423015422,"Difference":3},
+{"FromRate":884.851,"ToRate":50361.801,"Have":34938452019,"Get":614916756,"Need":34938452045,"Difference":-26},
+{"FromRate":7837.9481,"ToRate":39901.8513,"Have":33983192302,"Get":6674298968,"Need":33983192301,"Difference":1},
+{"FromRate":2793.6353,"ToRate":40680.3513,"Have":68712918070,"Get":4720577471,"Need":68712918064,"Difference":6}
+]
 `
