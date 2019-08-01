@@ -7,11 +7,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/pegnet/pegnet/mining"
-
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"

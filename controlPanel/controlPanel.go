@@ -73,10 +73,6 @@ func (c *ControlPanel) Close() {
 	c.SSEServer.Shutdown()
 }
 
-func (c *ControlPanel) HandleEvents() {
-
-}
-
 type CommonResponse struct {
 	Minute     int64  `json:"minute"`
 	Dbht       int32  `json:"dbht"`

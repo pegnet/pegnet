@@ -9,7 +9,6 @@ import (
 	"net/http"
 
 	"github.com/pegnet/pegnet/mining"
-
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 )
