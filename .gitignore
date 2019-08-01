@@ -1,3 +1,6 @@
+vendor
+myconfig.ini
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -7,6 +10,7 @@
 *.idea
 *.dat
 *.orig
+*.txt
 
 # Test binary, build with `go test -c`
 *.test

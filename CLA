@@ -1,0 +1,28 @@
+
+Contributor License Agreement
+=============================
+
+The PegNet community wishes to encourage contributions to the software, documentation, and other
+materials. We also wish to maintain the most flexibility in how the development of the
+PegNet protocol is organized and managed in the future.
+
+The purpose of this agreement is to provide to the Community clarity on the copyrights and licenses
+used in the development of the PegNet
+
+We really have no interest in managing the copyrights of work contributed.  Signing here only
+attests to the contributions to the body of work.  It isn't required to contribute.  However,
+adding your information, and creating a pull request with your information indicates you agree
+with the following:
+
+  * This agreement applies to all PegNet repositories, found under [github.com/pegnet]
+  * You agree to adhere to the github terms of service [https://help.github.com/articles/github-terms-of-service/]
+  * Your work will be made available under the MIT license that governs the source for the
+    PegNet.
+  * Agreeing to the MIT license does mean you do agree that your work might be re-licensed under other
+    licenses without restriction, including use within commercial and proprietary products.
+
+
+Name                                       Github Account                               Optional: Organization                       Optional: Additional Info
+===================================        ======================================       =====================================        ================================
+Paul Snow                                  PaulSnow                                                                                  PegNet Architect
+Mitchell Berry                             MitchellBerry
