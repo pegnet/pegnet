@@ -146,7 +146,7 @@ func TestPriceConversions(t *testing.T) {
 		ToRate      float64 // USD rate of to currency
 		ConvertRate float64 // Rate from -> to
 		Have        int64   // The fixed FROM input
-		amt         int64   // The amount we receive from the fixed
+		Amt         int64   // The amount we receive from the fixed
 		Need        int64   // The amount we expect to need to get 'amt'
 		Difference  int64   // the difference in the expected amounts
 		WhenNeeded  int64
@@ -175,8 +175,8 @@ func TestPriceConversions(t *testing.T) {
 				t.Error(err)
 			}
 
-			if amt != a.amt {
-				t.Errorf("Exp to get %d, got %d", a.amt, amt)
+			if amt != a.Amt {
+				t.Errorf("Exp to get %d, got %d", a.Amt, amt)
 			}
 
 			// The amt you get should match the amount to
@@ -255,14 +255,14 @@ func TestPriceConversions(t *testing.T) {
 			}
 
 			d, err := json.Marshal(&ConversionTest{
-				assets["from"],
-				assets["to"],
-				cr,
-				have,
-				amt,
-				need,
-				have - need,
-				whenNeed,
+				FromRate:    assets["from"],
+				ToRate:      assets["to"],
+				ConvertRate: cr,
+				Have:        have,
+				Amt:         amt,
+				Need:        need,
+				Difference:  have - need,
+				WhenNeeded:  whenNeed,
 			})
 
 			if err != nil {
@@ -360,9 +360,9 @@ func TestIntCast(t *testing.T) {
 
 const conversionVector = `
 [
-{"FromRate":0.0056,"ToRate":28.4376,"ConvertRate":0.0001957678336190335,"Have":49530497071,"Need":49530499173,"Difference":-2102,"WhenNeeded":49530499173},
-{"FromRate":0.0194,"ToRate":24.9232,"ConvertRate":0.0007776509548873975,"Have":14220790757,"Need":14220791225,"Difference":-468,"WhenNeeded":14220791225},
-{"FromRate":0.032,"ToRate":82.2916,"ConvertRate":0.00038912927643798784,"Have":75673685781,"Need":75673686383,"Difference":-602,"WhenNeeded":75673686383},
-{"FromRate":0.0005,"ToRate":48.4376,"ConvertRate":0.000010732782363517055,"Have":54662636938,"Need":54662606602,"Difference":30336,"WhenNeeded":54662606602}
+{"FromRate":0.0056,"ToRate":28.4376,"ConvertRate":0.0001957678336190335, "Have":49530497071, "Amt":9753664, "Need":49530499173,"Difference":-2102,"WhenNeeded":49530499173},
+{"FromRate":0.0194,"ToRate":24.9232,"ConvertRate":0.0007776509548873975,"Have":14220790757, "Amt":11069339,"Need":14220791225,"Difference":-468,"WhenNeeded":14220791225},
+{"FromRate":0.032,"ToRate":82.2916,"ConvertRate":0.00038912927643798784,"Have":75673685781, "Amt":29426551,"Need":75673686383,"Difference":-602,"WhenNeeded":75673686383},
+{"FromRate":0.0005,"ToRate":48.4376,"ConvertRate":0.000010732782363517055,"Have":54662636938, "Amt":564258,"Need":54662606602,"Difference":30336,"WhenNeeded":54662606602}
 ]
 `
