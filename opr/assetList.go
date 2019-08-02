@@ -3,11 +3,9 @@ package opr
 import (
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
 
 	"github.com/pegnet/pegnet/common"
-	"github.com/pegnet/pegnet/polling"
 )
 
 // OraclePriceRecordAssetList is used such that the marshaling of the assets
@@ -74,111 +72,7 @@ func (o OraclePriceRecordAssetList) ExchangeRate(from, to string) (float64, erro
 	}
 
 	// TODO: Should I round this?
-	return polling.Round(fromRate / toRate), nil
-}
-
-type RegularFloats OraclePriceRecordAssetList
-
-// Exchange tells us how much we need to spend given the amount we want is fixed.
-//	?? FROM -> X TO
-//	TODO: Ensure float calculations are ok.
-func (o RegularFloats) ExchangeTo(from string, to string, want float64) (float64, error) {
-	rate, err := o.ExchangeRate(from, to)
-	if err != nil {
-		return 0, err
-	}
-	if rate == 0 {
-		return 0, fmt.Errorf("exchrate is 0")
-	}
-
-	return want / rate, err
-}
-
-// Exchange tells us how much we need to spend given the amount we have is fixed.
-//	X FROM -> ?? TO
-//	TODO: Ensure float calculations are ok.
-func (o RegularFloats) ExchangeFrom(from string, have float64, to string) (float64, error) {
-	rate, err := o.ExchangeRate(from, to)
-	// The have is in 'sats'.
-	return have * rate, err
-}
-
-// ExchangeRate finds the exchange rate going from `FROM` to `TO`.
-//	To do the exchange rate, USD is the base pair and used as the intermediary.
-//	So to go from FCT -> BTC, the math goes:
-//		FCT -> USD -> BTC
-//	TODO: Ensure float calculations are ok.
-func (o RegularFloats) ExchangeRate(from, to string) (float64, error) {
-	// First we need to ensure we have the pricing for each side of the exchange
-	fromRate, ok := o[from]
-	if !ok {
-		return 0, fmt.Errorf("did not find a rate for %s", from)
-	}
-
-	toRate, ok := o[to]
-	if !ok {
-		return 0, fmt.Errorf("did not find a rate for %s", to)
-	}
-
-	// TODO: Should I round this?
-	return polling.Round(fromRate / toRate), nil
-}
-
-type BigFloats OraclePriceRecordAssetList
-
-// Exchange tells us how much we need to spend given the amount we want is fixed.
-//	?? FROM -> X TO
-//	TODO: Ensure float calculations are ok.
-func (o BigFloats) ExchangeTo(from string, to string, want *big.Float) (*big.Float, error) {
-	rate, err := o.ExchangeRate(from, to)
-	if err != nil {
-		return nil, err
-	}
-	if rate == nil {
-		return nil, fmt.Errorf("exchrate is 0")
-	}
-
-	//hW := big.NewFloat(float64(want))
-	v := big.NewFloat(0).Quo(want, rate)
-
-	return v, err
-}
-
-// Exchange tells us how much we need to spend given the amount we have is fixed.
-//	X FROM -> ?? TO
-//	TODO: Ensure float calculations are ok.
-func (o BigFloats) ExchangeFrom(from string, have *big.Float, to string) (*big.Float, error) {
-	rate, err := o.ExchangeRate(from, to)
-
-	//hF := big.NewFloat(float64(have))
-	v := big.NewFloat(0).Mul(have, rate)
-
-	// The have is in 'sats'.
-	return v, err
-}
-
-// ExchangeRate finds the exchange rate going from `FROM` to `TO`.
-//	To do the exchange rate, USD is the base pair and used as the intermediary.
-//	So to go from FCT -> BTC, the math goes:
-//		FCT -> USD -> BTC
-//	TODO: Ensure float calculations are ok.
-func (o BigFloats) ExchangeRate(from, to string) (*big.Float, error) {
-	// First we need to ensure we have the pricing for each side of the exchange
-	fromRate, ok := o[from]
-	if !ok {
-		return nil, fmt.Errorf("did not find a rate for %s", from)
-	}
-
-	toRate, ok := o[to]
-	if !ok {
-		return nil, fmt.Errorf("did not find a rate for %s", to)
-	}
-
-	bF := big.NewFloat(fromRate)
-	bT := big.NewFloat(toRate)
-
-	// TODO: Should I round this?
-	return big.NewFloat(0).Quo(bF, bT), nil
+	return fromRate / toRate, nil
 }
 
 func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {
