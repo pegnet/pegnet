@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
+	"math/big"
 	"math/rand"
 	"testing"
 
@@ -201,7 +202,7 @@ func TestPriceConversions(t *testing.T) {
 	// 	to create reference vectors.
 	t.Run("random", func(t *testing.T) {
 		// Create random prices, and check the exchage from matches the to
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100000; i++ {
 			assets := make(OraclePriceRecordAssetList)
 			// Random prices up to 100K usd per coin
 			assets["from"] = rand.Float64() * float64(rand.Int63n(100e3))
@@ -209,8 +210,6 @@ func TestPriceConversions(t *testing.T) {
 
 			assets["from"] = polling.Round(assets["from"])
 			assets["to"] = polling.Round(assets["to"])
-
-			//iAssets := IntegerBasedOraclePriceRecordAssetList(assets)
 
 			// Random amount up to 100K*1e8
 			have := rand.Int63n(1000 * 1e8)
@@ -261,6 +260,120 @@ func TestPriceConversions(t *testing.T) {
 			if assets2["to"] != assets["to"] {
 				t.Errorf("Json output does not match in for %f", assets["to"])
 			}
+		}
+	})
+
+	t.Run("random-Float64", func(t *testing.T) {
+		// Create random prices, and check the exchage from matches the to
+		for i := 0; i < 100000; i++ {
+			assets := make(OraclePriceRecordAssetList)
+			// Random prices up to 100K usd per coin
+			assets["from"] = rand.Float64() * float64(rand.Int63n(100e2))
+			assets["to"] = rand.Float64() * float64(rand.Int63n(100e2))
+
+			assets["from"] = polling.Round(assets["from"])
+			assets["to"] = polling.Round(assets["to"])
+
+			iAssets := RegularFloats(assets)
+
+			// Random amount up to 100K*1e8
+			have := float64(rand.Int63n(1000 * 1e8))
+			amt, err := iAssets.ExchangeFrom("from", have, "to")
+			if err != nil {
+				t.Error(err)
+			}
+
+			// The amt you get should match the amount to
+			need, err := iAssets.ExchangeTo("from", "to", amt)
+			if err != nil {
+				t.Error(err)
+			}
+
+			d, _ := json.Marshal(&ConversionTest{
+				assets["from"],
+				assets["to"],
+				int64(have),
+				int64(amt),
+				int64(need),
+				int64(have - need),
+			})
+
+			diff := math.Abs(have - need)
+
+			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
+			// If you turn down this tolerance, you can get some more vector tests.
+			if diff > 500 {
+				t.Errorf(string(d))
+				t.Errorf("Precision err. have %f, exp %f. Diff %f", have, need, have-need)
+			}
+
+			// To ints
+
+			hI := int64(have)
+			nI := int64(need)
+			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
+			// If you turn down this tolerance, you can get some more vector tests.
+			if math.Abs(float64(nI-hI)) > 500 {
+				t.Errorf("Precision err. have %d, exp %d. Diff %d", hI, nI, hI-nI)
+			}
+		}
+	})
+
+	t.Run("random-bigFloats", func(t *testing.T) {
+		// Create random prices, and check the exchage from matches the to
+		for i := 0; i < 100000; i++ {
+			assets := make(OraclePriceRecordAssetList)
+			// Random prices up to 100K usd per coin
+			assets["from"] = rand.Float64() * float64(rand.Int63n(100e3))
+			assets["to"] = rand.Float64() * float64(rand.Int63n(100e3))
+
+			assets["from"] = polling.Round(assets["from"])
+			assets["to"] = polling.Round(assets["to"])
+
+			iAssets := BigFloats(assets)
+
+			// Random amount up to 100K*1e8
+			have := big.NewFloat(float64(rand.Int63n(1000 * 1e8)))
+			amt, err := iAssets.ExchangeFrom("from", have, "to")
+			if err != nil {
+				t.Error(err)
+			}
+
+			// The amt you get should match the amount to
+			need, err := iAssets.ExchangeTo("from", "to", amt)
+			if err != nil {
+				t.Error(err)
+			}
+
+			//d, _ := json.Marshal(&ConversionTest{
+			//	assets["from"],
+			//	assets["to"],
+			//	have,
+			//	amt,
+			//	need,
+			//	have - need,
+			//})
+
+			diff := big.NewFloat(0).Sub(have, need)
+			aDiff := big.NewFloat(0).Abs(diff)
+
+			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
+			// If you turn down this tolerance, you can get some more vector tests.
+			if aDiff.Cmp(big.NewFloat(500)) == 1 {
+				//t.Errorf(string(d))
+				t.Errorf("Precision err. have %d, exp %d. Diff %d", have, need, diff)
+			}
+
+			// To ints
+
+			hI, _ := have.Int64()
+			nI, _ := need.Int64()
+			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
+			// If you turn down this tolerance, you can get some more vector tests.
+			if math.Abs(float64(nI-hI)) > 500 {
+				t.Errorf("Precision err. have %d, exp %d. Diff %d", hI, nI, hI-nI)
+			}
+
 		}
 	})
 
