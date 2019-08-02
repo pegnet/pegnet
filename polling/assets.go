@@ -35,7 +35,7 @@ type PegItem struct {
 func (p PegItem) Clone(randomize float64) PegItem {
 	np := new(PegItem)
 	np.Value = p.Value + p.Value*(randomize/2*rand.Float64()) - p.Value*(randomize/2*rand.Float64())
-	np.Value = Round(np.Value)
+	np.Value = RoundRate(np.Value)
 	np.When = p.When
 	return *np
 }

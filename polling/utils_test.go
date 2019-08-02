@@ -10,7 +10,7 @@ func TestVectoredRound(t *testing.T) {
 	}
 
 	testVec := func(t *testing.T, v Vector) {
-		if r := Round(v.V); r != v.Exp {
+		if r := RoundRate(v.V); r != v.Exp {
 			t.Errorf("Exp %f, found %f", v.Exp, r)
 		}
 	}

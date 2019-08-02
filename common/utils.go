@@ -4,17 +4,16 @@
 package common
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/prometheus/common/log"
-
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
+	"math"
+	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
+	log "github.com/sirupsen/logrus"
 )
 
 var PegAssetNames []string
@@ -30,6 +29,10 @@ func init() {
 		}
 		TestPegAssetNames = append(TestPegAssetNames, "t"+asset)
 	}
+}
+
+func TruncateFloat(v float64) int64 {
+	return int64(math.Trunc(v))
 }
 
 func PullValue(line string, howMany int) string {

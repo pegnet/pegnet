@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/FactomProject/factoid"
@@ -222,5 +223,34 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToRaw(); err != nil {
 		t.Error(err)
 	}
+}
 
+func TestFloatTruncate(t *testing.T) {
+	type Expected struct {
+		V   float64
+		Exp int64
+	}
+
+	testingfunc := func(t *testing.T, e Expected) {
+		if i := TruncateFloat(e.V); i != e.Exp {
+			t.Errorf("Exp %d, found %d with %f", i, e.Exp, e.V)
+		}
+	}
+
+	testingfunc(t, Expected{V: 0.1, Exp: 0})
+	testingfunc(t, Expected{V: 0.2, Exp: 0})
+	testingfunc(t, Expected{V: 0.3, Exp: 0})
+	testingfunc(t, Expected{V: 0.4, Exp: 0})
+	testingfunc(t, Expected{V: 0.5, Exp: 0})
+	testingfunc(t, Expected{V: 0.6, Exp: 0})
+	testingfunc(t, Expected{V: 0.7, Exp: 0})
+	testingfunc(t, Expected{V: 0.8, Exp: 0})
+	testingfunc(t, Expected{V: 0.9, Exp: 0})
+
+	testingfunc(t, Expected{V: 15.6, Exp: 15})
+	testingfunc(t, Expected{V: 22.49, Exp: 22})
+
+	for i := 0; i < 100; i++ {
+		testingfunc(t, Expected{V: rand.Float64(), Exp: 0})
+	}
 }

@@ -37,7 +37,8 @@ func PollingExponentialBackOff() *backoff.ExponentialBackOff {
 
 const precision = 10000
 
-func Round(v float64) float64 {
+// RoundRate truncates the float
+func RoundRate(v float64) float64 {
 	return math.Round(v*precision) / precision
 }
 

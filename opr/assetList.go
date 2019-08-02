@@ -8,6 +8,9 @@ import (
 	"github.com/pegnet/pegnet/common"
 )
 
+// OracleFloat has a custom marshal
+type OracleFloat float64
+
 // OraclePriceRecordAssetList is used such that the marshaling of the assets
 // is in the same order, and we still can use map access in the code
 // 	Key: Asset
@@ -26,52 +29,71 @@ func (o OraclePriceRecordAssetList) Contains(list []string) bool {
 
 // Exchange tells us how much we need to spend given the amount we want is fixed.
 //	?? FROM -> X TO
-//	TODO: Ensure float calculations are ok.
+//
+//   X TO         to_usd               1
+//  ------    *  --------- = USD * -------- = FROM
+//     1            1               from_usd
+//
 func (o OraclePriceRecordAssetList) ExchangeTo(from string, to string, want int64) (int64, error) {
-	rate, err := o.ExchangeRate(from, to)
+	fromRate, toRate, err := o.ExchangeRates(from, to)
 	if err != nil {
 		return 0, err
 	}
-	if rate == 0 {
-		return 0, fmt.Errorf("exchrate is 0")
-	}
 
-	return Int64RoundedCast(float64(want) / rate), err
+	// Truncate vs round, so txs will drop the partials, as rounding up would create tokens.
+	// Office space code goes here
+	return common.TruncateFloat(float64(want) * toRate / fromRate), err
 }
 
 // Exchange tells us how much we need to spend given the amount we have is fixed.
-//	X FROM -> ?? TO
-//	TODO: Ensure float calculations are ok.
+//  X FROM -> ?? TO
+//
+//  X FROM       from_usd             1
+//  ------    *  --------- = USD * -------- = TO
+//     1            1               to_usd
+//
 func (o OraclePriceRecordAssetList) ExchangeFrom(from string, have int64, to string) (int64, error) {
-	rate, err := o.ExchangeRate(from, to)
-	// The have is in 'sats'.
-	return Int64RoundedCast(float64(have) * rate), err
+	fromRate, toRate, err := o.ExchangeRates(from, to)
+	if err != nil {
+		return 0, err
+	}
+
+	// Truncate vs round, so txs will drop the partials, as rounding up would create tokens.
+	// Office space code goes here
+	return common.TruncateFloat(float64(have) * fromRate / toRate), err
 }
 
-// Int64RoundedCast will cast the amt to int64 and round rather than truncate
-func Int64RoundedCast(amt float64) int64 {
-	round := (int64(amt*10) % 10) / 5
-	return int64(amt) + round
+// ExchangeRate finds the exchange rates for FROM and TO in usd as the base pair.
+func (o OraclePriceRecordAssetList) ExchangeRates(from, to string) (fromRate float64, toRate float64, err error) {
+	var ok bool
+	// First we need to ensure we have the pricing for each side of the exchange
+	fromRate, ok = o[from]
+	if !ok {
+		return 0, 0, fmt.Errorf("did not find a rate for %s", from)
+	}
+
+	toRate, ok = o[to]
+	if !ok {
+		return 0, 0, fmt.Errorf("did not find a rate for %s", to)
+	}
+
+	if toRate == 0 || fromRate == 0 {
+		return 0, 0, fmt.Errorf("one of the rates found is 0")
+	}
+
+	// fromRate / toRate
+	return fromRate, toRate, nil
 }
 
 // ExchangeRate finds the exchange rate going from `FROM` to `TO`.
 //	To do the exchange rate, USD is the base pair and used as the intermediary.
 //	So to go from FCT -> BTC, the math goes:
 //		FCT -> USD -> BTC
-//	TODO: Ensure float calculations are ok.
 func (o OraclePriceRecordAssetList) ExchangeRate(from, to string) (float64, error) {
-	// First we need to ensure we have the pricing for each side of the exchange
-	fromRate, ok := o[from]
-	if !ok {
-		return 0, fmt.Errorf("did not find a rate for %s", from)
+	fromRate, toRate, err := o.ExchangeRates(from, to)
+	if err != nil {
+		return 0, err
 	}
-
-	toRate, ok := o[to]
-	if !ok {
-		return 0, fmt.Errorf("did not find a rate for %s", to)
-	}
-
-	// TODO: Should I round this?
 	return fromRate / toRate, nil
 }
 
