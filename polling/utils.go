@@ -35,8 +35,10 @@ func PollingExponentialBackOff() *backoff.ExponentialBackOff {
 	return b
 }
 
+const precision = 10000
+
 func Round(v float64) float64 {
-	return math.Round(v*10000) / 10000
+	return math.Round(v*precision) / precision
 }
 
 func ConverToUnix(format string, value string) (timestamp int64) {

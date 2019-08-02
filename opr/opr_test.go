@@ -142,12 +142,14 @@ func TestPriceConversions(t *testing.T) {
 	})
 
 	type ConversionTest struct {
-		FromRate   float64 // USD rate of from currency
-		ToRate     float64 // USD rate of to currency
-		Have       int64   // The fixed FROM input
-		Get        int64   // The amount we receive from the fixed
-		Need       int64   // The amount we expect to need to get 'Get'
-		Difference int64   // the difference in the expected amounts
+		FromRate    float64 // USD rate of from currency
+		ToRate      float64 // USD rate of to currency
+		ConvertRate float64 // Rate from -> to
+		Have        int64   // The fixed FROM input
+		amt         int64   // The amount we receive from the fixed
+		Need        int64   // The amount we expect to need to get 'amt'
+		Difference  int64   // the difference in the expected amounts
+		WhenNeeded  int64
 	}
 
 	t.Run("vectored", func(t *testing.T) {
@@ -173,8 +175,8 @@ func TestPriceConversions(t *testing.T) {
 				t.Error(err)
 			}
 
-			if amt != a.Get {
-				t.Errorf("Exp to get %d, got %d", a.Get, amt)
+			if amt != a.amt {
+				t.Errorf("Exp to get %d, got %d", a.amt, amt)
 			}
 
 			// The amt you get should match the amount to
@@ -199,16 +201,35 @@ func TestPriceConversions(t *testing.T) {
 	//		t = f * r
 	//	We expect some errors. This test has some tolerance allowed. It can be used
 	// 	to create reference vectors.
+	//
+	// | TX | From Currency (int64) | Conversion Direction (float64 ratio) | To Currency (int64) |
+	// |----|-----------------------|:------------------------------------:|---------------------|
+	// | 1  | Given `have`          |                 --->                 | Computed `amt`      |
+	// | 2  | Computed `need`       |                 --->                 | Given `amt`         |
+	// | 3  | Computed `whenNeeded` |                 <---                 | Given `amt`         |
 	t.Run("random", func(t *testing.T) {
 		// Create random prices, and check the exchage from matches the to
-		for i := 0; i < 10000; i++ {
+		for i := 0; i < 100000; i++ {
 			assets := make(OraclePriceRecordAssetList)
 			// Random prices up to 100 usd per coin
 			assets["from"] = rand.Float64() * float64(rand.Int63n(100))
 			assets["to"] = rand.Float64() * float64(rand.Int63n(100))
 
-			if assets["from"] < 0.05 || assets["to"] < 0.05 {
-				continue // When doing random rates, anything below this we lose a lot of precision
+			if assets["from"] < 0.0001 || assets["to"] < 0.0001 {
+				continue // This won't work. 0 rates are not valid
+			}
+
+			cr, _ := assets.ExchangeRate("from", "to")
+			if cr < 0.01 || cr == math.Inf(1) {
+				// When doing random rates, we will get precision errors.
+				// This unit test is good at finding vectors, and checking
+				// general conversion logic. But other testing should be done
+				// and this should serve as a tool to verify precision
+				continue
+			}
+
+			if cr == math.NaN() {
+				continue
 			}
 
 			assets["from"] = polling.Round(assets["from"])
@@ -227,20 +248,39 @@ func TestPriceConversions(t *testing.T) {
 				t.Error(err)
 			}
 
-			d, _ := json.Marshal(&ConversionTest{
+			// The amt you get should match the amount to
+			whenNeed, err := assets.ExchangeFrom("to", amt, "from")
+			if err != nil {
+				t.Error(err)
+			}
+
+			d, err := json.Marshal(&ConversionTest{
 				assets["from"],
 				assets["to"],
+				cr,
 				have,
 				amt,
 				need,
 				have - need,
+				whenNeed,
 			})
+
+			if err != nil {
+				t.Error(err)
+				continue
+			}
 
 			// A 400 'sat' tolerance. I'm not sure how else to test and know the expected error.
 			// If you turn down this tolerance, you can get some more vector tests.
-			if math.Abs(float64(have-need)) > 500 {
+			if math.Abs(float64(have-need)) > 400 {
 				t.Errorf(string(d))
 				t.Errorf("Precision err. have %d, exp %d. Diff %d", have, need, have-need)
+			}
+
+			// Checking the reverse
+			if math.Abs(float64(whenNeed-need)) > 400 {
+				t.Errorf(string(d))
+				t.Errorf("Precision err going opposit. whenNeed %d, exp %d. Diff %d", whenNeed, need, whenNeed-need)
 			}
 
 			// Verify our values are the same coming out of json
@@ -318,28 +358,11 @@ func TestIntCast(t *testing.T) {
 	testingfunc(t, Expected{V: 22.49, Exp: 22})
 }
 
-const conversionVector = `[{"FromRate":7401.2406,"ToRate":12554.2132,"Have":83311134652,"Get":49111913877,"Need":83311134651,"Difference":1},
-{"FromRate":971.9422,"ToRate":58891.8338,"Have":60983331750,"Get":1006224974,"Need":60983331758,"Difference":-8},
-{"FromRate":7840.4901,"ToRate":59324.0861,"Have":77372812453,"Get":10228685806,"Need":77372812451,"Difference":2},
-{"FromRate":32570.8436,"ToRate":38708.8151,"Have":81437551529,"Get":68521555857,"Need":81437551530,"Difference":-1},
-{"FromRate":1247.1401,"ToRate":8919.7313,"Have":72122742700,"Get":10082759429,"Need":72122742697,"Difference":3},
-{"FromRate":363.0485,"ToRate":21587.7816,"Have":60614313135,"Get":1018320461,"Need":60614313155,"Difference":-20},
-{"FromRate":879.7282,"ToRate":26859.0372,"Have":1432260190,"Get":46978134,"Need":1432260183,"Difference":7},
-{"FromRate":7475.8643,"ToRate":19388.1319,"Have":39528292143,"Get":15242109450,"Need":39528292142,"Difference":1},
-{"FromRate":349.895,"ToRate":57311.615,"Have":48154650895,"Get":293743370,"Need":48154650820,"Difference":75},
-{"FromRate":10691.0146,"ToRate":76022.3443,"Have":578986641,"Get":81405522,"Need":578986643,"Difference":-2},
-{"FromRate":3762.2321,"ToRate":41476.6813,"Have":29564889229,"Get":2681535453,"Need":29564889228,"Difference":1},
-{"FromRate":33879.3138,"ToRate":64319.8167,"Have":68471983631,"Get":36064193778,"Need":68471983630,"Difference":1},
-{"FromRate":7250.799,"ToRate":28106.2177,"Have":42639110966,"Get":11000890629,"Need":42639110965,"Difference":1},
-{"FromRate":3199.0859,"ToRate":70556.5703,"Have":32527976373,"Get":1473517330,"Need":32527976380,"Difference":-7},
-{"FromRate":6820.1745,"ToRate":16517.0497,"Have":22127172750,"Get":9136309628,"Need":22127172749,"Difference":1},
-{"FromRate":889.5809,"ToRate":21820.7544,"Have":91911834437,"Get":3750002845,"Need":91911834436,"Difference":1},
-{"FromRate":16434.0195,"ToRate":41816.5483,"Have":52175362199,"Get":20504917344,"Need":52175362198,"Difference":1},
-{"FromRate":10916.4125,"ToRate":61329.0005,"Have":65879719289,"Get":11726590033,"Need":65879719287,"Difference":2},
-{"FromRate":4773.2617,"ToRate":39510.0051,"Have":83423015425,"Get":10077500263,"Need":83423015422,"Difference":3},
-{"FromRate":884.851,"ToRate":50361.801,"Have":34938452019,"Get":614916756,"Need":34938452045,"Difference":-26},
-{"FromRate":7837.9481,"ToRate":39901.8513,"Have":33983192302,"Get":6674298968,"Need":33983192301,"Difference":1},
-{"FromRate":2793.6353,"ToRate":40680.3513,"Have":68712918070,"Get":4720577471,"Need":68712918064,"Difference":6},
-{"FromRate":2.7668,"ToRate":50192.5979,"Have":10530396008,"Get":1053040,"Need":10530400000,"Difference":-3992}
+const conversionVector = `
+[
+{"FromRate":0.0056,"ToRate":28.4376,"ConvertRate":0.0001957678336190335,"Have":49530497071,"Need":49530499173,"Difference":-2102,"WhenNeeded":49530499173},
+{"FromRate":0.0194,"ToRate":24.9232,"ConvertRate":0.0007776509548873975,"Have":14220790757,"Need":14220791225,"Difference":-468,"WhenNeeded":14220791225},
+{"FromRate":0.032,"ToRate":82.2916,"ConvertRate":0.00038912927643798784,"Have":75673685781,"Need":75673686383,"Difference":-602,"WhenNeeded":75673686383},
+{"FromRate":0.0005,"ToRate":48.4376,"ConvertRate":0.000010732782363517055,"Have":54662636938,"Need":54662606602,"Difference":30336,"WhenNeeded":54662606602}
 ]
 `
