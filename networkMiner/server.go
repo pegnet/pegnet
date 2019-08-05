@@ -2,10 +2,13 @@ package networkMiner
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/gob"
 	"errors"
 	"fmt"
+	"math/rand"
 	"sync"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
@@ -26,6 +29,8 @@ const (
 	FactomEntry
 	MiningStatistics
 	AddTag
+	SecretChallenge
+	RejectedConnection // Sever rejected client
 )
 
 // Idk why the factom.entry does not work
@@ -40,6 +45,12 @@ type Tag struct {
 	Value string
 }
 
+// AuthenticationChallenge is used for request + response
+type AuthenticationChallenge struct {
+	Challenge string // Request
+	Response  string // Response
+}
+
 func init() {
 	gob.Register(common.MonitorEvent{})
 	gob.Register(opr.OPRs{})
@@ -48,6 +59,7 @@ func init() {
 	gob.Register(opr.OraclePriceRecord{})
 	gob.Register(mining.GroupMinerStats{})
 	gob.Register(Tag{})
+	gob.Register(AuthenticationChallenge{})
 }
 
 // MiningServer is the coordinator to emit events to anyone listening
@@ -65,6 +77,10 @@ type MiningServer struct {
 
 	clientsLock sync.Mutex
 	clients     map[int]*TCPClient
+	numClients  int
+	salt        int // Random salt on each boot
+	secret      string
+	useAuth     bool
 }
 
 func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *MiningServer {
@@ -97,6 +113,20 @@ func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.
 	s.Server.onNewClientCallback = s.onNewClient
 	s.Server.onNewMessage = s.onNewMessage
 	s.Server.onClientConnectionClosed = s.onClientConnectionClosed
+
+	// We use random in our authentication. I think using crypto/rand is overkill.
+	// It is a simple authentication protocol, all miners connecting in should be trusted.
+	rand.Seed(time.Now().UnixNano())
+	s.salt = rand.Int()
+	s.useAuth, err = config.Bool(common.ConfigCoordinatorUseAuthentication)
+	if err != nil {
+		log.WithError(err).Fatalf("missing coordinator use authentication in config")
+	}
+
+	s.secret, err = config.String(common.ConfigCoordinatorSecret)
+	if err != nil {
+		log.WithError(err).Fatalf("missing authentication secret in config")
+	}
 
 	return s
 }
@@ -150,9 +180,8 @@ func (c *MiningServer) ForwardMonitorEvents() {
 					fLog.WithField("evt", "opr").WithError(err).Error("failed to send")
 				}
 			}
-			c.clientsLock.Unlock()
-
 			fLog.WithFields(c.Fields()).Info("sent opr to miners")
+			c.clientsLock.Unlock()
 
 		}
 	}
@@ -160,6 +189,17 @@ func (c *MiningServer) ForwardMonitorEvents() {
 
 // onNewMessage is when the client messages us.
 func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
+	if !c.accepted {
+		switch message.NetworkCommand {
+		case SecretChallenge, AddTag, Ping, Pong:
+		// Let these commands through
+		default:
+			// We won't listen to most messages if they are not accepted yet from
+			// the challenge
+			return
+		}
+	}
+
 	switch message.NetworkCommand {
 	case AddTag:
 		b, ok := message.Data.(Tag)
@@ -170,10 +210,11 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 
 		c.tagLock.Lock()
 		c.tags[b.Key] = b.Value
+		c.tags["version"] = message.Version
 		c.tagLock.Unlock()
 	case Pong:
 	case Ping:
-		err := c.SendNetworkCommand(&NetworkMessage{NetworkCommand: Pong})
+		err := c.SendNetworkCommand(NewNetworkMessage(Pong, nil))
 		if err != nil {
 			log.WithFields(n.Fields()).WithError(err).Errorf("failed to pong")
 		}
@@ -219,9 +260,52 @@ func (n *MiningServer) onNewMessage(c *TCPClient, message *NetworkMessage) {
 		c.tagLock.Unlock()
 
 		n.Stats.MiningStatsChannel <- &g
+	case SecretChallenge:
+		// Response for challenge from client
+		challengeResp, ok := message.Data.(AuthenticationChallenge)
+		if !ok {
+			log.WithFields(n.Fields()).Errorf("client did not send a proper entry")
+			return
+		}
+
+		// Get the expected challenge data
+		challenge := n.GetAuthenticationChallenge(c)
+
+		// If the user is responding to another challenge, they are wrong.
+		if challengeResp.Challenge != challenge.Challenge {
+			err := c.SendNetworkCommand(NewNetworkMessage(RejectedConnection, "challenge data did not match expected"))
+			if err != nil {
+				log.WithFields(n.Fields()).WithError(err).Errorf("client failed challenge")
+			}
+			var _ = c.Close()
+			return
+		}
+
+		// Challenge Resp is sha256(secret+challenge)
+		resp := sha256.Sum256([]byte(n.secret + challenge.Challenge))
+		challenge.Response = fmt.Sprintf("%x", resp)
+
+		// Check the user's challenge response
+		if challengeResp.Response != challenge.Response {
+			err := c.SendNetworkCommand(NewNetworkMessage(RejectedConnection, "challenge response is incorrect"))
+			if err != nil {
+				log.WithFields(n.Fields()).WithError(err).Errorf("client failed challenge")
+			}
+			var _ = c.Close()
+			return
+		}
+
+		// Client is good, let them mine
+		n.Accept(c)
+	case RejectedConnection:
+	// Clients don't reject servers. They just leave
 	default:
 		log.WithFields(n.Fields()).WithField("cmd", message.NetworkCommand).Warn("command not recognized from client")
 	}
+}
+
+func (s *MiningServer) GetAuthenticationChallenge(c *TCPClient) AuthenticationChallenge {
+	return AuthenticationChallenge{Challenge: fmt.Sprintf("%d%d", s.salt, c.id)}
 }
 
 func (s *MiningServer) onClientConnectionClosed(c *TCPClient, err error) {
@@ -229,20 +313,38 @@ func (s *MiningServer) onClientConnectionClosed(c *TCPClient, err error) {
 	defer s.clientsLock.Unlock()
 
 	delete(s.clients, c.id)
+	s.numClients = len(s.clients)
 	log.WithFields(s.Fields()).Info("Client disconnected")
 }
 
 func (s *MiningServer) onNewClient(c *TCPClient) {
+	if s.useAuth {
+		challenge := s.GetAuthenticationChallenge(c)
+		err := c.SendNetworkCommand(NewNetworkMessage(SecretChallenge, challenge))
+		if err != nil {
+			log.WithFields(s.Fields()).WithError(err).WithField("func", "onNewClient").Error("failed to send challenge")
+			return
+		}
+		log.WithFields(s.Fields()).WithField("id", c.id).Info("Client pending challenge")
+	} else {
+		err := c.SendNetworkCommand(NewNetworkMessage(Ping, nil))
+		if err != nil {
+			log.WithFields(s.Fields()).WithError(err).WithField("func", "onNewClient").Error("ping failed")
+			return
+		}
+
+		s.Accept(c)
+	}
+}
+
+func (s *MiningServer) Accept(c *TCPClient) {
 	s.clientsLock.Lock()
 	defer s.clientsLock.Unlock()
+	c.accepted = true
 
 	s.clients[c.id] = c
+	s.numClients = len(s.clients)
 	log.WithFields(s.Fields()).WithField("id", c.id).Info("Client connected")
-
-	err := c.SendNetworkCommand(&NetworkMessage{NetworkCommand: Ping})
-	if err != nil {
-		log.WithFields(s.Fields()).WithError(err).WithField("func", "onNewClient").Error("ping failed")
-	}
 }
 
 func (s *MiningServer) WriteEntry(entry *factom.Entry) error {
@@ -261,6 +363,5 @@ func (s *MiningServer) WriteEntry(entry *factom.Entry) error {
 }
 
 func (s *MiningServer) Fields() log.Fields {
-	// TODO: Is this threadsafe?
-	return log.Fields{"clients": len(s.clients)}
+	return log.Fields{"clients": s.numClients}
 }

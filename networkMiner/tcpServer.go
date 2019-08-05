@@ -3,6 +3,7 @@ package networkMiner
 import (
 	"crypto/tls"
 	"encoding/gob"
+	"fmt"
 	"math/rand"
 	"net"
 	"sync"
@@ -18,6 +19,7 @@ const (
 type NetworkMessage struct {
 	NetworkCommand int
 	Data           interface{}
+	Version        string
 }
 
 type TCPClient struct {
@@ -30,10 +32,12 @@ type TCPClient struct {
 	tagLock sync.Mutex
 	tags    map[string]string
 
-	conn    net.Conn
-	encoder *gob.Encoder
-	decoder *gob.Decoder
-	Server  *TCPServer
+	conn     net.Conn
+	encoder  *gob.Encoder
+	decoder  *gob.Decoder
+	Server   *TCPServer
+	closed   bool
+	accepted bool
 }
 
 func NewTCPClient(conn net.Conn, s *TCPServer) *TCPClient {
@@ -59,8 +63,7 @@ func (c *TCPClient) listen() {
 		var m NetworkMessage
 		err := c.decoder.Decode(&m)
 		if err != nil {
-			c.conn.Close()
-			c.Server.onClientConnectionClosed(c, err)
+			c.close(err)
 			return
 		}
 		c.Server.onNewMessage(c, &m)
@@ -77,8 +80,18 @@ func (c *TCPClient) Conn() net.Conn {
 	return c.conn
 }
 
-func (c *TCPClient) Close() error {
+func (c *TCPClient) close(err error) error {
+	if c.closed {
+		return nil // Only close once
+	}
+	c.closed = true
+
+	defer c.Server.onClientConnectionClosed(c, err)
 	return c.conn.Close()
+}
+
+func (c *TCPClient) Close() error {
+	return c.close(fmt.Errorf("closed by server"))
 }
 
 // TCPServer is heavily inspired by https://github.com/firstrow/tcp_server

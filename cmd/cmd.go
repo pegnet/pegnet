@@ -306,7 +306,8 @@ var networkMinerCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		go cl.Listen()
+		// Pass the cancel func to stop the system
+		go cl.Listen(cancel)
 		go cl.Forwarder()
 		monitor, grader, oprMaker := cl.Listeners()
 
@@ -333,7 +334,7 @@ var networkMinerCmd = &cobra.Command{
 			panic(err)
 		}
 
-		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
+		coord.LaunchMiners(ctx) // Inf loop unless context cancelled
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel

@@ -1,6 +1,8 @@
 package networkMiner
 
 import (
+	"context"
+	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
 	"net"
@@ -74,10 +76,10 @@ func (c *MiningClient) Connect() error {
 	c.initCoders()
 
 	// Send over our tags
-	err = c.encoder.Encode(&NetworkMessage{NetworkCommand: AddTag, Data: Tag{
+	err = c.encoder.Encode(NewNetworkMessage(AddTag, Tag{
 		Key:   "id",
 		Value: c.FactomDigitalID,
-	}})
+	}))
 	if err != nil {
 		log.WithField("evt", "tag").WithError(err).Error("failed to send tag")
 	} else {
@@ -110,18 +112,18 @@ func (c *MiningClient) Forwarder() {
 	for {
 		select {
 		case ent := <-c.entryChannel:
-			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: FactomEntry, Data: GobbedEntry{
+			err := c.encoder.Encode(NewNetworkMessage(FactomEntry, GobbedEntry{
 				ExtIDs:  ent.ExtIDs,
 				ChainID: ent.ChainID,
 				Content: ent.Content,
-			}})
+			}))
 			if err != nil {
 				fLog.WithField("evt", "entry").WithError(err).Error("failed to send entry")
 			} else {
 				fLog.WithField("evt", "entry").WithField("entry", fmt.Sprintf("%x", ent.Hash())).Debugf("sent entry")
 			}
 		case s := <-c.UpstreamStats:
-			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: MiningStatistics, Data: *s})
+			err := c.encoder.Encode(NewNetworkMessage(MiningStatistics, *s))
 			if err != nil {
 				fLog.WithField("evt", "entry").WithError(err).Error("failed to send stats")
 			} else {
@@ -132,7 +134,7 @@ func (c *MiningClient) Forwarder() {
 }
 
 // Listen for server events
-func (c *MiningClient) Listen() {
+func (c *MiningClient) Listen(cancel context.CancelFunc) {
 	fLog := log.WithField("func", "MiningClient.Listen()")
 	for {
 		var m NetworkMessage
@@ -166,10 +168,40 @@ func (c *MiningClient) Listen() {
 
 			c.OPRMaker.RecOPR(evt)
 		case Ping:
-			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: Pong})
+			err := c.encoder.Encode(NewNetworkMessage(Pong, nil))
 			if err != nil {
 				fLog.WithField("evt", "ping").WithError(err).Error("failed to pong")
 			}
+		case SecretChallenge:
+			// Respond to the challenge with our secret
+			challenge, ok := m.Data.(AuthenticationChallenge)
+			if !ok {
+				fLog.Errorf("server did not send a proper challenge")
+				cancel() // Cancel mining
+				return
+			}
+
+			secret, err := c.config.String(common.ConfigCoordinatorSecret)
+			if err != nil {
+				// Do not return here, let the empty secret fail the challenge.
+				fLog.WithError(err).Errorf("client is missing coordinator secret")
+			}
+
+			// Challenge Resp is sha256(secret+challenge)
+			resp := sha256.Sum256([]byte(secret + challenge.Challenge))
+			challenge.Response = fmt.Sprintf("%x", resp)
+			err = c.encoder.Encode(NewNetworkMessage(SecretChallenge, challenge))
+			if err != nil {
+				fLog.WithError(err).Errorf("failed to respond to challenge")
+				cancel()
+				return
+			}
+		case RejectedConnection:
+			// This means the server rejected us. Probably due to a failed challenge
+			fLog.Errorf("Our connection to the coordinator was rejected. This is most likely due to failing the " +
+				"authentication challenge. Ensure this miner has the same secret as the coordinator, and try again.")
+			cancel()
+			return
 		case Pong:
 			// Do nothing
 		default:
