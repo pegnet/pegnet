@@ -127,10 +127,12 @@ MiningLoop:
 			return
 		}
 
-		mineLog.WithFields(log.Fields{
+		hLog := mineLog.WithFields(log.Fields{
 			"height": fds.Dbht,
 			"minute": fds.Minute,
-		}).Debug("Miner received alert")
+		})
+
+		hLog.Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
 			if !mining {
@@ -138,6 +140,12 @@ MiningLoop:
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to mine this block")
+					mining = false
 					continue MiningLoop // OPR cancelled
 				}
 

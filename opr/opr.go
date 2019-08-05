@@ -114,6 +114,12 @@ func check(e error) {
 	}
 }
 
+func detailError(e error) error {
+	_, file, line, _ := runtime.Caller(1) // The line that called this function
+	shortFile := ShortenPegnetFilePath(file, "", 0)
+	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
+}
+
 // ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
 //	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
 //	This is nice for errors that print the file + line number
@@ -323,6 +329,10 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	case winners = <-alert: // Wait for winner
 	case <-ctx.Done(): // If we get cancelled
 		return nil, context.Canceled
+	}
+
+	if winners.Error != nil {
+		return nil, winners.Error
 	}
 
 	for i, w := range winners.ToBePaid {
