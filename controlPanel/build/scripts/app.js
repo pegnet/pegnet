@@ -84,7 +84,8 @@
       }
       },
       columnDefs: [
-          // { width: '40%', targets: 0 }
+        // { width: '40%', targets: 0 }
+        { className: "mono-space", "targets": [ 6 ] }
       ],
       columns: [
         {title: "Block Height", data: "blockheight"},

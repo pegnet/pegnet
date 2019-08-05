@@ -262,7 +262,8 @@ h.each(n,function(a,b){h.fn.DataTable[a]=b});return h.fn.dataTable});
       }
       },
       columnDefs: [
-          // { width: '40%', targets: 0 }
+        // { width: '40%', targets: 0 }
+        { className: "mono-space", "targets": [ 6 ] }
       ],
       columns: [
         {title: "Block Height", data: "blockheight"},
