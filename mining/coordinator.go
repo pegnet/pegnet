@@ -2,7 +2,6 @@ package mining
 
 import (
 	"context"
-	"math"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
@@ -135,7 +134,7 @@ MiningLoop:
 			mineLog.WithFields(log.Fields{
 				"height": fds.Dbht,
 				"minute": fds.Minute,
-			}).Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, int(math.Abs(float64(fds.Minute-11)))%10)
+			}).Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
 			first = true
 		}
 
