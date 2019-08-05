@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"math"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
@@ -99,7 +100,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	opr.InitLX()
-	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
+	mineLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
 	alert := c.FactomMonitor.NewListener()
@@ -117,6 +118,8 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 		go m.Miner.Mine(ctx)
 	}
 
+	first := false
+	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
 MiningLoop:
 	for {
@@ -125,6 +128,15 @@ MiningLoop:
 		case fds = <-alert:
 		case <-ctx.Done(): // If cancelled
 			return
+		}
+
+		if !first {
+			// On the first minute log how far away to mining
+			mineLog.WithFields(log.Fields{
+				"height": fds.Dbht,
+				"minute": fds.Minute,
+			}).Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, int(math.Abs(float64(fds.Minute-11)))%10)
+			first = true
 		}
 
 		mineLog.WithFields(log.Fields{
@@ -164,6 +176,10 @@ MiningLoop:
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
+				mineLog.WithFields(log.Fields{
+					"height": fds.Dbht,
+					"minute": fds.Minute,
+				}).Info("Begin mining new OPR")
 
 			}
 		case 9:
