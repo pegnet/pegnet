@@ -16,8 +16,8 @@ const (
 	DefaultInitialInterval     = 800 * time.Millisecond
 	DefaultRandomizationFactor = 0.5
 	DefaultMultiplier          = 1.5
-	DefaultMaxInterval         = 6 * time.Second
-	DefaultMaxElapsedTime      = 30 * time.Second // max 30 seconds
+	DefaultMaxInterval         = 3 * time.Second
+	DefaultMaxElapsedTime      = 10 * time.Second // max 10 seconds
 )
 
 // PollingExponentialBackOff creates an instance of ExponentialBackOff

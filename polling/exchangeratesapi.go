@@ -5,6 +5,7 @@ package polling
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -48,12 +49,12 @@ func HandleExchangeRatesAPI(response ExchangeRatesAPIResponse, peg PegAssets) {
 	UpdatePegAssets(response.Rates, timestamp, peg)
 }
 
-func ExchangeRatesAPIInterface(config *config.Config, peg PegAssets) {
+func ExchangeRatesAPIInterface(config *config.Config, peg PegAssets) error {
 	log.Debug("Pulling Asset data from ExchangeRatesAPI")
 	ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to access ExchangeRatesAPI")
-	} else {
-		HandleExchangeRatesAPI(ExchangeRatesApiResponse, peg)
+		return fmt.Errorf("failed to access ExchangeRatesAPI : %s", err.Error())
 	}
+	HandleExchangeRatesAPI(ExchangeRatesApiResponse, peg)
+	return nil
 }

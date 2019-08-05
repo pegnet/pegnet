@@ -339,15 +339,21 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
-	opr.GetOPRecord(c)
+	err = opr.GetOPRecord(c)
+	if err != nil {
+		return nil, err
+	}
 
 	return opr, nil
 }
 
 // GetOPRecord initializes the OPR with polling data and factom entry
-func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	//get asset values
-	Peg := polling.PullPEGAssets(c)
+	Peg, err := polling.PullPEGAssets(c)
+	if err != nil {
+		return err
+	}
 	opr.SetPegValues(Peg)
 
 	data, err := json.Marshal(opr)
@@ -355,6 +361,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 		panic(err)
 	}
 	opr.OPRHash = LX.Hash(data)
+	return nil
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.

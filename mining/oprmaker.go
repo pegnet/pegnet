@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
@@ -41,6 +42,9 @@ func (b *BlockingOPRMaker) RecOPR(opr *opr.OraclePriceRecord) {
 
 func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *opr.OPRs) (*opr.OraclePriceRecord, error) {
 	o := <-b.n
+	if o == nil {
+		return nil, fmt.Errorf("opr failed to be created")
+	}
 	if o.Dbht != dbht {
 		return b.NewOPR(ctx, minerNumber, dbht, config, alert)
 	}
