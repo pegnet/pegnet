@@ -64,7 +64,7 @@
 
     // Statistics table, only will show things when you are on the page? But better than nothing.
     stats = $('#mining-statistics').DataTable({
-      order: [[ 1, "desc" ]],
+      order: [[ 0, "desc" ]],
       ajax:{
         url: "/cp/miningstats",
         dataSrc: function(d) {
