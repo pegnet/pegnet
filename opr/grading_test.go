@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -582,7 +583,8 @@ func makeBenchmarkOPR() *OraclePriceRecord {
 	o.Nonce = make([]byte, 8) // random nonce
 	rand.Read(o.Nonce)
 	json, _ := json.Marshal(o)
-	o.OPRHash = LX.Hash(json)
+	sha := sha256.Sum256(json)
+	o.OPRHash = sha[:]
 	o.EntryHash = json // FOR BENCHMARK ONLY
 	difficulty := ComputeDifficulty(o.OPRHash, o.Nonce)
 	o.SelfReportedDifficulty = make([]byte, 8)
@@ -593,7 +595,7 @@ func makeBenchmarkOPR() *OraclePriceRecord {
 
 func BenchmarkGradeBlock(b *testing.B) {
 	rand.Seed(time.Now().UnixNano())
-	LX.Init(0xfafaececfafaecec, 30, 256, 5)
+	InitLX()
 
 	var oprs []*OraclePriceRecord
 	for i := 0; i < 10000; i++ {
