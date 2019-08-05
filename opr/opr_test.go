@@ -4,11 +4,14 @@
 package opr_test
 
 import (
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"testing"
 
 	"github.com/FactomProject/btcutil/base58"
+	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/opr"
 )
 
@@ -67,6 +70,80 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
 		t.Error("JSON is different")
+	}
+}
+
+func rstring(len int) string {
+	r := make([]byte, len)
+	rand.Read(r)
+	return string(r)
+}
+
+func genJSONOPR() *OraclePriceRecord {
+	opr := new(OraclePriceRecord)
+	opr.CoinbaseAddress = rstring(56)
+	opr.Dbht = rand.Int31()
+	for i := range opr.WinPreviousOPR {
+		opr.WinPreviousOPR[i] = rstring(8)
+	}
+	opr.FactomDigitalID = rstring(25)
+	opr.Assets = make(OraclePriceRecordAssetList)
+	for _, a := range common.AllAssets {
+		opr.Assets[a] = rand.Float64() * 5000
+	}
+	return opr
+}
+
+func BenchmarkJSONMarshal(b *testing.B) {
+	b.StopTimer()
+	InitLX()
+	data := make([]*OraclePriceRecord, 0)
+	for i := 0; i < b.N; i++ {
+		data = append(data, genJSONOPR())
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		json.Marshal(data[i])
+	}
+}
+
+func BenchmarkSingleOPRHash(b *testing.B) {
+	b.StopTimer()
+	InitLX()
+	data := make([][]byte, 0)
+	for i := 0; i < b.N; i++ {
+		json, _ := json.Marshal(genJSONOPR())
+		data = append(data, json)
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		LX.Hash(data[i])
+	}
+}
+
+func BenchmarkSingleSha256(b *testing.B) {
+	b.StopTimer()
+	InitLX()
+	data := make([][]byte, 0)
+	for i := 0; i < b.N; i++ {
+		json, _ := json.Marshal(genJSONOPR())
+		data = append(data, json)
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		sha256.Sum256(data[i])
+	}
+}
+func BenchmarkComputeDifficulty(b *testing.B) {
+	b.StopTimer()
+	data := make([][]byte, b.N)
+	for i := 0; i < b.N; i++ {
+		data[i] = make([]byte, 37) // 32 oprhash + "average" 5 byte nonce
+		rand.Read(data[i])
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		ComputeDifficulty(data[i][0:32], data[i][32:])
 	}
 }
 
