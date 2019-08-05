@@ -5,6 +5,7 @@ package opr
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -165,10 +166,14 @@ func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 
 // GetHash returns the LXHash over the OPR's json representation
 func (opr *OraclePriceRecord) GetHash() []byte {
+	if len(opr.OPRHash) > 0 {
+		return opr.OPRHash
+	}
 	data, err := json.Marshal(opr)
 	check(err)
-	oprHash := LX.Hash(data)
-	return oprHash
+	sha := sha256.Sum256(data)
+	opr.OPRHash = sha[:]
+	return opr.OPRHash
 }
 
 // ComputeDifficulty gets the difficulty by taking the hash of the OPRHash
@@ -360,7 +365,8 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	if err != nil {
 		panic(err)
 	}
-	opr.OPRHash = LX.Hash(data)
+	sha := sha256.Sum256(data)
+	opr.OPRHash = sha[:]
 	return nil
 }
 

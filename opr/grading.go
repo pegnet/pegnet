@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -188,7 +189,8 @@ func GetEntryBlocks(config *config.Config) error {
 				opr.SelfReportedDifficulty = entry.ExtIDs[1]
 
 				// Looking good.  Go ahead and compute the OPRHash
-				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
+				sha := sha256.Sum256(entry.Content)
+				opr.OPRHash = sha[:] // Save the OPRHash
 
 				// Okay, mostly good.  Add to our candidate list
 				oprblk.OPRs = append(oprblk.OPRs, opr)

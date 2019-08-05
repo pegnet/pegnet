@@ -99,7 +99,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	opr.InitLX()
-	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
+	mineLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
 	alert := c.FactomMonitor.NewListener()
@@ -117,6 +117,8 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 		go m.Miner.Mine(ctx)
 	}
 
+	first := false
+	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
 MiningLoop:
 	for {
@@ -131,6 +133,11 @@ MiningLoop:
 			"height": fds.Dbht,
 			"minute": fds.Minute,
 		})
+		if !first {
+			// On the first minute log how far away to mining
+			hLog.Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			first = true
+		}
 
 		hLog.Debug("Miner received alert")
 		switch fds.Minute {
@@ -172,6 +179,7 @@ MiningLoop:
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
+				hLog.Info("Begin mining new OPR")
 
 			}
 		case 9:
