@@ -267,3 +267,10 @@ func ConvertFCTtoPegNetAsset(network string, asset string, userFAdr string) (Peg
 	}
 	return
 }
+
+func Abs(v int) int {
+	if v < 0 {
+		return v * -1
+	}
+	return v
+}

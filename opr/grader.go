@@ -4,11 +4,16 @@
 package opr
 
 import (
+	"fmt"
 	"sync"
+	"time"
 
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+var gLog = log.WithField("id", "grader")
 
 type IGrader interface {
 	GetAlert(id string) (alert chan *OPRs)
@@ -35,6 +40,9 @@ func NewGrader() *Grader {
 type OPRs struct {
 	ToBePaid []*OraclePriceRecord
 	AllOPRs  []*OraclePriceRecord
+
+	// Since this is used as a message, we need a way to send an error
+	Error error
 }
 
 // GetAlert registers a new request for alerts.
@@ -72,27 +80,54 @@ func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
 	fdAlert := monitor.NewListener()
 	for {
 		fds := <-fdAlert
+		fLog := gLog.WithFields(log.Fields{"minute": fds.Minute, "dbht": fds.Dbht})
 		if fds.Minute == 1 {
-			GetEntryBlocks(config)
+			var err error
+			tries := 0
+			// Try 3 times
+			for tries = 0; tries < 3; tries++ {
+				err = nil
+				err = GetEntryBlocks(config)
+				if err == nil {
+					break
+				}
+				if err != nil {
+					// If this fails, we probably can't recover this block.
+					// Can't hurt to try though
+					time.Sleep(200 * time.Millisecond)
+				}
+			}
+
+			if err != nil {
+				fLog.WithError(err).WithField("tries", tries).Errorf("Grader failed to grade blocks. Sitting out this block")
+				g.SendToListeners(&OPRs{Error: fmt.Errorf("failed to grade")})
+				continue
+			}
+
 			oprs := GetPreviousOPRs(fds.Dbht)
 			gradedOPRs, sortedOPRs := GradeBlock(oprs)
 
-			// Alert followers that we have graded the previous block
-			g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
-			for _, a := range g.alerts {
-				var winners OPRs
-				if len(gradedOPRs) >= 10 {
-					winners.ToBePaid = gradedOPRs[:10]
-				}
-				winners.AllOPRs = sortedOPRs
-				select { // Don't block if someone isn't pulling from the winner channel
-				case a <- &winners:
-				default:
-					// This means the channel is full
-				}
+			var winners OPRs
+			if len(gradedOPRs) >= 10 {
+				winners.ToBePaid = gradedOPRs[:10]
 			}
-			g.alertsMutex.Unlock()
+			winners.AllOPRs = sortedOPRs
+
+			// Alert followers that we have graded the previous block
+			g.SendToListeners(&winners)
 		}
 
 	}
+}
+
+func (g *Grader) SendToListeners(winners *OPRs) {
+	g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
+	for _, a := range g.alerts {
+		select { // Don't block if someone isn't pulling from the winner channel
+		case a <- winners:
+		default:
+			// This means the channel is full
+		}
+	}
+	g.alertsMutex.Unlock()
 }

@@ -224,3 +224,11 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	}
 
 }
+
+func TestAbs(t *testing.T) {
+	for i := -100; i < 100; i++ {
+		if a := Abs(i); a < 0 {
+			t.Errorf("a is less than 00")
+		}
+	}
+}

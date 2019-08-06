@@ -156,7 +156,13 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 			evt := m.Data.(opr.OPRs)
 			c.Grader.EmitFakeEvent(evt)
 		case ConstructedOPR:
-			devt := m.Data.(opr.OraclePriceRecord)
+			devt, ok := m.Data.(opr.OraclePriceRecord)
+			if !ok {
+				// An error has occurred
+				c.OPRMaker.RecOPR(nil)
+				continue
+			}
+
 			evt := &devt
 
 			// We need to put our data in it

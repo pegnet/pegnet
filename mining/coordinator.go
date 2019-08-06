@@ -99,7 +99,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	opr.InitLX()
-	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
+	mineLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
 	alert := c.FactomMonitor.NewListener()
@@ -117,6 +117,8 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 		go m.Miner.Mine(ctx)
 	}
 
+	first := false
+	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
 MiningLoop:
 	for {
@@ -127,10 +129,17 @@ MiningLoop:
 			return
 		}
 
-		mineLog.WithFields(log.Fields{
+		hLog := mineLog.WithFields(log.Fields{
 			"height": fds.Dbht,
 			"minute": fds.Minute,
-		}).Debug("Miner received alert")
+		})
+		if !first {
+			// On the first minute log how far away to mining
+			hLog.Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			first = true
+		}
+
+		hLog.Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
 			if !mining {
@@ -138,6 +147,12 @@ MiningLoop:
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to mine this block")
+					mining = false
 					continue MiningLoop // OPR cancelled
 				}
 				if err != nil {
@@ -169,6 +184,7 @@ MiningLoop:
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
+				hLog.Info("Begin mining new OPR")
 
 			}
 		case 9:
