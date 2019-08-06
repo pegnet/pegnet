@@ -1,6 +1,9 @@
 package polling
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // IDataSource is the implementation all data sources need to adheer to.
 type IDataSource interface {
@@ -34,4 +37,41 @@ func FetchPegPrice(peg string, FetchPegPrices func() (peg PegAssets, err error))
 		return i, fmt.Errorf("peg not found")
 	}
 	return item, nil
+}
+
+// TimedDataSourceCache will limit the number of calls by caching the results for X period of time
+type TimedDataSourceCache struct {
+	IDataSource
+
+	LastCall      time.Time
+	CacheDuration time.Duration
+	Cache         PegAssets
+}
+
+func NewTimedDataSourceCache(s IDataSource, cacheLength time.Duration) IDataSource {
+	d := new(TimedDataSourceCache)
+	d.IDataSource = s
+	d.CacheDuration = cacheLength
+
+	return d
+}
+
+func (d *TimedDataSourceCache) FetchPegPrices() (peg PegAssets, err error) {
+	if d.Cache != nil {
+		// If the cache is set, check the time passed
+		if time.Since(d.LastCall) < d.CacheDuration {
+			return d.Cache, nil
+		}
+	}
+	cache, err := d.IDataSource.FetchPegPrices()
+	if err != nil {
+		return nil, err
+	}
+	d.Cache = cache
+	d.LastCall = time.Now()
+	return cache, nil
+}
+
+func (d *TimedDataSourceCache) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
 }

@@ -5,25 +5,37 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
 
 func NewDataSource(source string, config *config.Config) (IDataSource, error) {
+	var ds IDataSource
+	var err error
 	switch source {
 	case "APILayer":
-		return NewAPILayerDataSource(config)
+		ds, err = NewAPILayerDataSource(config)
 	case "CoinCap":
-		return NewCoinCapDataSource(config)
+		ds, err = NewCoinCapDataSource(config)
 	case "ExchangeRates":
-		return NewExchangeRatesDataSource(config)
+		ds, err = NewExchangeRatesDataSource(config)
 	case "Kitco":
-		return NewKitcoDataSource(config)
+		ds, err = NewKitcoDataSource(config)
 	case "OpenExchangeRates":
-		return NewOpenExchangeRatesDataSource(config)
+		ds, err = NewOpenExchangeRatesDataSource(config)
+	default:
+		return nil, fmt.Errorf("%s is not a supported data source", source)
 	}
-	return nil, fmt.Errorf("%s is not a supported data source", source)
+
+	if err != nil {
+		return nil, err
+	}
+
+	// Have 8min cache on all sources. Any more frequent queries will return the last
+	// cached query
+	return NewTimedDataSourceCache(ds, time.Minute*8), nil
 }
 
 // DataSources will initialize all data sources and handle pulling of all the assets.
@@ -56,6 +68,7 @@ type DataSourceWithPriority struct {
 func NewDataSources(config *config.Config) *DataSources {
 	d := new(DataSources)
 	d.AssetSources = make(map[string][]string)
+	d.DataSources = make(map[string]IDataSource)
 
 	// Create data sources
 	allSettings, err := config.Settings()
@@ -156,21 +169,22 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 	return pa, nil
 }
 
-// CachedDataSource will cache the data source response so we can query for
-// prices individually without making a new api call
-type CachedDataSource struct {
+// OneTimeUseCache will cache the data source response so we can query for
+// prices individually without making a new api call. This cache is only to be used
+// for 1 moment, rather than being used as a cache across multiple actions/rountines.
+type OneTimeUseCache struct {
 	IDataSource
 	Cache PegAssets
 }
 
-func NewCachedDataSource(d IDataSource) *CachedDataSource {
-	c := new(CachedDataSource)
+func NewCachedDataSource(d IDataSource) *OneTimeUseCache {
+	c := new(OneTimeUseCache)
 	c.IDataSource = d
 
 	return c
 }
 
-func (d *CachedDataSource) FetchPegPrices() (peg PegAssets, err error) {
+func (d *OneTimeUseCache) FetchPegPrices() (peg PegAssets, err error) {
 	if d.Cache != nil {
 		return d.Cache, nil
 	}
@@ -182,15 +196,6 @@ func (d *CachedDataSource) FetchPegPrices() (peg PegAssets, err error) {
 	return cache, nil
 }
 
-func (d *CachedDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	p, err := d.FetchPegPrices()
-	if err != nil {
-		return
-	}
-
-	item, ok := p[peg]
-	if !ok {
-		return i, fmt.Errorf("peg not found")
-	}
-	return item, nil
+func (d *OneTimeUseCache) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
 }

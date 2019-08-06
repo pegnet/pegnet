@@ -90,7 +90,7 @@ var (
 		"DCR",
 	}
 
-	AllAssets = merge(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 )
 
 func AssetListContains(assetList []string, asset string) bool {
@@ -102,7 +102,7 @@ func AssetListContains(assetList []string, asset string) bool {
 	return false
 }
 
-func merge(assets ...[]string) []string {
+func MergeLists(assets ...[]string) []string {
 	acc := []string{}
 	for _, list := range assets {
 		acc = append(acc, list...)

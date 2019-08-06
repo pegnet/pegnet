@@ -38,7 +38,7 @@ func (d *OpenExchangeRatesDataSource) Url() string {
 }
 
 func (d *OpenExchangeRatesDataSource) SupportedPegs() []string {
-	return common.CurrencyAssets
+	return common.MergeLists(common.CurrencyAssets, common.CommodityAssets, []string{"XBT"})
 }
 
 func (d *OpenExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -54,6 +54,13 @@ func (d *OpenExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error
 		// Price is inverted
 		if v, ok := resp.Rates[currencyISO]; ok {
 			peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
+		}
+
+		// Special case for btc
+		if currencyISO == "XBT" {
+			if v, ok := resp.Rates["BTC"]; ok {
+				peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
+			}
 		}
 	}
 

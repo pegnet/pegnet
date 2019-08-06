@@ -25,6 +25,19 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+// TODO: Do not make this a global.
+//		currently the OPR does the asset polling, this is bit backwards.
+//		We should poll the asset prices, and set the OPR. Not create the OPR
+//		and have it find it's own prices.
+var PollingDataSource *polling.DataSources
+var pollingDataSourceInitializer sync.Once
+
+func InitDataSource(config *config.Config) {
+	pollingDataSourceInitializer.Do(func() {
+		PollingDataSource = polling.NewDataSources(config)
+	})
+}
+
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
@@ -318,8 +331,9 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
+	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := polling.PullPEGAssets(c)
+	Peg, err := PollingDataSource.PullAllPEGAssets()
 	if err != nil {
 		return err
 	}
