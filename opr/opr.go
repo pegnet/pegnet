@@ -12,10 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -107,39 +104,6 @@ type Token struct {
 	value float64
 }
 
-func check(e error) {
-	if e != nil {
-		_, file, line, _ := runtime.Caller(1) // The line that called this function
-		shortFile := ShortenPegnetFilePath(file, "", 0)
-		log.WithField("caller", fmt.Sprintf("%s:%d", shortFile, line)).WithError(e).Fatal("An error in OPR was encountered")
-	}
-}
-
-func detailError(e error) error {
-	_, file, line, _ := runtime.Caller(1) // The line that called this function
-	shortFile := ShortenPegnetFilePath(file, "", 0)
-	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
-}
-
-// ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
-//	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
-//	This is nice for errors that print the file + line number
-//
-// 		!! Only use for error printing !!
-//
-func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
-	if depth > 5 || path == "." {
-		// Recursive base case
-		// If depth > 5 probably no pegnet dir exists
-		return filepath.ToSlash(filepath.Join(path, acc))
-	}
-	dir, base := filepath.Split(path)
-	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
-		return filepath.ToSlash(filepath.Join(base, acc))
-	}
-	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
-}
-
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
 func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
@@ -170,7 +134,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 		return opr.OPRHash
 	}
 	data, err := json.Marshal(opr)
-	check(err)
+	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
 	return opr.OPRHash

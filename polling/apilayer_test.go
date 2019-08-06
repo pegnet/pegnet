@@ -22,7 +22,10 @@ func TestFixedApiLayerPeggedAssets(t *testing.T) {
 	http.DefaultClient = cl
 
 	peg := make(PegAssets)
-	APILayerInterface(c, peg)
+	err := APILayerInterface(c, peg)
+	if err != nil {
+		t.Error(err)
+	}
 	for _, asset := range common.CurrencyAssets {
 		_, ok := peg[asset]
 		if !ok {

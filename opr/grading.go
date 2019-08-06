@@ -126,20 +126,20 @@ func GetEntryBlocks(config *config.Config) error {
 	defer ebMutex.Unlock()
 
 	network, err := common.LoadConfigNetwork(config)
-	check(err)
+	common.CheckAndPanic(err)
 	p, err := config.String("Miner.Protocol")
-	check(err)
+	common.CheckAndPanic(err)
 	n, err := common.LoadConfigNetwork(config)
-	check(err)
+	common.CheckAndPanic(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
 
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
 	if err != nil {
-		return detailError(err)
+		return common.DetailError(err)
 	}
 	eb, err := factom.GetEBlock(heb)
 	if err != nil {
-		return detailError(err)
+		return common.DetailError(err)
 	}
 
 	// A temp list of candidate oprblocks to evaluate to see if they fit nicely together
@@ -160,7 +160,7 @@ func GetEntryBlocks(config *config.Config) error {
 			for _, ebentry := range eb.EntryList {
 				entry, err := factom.GetEntry(ebentry.EntryHash)
 				if err != nil {
-					return detailError(err)
+					return common.DetailError(err)
 				}
 
 				// Do some quick collecting of data and checks of the entry.

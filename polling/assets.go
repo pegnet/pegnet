@@ -1,154 +1,181 @@
-// Copyright (c) of parts are held by the various contributors (see the CLA)
-// Licensed under the MIT License. See LICENSE file in the project root for full license information.
-
 package polling
 
 import (
 	"fmt"
-	"math/rand"
-	"sync"
-	"time"
+	"regexp"
+	"sort"
 
 	"github.com/pegnet/pegnet/common"
-	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
-const qlimit = 580 // Limit queries to once just shy of 10 minutes (600 seconds)
-
-type PegAssets map[string]PegItem
-
-func (p PegAssets) Clone(randomize float64) PegAssets {
-	np := make(PegAssets)
-	for _, asset := range common.AllAssets {
-		np[asset] = p[asset].Clone(randomize)
+func NewDataSource(source string, config *config.Config) (IDataSource, error) {
+	switch source {
+	case "APILayer":
+		return NewAPILayerDataSource(config), nil
+	case "CoinCap":
+		return NewCoinCapDataSource(config), nil
 	}
-
-	return np
+	return nil, fmt.Errorf("%s is not a supported data source", source)
 }
 
-type PegItem struct {
-	Value float64
-	When  int64 // unix timestamp
+// DataSources will initialize all data sources and handle pulling of all the assets.
+type DataSources struct {
+	// AssetSources are listed in priority order.
+	// If the asset is missing, we will walk through the data sources to find the
+	// price of an asset
+	//	Key -> CurrencyISO
+	//	Value -> List of data sources by name
+	AssetSources map[string][]string
+
+	// DataSources is all the data sources we support
+	//	Key -> Data source name
+	//	Value -> Data source struct
+	DataSources map[string]IDataSource
+
+	// The list of data sources by priority.
+	PriorityList []DataSourceWithPriority
+
+	maxPriority int // Each peg has a list of prioritized asset sources
+
+	config *config.Config
 }
 
-func (p PegItem) Clone(randomize float64) PegItem {
-	np := new(PegItem)
-	np.Value = p.Value + p.Value*(randomize/2*rand.Float64()) - p.Value*(randomize/2*rand.Float64())
-	np.Value = Round(np.Value)
-	np.When = p.When
-	return *np
+type DataSourceWithPriority struct {
+	DataSource IDataSource
+	Priority   int
 }
 
-var lastMutex sync.Mutex
-var lastAnswer PegAssets //
-var lastTime int64       // In seconds
+func NewDataSources(config *config.Config) *DataSources {
+	d := new(DataSources)
+	d.AssetSources = make(map[string][]string)
 
-var defaultDigitalAsset = "CoinCap"
-var availableDigitalAssets = map[string]func(config *config.Config, peg PegAssets) error{
-	"CoinCap": CoinCapInterface,
-}
+	// Create data sources
+	allSettings, err := config.Settings()
+	common.CheckAndPanic(err)
 
-var defaultCurrencyAsset = "APILayer"
-var availableCurrencyAssets = map[string]func(config *config.Config, peg PegAssets) error{
-	"APILayer":          APILayerInterface,
-	"ExchangeRatesAPI":  ExchangeRatesAPIInterface,
-	"OpenExchangeRates": OpenExchangeRatesInterface,
-}
+	datasourceRegex, err := regexp.Compile(`OracleDataSources\.[a-zA-Z0-9]+`)
+	common.CheckAndPanic(err)
 
-var defaultMetalAsset = "Kitco"
-var availableMetalAssets = map[string]func(config *config.Config, peg PegAssets) error{
-	"Kitco": KitcoInterface,
-}
+	for setting, _ := range allSettings {
+		if datasourceRegex.Match([]byte(setting)) {
+			s, err := NewDataSource(setting, config)
+			common.CheckAndPanic(err)
 
-func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg PegAssets) error, default_asset string) []string {
-	var result = []string{}
-	for key := range assets {
-		weight, _ := config.Int("Oracle." + key)
-		for w := 0; w < weight; w++ {
-			result = append(result, key)
+			// Get the priority. Priorities can be the same, then we'll sort
+			// alphabetically to keep the results deterministic
+			p, err := config.Int(setting)
+			common.CheckAndPanic(err)
+
+			// Add to our lists
+			d.PriorityList = append(d.PriorityList, DataSourceWithPriority{DataSource: s, Priority: p})
+			d.DataSources[s.Name()] = s
 		}
 	}
-	if len(result) == 0 {
-		result = append(result, default_asset)
+
+	// Ensure it is sorted
+	d.sortPriorityList()
+
+	// Add the data sources
+	// Yes I'm brute forcing it. Yes there is probably a better way. These lists are small
+	for _, asset := range common.AllAssets { // For each asset we need
+		for _, s := range d.PriorityList { // Append the data sources for that asset in priority order
+			if common.StringArrayContains(s.DataSource.SupportedPegs(), asset) != -1 {
+				d.AssetSources[asset] = append(d.AssetSources[asset], s.DataSource.Name())
+			}
+		}
 	}
-	return result
+
+	return d
 }
 
-func GetAvailableAssetsByWeight(config *config.Config) (string, string, string) {
-	rand.Seed(time.Now().Unix())
-
-	var digital_currencies = GetAssetsByWeight(config, availableDigitalAssets, defaultDigitalAsset)
-	var currency_rates = GetAssetsByWeight(config, availableCurrencyAssets, defaultCurrencyAsset)
-	var precious_metals = GetAssetsByWeight(config, availableMetalAssets, defaultMetalAsset)
-
-	var digital_currencies_asset = digital_currencies[rand.Intn(len(digital_currencies))]
-	var currency_rates_asset = currency_rates[rand.Intn(len(currency_rates))]
-	var precious_metals_asset = precious_metals[rand.Intn(len(precious_metals))]
-
-	// TODO: check if assets are in blacklist when running on production
-
-	return digital_currencies_asset, currency_rates_asset, precious_metals_asset
+// sortPriorityList sorts by name, then by priority
+func (ds *DataSources) sortPriorityList() {
+	sort.SliceStable(ds.PriorityList, func(i, j int) bool {
+		return ds.PriorityList[i].DataSource.Name() < ds.PriorityList[j].DataSource.Name()
+	})
+	sort.SliceStable(ds.PriorityList, func(i, j int) bool { return ds.PriorityList[i].Priority < ds.PriorityList[j].Priority })
 }
 
-func PullPEGAssets(config *config.Config) (pa PegAssets, err error) {
-	// Prevent pounding of external APIs
-	lastMutex.Lock()
-	defer lastMutex.Unlock()
-	now := time.Now().Unix()
-	delta := now - lastTime
+// PullAllPEGAssets will pull prices for every asset we are tracking.
+// We pull assets from the sources in their priority order when possible.
+// If an asset from priority 1 is missing, we resort to priority 2 ONLY for
+// that missing asset.
+// TODO: Currently we lazy eval prices, so we make the API call when we
+//		first need a price from that source. These calls should be quick,
+//		but it might be faster to eager eval all the data sources concurrently.
+func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
+	assets := common.AllAssets // All the assets we are tracking.
 
-	// For testing, you can specify a randomization of the values returned by the oracles.
-	// If the value specified isn't reasonable, then randomize is zero, and the values returned
-	// are not changed.
-	randomize, err := config.Float("Debug.Randomize")
-	if err != nil && lastTime == 0 {
-		log.WithError(err).Fatal(fmt.Sprintf("the config file doesn't have a valid Randomize value. %v", err))
+	// Wrap all the data sources with a quick caching layer for
+	// this loop
+	cacheWrap := make(map[string]IDataSource)
+
+	for _, source := range d.DataSources {
+		cacheWrap[source.Name()] = NewCachedDataSource(source)
 	}
 
-	if delta < qlimit && lastTime != 0 {
-		pa := lastAnswer.Clone(randomize)
-		return pa, nil
+	// TODO: You would eager eval here, and block the for loop on the first data source that has
+	// 		not completed. Or block the for loop until they all completed... but I'd prefer the former.
+
+	pa = make(PegAssets)
+	for _, asset := range assets {
+		var price PegItem
+		// For each asset we try the data source in the list.
+		// If we find a price, we can exit early, as we only need 1 asset price
+		// per peg.
+		for _, sourceName := range d.AssetSources[asset] {
+			price, err = cacheWrap[sourceName].FetchPegPrice(asset)
+			if err != nil {
+				continue // Try the next source
+			}
+		}
+
+		if err != nil { // This will only be the last err in the data source list.
+			// No prices found for a peg, this pull failed
+			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
+		}
+		pa[asset] = price
 	}
 
-	lastTime = now
-	log.WithFields(log.Fields{
-		"delta_time": delta,
-	}).Info("Pulling PEG Asset data")
+	return pa, nil
+}
 
-	peg := make(PegAssets)
+// CachedDataSource will cache the data source response so we can query for
+// prices individually without making a new api call
+type CachedDataSource struct {
+	IDataSource
+	Cache PegAssets
+}
 
-	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
+func NewCachedDataSource(d IDataSource) *CachedDataSource {
+	c := new(CachedDataSource)
+	c.IDataSource = d
 
-	// digital currencies
-	err = availableDigitalAssets[digital_currencies](config, peg)
+	return c
+}
+
+func (d *CachedDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	if d.Cache != nil {
+		return d.Cache, nil
+	}
+	cache, err := d.IDataSource.FetchPegPrices()
 	if err != nil {
-		lastTime = 0 // Need to requery
+		return nil, err
+	}
+	d.Cache = cache
+	return cache, nil
+}
+
+func (d *CachedDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	p, err := d.FetchPegPrices()
+	if err != nil {
 		return
 	}
 
-	// currency rates
-	err = availableCurrencyAssets[currency_rates](config, peg)
-	if err != nil {
-		lastTime = 0 // Need to requery
-		return
+	item, ok := p[peg]
+	if !ok {
+		return i, fmt.Errorf("peg not found")
 	}
-
-	// precious metals
-	err = availableMetalAssets[precious_metals](config, peg)
-	if err != nil {
-		lastTime = 0 // Need to requery
-		return
-	}
-
-	// debug
-	fields := log.Fields{}
-	for asset, v := range peg {
-		fields[asset] = v.Value
-	}
-	log.WithFields(fields).Debug("Pulling PEG Asset data Result")
-
-	lastAnswer = peg
-
-	return peg.Clone(randomize), nil
+	return item, nil
 }

@@ -54,7 +54,7 @@ func UpdatePegAssets(rates map[string]float64, timestamp int64, peg PegAssets, p
 
 	for _, currencyISO := range common.CurrencyAssets {
 		if v, ok := rates[p+currencyISO]; ok {
-			peg[currencyISO] = PegItem{Value: v, When: timestamp}
+			peg[currencyISO] = PegItem{Value: v, WhenUnix: timestamp}
 		}
 	}
 }

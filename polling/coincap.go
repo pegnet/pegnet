@@ -10,12 +10,98 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// CoinCapDataSource is the datasource at https://coincap.io/
+type CoinCapDataSource struct {
+	config  *config.Config
+	lastPeg PegAssets
+}
+
+func NewCoinCapDataSource(config *config.Config) *CoinCapDataSource {
+	s := new(CoinCapDataSource)
+	s.config = config
+	return s
+}
+
+func (d *CoinCapDataSource) Name() string {
+	return "CoinCap"
+}
+
+func (d *CoinCapDataSource) Url() string {
+	return "https://coincap.io/"
+}
+
+func (d *CoinCapDataSource) SupportedPegs() []string {
+	return common.CryptoAssets
+}
+
+func (d *CoinCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallCoinCap(d.config)
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	var UnixTimestamp = resp.Timestamp
+	timestamp := time.Unix(resp.Timestamp, 0)
+
+	for _, currency := range resp.Data {
+		switch currency.Symbol {
+		case "BTC", "XBT":
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg["XBT"] = PegItem{Value: Round(value), WhenUnix: UnixTimestamp, When: timestamp}
+			if err != nil {
+				return nil, err
+			}
+		case "BCH", "XBC":
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg["XBC"] = PegItem{Value: Round(value), WhenUnix: UnixTimestamp, When: timestamp}
+			if err != nil {
+				return nil, err
+			}
+		case "ZCASH", "ZEC":
+			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+			peg["ZEC"] = PegItem{Value: Round(value), WhenUnix: UnixTimestamp, When: timestamp}
+			if err != nil {
+				return nil, err
+			}
+		default:
+			// See if the ticker is in our crypto currency list
+			if common.AssetListContains(common.CryptoAssets, currency.Symbol) {
+				value, err := strconv.ParseFloat(currency.PriceUSD, 64)
+				peg[currency.Symbol] = PegItem{Value: Round(value), WhenUnix: UnixTimestamp, When: timestamp}
+				if err != nil {
+					return nil, err
+				}
+			}
+		}
+	}
+
+	return
+}
+
+func (d *CoinCapDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	p, err := d.FetchPegPrices()
+	if err != nil {
+		return
+	}
+
+	item, ok := p[peg]
+	if !ok {
+		return i, fmt.Errorf("peg not found")
+	}
+	return item, nil
+}
+
+// -----
 
 type CoinCapResponse struct {
 	Data      []CoinCapRecord `json:"data"`
@@ -91,19 +177,19 @@ func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 		switch currency.Symbol {
 		case "BTC", "XBT":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["XBT"] = PegItem{Value: Round(value), When: timestamp}
+			peg["XBT"] = PegItem{Value: Round(value), WhenUnix: timestamp}
 			if err != nil {
 				continue
 			}
 		case "BCH", "XBC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["XBC"] = PegItem{Value: Round(value), When: timestamp}
+			peg["XBC"] = PegItem{Value: Round(value), WhenUnix: timestamp}
 			if err != nil {
 				continue
 			}
 		case "ZCASH", "ZEC":
 			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["ZEC"] = PegItem{Value: Round(value), When: timestamp}
+			peg["ZEC"] = PegItem{Value: Round(value), WhenUnix: timestamp}
 			if err != nil {
 				continue
 			}
@@ -111,7 +197,7 @@ func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 			// See if the ticker is in our crypto currency list
 			if common.AssetListContains(common.CryptoAssets, currency.Symbol) {
 				value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-				peg[currency.Symbol] = PegItem{Value: Round(value), When: timestamp}
+				peg[currency.Symbol] = PegItem{Value: Round(value), WhenUnix: timestamp}
 				if err != nil {
 					continue
 				}

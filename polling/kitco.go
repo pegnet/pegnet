@@ -167,19 +167,19 @@ func HandleKitcoWeb(data KitcoData, peg PegAssets) {
 
 	silver := data.Silver
 	v, _ := strconv.ParseFloat(silver.Bid, 64)
-	peg["XAU"] = PegItem{Value: v, When: ConverToUnix(format, silver.Date)}
+	peg["XAU"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, silver.Date)}
 
 	gold := data.Gold
 	v, _ = strconv.ParseFloat(gold.Bid, 64)
-	peg["XAG"] = PegItem{Value: v, When: ConverToUnix(format, gold.Date)}
+	peg["XAG"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, gold.Date)}
 
 	palladium := data.Palladium
 	v, _ = strconv.ParseFloat(palladium.Bid, 64)
-	peg["XPD"] = PegItem{Value: v, When: ConverToUnix(format, palladium.Date)}
+	peg["XPD"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, palladium.Date)}
 
 	platinum := data.Platinum
 	v, _ = strconv.ParseFloat(platinum.Bid, 64)
-	peg["XPT"] = PegItem{Value: v, When: ConverToUnix(format, platinum.Date)}
+	peg["XPT"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, platinum.Date)}
 }
 
 func KitcoInterface(config *config.Config, peg PegAssets) error {

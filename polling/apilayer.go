@@ -8,11 +8,71 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// APILayerDataSource is the datasource at http://www.apilayer.net
+type APILayerDataSource struct {
+	config  *config.Config
+	lastPeg PegAssets
+}
+
+func NewAPILayerDataSource(config *config.Config) *APILayerDataSource {
+	s := new(APILayerDataSource)
+	s.config = config
+	return s
+}
+
+func (d *APILayerDataSource) Name() string {
+	return "APILayer"
+}
+
+func (d *APILayerDataSource) Url() string {
+	return "https://apilayer.com/"
+}
+
+func (d *APILayerDataSource) SupportedPegs() []string {
+	return common.CurrencyAssets
+}
+
+func (d *APILayerDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallAPILayer(d.config)
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	timestamp := time.Unix(resp.Timestamp, 0)
+	for _, currencyISO := range d.SupportedPegs() {
+		// Search for USDXXX pairs
+		if v, ok := resp.Quotes["USD"+currencyISO]; ok {
+			peg[currencyISO] = PegItem{Value: v, When: timestamp}
+		}
+	}
+
+	return
+}
+
+func (d *APILayerDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	p, err := d.FetchPegPrices()
+	if err != nil {
+		return
+	}
+
+	item, ok := p[peg]
+	if !ok {
+		return i, fmt.Errorf("peg not found")
+	}
+	return item, nil
+}
+
+// ----
 
 type APILayerResponse struct {
 	Success   bool               `json:"success"`
