@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strings"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
@@ -12,9 +13,15 @@ import (
 func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	switch source {
 	case "APILayer":
-		return NewAPILayerDataSource(config), nil
+		return NewAPILayerDataSource(config)
 	case "CoinCap":
-		return NewCoinCapDataSource(config), nil
+		return NewCoinCapDataSource(config)
+	case "ExchangeRates":
+		return NewExchangeRatesDataSource(config)
+	case "Kitco":
+		return NewKitcoDataSource(config)
+	case "OpenExchangeRates":
+		return NewOpenExchangeRatesDataSource(config)
 	}
 	return nil, fmt.Errorf("%s is not a supported data source", source)
 }
@@ -59,12 +66,20 @@ func NewDataSources(config *config.Config) *DataSources {
 
 	for setting, _ := range allSettings {
 		if datasourceRegex.Match([]byte(setting)) {
-			s, err := NewDataSource(setting, config)
-			common.CheckAndPanic(err)
-
 			// Get the priority. Priorities can be the same, then we'll sort
 			// alphabetically to keep the results deterministic
 			p, err := config.Int(setting)
+			common.CheckAndPanic(err)
+
+			if p == -1 {
+				continue // This source is disabled
+			}
+
+			source := strings.Split(setting, ".")
+			if len(source) != 2 {
+				panic(common.DetailError(fmt.Errorf("expect only 1 '.' in a setting. Found %s", setting)))
+			}
+			s, err := NewDataSource(source[1], config)
 			common.CheckAndPanic(err)
 
 			// Add to our lists

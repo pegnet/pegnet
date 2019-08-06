@@ -8,11 +8,63 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
+
+	"github.com/pegnet/pegnet/common"
 
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// OpenExchangeRatesDataSource is the datasource at "https://openexchangerates.org/"
+type OpenExchangeRatesDataSource struct {
+	config  *config.Config
+	lastPeg PegAssets
+}
+
+func NewOpenExchangeRatesDataSource(config *config.Config) (*OpenExchangeRatesDataSource, error) {
+	s := new(OpenExchangeRatesDataSource)
+	s.config = config
+	return s, nil
+}
+
+func (d *OpenExchangeRatesDataSource) Name() string {
+	return "OpenExchangeRates"
+}
+
+func (d *OpenExchangeRatesDataSource) Url() string {
+	return "https://openexchangerates.org/"
+}
+
+func (d *OpenExchangeRatesDataSource) SupportedPegs() []string {
+	return common.CurrencyAssets
+}
+
+func (d *OpenExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallOpenExchangeRates(d.config)
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	timestamp := time.Unix(resp.Timestamp, 0)
+	for _, currencyISO := range d.SupportedPegs() {
+		// Price is inverted
+		if v, ok := resp.Rates[currencyISO]; ok {
+			peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
+		}
+	}
+
+	return
+}
+
+func (d *OpenExchangeRatesDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
+}
+
+// --
 
 type OpenExchangeRatesResponse struct {
 	Disclaimer  string             `json:"disclaimer"`

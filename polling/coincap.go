@@ -24,10 +24,10 @@ type CoinCapDataSource struct {
 	lastPeg PegAssets
 }
 
-func NewCoinCapDataSource(config *config.Config) *CoinCapDataSource {
+func NewCoinCapDataSource(config *config.Config) (*CoinCapDataSource, error) {
 	s := new(CoinCapDataSource)
 	s.config = config
-	return s
+	return s, nil
 }
 
 func (d *CoinCapDataSource) Name() string {
@@ -89,16 +89,7 @@ func (d *CoinCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
 }
 
 func (d *CoinCapDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	p, err := d.FetchPegPrices()
-	if err != nil {
-		return
-	}
-
-	item, ok := p[peg]
-	if !ok {
-		return i, fmt.Errorf("peg not found")
-	}
-	return item, nil
+	return FetchPegPrice(peg, d.FetchPegPrices)
 }
 
 // -----

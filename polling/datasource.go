@@ -1,5 +1,7 @@
 package polling
 
+import "fmt"
+
 // IDataSource is the implementation all data sources need to adheer to.
 type IDataSource interface {
 	// Include some human friendly things.
@@ -17,4 +19,19 @@ type IDataSource interface {
 	// All exchanges should have a list of pegs they support. This should
 	// be defined up front.
 	SupportedPegs() []string
+}
+
+// FetchPegPrice is because this implementation is the same for each exchange and GoLang's
+// inheritance makes child structs referencing parent structs weird.
+func FetchPegPrice(peg string, FetchPegPrices func() (peg PegAssets, err error)) (i PegItem, err error) {
+	p, err := FetchPegPrices()
+	if err != nil {
+		return
+	}
+
+	item, ok := p[peg]
+	if !ok {
+		return i, fmt.Errorf("peg not found")
+	}
+	return item, nil
 }

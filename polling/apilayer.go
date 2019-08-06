@@ -22,10 +22,10 @@ type APILayerDataSource struct {
 	lastPeg PegAssets
 }
 
-func NewAPILayerDataSource(config *config.Config) *APILayerDataSource {
+func NewAPILayerDataSource(config *config.Config) (*APILayerDataSource, error) {
 	s := new(APILayerDataSource)
 	s.config = config
-	return s
+	return s, nil
 }
 
 func (d *APILayerDataSource) Name() string {
@@ -52,7 +52,7 @@ func (d *APILayerDataSource) FetchPegPrices() (peg PegAssets, err error) {
 	for _, currencyISO := range d.SupportedPegs() {
 		// Search for USDXXX pairs
 		if v, ok := resp.Quotes["USD"+currencyISO]; ok {
-			peg[currencyISO] = PegItem{Value: v, When: timestamp}
+			peg[currencyISO] = PegItem{Value: v, When: timestamp, WhenUnix: timestamp.Unix()}
 		}
 	}
 
@@ -60,16 +60,7 @@ func (d *APILayerDataSource) FetchPegPrices() (peg PegAssets, err error) {
 }
 
 func (d *APILayerDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	p, err := d.FetchPegPrices()
-	if err != nil {
-		return
-	}
-
-	item, ok := p[peg]
-	if !ok {
-		return i, fmt.Errorf("peg not found")
-	}
-	return item, nil
+	return FetchPegPrice(peg, d.FetchPegPrices)
 }
 
 // ----

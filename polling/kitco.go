@@ -10,12 +10,93 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// KitcoDataSource is the datasource at "https://www.kitco.com/"
+type KitcoDataSource struct {
+	config  *config.Config
+	lastPeg PegAssets
+}
+
+func NewKitcoDataSource(config *config.Config) (*KitcoDataSource, error) {
+	s := new(KitcoDataSource)
+	s.config = config
+	return s, nil
+}
+
+func (d *KitcoDataSource) Name() string {
+	return "Kitco"
+}
+
+func (d *KitcoDataSource) Url() string {
+	return "https://www.kitco.com/"
+}
+
+func (d *KitcoDataSource) SupportedPegs() []string {
+	return common.CommodityAssets
+}
+
+func (d *KitcoDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallKitcoWeb()
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	peg["XAU"], err = d.parseData(resp.Silver)
+	if err != nil {
+		return nil, err
+	}
+
+	peg["XAG"], err = d.parseData(resp.Gold)
+	if err != nil {
+		return nil, err
+	}
+
+	peg["XPD"], err = d.parseData(resp.Palladium)
+	if err != nil {
+		return nil, err
+	}
+
+	peg["XPT"], err = d.parseData(resp.Platinum)
+	if err != nil {
+		return nil, err
+	}
+
+	return
+}
+
+func (d *KitcoDataSource) parseData(data KitcoRecord) (PegItem, error) {
+	i := PegItem{}
+	timestamp, err := time.Parse(d.dateFormat(), data.Date)
+	if err != nil {
+		return i, err
+	}
+
+	v, err := strconv.ParseFloat(data.Bid, 64)
+	if err != nil {
+		return i, err
+	}
+
+	return PegItem{Value: v, When: timestamp, WhenUnix: timestamp.Unix()}, nil
+}
+
+func (d *KitcoDataSource) dateFormat() string {
+	return "01/02/2006"
+}
+
+func (d *KitcoDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
+}
+
+// ---
 
 type KitcoData struct {
 	Silver    KitcoRecord
