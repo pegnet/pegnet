@@ -129,19 +129,17 @@ MiningLoop:
 			return
 		}
 
+		hLog := mineLog.WithFields(log.Fields{
+			"height": fds.Dbht,
+			"minute": fds.Minute,
+		})
 		if !first {
 			// On the first minute log how far away to mining
-			mineLog.WithFields(log.Fields{
-				"height": fds.Dbht,
-				"minute": fds.Minute,
-			}).Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			hLog.Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
 			first = true
 		}
 
-		mineLog.WithFields(log.Fields{
-			"height": fds.Dbht,
-			"minute": fds.Minute,
-		}).Debug("Miner received alert")
+		hLog.Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
 			if !mining {
@@ -149,6 +147,12 @@ MiningLoop:
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to mine this block")
+					mining = false
 					continue MiningLoop // OPR cancelled
 				}
 
@@ -175,10 +179,7 @@ MiningLoop:
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
-				mineLog.WithFields(log.Fields{
-					"height": fds.Dbht,
-					"minute": fds.Minute,
-				}).Info("Begin mining new OPR")
+				hLog.Info("Begin mining new OPR")
 
 			}
 		case 9:

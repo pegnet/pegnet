@@ -5,6 +5,7 @@ package polling
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -77,12 +78,12 @@ func HandleAPILayer(response APILayerResponse, peg PegAssets) {
 	UpdatePegAssets(response.Quotes, response.Timestamp, peg, "USD")
 }
 
-func APILayerInterface(config *config.Config, peg PegAssets) {
+func APILayerInterface(config *config.Config, peg PegAssets) error {
 	log.Debug("Pulling Asset data from APILayer")
 	APILayerResponse, err := CallAPILayer(config)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to access APILayer")
-	} else {
-		HandleAPILayer(APILayerResponse, peg)
+		return fmt.Errorf("failed to access APILayer : %s", err.Error())
 	}
+	HandleAPILayer(APILayerResponse, peg)
+	return nil
 }

@@ -5,6 +5,7 @@ package polling
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -120,12 +121,13 @@ func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
 
 }
 
-func CoinCapInterface(config *config.Config, peg PegAssets) {
+func CoinCapInterface(config *config.Config, peg PegAssets) error {
 	log.Debug("Pulling Asset data from CoinCap")
 	CoinCapResponse, err := CallCoinCap(config)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to access CoinCap")
-	} else {
-		HandleCoinCap(CoinCapResponse, peg)
+		return fmt.Errorf("failed to access CoinCap : %s", err.Error())
 	}
+
+	HandleCoinCap(CoinCapResponse, peg)
+	return nil
 }

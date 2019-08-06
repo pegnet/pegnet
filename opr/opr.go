@@ -115,6 +115,12 @@ func check(e error) {
 	}
 }
 
+func detailError(e error) error {
+	_, file, line, _ := runtime.Caller(1) // The line that called this function
+	shortFile := ShortenPegnetFilePath(file, "", 0)
+	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
+}
+
 // ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
 //	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
 //	This is nice for errors that print the file + line number
@@ -330,19 +336,29 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		return nil, context.Canceled
 	}
 
+	if winners.Error != nil {
+		return nil, winners.Error
+	}
+
 	for i, w := range winners.ToBePaid {
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
-	opr.GetOPRecord(c)
+	err = opr.GetOPRecord(c)
+	if err != nil {
+		return nil, err
+	}
 
 	return opr, nil
 }
 
 // GetOPRecord initializes the OPR with polling data and factom entry
-func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
+func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	//get asset values
-	Peg := polling.PullPEGAssets(c)
+	Peg, err := polling.PullPEGAssets(c)
+	if err != nil {
+		return err
+	}
 	opr.SetPegValues(Peg)
 
 	data, err := json.Marshal(opr)
@@ -351,6 +367,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) {
 	}
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
+	return nil
 }
 
 // CreateOPREntry will create the entry from the EXISITING data.

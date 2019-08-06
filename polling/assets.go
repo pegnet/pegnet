@@ -45,23 +45,23 @@ var lastAnswer PegAssets //
 var lastTime int64       // In seconds
 
 var defaultDigitalAsset = "CoinCap"
-var availableDigitalAssets = map[string]func(config *config.Config, peg PegAssets){
+var availableDigitalAssets = map[string]func(config *config.Config, peg PegAssets) error{
 	"CoinCap": CoinCapInterface,
 }
 
 var defaultCurrencyAsset = "APILayer"
-var availableCurrencyAssets = map[string]func(config *config.Config, peg PegAssets){
+var availableCurrencyAssets = map[string]func(config *config.Config, peg PegAssets) error{
 	"APILayer":          APILayerInterface,
 	"ExchangeRatesAPI":  ExchangeRatesAPIInterface,
 	"OpenExchangeRates": OpenExchangeRatesInterface,
 }
 
 var defaultMetalAsset = "Kitco"
-var availableMetalAssets = map[string]func(config *config.Config, peg PegAssets){
+var availableMetalAssets = map[string]func(config *config.Config, peg PegAssets) error{
 	"Kitco": KitcoInterface,
 }
 
-func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg PegAssets), default_asset string) []string {
+func GetAssetsByWeight(config *config.Config, assets map[string]func(config *config.Config, peg PegAssets) error, default_asset string) []string {
 	var result = []string{}
 	for key := range assets {
 		weight, _ := config.Int("Oracle." + key)
@@ -91,8 +91,7 @@ func GetAvailableAssetsByWeight(config *config.Config) (string, string, string) 
 	return digital_currencies_asset, currency_rates_asset, precious_metals_asset
 }
 
-func PullPEGAssets(config *config.Config) (pa PegAssets) {
-
+func PullPEGAssets(config *config.Config) (pa PegAssets, err error) {
 	// Prevent pounding of external APIs
 	lastMutex.Lock()
 	defer lastMutex.Unlock()
@@ -109,7 +108,7 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	if delta < qlimit && lastTime != 0 {
 		pa := lastAnswer.Clone(randomize)
-		return pa
+		return pa, nil
 	}
 
 	lastTime = now
@@ -122,13 +121,25 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 	digital_currencies, currency_rates, precious_metals := GetAvailableAssetsByWeight(config)
 
 	// digital currencies
-	availableDigitalAssets[digital_currencies](config, peg)
+	err = availableDigitalAssets[digital_currencies](config, peg)
+	if err != nil {
+		lastTime = 0 // Need to requery
+		return
+	}
 
 	// currency rates
-	availableCurrencyAssets[currency_rates](config, peg)
+	err = availableCurrencyAssets[currency_rates](config, peg)
+	if err != nil {
+		lastTime = 0 // Need to requery
+		return
+	}
 
 	// precious metals
-	availableMetalAssets[precious_metals](config, peg)
+	err = availableMetalAssets[precious_metals](config, peg)
+	if err != nil {
+		lastTime = 0 // Need to requery
+		return
+	}
 
 	// debug
 	fields := log.Fields{}
@@ -139,5 +150,5 @@ func PullPEGAssets(config *config.Config) (pa PegAssets) {
 
 	lastAnswer = peg
 
-	return peg.Clone(randomize)
+	return peg.Clone(randomize), nil
 }

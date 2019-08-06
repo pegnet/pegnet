@@ -127,7 +127,12 @@ func (c *MiningClient) Listen() {
 			evt := m.Data.(opr.OPRs)
 			c.Grader.EmitFakeEvent(evt)
 		case ConstructedOPR:
-			evt := m.Data.(opr.OraclePriceRecord)
+			evt, ok := m.Data.(opr.OraclePriceRecord)
+			if !ok {
+				// An error has occurred
+				c.OPRMaker.RecOPR(nil)
+				continue
+			}
 			// We need to put our data in it
 			id, _ := c.config.String("Miner.IdentityChain")
 			evt.FactomDigitalID = id
