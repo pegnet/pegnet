@@ -36,6 +36,18 @@ func NewBlockingOPRMaker() *BlockingOPRMaker {
 	return b
 }
 
+// Drain everything from the channels
+func (b *BlockingOPRMaker) Drain() {
+ClearOPRChannel:
+	for { // Drain anything remaining or return the height that matches
+		select {
+		case <-b.n:
+		default:
+			break ClearOPRChannel
+		}
+	}
+}
+
 func (b *BlockingOPRMaker) RecOPR(opr *opr.OraclePriceRecord) {
 	b.n <- opr
 }
@@ -47,14 +59,17 @@ func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int
 	}
 	if o.Dbht != dbht {
 	DrainOPRLoop:
-		for { // Drain anything remaining
+		for { // Drain anything remaining or return the height that matches
 			select {
-			case <-b.n:
+			case o := <-b.n:
+				if o.Dbht == dbht {
+					return o, nil
+				}
 			default:
 				break DrainOPRLoop
 			}
 		}
-		return nil, fmt.Errorf("not the right height, exp %d found %d", o.Dbht, dbht)
+		return nil, fmt.Errorf("not the right height, exp %d found %d. %d in queue.", dbht, o.Dbht, len(b.n))
 	}
 	return o, nil
 }

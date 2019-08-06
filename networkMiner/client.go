@@ -146,6 +146,12 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 		switch m.NetworkCommand {
 		case FactomEvent:
 			evt := m.Data.(common.MonitorEvent)
+
+			// Drain anything that was left over
+			if evt.Minute == 1 {
+				c.OPRMaker.Drain()
+			}
+
 			c.Monitor.FakeNotifyEvt(evt)
 			fLog.WithField("evt", "factom").
 				WithFields(log.Fields{
