@@ -169,6 +169,10 @@ func (c *MiningServer) ForwardMonitorEvents() {
 				fLog.WithField("evt", "grader").WithError(err).Error("failed to make opr")
 			}
 
+			if oprobject == nil {
+				fLog.WithField("evt", "grader").Error("failed to make opr. opr is nil")
+			}
+
 			m := new(NetworkMessage)
 			m.NetworkCommand = ConstructedOPR
 			m.Data = *oprobject

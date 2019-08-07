@@ -12,6 +12,8 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/FactomProject/factom"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -156,7 +158,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 
 	iniFile := config.NewINIFile(configFile)
 	flags := NewCmdFlagProvider(cmd)
-	Config = config.NewConfig([]config.Provider{iniFile, flags})
+	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
 
 	// Profiling setup
 	if on, _ := cmd.Flags().GetBool("profile"); on {
