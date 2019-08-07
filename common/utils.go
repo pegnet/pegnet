@@ -9,8 +9,6 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -273,4 +271,46 @@ func Abs(v int) int {
 		return v * -1
 	}
 	return v
+}
+
+func CheckAndPanic(e error) {
+	if e != nil {
+		_, file, line, _ := runtime.Caller(1) // The line that called this function
+		shortFile := ShortenPegnetFilePath(file, "", 0)
+		log.WithField("caller", fmt.Sprintf("%s:%d", shortFile, line)).WithError(e).Fatal("An error was encountered")
+	}
+}
+
+func DetailError(e error) error {
+	_, file, line, _ := runtime.Caller(1) // The line that called this function
+	shortFile := ShortenPegnetFilePath(file, "", 0)
+	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
+}
+
+// ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
+//	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
+//	This is nice for errors that print the file + line number
+//
+// 		!! Only use for error printing !!
+//
+func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
+	if depth > 5 || path == "." {
+		// Recursive base case
+		// If depth > 5 probably no pegnet dir exists
+		return filepath.ToSlash(filepath.Join(path, acc))
+	}
+	dir, base := filepath.Split(path)
+	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
+		return filepath.ToSlash(filepath.Join(base, acc))
+	}
+	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
+}
+
+func StringArrayContains(haystack []string, needle string) int {
+	for i, v := range haystack {
+		if v == needle {
+			return i
+		}
+	}
+	return -1
 }
