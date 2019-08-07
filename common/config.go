@@ -67,11 +67,6 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   APILayerKey=CHANGEME
   OpenExchangeRatesKey=CHANGEME
   CoinMarketCapKey=CHANGEME
-  CoinCap=1
-  APILayer=0
-  ExchangeRatesAPI=1
-  OpenExchangeRates=0
-  Kitco=1
 
 
 [OracleDataSources]

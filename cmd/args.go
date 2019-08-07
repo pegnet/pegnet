@@ -10,10 +10,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pegnet/pegnet/polling"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/polling"
 	"github.com/spf13/cobra"
 )
 
@@ -108,6 +107,7 @@ func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
 	return fmt.Errorf("not a valid asset. Options include: %v", list)
 }
 
+// ArgValidatorAssetOrExchange checks for an asset or datasource name
 func ArgValidatorAssetOrExchange(cmd *cobra.Command, arg string) error {
 	list := append(common.AllAssets, polling.AllDataSourcesList()...)
 	for _, an := range list {

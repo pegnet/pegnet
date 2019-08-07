@@ -74,7 +74,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	}
 
 	// Have 8min cache on all sources. Any more frequent queries will return the last
-	// cached query
+	// cached query. This is mainly for local testing on short blocks. We don't want to blow our
+	// rate limits because we want to test on 30s blocks.
 	return NewTimedDataSourceCache(ds, time.Minute*8), nil
 }
 
@@ -94,8 +95,6 @@ type DataSources struct {
 
 	// The list of data sources by priority.
 	PriorityList []DataSourceWithPriority
-
-	maxPriority int // Each peg has a list of prioritized asset sources
 
 	config *config.Config
 }
@@ -157,6 +156,7 @@ func NewDataSources(config *config.Config) *DataSources {
 
 	// Add the data sources
 	// Yes I'm brute forcing it. Yes there is probably a better way. These lists are small
+	// so it's not worth trying to get fancy.
 	for _, asset := range common.AllAssets { // For each asset we need
 		for _, s := range d.PriorityList { // Append the data sources for that asset in priority order
 			if common.StringArrayContains(s.DataSource.SupportedPegs(), asset) != -1 {

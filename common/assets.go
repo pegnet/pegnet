@@ -95,6 +95,8 @@ var (
 	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 )
 
+// AssetListContainsCaseInsensitive is for when using user input. It's helpful for the
+// cmd line.
 func AssetListContainsCaseInsensitive(assetList []string, asset string) bool {
 	for _, a := range assetList {
 		if strings.ToLower(asset) == strings.ToLower(a) {

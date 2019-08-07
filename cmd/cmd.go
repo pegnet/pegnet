@@ -12,14 +12,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pegnet/pegnet/polling"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/networkMiner"
 	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/polling"
 	"github.com/spf13/cobra"
 )
 
