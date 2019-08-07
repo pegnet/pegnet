@@ -12,10 +12,13 @@ import (
 
 // Config names
 const (
-	ConfigCoordinatorListen   = "Miner.MiningCoordinatorPort"
-	ConfigCoordinatorLocation = "Miner.MiningCoordinatorHost"
-	ConfigCoinbaseAddress     = "Miner.CoinbaseAddress"
-	ConfigPegnetNetwork       = "Miner.Network"
+	ConfigCoordinatorListen            = "Miner.MiningCoordinatorPort"
+	ConfigCoordinatorLocation          = "Miner.MiningCoordinatorHost"
+	ConfigCoordinatorSecret            = "Miner.CoordinatorSecret"
+	ConfigCoordinatorUseAuthentication = "Miner.UseCoordinatorAuthentication"
+
+	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
+	ConfigPegnetNetwork   = "Miner.Network"
 )
 
 func NewUnitTestConfig() *config.Config {

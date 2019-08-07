@@ -4,17 +4,15 @@
 package common
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/prometheus/common/log"
-
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
+	log "github.com/sirupsen/logrus"
 )
 
 var PegAssetNames []string

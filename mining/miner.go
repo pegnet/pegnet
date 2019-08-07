@@ -5,7 +5,6 @@ package mining
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/pegnet/pegnet/opr"
@@ -128,6 +127,7 @@ func NewPegnetMinerFromConfig(c *config.Config, id int, commands <-chan *MinerCo
 
 func (p *PegnetMiner) Mine(ctx context.Context) {
 	mineLog := log.WithFields(log.Fields{"miner": p.ID})
+	var _ = mineLog
 	select {
 	// Wait for the first command to start
 	// We start 'paused'. Any command will knock us out of this init phase
@@ -158,11 +158,11 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 		diff := opr.ComputeDifficulty(p.MiningState.oprhash, p.MiningState.Nonce)
 		if diff > p.MiningState.minimumDifficulty && p.MiningState.rankings.AddNonce(p.MiningState.Nonce, diff) {
 			p.MiningState.stats.NewDifficulty(diff)
-			mineLog.WithFields(log.Fields{
-				"oprhash": fmt.Sprintf("%x", p.MiningState.oprhash),
-				"Nonce":   fmt.Sprintf("%x", p.MiningState.Nonce),
-				"diff":    diff,
-			}).Debugf("new Nonce")
+			//mineLog.WithFields(log.Fields{
+			//	"oprhash": fmt.Sprintf("%x", p.MiningState.oprhash),
+			//	"Nonce":   fmt.Sprintf("%x", p.MiningState.Nonce),
+			//	"diff":    diff,
+			//}).Debugf("new Nonce")
 		}
 	}
 

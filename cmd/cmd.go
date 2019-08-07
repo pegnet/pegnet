@@ -12,14 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pegnet/pegnet/mining"
-
-	"github.com/pegnet/pegnet/networkMiner"
-
-	"github.com/pegnet/pegnet/api"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/mining"
+	"github.com/pegnet/pegnet/networkMiner"
 	"github.com/pegnet/pegnet/opr"
 	"github.com/spf13/cobra"
 )
@@ -51,7 +48,7 @@ func init() {
 var getEncoding = &cobra.Command{
 	Use:     "getencoding <fct address> [encoding]",
 	Short:   "Takes a FCT address and returns an asset encoding (or all encodings) for that FCT address",
-	Example: "pegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npncli getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
+	Example: "pegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk usd\npegnet getencoding FA2RwVjKe4Jrr7M7E62fZi8mFYqEAoQppmpEDXqAumGkiropSAbk all",
 	// TODO: Verify this functionality.
 	ValidArgs: ValidOwnedFCTAddresses(),
 
@@ -279,30 +276,29 @@ var networkCoordinator = &cobra.Command{
 	Long: "The net coordinator will facilitate all communication with factomd and remote data sources. " +
 		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
-
+		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
 
-		monitor := common.GetMonitor()
-		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+		grader := LaunchGrader(Config, monitor)
+		statTracker := LaunchStatistics(Config, ctx)
+		apiserver := LaunchAPI(Config, statTracker)
+		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		var _ = apiserver
 
-		go func() {
-			errListener := monitor.NewErrorListener()
-			err := <-errListener
-			panic("Monitor threw error: " + err.Error())
-		}()
-
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
-
-		srv := networkMiner.NewMiningServer(Config, monitor, grader)
+		srv := networkMiner.NewMiningServer(Config, monitor, grader, statTracker)
 		go srv.Listen()
 		srv.ForwardMonitorEvents()
+
+		var _ = cancel
 	},
 }
 
 var networkMinerCmd = &cobra.Command{
 	Use: "netminer",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
@@ -310,8 +306,9 @@ var networkMinerCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		go cl.Listen()
-		go cl.RunForwardEntries()
+		// Pass the cancel func to stop the system
+		go cl.Listen(cancel)
+		go cl.Forwarder()
 		monitor, grader, oprMaker := cl.Listeners()
 
 		go func() {
@@ -320,7 +317,14 @@ var networkMinerCmd = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		statTracker := mining.NewGlobalStatTracker()
+		// Services
+		statTracker := LaunchStatistics(Config, ctx)
+		// TODO: Api on remote? CP on remote?
+		//apiserver := LaunchAPI(Config, statTracker)
+		//LaunchControlPanel(Config, ctx, monitor, statTracker)
+		//var _ = apiserver
+
+		cl.UpstreamStats = statTracker.GetUpstream("netcoord") // Send stats upstream
 
 		coord := mining.NewNetworkedMiningCoordinatorFromConfig(Config, monitor, grader, statTracker)
 		coord.OPRMaker = oprMaker
@@ -330,9 +334,7 @@ var networkMinerCmd = &cobra.Command{
 			panic(err)
 		}
 
-		ctx, cancel := context.WithCancel(context.Background())
-		go statTracker.Collect(ctx)              // Will stop collecting on ctx cancel
-		coord.LaunchMiners(context.Background()) // Inf loop unless context cancelled
+		coord.LaunchMiners(ctx) // Inf loop unless context cancelled
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
