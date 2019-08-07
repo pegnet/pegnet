@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pegnet/pegnet/polling"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
@@ -33,6 +35,7 @@ func init() {
 	rootCmd.AddCommand(grader)
 	rootCmd.AddCommand(networkCoordinator)
 	rootCmd.AddCommand(networkMinerCmd)
+	rootCmd.AddCommand(datasources)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
@@ -199,6 +202,32 @@ var burn = &cobra.Command{
 
 		fmt.Println("Burn transaction sent to the network")
 		fmt.Printf("Transaction: %s\n", tx.TxID)
+	},
+}
+
+var datasources = &cobra.Command{
+	Use:   "datasources",
+	Short: "Reads a config and outputs the data sources and their priorities",
+	Long: "When setting up a datasource config, this cmd will help you verify your config is set " +
+		"correctly. It will also help you ensure you have redudent data sources.",
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		d := polling.NewDataSources(Config)
+
+		// Time to print
+		fmt.Println("Data sources in priority order")
+		fmt.Printf("\t%s\n", d.PriorityListString())
+
+		fmt.Println()
+		fmt.Println("Assets and their data source order. The order left to right is the fallback order.")
+		for _, asset := range common.AllAssets {
+			if asset == "PNT" {
+				continue
+			}
+			str := d.AssetPriorityString(asset)
+			fmt.Printf("\t%4s (%d) : %s\n", asset, len(d.AssetSources[asset]), str)
+		}
 	},
 }
 

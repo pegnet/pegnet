@@ -8,8 +8,11 @@ import (
 	"time"
 
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+var dLog = log.WithField("id", "DataSources")
 
 func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	var ds IDataSource
@@ -106,6 +109,17 @@ func NewDataSources(config *config.Config) *DataSources {
 	// Ensure it is sorted
 	d.sortPriorityList()
 
+	// Validate that all priorities are only used once
+	last := DataSourceWithPriority{Priority: -1}
+	for _, v := range d.PriorityList {
+		if v.Priority == last.Priority {
+			dLog.Errorf("You may only use priorities once for your data sources in your config file. '%s' and '%s' both have '%d'",
+				v.DataSource.Name(), last.DataSource.Name(), v.Priority)
+			common.CheckAndPanic(fmt.Errorf("priority '%d' used more than once", v.Priority))
+		}
+		last = v
+	}
+
 	// Add the data sources
 	// Yes I'm brute forcing it. Yes there is probably a better way. These lists are small
 	for _, asset := range common.AllAssets { // For each asset we need
@@ -113,6 +127,14 @@ func NewDataSources(config *config.Config) *DataSources {
 			if common.StringArrayContains(s.DataSource.SupportedPegs(), asset) != -1 {
 				d.AssetSources[asset] = append(d.AssetSources[asset], s.DataSource.Name())
 			}
+		}
+	}
+
+	// Now we search for specific overrides. We will assume the user is a power user,
+	// so we will not check if the data source has the asset or anything proper
+	for _, asset := range common.AllAssets {
+		if order, err := config.String("OracleAssetDataSourcesPriority." + asset); err == nil && order != "" {
+			d.AssetSources[asset] = strings.Split(order, ",")
 		}
 	}
 
@@ -125,6 +147,26 @@ func (ds *DataSources) sortPriorityList() {
 		return ds.PriorityList[i].DataSource.Name() < ds.PriorityList[j].DataSource.Name()
 	})
 	sort.SliceStable(ds.PriorityList, func(i, j int) bool { return ds.PriorityList[i].Priority < ds.PriorityList[j].Priority })
+}
+
+func (ds *DataSources) PriorityListString() string {
+	var str []string
+	for _, v := range ds.PriorityList {
+		str = append(str, fmt.Sprintf("%s:%d", v.DataSource.Name(), v.Priority))
+	}
+
+	if len(str) == 0 {
+		return "You have no data sources configured"
+	}
+	return strings.Join(str, ", ")
+}
+
+func (ds *DataSources) AssetPriorityString(asset string) string {
+	str := ds.AssetSources[asset]
+	if len(str) == 0 {
+		return "NO DATASOURCE!"
+	}
+	return strings.Join(str, " -> ")
 }
 
 // PullAllPEGAssets will pull prices for every asset we are tracking.
