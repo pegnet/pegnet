@@ -9,6 +9,8 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -303,6 +305,7 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
 		return filepath.ToSlash(filepath.Join(base, acc))
 	}
+
 	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
 
