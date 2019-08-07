@@ -5,7 +5,6 @@ package polling
 
 import (
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -241,34 +240,4 @@ func ParseKitco(line string, kData *KitcoData) {
 	} else if strings.Index(line, "wsp-RH-high") > 0 {
 		kData.Rhodium.High = common.PullValue(line, 1)
 	}
-}
-
-func HandleKitcoWeb(data KitcoData, peg PegAssets) {
-	var format = "01/02/2006" // Kitco date format
-
-	silver := data.Silver
-	v, _ := strconv.ParseFloat(silver.Bid, 64)
-	peg["XAU"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, silver.Date)}
-
-	gold := data.Gold
-	v, _ = strconv.ParseFloat(gold.Bid, 64)
-	peg["XAG"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, gold.Date)}
-
-	palladium := data.Palladium
-	v, _ = strconv.ParseFloat(palladium.Bid, 64)
-	peg["XPD"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, palladium.Date)}
-
-	platinum := data.Platinum
-	v, _ = strconv.ParseFloat(platinum.Bid, 64)
-	peg["XPT"] = PegItem{Value: v, WhenUnix: ConverToUnix(format, platinum.Date)}
-}
-
-func KitcoInterface(config *config.Config, peg PegAssets) error {
-	log.Debug("Pulling Asset data from Kitco")
-	KitcoResponse, err := CallKitcoWeb()
-	if err != nil {
-		return fmt.Errorf("failed to access Kitco Website : %s", err.Error())
-	}
-	HandleKitcoWeb(KitcoResponse, peg)
-	return nil
 }

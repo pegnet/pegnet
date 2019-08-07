@@ -10,6 +10,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/pegnet/pegnet/polling"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/spf13/cobra"
@@ -103,7 +105,18 @@ func ArgValidatorAssetAndAll(cmd *cobra.Command, arg string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Not a valid asset. Options include: %v", list)
+	return fmt.Errorf("not a valid asset. Options include: %v", list)
+}
+
+func ArgValidatorAssetOrExchange(cmd *cobra.Command, arg string) error {
+	list := append(common.AllAssets, polling.AllDataSourcesList()...)
+	for _, an := range list {
+		if strings.ToLower(arg) == strings.ToLower(an) {
+			return nil
+		}
+	}
+
+	return fmt.Errorf("not a valid asset/datasource. Options include: %v", list)
 }
 
 // ArgValidatorAsset checks for valid asset
@@ -113,7 +126,7 @@ func ArgValidatorAsset(cmd *cobra.Command, arg string) error {
 			return nil
 		}
 	}
-	return fmt.Errorf("Not a valid asset. Assets include: %v", common.AllAssets)
+	return fmt.Errorf("not a valid asset. Assets include: %v", common.AllAssets)
 }
 
 // Custom Completion args
@@ -158,7 +171,7 @@ func factoidToFactoshi(amt string) (uint64, error) {
 
 	if len(pieces) > 1 {
 		if len(pieces[1]) > 8 {
-			return 0, fmt.Errorf("factoids are only subdivisible up to 1e-8, trim back on the number of decimal places.")
+			return 0, fmt.Errorf("factoids are only subdivisible up to 1e-8, trim back on the number of decimal places")
 		}
 
 		a := regexp.MustCompile(`(0*)([0-9]+)$`)

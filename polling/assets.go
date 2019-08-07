@@ -14,21 +14,56 @@ import (
 
 var dLog = log.WithField("id", "DataSources")
 
+// AllDataSources is just a hard coded list of all the available assets. This list is copied in
+// `NewDataSource`. These are the only two spots the list should be hard coded.
+var AllDataSources = map[string]IDataSource{
+	"APILayer":          new(APILayerDataSource),
+	"CoinCap":           new(CoinCapDataSource),
+	"ExchangeRates":     new(ExchangeRatesDataSource),
+	"Kitco":             new(KitcoDataSource),
+	"OpenExchangeRates": new(OpenExchangeRatesDataSource),
+	"CoinMarketCap":     new(CoinMarketCapDataSource),
+}
+
+func AllDataSourcesList() []string {
+	list := make([]string, len(AllDataSources))
+	i := 0
+	for k, _ := range AllDataSources {
+		list[i] = k
+		i++
+	}
+	return list
+}
+
+// CorrectCasing converts the case insensitive to the correct casing for the exchange
+func CorrectCasing(in string) string {
+	lowerIn := strings.ToLower(in)
+	cased := AllDataSourcesList()
+	for _, v := range cased {
+		if lowerIn == strings.ToLower(v) {
+			return v
+		}
+	}
+	return ""
+}
+
 func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	var ds IDataSource
 	var err error
-	switch source {
-	case "APILayer":
+
+	// Make it case insensitive.
+	switch strings.ToLower(source) {
+	case strings.ToLower("APILayer"):
 		ds, err = NewAPILayerDataSource(config)
-	case "CoinCap":
+	case strings.ToLower("CoinCap"):
 		ds, err = NewCoinCapDataSource(config)
-	case "ExchangeRates":
+	case strings.ToLower("ExchangeRates"):
 		ds, err = NewExchangeRatesDataSource(config)
-	case "Kitco":
+	case strings.ToLower("Kitco"):
 		ds, err = NewKitcoDataSource(config)
-	case "OpenExchangeRates":
+	case strings.ToLower("OpenExchangeRates"):
 		ds, err = NewOpenExchangeRatesDataSource(config)
-	case "CoinMarketCap":
+	case strings.ToLower("CoinMarketCap"):
 		ds, err = NewCoinMarketCapDataSource(config)
 	default:
 		return nil, fmt.Errorf("%s is not a supported data source", source)

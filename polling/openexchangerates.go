@@ -5,7 +5,6 @@ package polling
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -112,28 +111,4 @@ func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse
 
 	err = backoff.Retry(operation, PollingExponentialBackOff())
 	return OpenExchangeRatesResponse, err
-}
-
-func HandleOpenExchangeRates(response OpenExchangeRatesResponse, peg PegAssets) {
-
-	// Handle Response Errors
-	if response.Error {
-		log.WithFields(log.Fields{
-			"status":      response.Status,
-			"message":     response.Message,
-			"description": response.Description,
-		}).Fatal("Failed to access OpenExchangeRates")
-	}
-
-	UpdatePegAssets(response.Rates, response.Timestamp, peg)
-}
-
-func OpenExchangeRatesInterface(config *config.Config, peg PegAssets) error {
-	log.Debug("Pulling Asset data from OpenExchangesRates")
-	OpenExchangeRatesResponse, err := CallOpenExchangeRates(config)
-	if err != nil {
-		return fmt.Errorf("failed to access OpenExchangesRates : %s", err.Error())
-	}
-	HandleOpenExchangeRates(OpenExchangeRatesResponse, peg)
-	return nil
 }

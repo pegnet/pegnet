@@ -206,13 +206,56 @@ var burn = &cobra.Command{
 }
 
 var datasources = &cobra.Command{
-	Use:   "datasources",
+	Use:   "datasources [assets or datasource]",
 	Short: "Reads a config and outputs the data sources and their priorities",
 	Long: "When setting up a datasource config, this cmd will help you verify your config is set " +
-		"correctly. It will also help you ensure you have redudent data sources.",
+		"correctly. It will also help you ensure you have redudent data sources. " +
+		"This command can also provide all datasources, and what assets they support. As well as the " +
+		"opposite; given an asset what datasources include it.",
+	Example:   "pegnet datasources FCT\npegnet datasources CoinMarketCap",
+	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(false, ArgValidatorAssetOrExchange)),
+	ValidArgs: append(common.AllAssets, polling.AllDataSourcesList()...),
 	Run: func(cmd *cobra.Command, args []string) {
 		ValidateConfig(Config) // Will fatal log if it fails
 
+		// User selected a data source or asset
+		if len(args) == 1 {
+			if common.AssetListContainsCaseInsensitive(common.AllAssets, args[0]) {
+				// Specified an asset
+				asset := strings.ToUpper(args[0])
+
+				// Find all exchanges for the asset
+				fmt.Printf("Asset : %s\n", asset)
+
+				var sources []string
+				for k, v := range polling.AllDataSources {
+					if common.AssetListContains(v.SupportedPegs(), asset) {
+						sources = append(sources, k)
+					}
+				}
+				fmt.Printf("Datasources : %v\n", sources)
+			} else if common.AssetListContainsCaseInsensitive(polling.AllDataSourcesList(), args[0]) {
+				// Specified an exchange
+				source := polling.CorrectCasing(args[0])
+				if source == "" {
+					CmdErrorf(cmd, "%s is not a supported datasource", args[0])
+				}
+				s := polling.AllDataSources[source]
+
+				fmt.Printf("Datasource : %s\n", s.Name())
+				fmt.Printf("Datasource URL : %s\n", s.Url())
+				fmt.Printf("Supported peg pricing\n")
+				for _, asset := range s.SupportedPegs() {
+					fmt.Printf("\t%s\n", asset)
+				}
+			} else {
+				// Should never happen
+				fmt.Println("This should never happen. The provided argument is invalid")
+			}
+			return
+		}
+
+		// Default to printing everything
 		d := polling.NewDataSources(Config)
 
 		// Time to print

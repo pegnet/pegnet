@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package common
 
+import "strings"
+
 /*          All the assets on pegnet
  *
  *          PegNet,                 PNT,        PNT
@@ -92,6 +94,15 @@ var (
 
 	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 )
+
+func AssetListContainsCaseInsensitive(assetList []string, asset string) bool {
+	for _, a := range assetList {
+		if strings.ToLower(asset) == strings.ToLower(a) {
+			return true
+		}
+	}
+	return false
+}
 
 func AssetListContains(assetList []string, asset string) bool {
 	for _, a := range assetList {

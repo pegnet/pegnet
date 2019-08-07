@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff"
+
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -121,12 +123,23 @@ func (d *CoinMarketCapDataSource) CurrencyIDMapping() map[string]int {
 }
 
 func (d *CoinMarketCapDataSource) CallCoinMarketCap() (*CoinMarketCapResponse, error) {
-	data, err := d.FetchPeggedPrices()
-	if err != nil {
-		return nil, err
+	var resp *CoinMarketCapResponse
+
+	operation := func() error {
+		data, err := d.FetchPeggedPrices()
+		if err != nil {
+			return err
+		}
+
+		resp, err = d.ParseFetchedPrices(data)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	return d.ParseFetchedPrices(data)
+	err := backoff.Retry(operation, PollingExponentialBackOff())
+	return resp, err
 }
 
 func (d *CoinMarketCapDataSource) ParseFetchedPrices(data []byte) (*CoinMarketCapResponse, error) {
