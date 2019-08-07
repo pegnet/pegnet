@@ -11,6 +11,62 @@ import (
 	. "github.com/pegnet/pegnet/common"
 )
 
+func TestStringAmounts(t *testing.T) {
+	vectors := []struct {
+		S string
+		V int64
+	}{ // TODO: Add vectors
+		{"1", 1e8},
+		{"2", 2e8},
+		{"0.01", 1e6},
+		{"0.001", 1e5},
+		{"0.0001", 1e4},
+		{"0.00001", 1e3},
+		{"0.000001", 1e2},
+		{"0.0000001", 1e1},
+		{"0.00000001", 1e0}, // 1
+		// Edge cases
+		{".1", 1e7},
+		{".0", 0},
+		{"0.0", 0},
+		// 92,233,720,368 <- ~93 trillion is the limit
+		{"92233720368", int64(math.MaxInt64) / int64(1e8) * 1e8},
+	}
+
+	for _, v := range vectors {
+		vV, err := StringToAmount(v.S)
+		if err != nil {
+			t.Errorf("%s : %s", v.S, err.Error())
+		}
+
+		if vV != v.V {
+			t.Errorf("[3] Exp %d, got %d", v.V, vV)
+		}
+	}
+}
+
+func TestInvalidAmountStrings(t *testing.T) {
+	vectors := []string{
+		"0.000000001", // To small
+		"1.000000001", // Contains value that is too small
+		"10.",         // Invalid
+		".",
+		"9..0", // "Obviously
+		"a",
+		"-1.0",                // No negatives
+		"9223372036854775807", // max int64, too big
+		"92233720369",         // max int64/1e8 + 1. This will overflow
+	}
+
+	for _, v := range vectors {
+		_, err := StringToAmount(v)
+		if err == nil {
+			t.Error(fmt.Errorf("Expected an error"))
+		}
+
+	}
+}
+
 func TestAmounts(t *testing.T) {
 	vectors := []struct {
 		V int64
@@ -21,6 +77,7 @@ func TestAmounts(t *testing.T) {
 		{2e8 + 2e7, "2.2"},
 		{1, "0.00000001"},
 		{0, "0"},
+		{1e7, "0.1"},
 		{12345678, "0.12345678"},
 	}
 
@@ -33,7 +90,7 @@ func TestAmounts(t *testing.T) {
 
 		vV, err := StringToAmount(v.S)
 		if err != nil {
-			t.Errorf("[2] Exp %d, got %d", v.V, vV)
+			t.Error(err)
 		}
 
 		// Test the results

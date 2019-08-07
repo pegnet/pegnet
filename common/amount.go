@@ -45,8 +45,17 @@ func StringToAmount(amt string) (int64, error) {
 
 	dot := regexp.MustCompile(`\.`)
 	pieces := dot.Split(amt, 2)
-	whole, _ := strconv.Atoi(pieces[0])
-	total += int64(whole) * 1e8
+	whole, err := strconv.ParseInt(pieces[0], 10, 64)
+	if err != nil && len(pieces[0]) > 0 { // If the string is "", the result is 0
+		return 0, err
+	}
+
+	if whole > int64(math.MaxInt64)/1e8 {
+		// This will overflow
+		return 0, fmt.Errorf("%d*1e8 will overflow int64", whole)
+	}
+
+	total += whole * 1e8
 
 	if len(pieces) > 1 {
 		if len(pieces[1]) > 8 {
