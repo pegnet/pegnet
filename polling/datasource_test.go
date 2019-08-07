@@ -19,6 +19,9 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
 	// Set default http client to return what we expect from apilayer
 	cl := testutils.GetClientWithFixedResp(fixed)
 	http.DefaultClient = cl
+	polling.NewHTTPClient = func() *http.Client {
+		return testutils.GetClientWithFixedResp(fixed)
+	}
 
 	s, err := polling.NewDataSource(source, c)
 	if err != nil {

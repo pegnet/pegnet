@@ -25,6 +25,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewKitcoDataSource(config)
 	case "OpenExchangeRates":
 		ds, err = NewOpenExchangeRatesDataSource(config)
+	case "CoinMarketCap":
+		ds, err = NewCoinMarketCapDataSource(config)
 	default:
 		return nil, fmt.Errorf("%s is not a supported data source", source)
 	}
@@ -163,6 +165,9 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 			// No prices found for a peg, this pull failed
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
 		}
+
+		// We round all prices to the same precision
+		price.Value = Round(price.Value)
 		pa[asset] = price
 	}
 

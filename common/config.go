@@ -19,6 +19,8 @@ const (
 
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
+
+	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
 )
 
 func NewUnitTestConfig() *config.Config {
@@ -62,13 +64,28 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   CoinbasePNTAddress=tPNT_mEU1i4M5rn7bnrxNKdVVf4HXLG15Q798oaVAMrXq7zdbhQ9pv
   IdentityChain=prototype
 [Oracle]
-  APILayerKey=f6c9765ef81279e8891d40e34ef7ab01
-  OpenExchangeRatesKey=bogus
+  APILayerKey=CHANGEME
+  OpenExchangeRatesKey=CHANGEME
+  CoinMarketCapKey=CHANGEME
   CoinCap=1
-  APILayer=1
-  ExchangeRatesAPI=0
+  APILayer=0
+  ExchangeRatesAPI=1
   OpenExchangeRates=0
   Kitco=1
+
+
+[OracleDataSources]
+  APILayer=1
+  ExchangeRates=3
+  OpenExchangeRates=2
+
+  # Crypto
+  CoinMarketCap=3
+  CoinCap=4
+
+  # Commodities
+  Kitco=10
+
 `
 	return d
 }

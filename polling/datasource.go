@@ -2,8 +2,15 @@ package polling
 
 import (
 	"fmt"
+	"net/http"
 	"time"
 )
+
+// NewHTTPClient is a variable so we can override it in unit tests.
+// Some data sources might build clients off of this base one
+var NewHTTPClient = func() *http.Client {
+	return &http.Client{}
+}
 
 // IDataSource is the implementation all data sources need to adheer to.
 type IDataSource interface {
