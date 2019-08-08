@@ -31,12 +31,12 @@ func NewUnitTestConfig() *config.Config {
 //	This way we don't have to deal with pathing to find the
 //	`defaultconfig.ini`.
 type UnitTestConfigProvider struct {
-	data string
+	Data string
 }
 
 func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 	d := new(UnitTestConfigProvider)
-	d.data = `
+	d.Data = `
 [Debug]
 # Randomize adds a random factor +/- the give percent.  3.1 for 3.1%
   Randomize=0.1
@@ -88,7 +88,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 func (this *UnitTestConfigProvider) Load() (map[string]string, error) {
 	settings := map[string]string{}
 
-	file, err := ini.Load([]byte(this.data))
+	file, err := ini.Load([]byte(this.Data))
 	if err != nil {
 		return nil, err
 	}

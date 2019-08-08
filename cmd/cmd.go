@@ -236,10 +236,10 @@ var datasources = &cobra.Command{
 			} else if common.AssetListContainsCaseInsensitive(polling.AllDataSourcesList(), args[0]) {
 				// Specified an exchange
 				source := polling.CorrectCasing(args[0])
-				if source == "" {
+				s, ok := polling.AllDataSources[source]
+				if !ok {
 					CmdErrorf(cmd, "%s is not a supported datasource", args[0])
 				}
-				s := polling.AllDataSources[source]
 
 				fmt.Printf("Datasource : %s\n", s.Name())
 				fmt.Printf("Datasource URL : %s\n", s.Url())

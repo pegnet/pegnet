@@ -44,7 +44,14 @@ func CorrectCasing(in string) string {
 			return v
 		}
 	}
-	return ""
+
+	// For unit testing support
+	r, _ := regexp.Compile("UnitTest[0-9]*")
+	if r.Match([]byte(in)) {
+		return "UnitTest"
+	}
+
+	return in
 }
 
 func NewDataSource(source string, config *config.Config) (IDataSource, error) {
@@ -52,19 +59,21 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	var err error
 
 	// Make it case insensitive.
-	switch strings.ToLower(source) {
-	case strings.ToLower("APILayer"):
+	switch CorrectCasing(source) {
+	case "APILayer":
 		ds, err = NewAPILayerDataSource(config)
-	case strings.ToLower("CoinCap"):
+	case "CoinCap":
 		ds, err = NewCoinCapDataSource(config)
-	case strings.ToLower("ExchangeRates"):
+	case "ExchangeRates":
 		ds, err = NewExchangeRatesDataSource(config)
-	case strings.ToLower("Kitco"):
+	case "Kitco":
 		ds, err = NewKitcoDataSource(config)
-	case strings.ToLower("OpenExchangeRates"):
+	case "OpenExchangeRates":
 		ds, err = NewOpenExchangeRatesDataSource(config)
-	case strings.ToLower("CoinMarketCap"):
+	case "CoinMarketCap":
 		ds, err = NewCoinMarketCapDataSource(config)
+	case "UnitTest":
+		ds, err = NewTestingDataSource(config, source)
 	default:
 		return nil, fmt.Errorf("%s is not a supported data source", source)
 	}
@@ -235,6 +244,9 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 			price, err = cacheWrap[sourceName].FetchPegPrice(asset)
 			if err != nil {
 				continue // Try the next source
+			}
+			if price.Value != 0 {
+				break
 			}
 		}
 

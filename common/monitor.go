@@ -41,7 +41,7 @@ type Monitor struct {
 	errors        []chan error
 }
 
-// MonitorEvent is the data sent to all listeners when being notified
+// MonitorEvent is the Data sent to all listeners when being notified
 type MonitorEvent struct {
 	Minute int64 `json:"minute"`
 	Dbht   int32 `json:"dbht"`
