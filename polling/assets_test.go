@@ -49,9 +49,9 @@ func TestBasicPollingSources(t *testing.T) {
   UnitTest8=8
 `
 
-	config := config.NewConfig([]config.Provider{p})
+	c := config.NewConfig([]config.Provider{p})
 
-	s := NewDataSources(config)
+	s := NewDataSources(c)
 
 	pa, err := s.PullAllPEGAssets()
 	if err != nil {
@@ -82,6 +82,48 @@ func TestBasicPollingSources(t *testing.T) {
 			}
 		}
 	}
+
+	// Test the override mechanic
+	t.Run("Test the override", func(t *testing.T) {
+		p.Data = `
+[OracleDataSources]
+  UnitTest1=1
+  UnitTest2=2
+  UnitTest3=3
+  UnitTest4=4
+  UnitTest5=5
+  UnitTest6=6
+  UnitTest7=7
+  UnitTest8=8
+
+[OracleAssetDataSourcesPriority]
+  # Specific coin overrides
+  USD=UnitTest8
+`
+		c = config.NewConfig([]config.Provider{p})
+
+		s = NewDataSources(c)
+		pa, err := s.PullAllPEGAssets()
+		if err != nil {
+			t.Error(err)
+		}
+
+		if v, ok := pa["USD"]; !ok {
+			t.Error("No usd")
+		} else {
+			if int(v.Value) != 8 {
+				t.Error("Override failed")
+			}
+		}
+
+		if len(s.AssetSources["USD"]) != 1 {
+			t.Errorf("exp %d sources for %s, found %d", 1, "USD", len(s.AssetSources["USD"]))
+		}
+
+		if s.AssetSources["USD"][0] != "UnitTest8" {
+			t.Errorf("Exp UnitTest8, got %s", s.AssetSources["USD"][0])
+		}
+	})
 }
 
 // UnitTestDataSource just reports the value for the supported assets
