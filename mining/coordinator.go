@@ -173,7 +173,7 @@ MiningLoop:
 					StatsAggregator(statsAggregate).                  // Stat collection per block
 					ResetRecords().                                   // Reset the miner's stats/difficulty/etc
 					NewOPRHash(oprHash).                              // New OPR hash to mine
-					MinimumDifficulty(oprTemplate.MinimumDifficulty). // TODO: Set this from the cfg?
+					MinimumDifficulty(oprTemplate.MinimumDifficulty). // Floor difficulty to use
 					ResumeMining().                                   // Start mining
 					Build()
 

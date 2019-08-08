@@ -34,8 +34,13 @@ func init() {
 	rootCmd.AddCommand(networkCoordinator)
 	rootCmd.AddCommand(networkMinerCmd)
 
+	dataWriter.AddCommand(minerStats)
+	rootCmd.AddCommand(dataWriter)
+
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
+
+	minerStats.Flags().StringP("output", "o", "minerstats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
@@ -338,5 +343,34 @@ var networkMinerCmd = &cobra.Command{
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
+	},
+}
+
+var dataWriter = &cobra.Command{
+	Use:     "csv <data_request>",
+	Short:   "Creates csvs for the given data request.",
+	Example: "csv minerstats",
+}
+
+var minerStats = &cobra.Command{
+	Use:     "minerstats",
+	Short:   "Creates a csv showing the miner related stats from the blocks on chain.",
+	Example: "csv minerstats",
+	Run: func(cmd *cobra.Command, args []string) {
+		// minerstats.csv
+		path, err := cmd.Flags().GetString("output")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		c, err := opr.NewChainRecorder(Config, path)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		err = c.WriteMinerCSV()
+		if err != nil {
+			CmdError(cmd, err)
+		}
 	},
 }

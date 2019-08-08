@@ -348,17 +348,10 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
-	start, stop, err := common.LoadDifficultyCutoff(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Set the min difficulty we want to aim for
-	if len(winners.AllOPRs) > start {
-		if len(winners.AllOPRs) > stop {
-			opr.MinimumDifficulty = winners.AllOPRs[stop].Difficulty
-		} else {
-			opr.MinimumDifficulty = winners.AllOPRs[len(winners.AllOPRs)-1].Difficulty
+	if len(winners.AllOPRs) > 0 {
+		cutoff, _ := c.Int(common.ConfigSubmissionCutOff)
+		if cutoff > 0 { // <= 0 disables it
+			opr.MinimumDifficulty = CalculateMinimumDifficulty(winners.AllOPRs, cutoff)
 		}
 	}
 

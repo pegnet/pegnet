@@ -6,10 +6,6 @@ import (
 	"fmt"
 
 	"github.com/zpatrick/go-config"
-
-	"strconv"
-	"strings"
-
 	"github.com/go-ini/ini"
 )
 
@@ -40,7 +36,7 @@ func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
 
 func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
-	settings[ConfigSubmissionCutOff] = "200,300"
+	settings[ConfigSubmissionCutOff] = "300"
 
 	return settings, nil
 }
@@ -113,27 +109,4 @@ func (this *UnitTestConfigProvider) Load() (map[string]string, error) {
 	}
 
 	return settings, nil
-}
-
-func LoadDifficultyCutoff(config *config.Config) (int, int, error) {
-	str, err := config.String(ConfigSubmissionCutOff)
-	if err != nil {
-		return -1, -1, err
-	}
-	arr := strings.Split(str, ",")
-	if len(arr) != 2 {
-		return -1, -1, fmt.Errorf("exp range for submission cutoff")
-	}
-
-	start, err := strconv.Atoi(arr[0])
-	if err != nil {
-		return -1, -1, err
-	}
-
-	stop, err := strconv.Atoi(arr[1])
-	if err != nil {
-		return -1, -1, err
-	}
-
-	return start, stop, nil
 }
