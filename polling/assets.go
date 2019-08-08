@@ -16,6 +16,8 @@ var dLog = log.WithField("id", "DataSources")
 
 // AllDataSources is just a hard coded list of all the available assets. This list is copied in
 // `NewDataSource`. These are the only two spots the list should be hard coded.
+// The reason I have the `new(DataSource` is so I can get the name, url, and supported
+// pegs from this map. It's useful in the cmdline to fetch the datasources dynamically.
 var AllDataSources = map[string]IDataSource{
 	"APILayer":          new(APILayerDataSource),
 	"CoinCap":           new(CoinCapDataSource),
@@ -36,6 +38,7 @@ func AllDataSourcesList() []string {
 }
 
 // CorrectCasing converts the case insensitive to the correct casing for the exchange
+// This is mainly to handle user input from the command line.
 func CorrectCasing(in string) string {
 	lowerIn := strings.ToLower(in)
 	cased := AllDataSourcesList()
@@ -45,7 +48,10 @@ func CorrectCasing(in string) string {
 		}
 	}
 
-	// For unit testing support
+	// For unit testing support, we need to include this.
+	// Unit tests can create arbitrary 'DataSources'.
+	// If you run this outside a unit test, the data source
+	// will error out and fail to be made.
 	r, _ := regexp.Compile("UnitTest[0-9]*")
 	if r.Match([]byte(in)) {
 		return "UnitTest"
@@ -72,7 +78,7 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOpenExchangeRatesDataSource(config)
 	case "CoinMarketCap":
 		ds, err = NewCoinMarketCapDataSource(config)
-	case "UnitTest":
+	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
 		return nil, fmt.Errorf("%s is not a supported data source", source)
@@ -113,32 +119,33 @@ type DataSourceWithPriority struct {
 	Priority   int
 }
 
+// NewDataSources reads the config and sets everything up for polling
 func NewDataSources(config *config.Config) *DataSources {
 	d := new(DataSources)
 	d.AssetSources = make(map[string][]string)
 	d.DataSources = make(map[string]IDataSource)
 
-	// Create data sources
+	// All the config settings
 	allSettings, err := config.Settings()
 	common.CheckAndPanic(err)
 
+	// We only want the OracleDataSources section. And they must be alpha numeric
 	datasourceRegex, err := regexp.Compile(`OracleDataSources\.[a-zA-Z0-9]+`)
 	common.CheckAndPanic(err)
 
 	for setting, _ := range allSettings {
 		if datasourceRegex.Match([]byte(setting)) {
-			// Get the priority. Priorities can be the same, then we'll sort
-			// alphabetically to keep the results deterministic
+			// Get the priority. Priorities CANNOT be the same.
 			p, err := config.Int(setting)
 			common.CheckAndPanic(err)
 
 			if p == -1 {
-				continue // This source is disabled
+				continue // -1 priority means this source is disabled
 			}
 
 			source := strings.Split(setting, ".")
 			if len(source) != 2 {
-				panic(common.DetailError(fmt.Errorf("expect only 1 '.' in a setting. Found %s", setting)))
+				panic(common.DetailError(fmt.Errorf("expect only 1 '.' in a setting. Found more : %s", setting)))
 			}
 			s, err := NewDataSource(source[1], config)
 			common.CheckAndPanic(err)
@@ -165,7 +172,7 @@ func NewDataSources(config *config.Config) *DataSources {
 
 	// Add the data sources
 	// Yes I'm brute forcing it. Yes there is probably a better way. These lists are small
-	// so it's not worth trying to get fancy.
+	// so it's not worth trying to get fancy. (3 nested for loops)
 	for _, asset := range common.AllAssets { // For each asset we need
 		for _, s := range d.PriorityList { // Append the data sources for that asset in priority order
 			if common.StringArrayContains(s.DataSource.SupportedPegs(), asset) != -1 {
@@ -175,7 +182,9 @@ func NewDataSources(config *config.Config) *DataSources {
 	}
 
 	// Now we search for specific overrides. We will assume the user is a power user,
-	// so we will not check if the data source has the asset or anything proper
+	// so we will not check if the data source has the asset or anything proper.
+	// If they mess this up... well, they shouldn't be using this feature.
+	// If someone wants to add validation here, go ahead :)
 	for _, asset := range common.AllAssets {
 		if order, err := config.String("OracleAssetDataSourcesPriority." + asset); err == nil && order != "" {
 			d.AssetSources[asset] = strings.Split(order, ",")
@@ -185,14 +194,12 @@ func NewDataSources(config *config.Config) *DataSources {
 	return d
 }
 
-// sortPriorityList sorts by name, then by priority
+// sortPriorityList sorts by priority
 func (ds *DataSources) sortPriorityList() {
-	sort.SliceStable(ds.PriorityList, func(i, j int) bool {
-		return ds.PriorityList[i].DataSource.Name() < ds.PriorityList[j].DataSource.Name()
-	})
 	sort.SliceStable(ds.PriorityList, func(i, j int) bool { return ds.PriorityList[i].Priority < ds.PriorityList[j].Priority })
 }
 
+// PriorityListString is for the cmd line, it will print all the data sources in their priority order.
 func (ds *DataSources) PriorityListString() string {
 	var str []string
 	for _, v := range ds.PriorityList {
@@ -205,6 +212,7 @@ func (ds *DataSources) PriorityListString() string {
 	return strings.Join(str, ", ")
 }
 
+// AssetPriorityString will print all the data sources for it in the priority order.
 func (ds *DataSources) AssetPriorityString(asset string) string {
 	str := ds.AssetSources[asset]
 	if len(str) == 0 {
@@ -224,7 +232,7 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 	assets := common.AllAssets // All the assets we are tracking.
 
 	// Wrap all the data sources with a quick caching layer for
-	// this loop
+	// this loop. We only want to make 1 api call per source per Pull.
 	cacheWrap := make(map[string]IDataSource)
 
 	for _, source := range d.DataSources {
@@ -245,6 +253,7 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 			if err != nil {
 				continue // Try the next source
 			}
+			// We found a price, so break out.
 			if price.Value != 0 {
 				break
 			}
@@ -256,6 +265,11 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 		}
 
 		// We round all prices to the same precision
+		// Keep in mind if we didn't get a price (like no data sources), this will be a 0.
+		// Validation of the price does not happen here. For example, PNT is an asset with no data source,
+		// so it will be 0 here.
+		// We WILL error out if all our data sources for a peg failed, and we listed data sources. That
+		// is important to note.
 		price.Value = Round(price.Value)
 		pa[asset] = price
 	}

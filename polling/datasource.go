@@ -34,7 +34,7 @@ type IDataSource interface {
 // FetchPegPrice is because this implementation is the same for each exchange and GoLang's
 // inheritance makes child structs referencing parent structs weird.
 func FetchPegPrice(peg string, FetchPegPrices func() (peg PegAssets, err error)) (i PegItem, err error) {
-	p, err := FetchPegPrices()
+	p, err := FetchPegPrices() // 99% of the time this fetches a cached value, and does not make a new api call
 	if err != nil {
 		return
 	}

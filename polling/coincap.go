@@ -5,7 +5,6 @@ package polling
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -158,53 +157,4 @@ func CallCoinCap(config *config.Config) (CoinCapResponse, error) {
 
 	err := backoff.Retry(operation, PollingExponentialBackOff())
 	return CoinCapResponse, err
-}
-
-func HandleCoinCap(response CoinCapResponse, peg PegAssets) {
-
-	var timestamp = response.Timestamp
-
-	for _, currency := range response.Data {
-		switch currency.Symbol {
-		case "BTC", "XBT":
-			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["XBT"] = PegItem{Value: value, WhenUnix: timestamp}
-			if err != nil {
-				continue
-			}
-		case "BCH", "XBC":
-			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["XBC"] = PegItem{Value: value, WhenUnix: timestamp}
-			if err != nil {
-				continue
-			}
-		case "ZCASH", "ZEC":
-			value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-			peg["ZEC"] = PegItem{Value: value, WhenUnix: timestamp}
-			if err != nil {
-				continue
-			}
-		default:
-			// See if the ticker is in our crypto currency list
-			if common.AssetListContains(common.CryptoAssets, currency.Symbol) {
-				value, err := strconv.ParseFloat(currency.PriceUSD, 64)
-				peg[currency.Symbol] = PegItem{Value: value, WhenUnix: timestamp}
-				if err != nil {
-					continue
-				}
-			}
-		}
-	}
-
-}
-
-func CoinCapInterface(config *config.Config, peg PegAssets) error {
-	log.Debug("Pulling Asset data from CoinCap")
-	CoinCapResponse, err := CallCoinCap(config)
-	if err != nil {
-		return fmt.Errorf("failed to access CoinCap : %s", err.Error())
-	}
-
-	HandleCoinCap(CoinCapResponse, peg)
-	return nil
 }
