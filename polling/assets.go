@@ -175,7 +175,7 @@ func NewDataSources(config *config.Config) *DataSources {
 	// so it's not worth trying to get fancy. (3 nested for loops)
 	for _, asset := range common.AllAssets { // For each asset we need
 		for _, s := range d.PriorityList { // Append the data sources for that asset in priority order
-			if common.StringArrayContains(s.DataSource.SupportedPegs(), asset) != -1 {
+			if common.FindIndexInStringArray(s.DataSource.SupportedPegs(), asset) != -1 {
 				d.AssetSources[asset] = append(d.AssetSources[asset], s.DataSource.Name())
 			}
 		}

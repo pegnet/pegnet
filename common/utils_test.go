@@ -280,3 +280,17 @@ func testPath(e ExpPath, t *testing.T) {
 		t.Errorf("Exp %s, found %s", e.Exp, f)
 	}
 }
+
+func TestFindIndexInStringArray(t *testing.T) {
+	a := "abcdefghijklmnopqrstuvwxyz"
+	var arr []string
+	for _, l := range a {
+		arr = append(arr, string(l))
+	}
+
+	for i, l := range a {
+		if FindIndexInStringArray(arr, string(l)) != i {
+			t.Error("did not find at right location")
+		}
+	}
+}

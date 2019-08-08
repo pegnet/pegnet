@@ -309,7 +309,7 @@ func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
 	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
 }
 
-func StringArrayContains(haystack []string, needle string) int {
+func FindIndexInStringArray(haystack []string, needle string) int {
 	for i, v := range haystack {
 		if v == needle {
 			return i
