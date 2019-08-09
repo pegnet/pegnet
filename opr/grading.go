@@ -167,7 +167,7 @@ func GetEntryBlocks(config *config.Config) error {
 				// Can only have two ExtIDs which must be:
 				//	[0] the nonce for the entry
 				//	[1] Self reported difficulty
-				if len(entry.ExtIDs) != 2 {
+				if len(entry.ExtIDs) != 3 {
 					continue // keep looking if the entry has more than one extid
 				}
 
@@ -187,6 +187,10 @@ func GetEntryBlocks(config *config.Config) error {
 				opr.EntryHash = entry.Hash()
 				opr.Nonce = entry.ExtIDs[0]
 				opr.SelfReportedDifficulty = entry.ExtIDs[1]
+				if len(entry.ExtIDs[2]) != 1 {
+					continue // Version is 1 byte
+				}
+				opr.Version = entry.ExtIDs[2][0]
 
 				// Looking good.  Go ahead and compute the OPRHash
 				sha := sha256.Sum256(entry.Content)
