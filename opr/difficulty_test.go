@@ -1,38 +1,11 @@
 package opr_test
 
 import (
-	"fmt"
-	"math/bits"
+	"math"
 	"testing"
 
 	. "github.com/pegnet/pegnet/opr"
 )
-
-func TestLeadingOnesBits(t *testing.T) {
-	vectors := []struct {
-		V   uint64
-		Exp int
-	}{
-		{V: 0, Exp: 0},
-		{V: uint64(0xffffffffffffffff), Exp: 64},
-		{V: uint64(0xfffffffffffffff0), Exp: 60},
-		{V: uint64(0x7ffffffffffffff0), Exp: 0},
-		{V: uint64(0x0ffffffffffffff0), Exp: 0},
-		{V: uint64(0xAffffffffffffff0), Exp: 1},
-	}
-
-	for _, v := range vectors {
-		if f := LeadingOnes64(v.V); f != v.Exp {
-			t.Errorf("exp %d, found %d for %d", v.Exp, f, v.V)
-		}
-	}
-}
-
-func LeadingOnes64(v uint64) int {
-	flipped := ^v
-	index := bits.LeadingZeros64(flipped)
-	return index
-}
 
 // Just some sample vectors taken from 1 miner on a network
 func TestEffectiveHashRate(t *testing.T) {
@@ -57,10 +30,21 @@ func TestEffectiveHashRate(t *testing.T) {
 
 	for _, v := range vectors {
 		ehr := EffectiveHashRate(v.WorstDiff, 50)
-		fmt.Printf("%d %.4f, %.4f\n", v.Height, ehr, v.HashRate)
+		diff := math.Abs(ehr - v.HashRate)
+		if diff/v.HashRate > 0.25 {
+			// 25% tolerance?
+			t.Errorf("Hashrate calculated is over 20%% different from the actual. Difference is %.2f%%", diff/v.HashRate*100)
+		}
+		//fmt.Printf("%d %.4f, %.4f\n", v.Height, ehr, v.HashRate)
 
 		expMin := ExpectedMinimumDifficulty(v.HashRate, 50)
-		fmt.Printf("%d %x, %x\n", v.Height, expMin, v.WorstDiff)
+		diff = math.Abs(float64(expMin) - float64(v.WorstDiff))
+		if diff/float64(v.WorstDiff) > 0.25 {
+			// 25% tolerance?
+			t.Errorf("Minimum difficulty calculated is over 20%% different from the actual. Difference is %.2f%%", diff/float64(v.WorstDiff)*100)
+		}
+		//fm
+		//fmt.Printf("%d %x, %x\n", v.Height, expMin, v.WorstDiff)
 	}
 
 }
