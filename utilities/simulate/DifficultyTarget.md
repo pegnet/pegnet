@@ -59,3 +59,11 @@ Below is listed various trials with various parameters. All tests were run using
 
 ![Records Graph](results/t200_r100k_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t200_r100k_b100_d5s_DIFFICULTY.png "Difficulty Graph")
+
+
+### Targeting 200 records, 100K hashes/s, 1m per block, 100 blocks
+
+`simulate blocks --csv stats.csv --target 200 -r 100000`
+
+![Records Graph](results/t200_r100k_b100_d1m_RECORDS.png "Records Graph")
+![Difficulty Graph](results/t200_r100k_b100_d1m_DIFFICULTY.png "Difficulty Graph")
