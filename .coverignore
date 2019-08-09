@@ -1,7 +1,2 @@
-# We should not have utilities or the cmd part of our coverage calculation.
-# Utilities are tools we can collect.
-utilities
-# Unit testing cmd commands?
-cmd
-# Unit testing the control panel?
-controlPanel
+cmd/*
+controlPanel/*

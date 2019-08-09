@@ -15,7 +15,7 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh 
-        - goveralls -v -service=travis-ci -flags "-timeout 45m"
+        - goveralls -v -service=travis-ci -ignore="$(paste -sd, .coverignore)" -flags "-timeout 45m"
   allow_failures:
     - os: windows
 
