@@ -183,6 +183,7 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 
 			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
 			evt.CoinbasePNTAddress = addr
+			evt.OPRHash = nil // Reset the oprhash since we changed some fields
 
 			c.OPRMaker.RecOPR(evt)
 		case Ping:
