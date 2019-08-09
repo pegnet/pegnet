@@ -36,6 +36,7 @@ func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
 
 func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
+	// Include default settings here
 	settings[ConfigSubmissionCutOff] = "175"
 
 	return settings, nil

@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/pegnet/pegnet/common"
-
 	"github.com/FactomProject/factom"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

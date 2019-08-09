@@ -63,28 +63,28 @@ Below is listed various trials with various parameters. All tests were run using
 
 ### Targeting 200 records, 100K hashes/s, 1m per block, 100 blocks
 
-`simulate blocks --csv stats.csv --target 200 -r 100000`
+`simulate blocks --csv stats.csv --target 200 -r 100000 --time 1m`
 
 ![Records Graph](results/t200_r100k_b100_d1m_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t200_r100k_b100_d1m_DIFFICULTY.png "Difficulty Graph")
 
 ### Targeting 100 records, 100K hashes/s, 5s per block, 100 blocks
 
-`simulate blocks --csv stats.csv --target 200 -r 100000`
+`simulate blocks --csv stats.csv --target 100 -r 100000`
 
 ![Records Graph](results/t100_r100k_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t100_r100k_b100_d5s_DIFFICULTY.png "Difficulty Graph")
 
 ### Targeting 100 records, 100K hashes/s, with +/- 30% flux in hashrate,  5s per block, 100 blocks
 
-`simulate blocks --csv stats.csv --target 200 -r 100000`
+`simulate blocks --csv t150_r100k_f50_b100_d5s.csv --target 100 -r 100000 --minflux -30 --maxflux 30`
 
 ![Records Graph](results/t100_r100k_f30_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t100_r100k_f30_b100_d5s_DIFFICULTY.png "Difficulty Graph")
 
 ### Targeting 150 records, 200K hashes/s, with +/- 50% flux in hashrate,  5s per block, 100 blocks
 
-`simulate blocks --csv stats.csv --target 200 -r 100000`
+`simulate blocks --csv t150_r100k_f50_b100_d5s.csv --target 150 -r 200000 --minflux -50 --maxflux 50`
 
 ![Records Graph](results/t150_r200k_f50_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t150_r200k_f50_b100_d5s_DIFFICULTY.png "Difficulty Graph")

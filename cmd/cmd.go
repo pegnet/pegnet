@@ -347,14 +347,19 @@ var networkMinerCmd = &cobra.Command{
 }
 
 var dataWriter = &cobra.Command{
-	Use:     "csv <data_request>",
-	Short:   "Creates csvs for the given data request.",
+	Use:   "csv <data_request>",
+	Short: "Ability to create csvs for some analysis",
+	Long: "Adds the ability to run analysis commands on a network and output csvs. " +
+		"This is helpful as this cmd already has access to the pegnet internals, and could " +
+		"help us create analysis tooling.",
 	Example: "csv minerstats",
 }
 
 var minerStats = &cobra.Command{
-	Use:     "minerstats",
-	Short:   "Creates a csv showing the miner related stats from the blocks on chain.",
+	Use:   "minerstats",
+	Short: "Creates a csv showing the miner related stats from the blocks on chain.",
+	Long: "Will let you analyze the difficulty changes over time, and test difficulty targeting" +
+		" against on chain data.",
 	Example: "csv minerstats",
 	Run: func(cmd *cobra.Command, args []string) {
 		// minerstats.csv

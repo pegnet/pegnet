@@ -28,6 +28,8 @@ func NewChainRecorder(con *config.Config, filpath string) (*ChainRecorder, error
 	return c, nil
 }
 
+// WriteMinerCSV will write all the miner related stats for a given chain to a csv. This includes
+// number of records, difficulties hit, and more.
 func (c *ChainRecorder) WriteMinerCSV() error {
 	InitLX() // We intend to use the LX hash
 

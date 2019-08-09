@@ -18,6 +18,7 @@ func CalculateMinimumDifficultyFromOPRs(oprs []*OraclePriceRecord, cutoff int) u
 	var spot = 0
 	// grab the least difficult in the top 50
 	if len(oprs) >= 50 {
+		// Oprs is indexed at 0, where the math (spot) is indexed at 1.
 		min = oprs[49]
 		spot = 50
 	} else {

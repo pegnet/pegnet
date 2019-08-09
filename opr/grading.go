@@ -8,7 +8,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
-	"fmt"
 	"sort"
 	"sync"
 
@@ -63,7 +62,6 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 // The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
 // sorted by difficulty.
 func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
-	fmt.Println("Grade", list[0].Dbht)
 	list = RemoveDuplicateSubmissions(list)
 
 	if len(list) < 10 {
