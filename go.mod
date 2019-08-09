@@ -42,16 +42,16 @@ require (
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pegnet/LXRHash v0.0.0-20190804152355-33fa380b63d6
 	github.com/prometheus/client_golang v1.0.0 // indirect
-	github.com/prometheus/common v0.4.1
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/zpatrick/go-config v0.0.0-20190509173111-460869022dbd
+	go.uber.org/ratelimit v0.1.0
 	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/sys v0.0.0-20190621203818-d432491b9138 // indirect
 	golang.org/x/text v0.3.2 // indirect
-	golang.org/x/tools v0.0.0-20190719005602-e377ae9d6386 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect

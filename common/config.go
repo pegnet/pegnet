@@ -5,8 +5,8 @@ package common
 import (
 	"fmt"
 
-	"github.com/zpatrick/go-config"
 	"github.com/go-ini/ini"
+	"github.com/zpatrick/go-config"
 )
 
 // Config names
@@ -36,7 +36,7 @@ func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
 
 func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
-	settings[ConfigSubmissionCutOff] = "300"
+	settings[ConfigSubmissionCutOff] = "175"
 
 	return settings, nil
 }

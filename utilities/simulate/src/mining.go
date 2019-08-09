@@ -8,10 +8,9 @@ import (
 	"os"
 	"time"
 
-	"go.uber.org/ratelimit"
-
 	"github.com/pegnet/pegnet/opr"
 	"github.com/spf13/cobra"
+	"go.uber.org/ratelimit"
 )
 
 func init() {
@@ -132,6 +131,8 @@ var blocks = &cobra.Command{
 		allBlocks := make([]*PerBlock, blocks)
 
 		for i := 0; i < blocks; i++ {
+			// If we added flux, this will adjust the hashrate
+			UpdateHashRate(cmd, args)
 			minDiff := uint64(0)
 			b := new(PerBlock)
 			b.Height = i
