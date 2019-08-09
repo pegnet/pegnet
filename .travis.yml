@@ -14,9 +14,8 @@ matrix:
   include:
     - os: linux
       script:
-        - go get github.com/mattn/goveralls
         - ./.gofmt.sh 
-        - goveralls -v -service=travis-ci -ignore="$(paste -sd, .coverignore)"
+        - goveralls -v -service=travis-ci
   allow_failures:
     - os: windows
 
