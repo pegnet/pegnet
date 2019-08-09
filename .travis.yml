@@ -30,9 +30,10 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./...
+  - go test -v -timeout 45m ./...
   # If on linux, submit to coveralls
-  - if [ $TRAVIS_OS_NAME = 'linux' ]; then goveralls -coverprofile=profile.cov -service=travis-ci"; fi
+#  - if [ $TRAVIS_OS_NAME = 'linux' ]; then goveralls -coverprofile=profile.cov -service=travis-ci"; fi
+  - 
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
