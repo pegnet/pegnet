@@ -43,6 +43,7 @@ type OraclePriceRecord struct {
 	EntryHash              []byte `json:"-"` // Entry to record this record
 	Nonce                  []byte `json:"-"` // Nonce used with OPR
 	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty
+	Version                uint8  `json:"-"`
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
 	CoinbaseAddress string     `json:"coinbase"` // [base58]  PNT Address to pay PNT
@@ -57,6 +58,7 @@ type OraclePriceRecord struct {
 func NewOraclePriceRecord() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
+	o.Version = 1 // We are on version 1
 
 	return o
 }
@@ -67,6 +69,7 @@ func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
 	n := new(OraclePriceRecord)
 	n.OPRChainID = c.OPRChainID
 	n.Dbht = c.Dbht
+	n.Version = c.Version
 	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
 	n.CoinbaseAddress = c.CoinbaseAddress
 	n.CoinbasePNTAddress = c.CoinbasePNTAddress
@@ -380,7 +383,7 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 	binary.BigEndian.PutUint64(buf, difficulty)
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	e.ExtIDs = [][]byte{nonce, buf}
+	e.ExtIDs = [][]byte{nonce, buf, []byte{opr.Version}}
 	e.Content, err = json.Marshal(opr)
 	if err != nil {
 		return nil, err
