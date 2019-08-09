@@ -31,6 +31,7 @@ const (
 	AddTag
 	SecretChallenge
 	RejectedConnection // Sever rejected client
+	CoordinatorError
 )
 
 // Idk why the factom.entry does not work
@@ -43,6 +44,11 @@ type GobbedEntry struct {
 type Tag struct {
 	Key   string
 	Value string
+}
+
+// ErrorMessage allows us to send w/e errors we want to a client
+type ErrorMessage struct {
+	Error string
 }
 
 // AuthenticationChallenge is used for request + response
@@ -60,6 +66,7 @@ func init() {
 	gob.Register(mining.GroupMinerStats{})
 	gob.Register(Tag{})
 	gob.Register(AuthenticationChallenge{})
+	gob.Register(ErrorMessage{})
 }
 
 // MiningServer is the coordinator to emit events to anyone listening
@@ -141,27 +148,49 @@ func (c *MiningServer) ForwardMonitorEvents() {
 	alert := c.FactomMonitor.NewListener()
 	gAlerts := c.OPRGrader.GetAlert("evt-forwarder")
 	var last common.MonitorEvent
+	mining := false
 	for {
 		select {
 		case fds := <-alert: // Push factom events straight to miners
+			// If we do not have an EC balance, do not push events to start mining.
+			// Minute 1 is where we start mining, ensure we have some ECs.
+			if fds.Minute == 1 {
+				bal, err := factom.GetECBalance(c.EC.String())
+				if err != nil {
+					fLog.WithField("evt", "factom").WithError(err).Error("failed to send, balance query failed")
+					coordError := fmt.Errorf("balance query failed on net coordinator")
+					c.SendToClients(&NetworkMessage{NetworkCommand: CoordinatorError, Data: ErrorMessage{coordError.Error()}}, fLog.WithField("evt", "err"))
+					break
+				}
+
+				if bal == 0 {
+					fLog.WithField("evt", "factom").WithError(fmt.Errorf("%s balance is 0", c.EC.String())).Error("you do not have any ECs left to mine.")
+					coordError := fmt.Errorf("you do not have any ECs left to mine, %s balance is 0", c.EC.String())
+					c.SendToClients(&NetworkMessage{NetworkCommand: CoordinatorError, Data: ErrorMessage{coordError.Error()}}, fLog.WithField("evt", "err"))
+					break
+				}
+			}
+
+			if fds.Minute == 9 && mining {
+				mining = false
+			} else if fds.Minute == 1 {
+				mining = true
+			}
+
 			m := new(NetworkMessage)
 			m.NetworkCommand = FactomEvent
 			m.Data = fds
 			last = fds
 
-			c.clientsLock.Lock()
-			for _, c := range c.clients {
-				err := c.SendNetworkCommand(m)
-				if err != nil {
-					fLog.WithField("evt", "factom").WithError(err).Error("failed to send")
-				}
-			}
-			c.clientsLock.Unlock()
+			c.SendToClients(m, fLog.WithField("evt", "factom"))
 			fLog.WithFields(log.Fields{
 				"height": fds.Dbht,
 				"minute": fds.Minute,
 			}).Debug("server sent alert")
 		case g := <-gAlerts:
+			if !mining {
+				break // If we are not mining, we do not do anything
+			}
 			tmpChan := make(chan *opr.OPRs, 1)
 			tmpChan <- g
 			oprobject, err := opr.NewOpr(context.Background(), 0, last.Dbht, c.config, tmpChan)
@@ -171,7 +200,6 @@ func (c *MiningServer) ForwardMonitorEvents() {
 
 			m := new(NetworkMessage)
 			m.NetworkCommand = ConstructedOPR
-
 			if oprobject == nil {
 				fLog.WithField("evt", "grader").Error("failed to make opr. opr is nil")
 				m.Data = nil
@@ -179,16 +207,19 @@ func (c *MiningServer) ForwardMonitorEvents() {
 				m.Data = *oprobject
 			}
 
-			c.clientsLock.Lock()
-			for _, c := range c.clients {
-				err := c.SendNetworkCommand(m)
-				if err != nil {
-					fLog.WithField("evt", "opr").WithError(err).Error("failed to send")
-				}
-			}
+			c.SendToClients(m, fLog.WithField("evt", "opr"))
 			fLog.WithFields(c.Fields()).Info("sent opr to miners")
-			c.clientsLock.Unlock()
+		}
+	}
+}
 
+func (n *MiningServer) SendToClients(message *NetworkMessage, logger *log.Entry) {
+	n.clientsLock.Lock()
+	defer n.clientsLock.Unlock()
+	for _, c := range n.clients {
+		err := c.SendNetworkCommand(message)
+		if err != nil {
+			logger.WithError(err).Error("failed to send")
 		}
 	}
 }
