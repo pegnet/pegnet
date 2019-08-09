@@ -14,8 +14,7 @@ matrix:
   include:
     - os: linux
       script:
-        - ./.gofmt.sh 
-        - goveralls -v -service=travis-ci -ignore="$(paste -sd, .coverignore)"
+        - ./.gofmt.sh
   allow_failures:
     - os: windows
 
@@ -31,6 +30,7 @@ cache:
 
 script:
   - go test -v -timeout 45m ./...
+  - goveralls -v -service=travis-ci -ignore="$(paste -sd, .coverignore)"
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
