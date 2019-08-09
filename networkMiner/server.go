@@ -171,7 +171,11 @@ func (c *MiningServer) ForwardMonitorEvents() {
 
 			m := new(NetworkMessage)
 			m.NetworkCommand = ConstructedOPR
-			m.Data = *oprobject
+			if oprobject == nil {
+				m.Data = nil
+			} else {
+				m.Data = *oprobject
+			}
 
 			c.clientsLock.Lock()
 			for _, c := range c.clients {
