@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
@@ -109,7 +110,6 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 
 	var oprTemplate *opr.OraclePriceRecord
 	var oprHash []byte
-	var err error
 	var statsAggregate chan *SingleMinerStats
 
 	// Launch!
@@ -142,6 +142,17 @@ MiningLoop:
 		hLog.Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
+			// First check if we have the funds to mine
+			bal, err := c.FactomEntryWriter.ECBalance()
+			if err != nil {
+				hLog.WithError(err).WithField("action", "balance-query").Error("failed to mine this block")
+				continue MiningLoop // OPR cancelled
+			}
+			if bal == 0 {
+				hLog.WithError(fmt.Errorf("entry credit balance is 0")).WithField("action", "balance-query").Error("will not mine, out of entry credits")
+				continue MiningLoop // OPR cancelled
+			}
+
 			if !mining {
 				mining = true
 				// Need to get an OPR record

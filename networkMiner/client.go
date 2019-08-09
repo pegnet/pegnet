@@ -144,6 +144,12 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 		}
 
 		switch m.NetworkCommand {
+		case CoordinatorError:
+			// Any non-regular error message we want to send to the clients comes here.
+			evt, ok := m.Data.(ErrorMessage)
+			if ok && evt.Error != "" {
+				fLog.WithField("evt", "error").WithError(fmt.Errorf(evt.Error)).Error("error from coordinator")
+			}
 		case FactomEvent:
 			evt := m.Data.(common.MonitorEvent)
 
