@@ -9,15 +9,16 @@ const (
 	MiningPeriod = 480 // in seconds
 )
 
-// CalculateMinimumDifficulty that we should submit for a block.
+// CalculateMinimumDifficultyFromOPRs that we should submit for a block.
 //	Params:
-//		oprs Sorted by difficulty, must be > 0 oprs
-func CalculateMinimumDifficulty(oprs []*OraclePriceRecord, cutoff int) uint64 {
+//		oprs 		Sorted by difficulty, must be > 0 oprs
+//		cutoff 		Is 1 based, not 0. So cutoff 50 is at index 49.
+func CalculateMinimumDifficultyFromOPRs(oprs []*OraclePriceRecord, cutoff int) uint64 {
 	var min *OraclePriceRecord
 	var spot = 0
 	// grab the least difficult in the top 50
-	if len(oprs) > 50 {
-		min = oprs[50]
+	if len(oprs) >= 50 {
+		min = oprs[49]
 		spot = 50
 	} else {
 		min = oprs[len(oprs)-1]
@@ -27,8 +28,16 @@ func CalculateMinimumDifficulty(oprs []*OraclePriceRecord, cutoff int) uint64 {
 	// minDiff is our number to create a tolerance around
 	minDiff := min.Difficulty
 
+	return CalculateMinimumDifficulty(spot, minDiff, cutoff)
+}
+
+// CalculateMinimumDifficulty
+//		spot		The index of the difficulty param in the list. Sorted by difficulty
+//		difficulty	The difficulty at index 'spot'
+//		cutoff		The targeted index difficulty estimate
+func CalculateMinimumDifficulty(spot int, difficulty uint64, cutoff int) uint64 {
 	// Calculate the effective hash rate of the network in hashes/s
-	hashrate := EffectiveHashRate(minDiff, spot)
+	hashrate := EffectiveHashRate(difficulty, spot)
 
 	// Given that hashrate, aim to be above the cutoff
 	floor := ExpectedMinimumDifficulty(hashrate, cutoff)

@@ -351,7 +351,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	if len(winners.AllOPRs) > 0 {
 		cutoff, _ := c.Int(common.ConfigSubmissionCutOff)
 		if cutoff > 0 { // <= 0 disables it
-			opr.MinimumDifficulty = CalculateMinimumDifficulty(winners.AllOPRs, cutoff)
+			opr.MinimumDifficulty = CalculateMinimumDifficultyFromOPRs(winners.AllOPRs, cutoff)
 		}
 	}
 

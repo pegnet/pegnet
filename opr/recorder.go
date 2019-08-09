@@ -78,7 +78,7 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 			continue
 		}
 
-		cutoffD := CalculateMinimumDifficulty(block.OPRs, cutoff)
+		cutoffD := CalculateMinimumDifficultyFromOPRs(block.OPRs, cutoff)
 
 		err = writer.Write([]string{
 			fmt.Sprintf("%d", block.Dbht),
