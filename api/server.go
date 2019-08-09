@@ -5,32 +5,53 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
+	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 )
 
-// RequestHandler as the base handler
-type RequestHandler struct{}
+// APIServer as the base handler
+type APIServer struct {
+	Statistics *mining.GlobalStatTracker
+	Server     *http.Server
+}
+
+func NewApiServer() *APIServer {
+	s := new(APIServer)
+	s.Server = &http.Server{}
+	s.Server.Handler = s
+
+	return s
+}
+
+func (s *APIServer) Listen(port int) {
+	s.Server.Addr = fmt.Sprintf(":%d", port)
+	err := s.Server.ListenAndServe()
+	if err != nil {
+		log.WithError(err).Fatal("api server stopped")
+	}
+}
 
 // Base handler of all requests
-func (h RequestHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+func (h *APIServer) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	log.WithFields(log.Fields{
 		"IP":             req.RemoteAddr,
 		"Request Method": req.Method}).Info("Server Request")
 	if req.Method == "POST" {
-		apiHandler(writer, req)
+		h.apiHandler(writer, req)
 	} else {
 		methodNotAllowed(writer)
 	}
 }
 
-func apiHandler(w http.ResponseWriter, r *http.Request) {
+func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 	var request PostRequest
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		respond(w, PostResponse{Err: NewJSONDecodingError()})
+		Respond(w, PostResponse{Err: NewJSONDecodingError()})
 		return
 	}
 	log.WithFields(log.Fields{
@@ -100,14 +121,14 @@ func apiHandler(w http.ResponseWriter, r *http.Request) {
 	} else {
 		response = PostResponse{Res: result}
 	}
-	respond(w, response)
+	Respond(w, response)
 }
 
-func respond(w http.ResponseWriter, response PostResponse) {
+func Respond(w http.ResponseWriter, response PostResponse) {
 	err := json.NewEncoder(w).Encode(response)
 	if err != nil {
 		log.WithError(err).Error("Failed to write response JSON")
 		// Potential infinite recursion, but the error message should always encode properly:
-		respond(w, PostResponse{Err: NewInternalError()})
+		Respond(w, PostResponse{Err: NewInternalError()})
 	}
 }

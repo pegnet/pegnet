@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -119,7 +120,7 @@ var OPRBlocks []*OprBlock
 var ebMutex sync.Mutex
 
 // GetEntryBlocks creates the OPR Records at a given dbht
-func GetEntryBlocks(config *config.Config) {
+func GetEntryBlocks(config *config.Config) error {
 	ebMutex.Lock()
 	defer UpdateBurns(config)
 	defer ebMutex.Unlock()
@@ -131,10 +132,15 @@ func GetEntryBlocks(config *config.Config) {
 	n, err := common.LoadConfigNetwork(config)
 	check(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
+
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
-	check(err)
+	if err != nil {
+		return detailError(err)
+	}
 	eb, err := factom.GetEBlock(heb)
-	check(err)
+	if err != nil {
+		return detailError(err)
+	}
 
 	// A temp list of candidate oprblocks to evaluate to see if they fit nicely together
 	// Because we go from the head of the chain backwards to collect them, they have to be
@@ -153,7 +159,9 @@ func GetEntryBlocks(config *config.Config) {
 			oprblk.Dbht = eb.Header.DBHeight
 			for _, ebentry := range eb.EntryList {
 				entry, err := factom.GetEntry(ebentry.EntryHash)
-				check(err)
+				if err != nil {
+					return detailError(err)
+				}
 
 				// Do some quick collecting of data and checks of the entry.
 				// Can only have two ExtIDs which must be:
@@ -181,7 +189,8 @@ func GetEntryBlocks(config *config.Config) {
 				opr.SelfReportedDifficulty = entry.ExtIDs[1]
 
 				// Looking good.  Go ahead and compute the OPRHash
-				opr.OPRHash = LX.Hash(entry.Content) // Save the OPRHash
+				sha := sha256.Sum256(entry.Content)
+				opr.OPRHash = sha[:] // Save the OPRHash
 
 				// Okay, mostly good.  Add to our candidate list
 				oprblk.OPRs = append(oprblk.OPRs, opr)
@@ -267,6 +276,7 @@ func GetEntryBlocks(config *config.Config) {
 			}
 		}
 	}
+	return nil
 }
 
 // VerifyWinners takes an opr and compares its list of winners to the winners of previousHeight

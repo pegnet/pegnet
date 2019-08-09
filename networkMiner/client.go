@@ -1,6 +1,8 @@
 package networkMiner
 
 import (
+	"context"
+	"crypto/sha256"
 	"encoding/gob"
 	"fmt"
 	"net"
@@ -19,13 +21,15 @@ import (
 type MiningClient struct {
 	config *config.Config
 
-	Host string // Coordinator Location
+	Host            string // Coordinator Location
+	FactomDigitalID string
 
 	Monitor  *common.FakeMonitor
 	Grader   *opr.FakeGrader
 	OPRMaker *mining.BlockingOPRMaker
 
-	entryChannel chan *factom.Entry
+	entryChannel  chan *factom.Entry
+	UpstreamStats chan *mining.GroupMinerStats
 
 	conn    net.Conn
 	encoder *gob.Encoder
@@ -48,6 +52,13 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	s.Grader = opr.NewFakeGrader()
 	s.OPRMaker = mining.NewBlockingOPRMaker()
 
+	// We need to put our data in it
+	id, err := config.String("Miner.IdentityChain")
+	if err != nil {
+		panic(err)
+	}
+	s.FactomDigitalID = id
+
 	return s
 }
 
@@ -63,6 +74,17 @@ func (c *MiningClient) Connect() error {
 	log.Infof("Connected to %s", c.Host)
 	c.conn = conn
 	c.initCoders()
+
+	// Send over our tags
+	err = c.encoder.Encode(NewNetworkMessage(AddTag, Tag{
+		Key:   "id",
+		Value: c.FactomDigitalID,
+	}))
+	if err != nil {
+		log.WithField("evt", "tag").WithError(err).Error("failed to send tag")
+	} else {
+		log.WithField("evt", "tag").Debugf("sent tag")
+	}
 	return nil
 }
 
@@ -84,39 +106,58 @@ func (c *MiningClient) ConnectionLost(err error) {
 	}
 }
 
-// RunForwardEntries will forward our factom entries to the coordinator
-func (c *MiningClient) RunForwardEntries() {
-	fLog := log.WithField("func", "MiningClient.RunForwardEntries()")
+// Forwarder will forward our channels to the coordinator
+func (c *MiningClient) Forwarder() {
+	fLog := log.WithField("func", "MiningClient.Forwarder()")
 	for {
 		select {
 		case ent := <-c.entryChannel:
-			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: FactomEntry, Data: GobbedEntry{
+			err := c.encoder.Encode(NewNetworkMessage(FactomEntry, GobbedEntry{
 				ExtIDs:  ent.ExtIDs,
 				ChainID: ent.ChainID,
 				Content: ent.Content,
-			}})
+			}))
 			if err != nil {
 				fLog.WithField("evt", "entry").WithError(err).Error("failed to send entry")
 			} else {
 				fLog.WithField("evt", "entry").WithField("entry", fmt.Sprintf("%x", ent.Hash())).Debugf("sent entry")
+			}
+		case s := <-c.UpstreamStats:
+			err := c.encoder.Encode(NewNetworkMessage(MiningStatistics, *s))
+			if err != nil {
+				fLog.WithField("evt", "entry").WithError(err).Error("failed to send stats")
+			} else {
+				fLog.WithField("evt", "entry").Debugf("sent entry")
 			}
 		}
 	}
 }
 
 // Listen for server events
-func (c *MiningClient) Listen() {
+func (c *MiningClient) Listen(cancel context.CancelFunc) {
 	fLog := log.WithField("func", "MiningClient.Listen()")
 	for {
 		var m NetworkMessage
 		err := c.decoder.Decode(&m)
 		if err != nil {
-			c.ConnectionLost(err)
+			c.ConnectionLost(fmt.Errorf("decode: %s", err.Error()))
 		}
 
 		switch m.NetworkCommand {
+		case CoordinatorError:
+			// Any non-regular error message we want to send to the clients comes here.
+			evt, ok := m.Data.(ErrorMessage)
+			if ok && evt.Error != "" {
+				fLog.WithField("evt", "error").WithError(fmt.Errorf(evt.Error)).Error("error from coordinator")
+			}
 		case FactomEvent:
 			evt := m.Data.(common.MonitorEvent)
+
+			// Drain anything that was left over
+			if evt.Minute == 1 {
+				c.OPRMaker.Drain()
+			}
+
 			c.Monitor.FakeNotifyEvt(evt)
 			fLog.WithField("evt", "factom").
 				WithFields(log.Fields{
@@ -127,7 +168,15 @@ func (c *MiningClient) Listen() {
 			evt := m.Data.(opr.OPRs)
 			c.Grader.EmitFakeEvent(evt)
 		case ConstructedOPR:
-			evt := m.Data.(opr.OraclePriceRecord)
+			devt, ok := m.Data.(opr.OraclePriceRecord)
+			if !ok {
+				// An error has occurred
+				c.OPRMaker.RecOPR(nil)
+				continue
+			}
+
+			evt := &devt
+
 			// We need to put our data in it
 			id, _ := c.config.String("Miner.IdentityChain")
 			evt.FactomDigitalID = id
@@ -135,12 +184,42 @@ func (c *MiningClient) Listen() {
 			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
 			evt.CoinbasePNTAddress = addr
 
-			c.OPRMaker.RecOPR(&evt)
+			c.OPRMaker.RecOPR(evt)
 		case Ping:
-			err := c.encoder.Encode(&NetworkMessage{NetworkCommand: Pong})
+			err := c.encoder.Encode(NewNetworkMessage(Pong, nil))
 			if err != nil {
 				fLog.WithField("evt", "ping").WithError(err).Error("failed to pong")
 			}
+		case SecretChallenge:
+			// Respond to the challenge with our secret
+			challenge, ok := m.Data.(AuthenticationChallenge)
+			if !ok {
+				fLog.Errorf("server did not send a proper challenge")
+				cancel() // Cancel mining
+				return
+			}
+
+			secret, err := c.config.String(common.ConfigCoordinatorSecret)
+			if err != nil {
+				// Do not return here, let the empty secret fail the challenge.
+				fLog.WithError(err).Errorf("client is missing coordinator secret")
+			}
+
+			// Challenge Resp is sha256(secret+challenge)
+			resp := sha256.Sum256([]byte(secret + challenge.Challenge))
+			challenge.Response = fmt.Sprintf("%x", resp)
+			err = c.encoder.Encode(NewNetworkMessage(SecretChallenge, challenge))
+			if err != nil {
+				fLog.WithError(err).Errorf("failed to respond to challenge")
+				cancel()
+				return
+			}
+		case RejectedConnection:
+			// This means the server rejected us. Probably due to a failed challenge
+			fLog.Errorf("Our connection to the coordinator was rejected. This is most likely due to failing the " +
+				"authentication challenge. Ensure this miner has the same secret as the coordinator, and try again.")
+			cancel()
+			return
 		case Pong:
 			// Do nothing
 		default:

@@ -19,6 +19,7 @@ type IEntryWriter interface {
 	AddMiner() chan<- *opr.NonceRanking
 	SetOPR(opr *opr.OraclePriceRecord)
 	CollectAndWrite(blocking bool)
+	ECBalance() (int64, error)
 }
 
 // EntryWriter writes the best OPRs to factom once all the mining is done
@@ -49,6 +50,10 @@ func NewEntryWriter(config *config.Config, keep int) *EntryWriter {
 	w.EntryWritingFunction = w.writeMiningRecord
 
 	return w
+}
+
+func (w *EntryWriter) ECBalance() (int64, error) {
+	return factom.GetECBalance(w.ec.String())
 }
 
 // PopulateECAddress only needs to be called once
@@ -182,6 +187,7 @@ func (w *EntryWriter) Cancel() {
 	w.minerLists <- nil
 }
 
+// EntryForwarder is a wrapper for network based miners to rely on a coordinator to write entries
 type EntryForwarder struct {
 	*EntryWriter
 	Next *EntryForwarder
@@ -197,6 +203,11 @@ func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *facto
 
 	return n
 
+}
+
+// ECBalance is always positive, the coordinator will stop us mining if he runs out
+func (w *EntryForwarder) ECBalance() (int64, error) {
+	return 1, nil
 }
 
 // NextBlockWriter gets the next block writer to use for the miner.

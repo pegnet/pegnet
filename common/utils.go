@@ -4,17 +4,15 @@
 package common
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/prometheus/common/log"
-
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"errors"
+	"fmt"
+	"strings"
 
 	"github.com/FactomProject/btcutil/base58"
+	log "github.com/sirupsen/logrus"
 )
 
 var PegAssetNames []string
@@ -266,4 +264,11 @@ func ConvertFCTtoPegNetAsset(network string, asset string, userFAdr string) (Peg
 		log.Errorf("Invalid RCD, could not create PNT address")
 	}
 	return
+}
+
+func Abs(v int) int {
+	if v < 0 {
+		return v * -1
+	}
+	return v
 }

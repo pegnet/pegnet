@@ -35,7 +35,7 @@ func TestStats(t *testing.T) {
 
 }
 
-func verifyOrder(gs []*GroupMinerStats) bool {
+func verifyOrder(gs []*StatisticBucket) bool {
 	for i := 1; i < len(gs); i++ {
 		if gs[i].BlockHeight > gs[i-1].BlockHeight {
 			return false

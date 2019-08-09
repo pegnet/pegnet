@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
@@ -99,7 +100,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	opr.InitLX()
-	mineLog := log.WithFields(log.Fields{"miner": "coordinator"})
+	mineLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	// TODO: Also tell Factom Monitor we are done listening
 	alert := c.FactomMonitor.NewListener()
@@ -109,7 +110,6 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 
 	var oprTemplate *opr.OraclePriceRecord
 	var oprHash []byte
-	var err error
 	var statsAggregate chan *SingleMinerStats
 
 	// Launch!
@@ -117,6 +117,8 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 		go m.Miner.Mine(ctx)
 	}
 
+	first := false
+	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
 MiningLoop:
 	for {
@@ -127,18 +129,47 @@ MiningLoop:
 			return
 		}
 
-		mineLog.WithFields(log.Fields{
+		hLog := mineLog.WithFields(log.Fields{
 			"height": fds.Dbht,
 			"minute": fds.Minute,
-		}).Debug("Miner received alert")
+		})
+		if !first {
+			// On the first minute log how far away to mining
+			hLog.Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			first = true
+		}
+
+		hLog.Debug("Miner received alert")
 		switch fds.Minute {
 		case 1:
+			// First check if we have the funds to mine
+			bal, err := c.FactomEntryWriter.ECBalance()
+			if err != nil {
+				hLog.WithError(err).WithField("action", "balance-query").Error("failed to mine this block")
+				continue MiningLoop // OPR cancelled
+			}
+			if bal == 0 {
+				hLog.WithError(fmt.Errorf("entry credit balance is 0")).WithField("action", "balance-query").Error("will not mine, out of entry credits")
+				continue MiningLoop // OPR cancelled
+			}
+
 			if !mining {
 				mining = true
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 				if err == context.Canceled {
+					mining = false
 					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to mine this block")
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					mineLog.WithError(err).Errorf("OPR is incorrect")
+					mining = false
+					continue
 				}
 
 				// Get the OPRHash for miners to mine.
@@ -164,6 +195,7 @@ MiningLoop:
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
+				hLog.Info("Begin mining new OPR")
 
 			}
 		case 9:
@@ -182,8 +214,7 @@ MiningLoop:
 				// Write to blockchain (this is non blocking)
 				c.FactomEntryWriter.CollectAndWrite(false)
 
-				groupStats := NewGroupMinerStats()
-				groupStats.BlockHeight = int(fds.Dbht)
+				groupStats := NewGroupMinerStats("main", int(fds.Dbht))
 				// Collect stats
 				cm := 0
 				for s := range statsAggregate {

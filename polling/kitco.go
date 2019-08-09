@@ -5,6 +5,7 @@ package polling
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -56,6 +57,7 @@ func CallKitcoWeb() (KitcoData, error) {
 			if start < 0 {
 				err = errors.New("No Response")
 				log.WithError(err).Warning("Failed to get response from Kitco")
+				return err
 			}
 			strResp = strResp[start:]
 			stop := strings.Index(strResp, matchStop)
@@ -180,12 +182,12 @@ func HandleKitcoWeb(data KitcoData, peg PegAssets) {
 	peg["XPT"] = PegItem{Value: v, When: ConverToUnix(format, platinum.Date)}
 }
 
-func KitcoInterface(config *config.Config, peg PegAssets) {
+func KitcoInterface(config *config.Config, peg PegAssets) error {
 	log.Debug("Pulling Asset data from Kitco")
 	KitcoResponse, err := CallKitcoWeb()
 	if err != nil {
-		log.WithError(err).Fatal("Failed to access Kitco Website")
-	} else {
-		HandleKitcoWeb(KitcoResponse, peg)
+		return fmt.Errorf("failed to access Kitco Website : %s", err.Error())
 	}
+	HandleKitcoWeb(KitcoResponse, peg)
+	return nil
 }
