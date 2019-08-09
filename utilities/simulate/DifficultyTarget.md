@@ -1,6 +1,7 @@
 <!-- ToC start -->
 # Table of Contents
 
+1. [Table of Contents](#table-of-contents)
 1. [Attempting to Calculate minimum difficulty](#attempting-to-calculate-minimum-difficulty)
    1. [Problem](#problem)
    1. [Solution](#solution)
@@ -8,6 +9,10 @@
       1. [Targeting 300 records, 1mil hashes/s, 5s per block, 100 blocks](#targeting-300-records-1mil-hashes/s-5s-per-block-100-blocks)
       1. [Targeting 200 records, 1mil hashes/s, 5s per block, 100 blocks](#targeting-200-records-1mil-hashes/s-5s-per-block-100-blocks)
       1. [Targeting 200 records, 100K hashes/s, 5s per block, 100 blocks](#targeting-200-records-100k-hashes/s-5s-per-block-100-blocks)
+      1. [Targeting 200 records, 100K hashes/s, 1m per block, 100 blocks](#targeting-200-records-100k-hashes/s-1m-per-block-100-blocks)
+      1. [Targeting 100 records, 100K hashes/s, 5s per block, 100 blocks](#targeting-100-records-100k-hashes/s-5s-per-block-100-blocks)
+      1. [Targeting 100 records, 100K hashes/s, with +/- 30% flux in hashrate,  5s per block, 100 blocks](#targeting-100-records-100k-hashes/s-with-+/--30-flux-in-hashrate--5s-per-block-100-blocks)
+      1. [Targeting 150 records, 200K hashes/s, with +/- 50% flux in hashrate,  5s per block, 100 blocks](#targeting-150-records-200k-hashes/s-with-+/--50-flux-in-hashrate--5s-per-block-100-blocks)
 <!-- ToC end -->
 
 
