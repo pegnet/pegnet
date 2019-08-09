@@ -58,7 +58,7 @@ type OraclePriceRecord struct {
 func NewOraclePriceRecord() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
-	o.Version = 1 // We are on version 1
+	o.Version = OPRVersion
 
 	return o
 }
@@ -156,6 +156,10 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	if int64(opr.Dbht) != dbht {
 		return false // DBHeight is not reported correctly
+	}
+
+	if opr.Version != OPRVersion {
+		return false // We only support this version
 	}
 
 	// Validate all the Assets exists
