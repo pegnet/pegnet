@@ -39,15 +39,21 @@ Below is listed various trials with various parameters. All tests were run using
 
 ### Targeting 300 records, 1mil hashes/s, 5s per block, 100 blocks
 
+`simulate blocks --csv stats.csv --target 300`
+
 ![Records Graph](results/t300_rU_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t300_rU_b100_d5s_DIFFICULTY.png "Difficulty Graph")
 
 ### Targeting 200 records, 1mil hashes/s, 5s per block, 100 blocks
 
+`simulate blocks --csv stats.csv --target 200`
+
 ![Records Graph](results/t200_rU_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t200_rU_b100_d5s_DIFFICULTY.png "Difficulty Graph")
 
 ### Targeting 200 records, 100K hashes/s, 5s per block, 100 blocks
+
+`simulate blocks --csv stats.csv --target 200 -r 100000`
 
 ![Records Graph](results/t200_r100k_b100_d5s_RECORDS.png "Records Graph")
 ![Difficulty Graph](results/t200_r100k_b100_d5s_DIFFICULTY.png "Difficulty Graph")
