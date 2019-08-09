@@ -15,7 +15,8 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh
-        - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./... && goveralls -coverprofile=profile.cov -service=travis-ci
+        - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./...
+        - goveralls -coverprofile=profile.cov -service=travis-ci -ignore="$(paste -sd, .coverignore)"
   allow_failures:
     - os: windows
 
