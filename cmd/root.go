@@ -12,8 +12,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/pegnet/pegnet/common"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/zpatrick/go-config"
