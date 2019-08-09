@@ -36,6 +36,8 @@ Below is listed various trials with various parameters. All tests were run using
    - Last Graded is the 50th
    - Last is the very last hash submitted
    - MinDifficulty is the minimum calculated for the block to hit the target number of records.
+   
+(All made here: https://docs.google.com/spreadsheets/d/1Sd8rVW-bABAl62e48b3L8rG5YfxbrXF7Ei7BPfGiCE4/edit?usp=sharing)
 
 ### Targeting 300 records, 1mil hashes/s, 5s per block, 100 blocks
 
