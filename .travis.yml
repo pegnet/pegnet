@@ -4,7 +4,7 @@ language: go
 go:
 - 1.x
 
-os: 
+os:
   - osx
   - windows
 
@@ -15,6 +15,7 @@ matrix:
     - os: linux
       script:
         - ./.gofmt.sh
+        - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./... && goveralls -coverprofile=profile.cov -service=travis-ci
   allow_failures:
     - os: windows
 
@@ -29,7 +30,7 @@ cache:
     - $HOME/gopath/pkg/mod
 
 script:
-  - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./... && goveralls -coverprofile=profile.cov -service=travis-ci
+  - go test -v -timeout 45m ./... 
 
 # GO111MODULE will force Go modules
 # This will be unnecessary when Go 1.13 lands.
