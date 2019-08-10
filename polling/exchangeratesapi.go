@@ -5,14 +5,68 @@ package polling
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
+
+	"github.com/pegnet/pegnet/common"
 
 	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// ExchangeRatesDataSource is the datasource at "https://exchangeratesapi.io"
+type ExchangeRatesDataSource struct {
+	config  *config.Config
+	lastPeg PegAssets
+}
+
+func NewExchangeRatesDataSource(config *config.Config) (*ExchangeRatesDataSource, error) {
+	s := new(ExchangeRatesDataSource)
+	s.config = config
+	return s, nil
+}
+
+func (d *ExchangeRatesDataSource) Name() string {
+	return "ExchangeRates"
+}
+
+func (d *ExchangeRatesDataSource) Url() string {
+	return "https://exchangeratesapi.io"
+}
+
+func (d *ExchangeRatesDataSource) SupportedPegs() []string {
+	return common.CurrencyAssets
+}
+
+func (d *ExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallExchangeRatesAPI(d.config)
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	timestamp, err := time.Parse("2006-01-02", resp.Date)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, currencyISO := range d.SupportedPegs() {
+		if v, ok := resp.Rates[currencyISO]; ok {
+			peg[currencyISO] = PegItem{Value: v, When: timestamp, WhenUnix: timestamp.Unix()}
+		}
+	}
+
+	return
+}
+
+func (d *ExchangeRatesDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
+}
+
+// ------
 
 type ExchangeRatesAPIResponse struct {
 	Date  string             `json:"date"`
@@ -41,20 +95,4 @@ func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
 
 	err := backoff.Retry(operation, PollingExponentialBackOff())
 	return ExchangeRatesAPIResponse, err
-}
-
-func HandleExchangeRatesAPI(response ExchangeRatesAPIResponse, peg PegAssets) {
-	// Exchange rates api does not return timestamp.
-	var timestamp = ConverToUnix("2006-01-02", response.Date)
-	UpdatePegAssets(response.Rates, timestamp, peg)
-}
-
-func ExchangeRatesAPIInterface(config *config.Config, peg PegAssets) error {
-	log.Debug("Pulling Asset data from ExchangeRatesAPI")
-	ExchangeRatesApiResponse, err := CallExchangeRatesAPI(config)
-	if err != nil {
-		return fmt.Errorf("failed to access ExchangeRatesAPI : %s", err.Error())
-	}
-	HandleExchangeRatesAPI(ExchangeRatesApiResponse, peg)
-	return nil
 }

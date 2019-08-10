@@ -3,33 +3,12 @@
 package polling_test
 
 import (
-	"net/http"
 	"testing"
-
-	"github.com/pegnet/pegnet/common"
-	. "github.com/pegnet/pegnet/polling"
-	"github.com/pegnet/pegnet/testutils"
-	"github.com/zpatrick/go-config"
 )
 
 // TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
 func TestFixedOpenExchangeRatesPeggedAssets(t *testing.T) {
-	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
-
-	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
-
-	// Set default http client to return what we expect from apilayer
-	cl := testutils.GetClientWithFixedResp([]byte(openExchangeRateResponse))
-	http.DefaultClient = cl
-
-	peg := make(PegAssets)
-	OpenExchangeRatesInterface(c, peg)
-	for _, asset := range common.CurrencyAssets {
-		_, ok := peg[asset]
-		if !ok {
-			t.Errorf("Missing %s", asset)
-		}
-	}
+	FixedDataSourceTest(t, "OpenExchangeRates", []byte(openExchangeRateResponse))
 }
 
 var openExchangeRateResponse = `{

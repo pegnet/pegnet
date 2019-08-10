@@ -232,3 +232,65 @@ func TestAbs(t *testing.T) {
 		}
 	}
 }
+
+type ExpPath struct {
+	Path string
+	Exp  string
+}
+
+func TestShortenPegnetFilePath(t *testing.T) {
+	testPath(ExpPath{
+		"/home/billy/go/src/github.com/pegnet/pegnet/opr.go",
+		"pegnet/opr.go",
+	}, t)
+
+	testPath(ExpPath{
+		"/home/billy/go/src/github.com/notpegnet/notpegnet/opr.go",
+		"/home/billy/go/src/github.com/notpegnet/notpegnet/opr.go",
+	}, t)
+
+	testPath(ExpPath{
+		"opr.go",
+		"opr.go",
+	}, t)
+
+	testPath(ExpPath{
+		"/home/steven/go/src/github.com/pegnet/pegnet/opr/oneminer.go",
+		"pegnet/opr/oneminer.go",
+	}, t)
+
+	testPath(ExpPath{
+		"pegnet",
+		"pegnet",
+	}, t)
+
+	testPath(ExpPath{
+		"pegnet/test_pegnet.go",
+		"pegnet/test_pegnet.go",
+	}, t)
+
+	testPath(ExpPath{
+		"/home/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec",
+		"/home/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec/rec",
+	}, t)
+}
+
+func testPath(e ExpPath, t *testing.T) {
+	if f := ShortenPegnetFilePath(e.Path, "", 0); f != e.Exp {
+		t.Errorf("Exp %s, found %s", e.Exp, f)
+	}
+}
+
+func TestFindIndexInStringArray(t *testing.T) {
+	a := "abcdefghijklmnopqrstuvwxyz"
+	var arr []string
+	for _, l := range a {
+		arr = append(arr, string(l))
+	}
+
+	for i, l := range a {
+		if FindIndexInStringArray(arr, string(l)) != i {
+			t.Error("did not find at right location")
+		}
+	}
+}

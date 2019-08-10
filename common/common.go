@@ -5,7 +5,6 @@ package common
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/zpatrick/go-config"
 )
@@ -34,9 +33,6 @@ func GetNetwork(network string) (string, error) {
 		return "", fmt.Errorf("'%s' is not a valid network", network)
 	}
 }
-
-// Stats contains the hashrate and difficulty of the last mined block
-var Stats MiningStats
 
 const (
 	MainNetwork = "MainNet"
@@ -72,41 +68,6 @@ var (
 	ecPubPrefix = []byte{0x59, 0x2a}
 	ecSecPrefix = []byte{0x5d, 0xb6}
 )
-
-// MiningStats contains the hashrate and difficulty of the last mined block
-type MiningStats struct {
-	Mux        sync.Mutex
-	HashRate   uint64
-	Difficulty uint64
-	Miners     uint
-}
-
-// Update adds info from an individual miner
-func (stats *MiningStats) Update(hashrate uint64, diff uint64) {
-	stats.Mux.Lock()
-	defer stats.Mux.Unlock()
-	stats.HashRate += hashrate
-	if diff > stats.Difficulty {
-		stats.Difficulty = diff
-	}
-	stats.Miners++
-}
-
-// Clear resets the stats struct
-func (stats *MiningStats) Clear() {
-	stats.Mux.Lock()
-	defer stats.Mux.Unlock()
-	stats.HashRate = 0
-	stats.Difficulty = 0
-	stats.Miners = 0
-}
-
-// GetHashRate returns the hashes per second mined in the last block
-func (stats *MiningStats) GetHashRate() uint64 {
-	stats.Mux.Lock()
-	defer stats.Mux.Unlock()
-	return stats.HashRate / 480 // 480 seconds in 8 minutes
-}
 
 // FormatDiff returns a human readable string in scientific notation
 func FormatDiff(diff uint64, precision uint) string {
