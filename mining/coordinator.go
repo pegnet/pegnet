@@ -2,6 +2,7 @@ package mining
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 
 	"github.com/pegnet/pegnet/common"
@@ -166,11 +167,6 @@ MiningLoop:
 					mining = false
 					continue MiningLoop // OPR cancelled
 				}
-				if err != nil {
-					mineLog.WithError(err).Errorf("OPR is incorrect")
-					mining = false
-					continue
-				}
 
 				// Get the OPRHash for miners to mine.
 				oprHash = oprTemplate.GetHash()
@@ -183,19 +179,22 @@ MiningLoop:
 				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
 
 				command := BuildCommand().
-					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
-					StatsAggregator(statsAggregate). // Stat collection per block
-					ResetRecords().                  // Reset the miner's stats/difficulty/etc
-					NewOPRHash(oprHash).             // New OPR hash to mine
-					MinimumDifficulty(0).            // TODO: Set this from the cfg?
-					ResumeMining().                  // Start mining
+					Aggregator(c.FactomEntryWriter).                  // New aggregate per block. Writes the top X records
+					StatsAggregator(statsAggregate).                  // Stat collection per block
+					ResetRecords().                                   // Reset the miner's stats/difficulty/etc
+					NewOPRHash(oprHash).                              // New OPR hash to mine
+					MinimumDifficulty(oprTemplate.MinimumDifficulty). // Floor difficulty to use
+					ResumeMining().                                   // Start mining
 					Build()
 
 				// Need to send to our miners
 				for _, m := range c.Miners {
 					m.SendCommand(command)
 				}
-				hLog.Info("Begin mining new OPR")
+
+				buf := make([]byte, 8)
+				binary.BigEndian.PutUint64(buf, oprTemplate.MinimumDifficulty)
+				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new OPR")
 
 			}
 		case 9:

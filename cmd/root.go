@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/zpatrick/go-config"
@@ -156,7 +157,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 
 	iniFile := config.NewINIFile(configFile)
 	flags := NewCmdFlagProvider(cmd)
-	Config = config.NewConfig([]config.Provider{iniFile, flags})
+	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
 
 	// Profiling setup
 	if on, _ := cmd.Flags().GetBool("profile"); on {

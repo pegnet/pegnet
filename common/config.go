@@ -5,9 +5,8 @@ package common
 import (
 	"fmt"
 
-	"github.com/zpatrick/go-config"
-
 	"github.com/go-ini/ini"
+	"github.com/zpatrick/go-config"
 )
 
 // Config names
@@ -16,12 +15,34 @@ const (
 	ConfigCoordinatorLocation          = "Miner.MiningCoordinatorHost"
 	ConfigCoordinatorSecret            = "Miner.CoordinatorSecret"
 	ConfigCoordinatorUseAuthentication = "Miner.UseCoordinatorAuthentication"
+	ConfigSubmissionCutOff             = "Miner.SubmissionCutOff"
 
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
 
 	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
 )
+
+// DefaultConfigOptions gives us the ability to add configurable settings that really
+// should not be tinkered with often. Making the config file long and overly complex
+// is just daunting to new users. Many of the settings that will likely never be touched
+// can be inclued in here.
+type DefaultConfigOptions struct {
+}
+
+func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
+	d := new(DefaultConfigOptions)
+
+	return d
+}
+
+func (c *DefaultConfigOptions) Load() (map[string]string, error) {
+	settings := map[string]string{}
+	// Include default settings here
+	settings[ConfigSubmissionCutOff] = "175"
+
+	return settings, nil
+}
 
 func NewUnitTestConfig() *config.Config {
 	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})

@@ -49,6 +49,10 @@ type OraclePriceRecord struct {
 	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
 	CoinbasePNTAddress string  `json:"-"` // [base58]  PNT Address to pay PNT
 
+	// This can be attached to an OPR, which indicates how low we should expect a mined
+	// opr to be. Any OPRs mined below this are not worth submitting to the network.
+	MinimumDifficulty uint64 `json:"-"`
+
 	// Factom Entry data
 	EntryHash              []byte `json:"-"` // Entry to record this record
 	Nonce                  []byte `json:"-"` // Nonce used with OPR
@@ -326,6 +330,14 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	for i, w := range winners.ToBePaid {
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+	}
+
+	if len(winners.AllOPRs) > 0 {
+		cutoff, _ := c.Int(common.ConfigSubmissionCutOff)
+		if cutoff > 0 { // <= 0 disables it
+			// This will calculate a minimum difficulty floor for our target cutoff.
+			opr.MinimumDifficulty = CalculateMinimumDifficultyFromOPRs(winners.AllOPRs, cutoff)
+		}
 	}
 
 	err = opr.GetOPRecord(c)

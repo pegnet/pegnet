@@ -62,7 +62,7 @@ func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int
 		for { // Drain anything remaining or return the height that matches
 			select {
 			case o := <-b.n:
-				if o.Dbht == dbht {
+				if o != nil && o.Dbht == dbht {
 					return o, nil
 				}
 			default:
