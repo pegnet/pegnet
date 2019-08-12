@@ -35,6 +35,10 @@ func GetNetwork(network string) (string, error) {
 }
 
 const (
+	ZeroHash = "0000000000000000000000000000000000000000000000000000000000000000"
+)
+
+const (
 	MainNetwork = "MainNet"
 	TestNetwork = "TestNet-pM1"
 

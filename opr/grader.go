@@ -4,6 +4,8 @@
 package opr
 
 import (
+	"context"
+	"encoding/hex"
 	"fmt"
 	"sync"
 	"time"
@@ -20,6 +22,129 @@ type IGrader interface {
 	StopAlert(id string)
 	Run(config *config.Config, monitor *common.Monitor)
 }
+
+// QuickGrader is responsible for evaluating the previous block of OPRs and
+// determines who should be paid. It will only check the minimum number of
+// OPR records.
+// This also informs the miners which records should be included in their OPR records
+type QuickGrader struct {
+	Network          string
+	Protocol         string
+	OPRChainID       []byte
+	OPRChainIDString string
+
+	OPRChain *EntryBlockSync
+
+	Config *config.Config
+
+	alerts      map[string]chan *OPRs
+	alertsMutex sync.Mutex // Maps are not thread safe
+}
+
+func NewQuickGrader(config *config.Config) *QuickGrader {
+	g := new(QuickGrader)
+	g.Config = config
+
+	network, err := common.LoadConfigNetwork(config)
+	common.CheckAndPanic(err)
+	p, err := config.String("Miner.Protocol")
+	common.CheckAndPanic(err)
+
+	opr := [][]byte{[]byte(p), []byte(network), []byte(common.OPRChainTag)}
+
+	g.Network = network
+	g.Protocol = p
+	g.OPRChainID = common.ComputeChainIDFromFields(opr)
+	g.OPRChainIDString = hex.EncodeToString(g.OPRChainID)
+
+	g.alerts = make(map[string]chan *OPRs)
+
+	g.OPRChain = NewEntryBlockSync(g.OPRChainIDString)
+
+	return g
+}
+
+// GetAlert registers a new request for alerts.
+// Data will be sent when the grades from the last block are ready
+func (g *QuickGrader) GetAlert(id string) (alert chan *OPRs) {
+	g.alertsMutex.Lock()
+	defer g.alertsMutex.Unlock()
+
+	// If the alert already exists for the id, close it.
+	// We only want 1 alert per id
+	alert, ok := g.alerts[id]
+	if ok {
+		close(alert)
+	}
+
+	alert = make(chan *OPRs, 10)
+	g.alerts[id] = alert
+	return g.alerts[id]
+}
+
+// StopAlert allows cleanup of alerts that are no longer used
+func (g *QuickGrader) StopAlert(id string) {
+	g.alertsMutex.Lock()
+	defer g.alertsMutex.Unlock()
+
+	alert, ok := g.alerts[id]
+	if ok {
+		close(alert)
+	}
+	delete(g.alerts, id)
+}
+
+// Sync will sync our opr chain to the latest eblock head
+func (g *QuickGrader) Sync() error {
+	// Syncblocks will take our chainsyn, and gather all the blocks
+	// that might remain to be synced.
+	err := g.OPRChain.SyncBlocks()
+	if err != nil {
+		return err
+	}
+
+	if !g.OPRChain.Synced() {
+		// We have eblocks to sync!
+		for block := g.OPRChain.NextEBlock(); block != nil; block = g.OPRChain.NextEBlock() {
+			if block == nil {
+				break // We are synced
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
+	InitLX() // We intend to use the LX hash
+	fdAlert := monitor.NewListener()
+	for {
+		var fds common.MonitorEvent
+		select {
+		case fds = <-fdAlert:
+		case <-ctx.Done():
+			return // Grader stopped
+		}
+		var _ = fds
+		//TODO: This
+
+	}
+
+}
+
+func (g *QuickGrader) SendToListeners(winners *OPRs) {
+	g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
+	for _, a := range g.alerts {
+		select { // Don't block if someone isn't pulling from the winner channel
+		case a <- winners:
+		default:
+			// This means the channel is full
+		}
+	}
+	g.alertsMutex.Unlock()
+}
+
+/// -----
 
 // Grader is responsible for evaluating the previous block of OPRs and
 // determines who should be paid.
