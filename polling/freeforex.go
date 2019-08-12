@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -136,8 +134,7 @@ func (d *FreeForexAPIDataSource) FetchPeggedPrices() ([]byte, error) {
 	client := NewHTTPClient()
 	req, err := http.NewRequest("GET", d.ApiUrl()+"live", nil)
 	if err != nil {
-		log.Print(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	var ids []string
