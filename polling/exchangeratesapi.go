@@ -40,6 +40,13 @@ func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
 	}
 
 	err := backoff.Retry(operation, PollingExponentialBackOff())
+	if err == nil {
+		// Price is inverted
+		for k, v := range ExchangeRatesAPIResponse.Rates {
+			ExchangeRatesAPIResponse.Rates[k] = 1 / v
+		}
+	}
+
 	return ExchangeRatesAPIResponse, err
 }
 
