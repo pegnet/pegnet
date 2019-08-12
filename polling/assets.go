@@ -25,6 +25,7 @@ var AllDataSources = map[string]IDataSource{
 	"Kitco":             new(KitcoDataSource),
 	"OpenExchangeRates": new(OpenExchangeRatesDataSource),
 	"CoinMarketCap":     new(CoinMarketCapDataSource),
+	"FreeForexAPI":      new(FreeForexAPIDataSource),
 }
 
 func AllDataSourcesList() []string {

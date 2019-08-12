@@ -51,6 +51,7 @@ func (d *FreeForexAPIDataSource) ApiUrl() string {
 }
 
 func (d *FreeForexAPIDataSource) SupportedPegs() []string {
+	// Does not have all the commodities
 	return common.MergeLists(common.CurrencyAssets, []string{"XAU", "XAG"})
 }
 
