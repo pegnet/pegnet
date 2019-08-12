@@ -51,7 +51,7 @@ func (d *APILayerDataSource) FetchPegPrices() (peg PegAssets, err error) {
 	for _, currencyISO := range d.SupportedPegs() {
 		// Search for USDXXX pairs
 		if v, ok := resp.Quotes["USD"+currencyISO]; ok {
-			peg[currencyISO] = PegItem{Value: v, When: timestamp, WhenUnix: timestamp.Unix()}
+			peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
 		}
 	}
 

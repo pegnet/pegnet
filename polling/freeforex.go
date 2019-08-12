@@ -25,15 +25,8 @@ type FreeForexAPIDataSource struct {
 }
 
 func NewFreeForexAPIDataSource(config *config.Config) (*FreeForexAPIDataSource, error) {
-	var err error
 	s := new(FreeForexAPIDataSource)
 	s.config = config
-
-	// Load api key
-	s.apikey, err = s.config.String(common.ConfigCoinMarketCapKey)
-	if err != nil {
-		return nil, err
-	}
 
 	return s, nil
 }
@@ -73,7 +66,7 @@ func (d *FreeForexAPIDataSource) FetchPegPrices() (peg PegAssets, err error) {
 
 		timestamp := time.Unix(currency.Timestamp, 0)
 		// The USD price is 1/rate
-		peg[asset] = PegItem{Value: currency.Rate, WhenUnix: timestamp.Unix(), When: timestamp}
+		peg[asset] = PegItem{Value: 1 / currency.Rate, WhenUnix: timestamp.Unix(), When: timestamp}
 	}
 
 	return
@@ -94,6 +87,7 @@ func (d *FreeForexAPIDataSource) CallFreeForexAPI() (*FreeForexAPIDataSourceResp
 
 		resp, err = d.ParseFetchedPrices(data)
 		if err != nil {
+			// Try the other variation
 			return err
 		}
 		return nil
@@ -107,9 +101,35 @@ func (d *FreeForexAPIDataSource) ParseFetchedPrices(data []byte) (*FreeForexAPID
 	var resp FreeForexAPIDataSourceResponse
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
+		fmt.Println(string(data))
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// ParseFetchedPricesVariation2 is when the api returns a different variation. For some reason this variation is missing
+// XAG and XAU. For now, let's just let the original parse fail and exponentially retry.
+// TODO: Figure out what the heck is going on when the response format is changed.
+// 		Also the date was more than 2 weeks old. So I think this variation is.... bad
+func (d *FreeForexAPIDataSource) ParseFetchedPricesVariation2(data []byte) (*FreeForexAPIDataSourceResponse, error) {
+	var resp FreeForexAPIDataSourceResponseVariation2
+	err := json.Unmarshal(data, &resp)
+	if err != nil {
+		return nil, err
+	}
+
+	// Convert to the normal
+	var orig FreeForexAPIDataSourceResponse
+	orig.Rates = make(map[string]FreeForexAPIDataSourceRate)
+	orig.Code = resp.Code
+	timestamp, err := time.Parse("2006-01-02", resp.Date)
+	if err != nil {
+		return nil, err
+	}
+	for k, v := range resp.Rates {
+		orig.Rates[resp.Base+k] = FreeForexAPIDataSourceRate{Rate: v, Timestamp: timestamp.Unix()}
+	}
+	return &orig, nil
 }
 
 func (d *FreeForexAPIDataSource) FetchPeggedPrices() ([]byte, error) {
@@ -129,6 +149,7 @@ func (d *FreeForexAPIDataSource) FetchPeggedPrices() ([]byte, error) {
 	q.Add("pairs", strings.Join(ids, ","))
 	req.URL.RawQuery = q.Encode()
 
+	fmt.Println(req.URL.String())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -136,6 +157,13 @@ func (d *FreeForexAPIDataSource) FetchPeggedPrices() ([]byte, error) {
 	defer resp.Body.Close()
 
 	return ioutil.ReadAll(resp.Body)
+}
+
+type FreeForexAPIDataSourceResponseVariation2 struct {
+	Code  int                `json:"code"`
+	Base  string             `json:"base"`
+	Date  string             `json:"date"`
+	Rates map[string]float64 `json:"rates"`
 }
 
 type FreeForexAPIDataSourceResponse struct {
