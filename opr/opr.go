@@ -139,6 +139,10 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		}
 	}
 
+	if err := common.ValidIdentity(opr.FactomDigitalID); err != nil {
+		return false
+	}
+
 	if int64(opr.Dbht) != dbht {
 		return false // DBHeight is not reported correctly
 	}

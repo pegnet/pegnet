@@ -5,10 +5,16 @@ package opr
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
+	"sort"
 	"sync"
 	"time"
+
+	"github.com/FactomProject/factom"
 
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
@@ -37,6 +43,12 @@ type QuickGrader struct {
 
 	Config *config.Config
 
+	// oprblks is all the eblocks that contain the oprs
+	oprblks []*OprBlock
+	// lastGraded is the last graded oprblk, so we know
+	// where to start grading
+	lastGraded int
+
 	alerts      map[string]chan *OPRs
 	alertsMutex sync.Mutex // Maps are not thread safe
 }
@@ -60,6 +72,7 @@ func NewQuickGrader(config *config.Config) *QuickGrader {
 	g.alerts = make(map[string]chan *OPRs)
 
 	g.OPRChain = NewEntryBlockSync(g.OPRChainIDString)
+	g.oprblks = make([]*OprBlock, 0)
 
 	return g
 }
@@ -94,9 +107,56 @@ func (g *QuickGrader) StopAlert(id string) {
 	delete(g.alerts, id)
 }
 
+func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
+	InitLX() // We intend to use the LX hash
+	fdAlert := monitor.NewListener()
+	for {
+		var fds common.MonitorEvent
+		select {
+		case fds = <-fdAlert:
+		case <-ctx.Done():
+			return // Grader stopped
+		}
+		fLog := gLog.WithFields(log.Fields{"minute": fds.Minute, "dbht": fds.Dbht})
+		if fds.Minute == 1 {
+			var err error
+			tries := 0
+			// Try 3 times
+			for tries = 0; tries < 3; tries++ {
+				err = nil
+				err = g.Sync()
+				if err == nil {
+					break
+				}
+				if err != nil {
+					// If this fails, we probably can't recover this block.
+					// Can't hurt to try though
+					time.Sleep(200 * time.Millisecond)
+				}
+			}
+
+			if err != nil {
+				fLog.WithError(err).WithField("tries", tries).Errorf("Grader failed to grade blocks. Sitting out this block")
+				g.SendToListeners(&OPRs{Error: fmt.Errorf("failed to grade")})
+				continue
+			}
+
+			oprs := g.GetPreviousOPRBlock(fds.Dbht)
+
+			var winners OPRs
+			winners.ToBePaid = oprs.GradedOPRs[:10]
+			winners.AllOPRs = oprs.OPRs
+
+			// Alert followers that we have graded the previous block
+			g.SendToListeners(&winners)
+		}
+
+	}
+}
+
 // Sync will sync our opr chain to the latest eblock head
 func (g *QuickGrader) Sync() error {
-	// Syncblocks will take our chainsyn, and gather all the blocks
+	// Syncblocks will take our chain and gather all the blocks
 	// that might remain to be synced.
 	err := g.OPRChain.SyncBlocks()
 	if err != nil {
@@ -109,27 +169,146 @@ func (g *QuickGrader) Sync() error {
 			if block == nil {
 				break // We are synced
 			}
+
+			// Previous winners so we know if the opr is valid
+			prevWinners := g.Winners(len(g.oprblks) - 1)
+
+			var oprs []*OraclePriceRecord
+			// Sync entries in the block, then mark the block as synced
+			// Gather each opr from the entries
+			for _, entryHash := range block.EntryBlock.EntryList {
+				entry, err := factom.GetEntry(entryHash.EntryHash)
+				if err != nil {
+					return err
+				}
+				opr, err := g.ParseOPREntry(entry, block.EntryBlock.Header.DBHeight)
+				if err != nil {
+					return err
+				}
+				if !VerifyWinners(opr, prevWinners[:10]) {
+					continue // This entry does not have the correct previous winners
+				}
+
+				oprs = append(oprs, opr)
+			}
+
+			// Check if we have enough oprs for this block
+			if len(oprs) < 10 {
+				g.OPRChain.BlockParsed(*block) // This block is done being processed
+				continue                       // Not enough oprs for this block be a valid oprblock
+			}
+
+			// Sort the OPRs by self reported difficulty
+			sort.SliceStable(oprs, func(i, j int) bool {
+				return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
+			})
+
+			graded := GradeMinimum(oprs)
+			if len(graded) < 10 {
+				continue // Not enough to be complete
+			}
+
+			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
+			g.oprblks = append(g.oprblks, &OprBlock{
+				Dbht:       block.EntryBlock.Header.DBHeight,
+				OPRs:       oprs,
+				GradedOPRs: graded,
+			})
+
+			// Let's add the winner's rewards. They will be happy that we do this step :)
+			for place, winner := range graded[:10] { // Only top 10 matter
+				reward := GetRewardFromPlace(place)
+				if reward > 0 {
+					err := AddToBalance(winner.CoinbasePNTAddress, reward)
+					if err != nil {
+						log.WithError(err).Fatal("Failed to update balance")
+					}
+					// Debug logs were here before to print the winners, it was a bit noisy
+				}
+			}
+
+			// Debug log that the block was graded
+			log.WithFields(log.Fields{
+				"dbht":   block.EntryBlock.Header.DBHeight,
+				"graded": len(oprs),
+			}).Debugf("block graded")
 		}
 	}
 
 	return nil
 }
 
-func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
-	InitLX() // We intend to use the LX hash
-	fdAlert := monitor.NewListener()
-	for {
-		var fds common.MonitorEvent
-		select {
-		case fds = <-fdAlert:
-		case <-ctx.Done():
-			return // Grader stopped
+// GetPreviousOPRBlock returns the winners of the previous OPR block
+func (g *QuickGrader) GetPreviousOPRBlock(dbht int32) *OprBlock {
+	for i := len(g.oprblks) - 1; i >= 0; i-- {
+		if g.oprblks[i].Dbht < int64(dbht) {
+			return g.oprblks[i]
 		}
-		var _ = fds
-		//TODO: This
+	}
+	return nil
+}
 
+// GetPreviousOPRs returns the OPRs in highest-known block less than dbht.
+// Returns nil if the dbht is the first dbht in the chain.
+func (g *QuickGrader) GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
+	block := g.GetPreviousOPRBlock(dbht)
+	if block != nil {
+		return block.OPRs
+	}
+	return nil
+}
+
+func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
+	if index == -1 {
+		return winners // empty array is the base case
 	}
 
+	return g.oprblks[index].GradedOPRs
+}
+
+// ParseOPREntry will return the oracle price record for a given entry.
+// 	Returns:
+//		(opr, nil)		Entry is OPR and no errors
+//		(nil, nil)		Entry is not an OPR and no errors
+//		(nil, error)	We don't know, we should not check this eblock as processed
+func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OraclePriceRecord, error) {
+	var err error
+	// Do some quick collecting of data and checks of the entry.
+	// Can only have three ExtIDs which must be:
+	//	[0] the nonce for the entry
+	//	[1] Self reported difficulty
+	//  [2] Version number
+	if len(entry.ExtIDs) != 3 {
+		return nil, nil
+	}
+
+	// Okay, it looks sort of okay.  Lets unmarshal the JSON
+	opr := NewOraclePriceRecord()
+	if err := json.Unmarshal(entry.Content, opr); err != nil {
+		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
+	}
+	if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PNT", opr.CoinbaseAddress); err != nil {
+		return nil, nil // Invalid Coinbase Address
+	}
+	// Run some basic checks on the values.  If they don't check out, then ignore the entry
+	if !opr.Validate(g.Config, height) {
+		return nil, nil
+	}
+
+	// Keep this entry
+	opr.EntryHash = entry.Hash()
+	opr.Nonce = entry.ExtIDs[0]
+	opr.SelfReportedDifficulty = entry.ExtIDs[1]
+	if len(entry.ExtIDs[2]) != 1 {
+		return nil, nil // Version is 1 byte
+	}
+	opr.Version = entry.ExtIDs[2][0]
+
+	// Looking good.  Go ahead and compute the OPRHash
+	sha := sha256.Sum256(entry.Content)
+	opr.OPRHash = sha[:] // Save the OPRHash
+
+	return opr, nil
 }
 
 func (g *QuickGrader) SendToListeners(winners *OPRs) {
