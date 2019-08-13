@@ -26,7 +26,7 @@ var gLog = log.WithField("id", "grader")
 type IGrader interface {
 	GetAlert(id string) (alert chan *OPRs)
 	StopAlert(id string)
-	Run(config *config.Config, monitor *common.Monitor)
+	Run(monitor *common.Monitor, ctx context.Context)
 }
 
 // QuickGrader is responsible for evaluating the previous block of OPRs and
@@ -115,6 +115,21 @@ func (g *QuickGrader) StopAlert(id string) {
 
 func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 	InitLX() // We intend to use the LX hash
+	for {    // We need to first sync our grader before we start syncing new blocks
+		select { // If we get stuck in the sync loop, this is how can cancel it
+		case <-ctx.Done():
+			return // Grader stopped
+		default:
+		}
+		err := g.Sync() // Might want to pass a context down?
+		if err != nil { // We will try again in a little bit
+			log.WithField("id", "grader").WithError(err).Errorf("failed to sync")
+			time.Sleep(2 * time.Second)
+			continue
+		}
+		break // Initial sync done
+	}
+
 	fdAlert := monitor.NewListener()
 	for {
 		var fds common.MonitorEvent
@@ -162,29 +177,34 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 
 // Sync will sync our opr chain to the latest eblock head of the OPR chain
 func (g *QuickGrader) Sync() error {
-	// Syncblocks will take our chain and gather all the blocks
-	// that might remain to be synced.
+	// Syncblocks will take our chain and gather all the eblocks
+	// that might remain to be synced. This means this function ONLY syncs eblocks
+	// and from there we can sync the blocks one by one
 	err := g.OPRChain.SyncBlocks()
 	if err != nil {
 		return err
 	}
 
+	// If we have eblocks to sync, this is where we go through them one by one.
 	if !g.OPRChain.Synced() {
 		// We have eblocks to sync!
 		// NextEBlock() will return the next eblock in the chain that we still need to sync
 		// it's entries. So we can walk, NextEblock -> NextEblock -> ... to sync the whole chain.
 		for block := g.OPRChain.NextEBlock(); block != nil; block = g.OPRChain.NextEBlock() {
-			if block == nil {
-				break // We are synced
-			}
-
 			// There is not enough entries in this block, so there is no point in looking at it.
 			if len(block.EntryBlock.EntryList) < 10 {
 				g.OPRChain.BlockParsed(*block) // This block is done being processed
 				continue
 			}
 
-			oprs, err := g.FetchOPRsFromEBlock(block)
+			var oprs []*OraclePriceRecord
+			var err error
+			if len(block.EntryBlock.EntryList) > 50 {
+				// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
+				oprs, err = g.ParallelFetchOPRsFromEBlock(block)
+			} else {
+				oprs, err = g.FetchOPRsFromEBlock(block)
+			}
 			if err != nil {
 				return err
 			}
@@ -197,13 +217,14 @@ func (g *QuickGrader) Sync() error {
 			}
 
 			// Sort the OPRs by self reported difficulty
+			// We will toss dishonest ones when we grade.
 			sort.SliceStable(oprs, func(i, j int) bool {
 				return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
 			})
 
 			// GradeMinimum will only grade the first 50 honest records
 			graded := GradeMinimum(oprs)
-			if len(graded) < 10 {
+			if len(graded) < 10 { // We might lose some when we reject dishonest records
 				g.OPRChain.BlockParsed(*block) // This block is done being processed
 				continue                       // Not enough to be complete
 			}
@@ -247,7 +268,7 @@ type OPRWorkResponse struct {
 	err error
 }
 
-// ParallelFetchOPRsFromEBlock might be requesting too quickly. It was a speedup idea
+// ParallelFetchOPRsFromEBlock is so we can parallelize our factomd requests.
 func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
@@ -299,7 +320,7 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 
 			entry, err := factom.GetEntry(job.entryhash)
 			if err != nil {
-				results <- &OPRWorkResponse{err: err}
+				results <- &OPRWorkResponse{err: fmt.Errorf("entry %s : %s", job.entryhash, err.Error())}
 				continue
 			}
 			// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
@@ -332,7 +353,7 @@ func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePri
 	for _, entryHash := range block.EntryBlock.EntryList {
 		entry, err := factom.GetEntry(entryHash.EntryHash)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("entry %s : %s", entryHash.EntryHash, err.Error())
 		}
 		// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
 		// that we need to retry. So the sync failed

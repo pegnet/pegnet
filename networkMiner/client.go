@@ -49,7 +49,7 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	s.entryChannel = make(chan *factom.Entry, 25)
 	// The "Fakes" allow us to emit events
 	s.Monitor = common.NewFakeMonitor()
-	s.Grader = opr.NewFakeGrader()
+	s.Grader = opr.NewFakeGrader(config)
 	s.OPRMaker = mining.NewBlockingOPRMaker()
 
 	// We need to put our data in it

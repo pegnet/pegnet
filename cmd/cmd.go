@@ -283,6 +283,7 @@ var datasources = &cobra.Command{
 var grader = &cobra.Command{
 	Use: "grader ",
 	Run: func(cmd *cobra.Command, args []string) {
+		opr.InitLX()
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		monitor := common.GetMonitor()
@@ -293,18 +294,53 @@ var grader = &cobra.Command{
 			err := <-errListener
 			panic("Monitor threw error: " + err.Error())
 		}()
+		var err error
 
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
+		//err = opr.GetEntryBlocks(Config)
+		//if err != nil {
+		//	panic(err)
+		//}
+		//fmt.Println()
 
-		alert := grader.GetAlert("cmd")
-
-		for {
-			select {
-			case a := <-alert:
-				fmt.Println(a)
-			}
+		q := opr.NewQuickGrader(Config)
+		err = q.Sync()
+		if err != nil {
+			panic(err)
 		}
+
+		//news := q.GetBlocks()
+		//if len(news) != len(opr.OPRBlocks) {
+		//	panic("diff lengths")
+		//}
+		//for i, orig := range opr.OPRBlocks {
+		//	new := news[i]
+		//	oWinners := orig.GradedOPRs[:10]
+		//	nWinners := new.GradedOPRs[:10]
+		//
+		//	for i := range oWinners {
+		//		if bytes.Compare(oWinners[i].EntryHash, nWinners[i].EntryHash) != 0 {
+		//			panic("winners are different")
+		//		}
+		//
+		//		if oWinners[i].Grade != nWinners[i].Grade {
+		//			panic("grades are different")
+		//		}
+		//	}
+		//}
+
+		//fmt.Println(len(news), len(opr.OPRBlocks))
+
+		//grader := opr.NewGrader()
+		//go grader.Run(Config, monitor)
+		//
+		//alert := grader.GetAlert("cmd")
+		//
+		//for {
+		//	select {
+		//	case a := <-alert:
+		//		fmt.Println(a)
+		//	}
+		//}
 	},
 }
 
@@ -385,7 +421,7 @@ var networkCoordinator = &cobra.Command{
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor)
+		grader := LaunchGrader(Config, monitor, ctx)
 		statTracker := LaunchStatistics(Config, ctx)
 		apiserver := LaunchAPI(Config, statTracker)
 		LaunchControlPanel(Config, ctx, monitor, statTracker)
