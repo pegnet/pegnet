@@ -54,6 +54,7 @@ type QuickGrader struct {
 }
 
 func NewQuickGrader(config *config.Config) *QuickGrader {
+	InitLX()
 	g := new(QuickGrader)
 	g.Config = config
 
@@ -75,6 +76,11 @@ func NewQuickGrader(config *config.Config) *QuickGrader {
 	g.oprblks = make([]*OprBlock, 0)
 
 	return g
+}
+
+// GetBlocks should only be used in unit tests. It is not thread safe
+func (g *QuickGrader) GetBlocks() []*OprBlock {
+	return g.oprblks
 }
 
 // GetAlert registers a new request for alerts.
@@ -154,7 +160,7 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 	}
 }
 
-// Sync will sync our opr chain to the latest eblock head
+// Sync will sync our opr chain to the latest eblock head of the OPR chain
 func (g *QuickGrader) Sync() error {
 	// Syncblocks will take our chain and gather all the blocks
 	// that might remain to be synced.
@@ -165,34 +171,26 @@ func (g *QuickGrader) Sync() error {
 
 	if !g.OPRChain.Synced() {
 		// We have eblocks to sync!
+		// NextEBlock() will return the next eblock in the chain that we still need to sync
+		// it's entries. So we can walk, NextEblock -> NextEblock -> ... to sync the whole chain.
 		for block := g.OPRChain.NextEBlock(); block != nil; block = g.OPRChain.NextEBlock() {
 			if block == nil {
 				break // We are synced
 			}
 
-			// Previous winners so we know if the opr is valid
-			prevWinners := g.Winners(len(g.oprblks) - 1)
-
-			var oprs []*OraclePriceRecord
-			// Sync entries in the block, then mark the block as synced
-			// Gather each opr from the entries
-			for _, entryHash := range block.EntryBlock.EntryList {
-				entry, err := factom.GetEntry(entryHash.EntryHash)
-				if err != nil {
-					return err
-				}
-				opr, err := g.ParseOPREntry(entry, block.EntryBlock.Header.DBHeight)
-				if err != nil {
-					return err
-				}
-				if !VerifyWinners(opr, prevWinners[:10]) {
-					continue // This entry does not have the correct previous winners
-				}
-
-				oprs = append(oprs, opr)
+			// There is not enough entries in this block, so there is no point in looking at it.
+			if len(block.EntryBlock.EntryList) < 10 {
+				g.OPRChain.BlockParsed(*block) // This block is done being processed
+				continue
 			}
 
-			// Check if we have enough oprs for this block
+			oprs, err := g.FetchOPRsFromEBlock(block)
+			if err != nil {
+				return err
+			}
+
+			// Check if we have enough oprs for this block. If we have less than 10, there is no point in
+			// trying to grade it.
 			if len(oprs) < 10 {
 				g.OPRChain.BlockParsed(*block) // This block is done being processed
 				continue                       // Not enough oprs for this block be a valid oprblock
@@ -203,9 +201,11 @@ func (g *QuickGrader) Sync() error {
 				return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
 			})
 
+			// GradeMinimum will only grade the first 50 honest records
 			graded := GradeMinimum(oprs)
 			if len(graded) < 10 {
-				continue // Not enough to be complete
+				g.OPRChain.BlockParsed(*block) // This block is done being processed
+				continue                       // Not enough to be complete
 			}
 
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
@@ -238,6 +238,120 @@ func (g *QuickGrader) Sync() error {
 	return nil
 }
 
+type OPRWorkRequest struct {
+	entryhash string
+}
+
+type OPRWorkResponse struct {
+	opr *OraclePriceRecord
+	err error
+}
+
+// ParallelFetchOPRsFromEBlock might be requesting too quickly. It was a speedup idea
+func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
+	// Previous winners so we know if the opr is valid
+	// The Winners() wrapper just handles the base case for us, where there is no winners
+	prevWinners := g.Winners(len(g.oprblks) - 1)
+	numThreads := 4
+
+	work := make(chan *OPRWorkRequest, numThreads*2)
+	collect := make(chan *OPRWorkResponse, numThreads*2)
+
+	// 10 threads
+	for i := 0; i < numThreads; i++ {
+		go g.fetchOPRWorker(work, collect, prevWinners, block.EntryBlock.Header.DBHeight)
+	}
+	count := len(block.EntryBlock.EntryList)
+
+	var oprs []*OraclePriceRecord
+	var collectErr error
+	go func() {
+		// Collection routine
+		for resp := range collect {
+			if resp.err != nil {
+				collectErr = resp.err
+			}
+			if resp.opr != nil {
+				oprs = append(oprs, resp.opr)
+			}
+			count--
+			if count == 0 {
+				break
+			}
+		}
+		close(work)
+	}()
+
+	for _, entryHash := range block.EntryBlock.EntryList {
+		work <- &OPRWorkRequest{entryhash: entryHash.EntryHash}
+	}
+
+	return oprs, collectErr
+}
+
+func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OPRWorkResponse, prevWinners []*OraclePriceRecord, dbht int64) {
+	for {
+		select {
+		case job, ok := <-work:
+			if !ok {
+				return // Done working
+			}
+
+			entry, err := factom.GetEntry(job.entryhash)
+			if err != nil {
+				results <- &OPRWorkResponse{err: err}
+				continue
+			}
+			// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
+			// that we need to retry. So the sync failed
+			opr, err := g.ParseOPREntry(entry, dbht)
+			if err != nil {
+				results <- &OPRWorkResponse{err: err}
+				continue
+			}
+			if opr == nil {
+				results <- &OPRWorkResponse{opr: nil} // This entry is not correctly formatted
+				continue
+			}
+			if !VerifyWinners(opr, prevWinners) {
+				results <- &OPRWorkResponse{opr: nil} // This entry does not have the correct previous winners
+				continue
+			}
+
+			results <- &OPRWorkResponse{opr: opr}
+		}
+	}
+}
+
+func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
+	// Previous winners so we know if the opr is valid
+	// The Winners() wrapper just handles the base case for us, where there is no winners
+	prevWinners := g.Winners(len(g.oprblks) - 1)
+
+	var oprs []*OraclePriceRecord
+	for _, entryHash := range block.EntryBlock.EntryList {
+		entry, err := factom.GetEntry(entryHash.EntryHash)
+		if err != nil {
+			return nil, err
+		}
+		// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
+		// that we need to retry. So the sync failed
+		opr, err := g.ParseOPREntry(entry, block.EntryBlock.Header.DBHeight)
+		if err != nil {
+			return nil, err
+		}
+		if opr == nil {
+			continue // This entry is not correctly formatted
+		}
+		if !VerifyWinners(opr, prevWinners) {
+			continue // This entry does not have the correct previous winners
+		}
+
+		oprs = append(oprs, opr)
+	}
+	return oprs, nil
+}
+
 // GetPreviousOPRBlock returns the winners of the previous OPR block
 func (g *QuickGrader) GetPreviousOPRBlock(dbht int32) *OprBlock {
 	for i := len(g.oprblks) - 1; i >= 0; i-- {
@@ -263,7 +377,7 @@ func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
 		return winners // empty array is the base case
 	}
 
-	return g.oprblks[index].GradedOPRs
+	return g.oprblks[index].GradedOPRs[:10]
 }
 
 // ParseOPREntry will return the oracle price record for a given entry.
