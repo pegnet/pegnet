@@ -84,10 +84,11 @@ func (a *EntryBlockSync) NextEBlock() *EntryBlockMarker {
 // BlockParsed indicates a block has been parsed. We update our current
 func (a *EntryBlockSync) BlockParsed(block EntryBlockMarker) {
 	if !a.BlocksToBeParsed[0].IsSameAs(&block) {
-		panic("This block should be next in the list")
+		panic("This block should not be next in the list")
 	}
 	a.Current = block
-	a.BlocksToBeParsed = a.BlocksToBeParsed[1:]
+	a.BlocksToBeParsed = make([]EntryBlockMarker, len(a.BlocksToBeParsed)-1)
+	copy(a.BlocksToBeParsed, a.BlocksToBeParsed[1:])
 }
 
 func (a *EntryBlockSync) AddNewHead(keymr string, eblock *factom.EBlock) {

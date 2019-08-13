@@ -58,6 +58,42 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
 	return opr.Grade
 }
 
+// GradeMinimum only grades the top 50 honest records. The input must be the records sorted by
+// self reported difficulty.
+func GradeMinimum(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(sortedList)
+	if len(list) < 10 {
+		return nil
+	}
+
+	// Find the top 50 with the correct difficulties
+	top50 := make([]*OraclePriceRecord, 0)
+	for _, opr := range sortedList {
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+		if f != opr.Difficulty {
+			continue
+		}
+
+		// Honest record
+		top50 = append(top50, opr)
+		if len(top50) == 50 {
+			break // We have enough to grade
+		}
+	}
+
+	for i := len(top50); i >= 10; i-- {
+		avg := Avg(top50[:i])
+		for j := 0; j < i; j++ {
+			CalculateGrade(avg, top50[j])
+		}
+		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Difficulty > top50[j].Difficulty })
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Grade < top50[j].Grade })
+	}
+	return top50
+}
+
 // GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
 // The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
 // sorted by difficulty.

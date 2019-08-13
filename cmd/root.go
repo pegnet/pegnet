@@ -9,7 +9,6 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/FactomProject/factom"
@@ -106,10 +105,10 @@ func ValidateConfig(config *config.Config) {
 		log.WithError(err).Fatal("failed to read the identity chain or miner id")
 	}
 
-	valid, _ := regexp.MatchString("^[a-zA-Z0-9,]+$", identity)
-	if !valid {
-		log.WithError(err).Fatal("only alphanumeric characters and commas are allowed in the identity")
+	if err := common.ValidIdentity(identity); err != nil {
+		log.WithError(err).Fatal("invalid identity")
 	}
+
 }
 
 func initLogger() {
