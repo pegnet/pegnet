@@ -25,6 +25,7 @@ var AllDataSources = map[string]IDataSource{
 	"Kitco":             new(KitcoDataSource),
 	"OpenExchangeRates": new(OpenExchangeRatesDataSource),
 	"CoinMarketCap":     new(CoinMarketCapDataSource),
+	"FreeForexAPI":      new(FreeForexAPIDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -78,6 +79,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOpenExchangeRatesDataSource(config)
 	case "CoinMarketCap":
 		ds, err = NewCoinMarketCapDataSource(config)
+	case "FreeForexAPI":
+		ds, err = NewFreeForexAPIDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
