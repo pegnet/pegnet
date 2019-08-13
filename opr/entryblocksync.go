@@ -16,8 +16,6 @@ type EntryBlockSync struct {
 
 func NewEntryBlockSync(chainid string) *EntryBlockSync {
 	e := new(EntryBlockSync)
-	e.Current = *NewEntryBlockMarker()
-	e.Target = *NewEntryBlockMarker()
 	e.ChainID = chainid
 
 	return e
@@ -87,8 +85,9 @@ func (a *EntryBlockSync) BlockParsed(block EntryBlockMarker) {
 		panic("This block should not be next in the list")
 	}
 	a.Current = block
-	a.BlocksToBeParsed = make([]EntryBlockMarker, len(a.BlocksToBeParsed)-1)
-	copy(a.BlocksToBeParsed, a.BlocksToBeParsed[1:])
+	tmp := make([]EntryBlockMarker, len(a.BlocksToBeParsed)-1)
+	copy(tmp, a.BlocksToBeParsed[1:])
+	a.BlocksToBeParsed = tmp
 }
 
 func (a *EntryBlockSync) AddNewHead(keymr string, eblock *factom.EBlock) {
@@ -98,7 +97,7 @@ func (a *EntryBlockSync) AddNewHead(keymr string, eblock *factom.EBlock) {
 // AddNewHead will add a new eblock to be parsed to the head (tail of list)
 //	Since the block needs to be parsed, it is the new target and added to the blocks to be parsed
 func (a *EntryBlockSync) AddNewHeadMarker(marker EntryBlockMarker) {
-	if marker.EntryBlock.Header.BlockSequenceNumber < a.Target.EntryBlock.Header.BlockSequenceNumber {
+	if a.Target.KeyMr != "" && marker.EntryBlock.Header.BlockSequenceNumber < a.Target.EntryBlock.Header.BlockSequenceNumber {
 		return // Already added this target
 	}
 	a.BlocksToBeParsed = append(a.BlocksToBeParsed, marker)
