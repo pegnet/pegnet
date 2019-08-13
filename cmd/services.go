@@ -25,9 +25,9 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 	return monitor
 }
 
-func LaunchGrader(config *config.Config, monitor *common.Monitor) *opr.Grader {
-	grader := opr.NewGrader()
-	go grader.Run(config, monitor)
+func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context) *opr.QuickGrader {
+	grader := opr.NewQuickGrader(config)
+	go grader.Run(monitor, ctx)
 	return grader
 }
 
