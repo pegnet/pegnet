@@ -67,7 +67,7 @@ var rootCmd = &cobra.Command{
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor)
+		grader := LaunchGrader(Config, monitor, ctx)
 		statTracker := LaunchStatistics(Config, ctx)
 		apiserver := LaunchAPI(Config, statTracker)
 		LaunchControlPanel(Config, ctx, monitor, statTracker)
