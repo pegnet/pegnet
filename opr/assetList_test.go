@@ -103,6 +103,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 
 	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
+	o.FactomDigitalID = "random"
 
 	for _, asset := range common.AllAssets {
 		o.Assets[asset] = rand.Float64() * 1000

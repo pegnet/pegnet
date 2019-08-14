@@ -3,7 +3,10 @@
 
 package opr
 
-import "github.com/zpatrick/go-config"
+import (
+	"github.com/pegnet/pegnet/database"
+	"github.com/zpatrick/go-config"
+)
 
 // FakeGrader can be used in unit tests
 type FakeGrader struct {
@@ -12,7 +15,7 @@ type FakeGrader struct {
 
 func NewFakeGrader(config *config.Config) *FakeGrader {
 	f := new(FakeGrader)
-	f.QuickGrader = NewQuickGrader(config)
+	f.QuickGrader = NewQuickGrader(config, database.NewMapDb())
 
 	return f
 }

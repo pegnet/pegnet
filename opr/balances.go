@@ -4,12 +4,10 @@
 package opr
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 
 	"github.com/pegnet/pegnet/common"
-	log "github.com/sirupsen/logrus"
 )
 
 // Balances holds the non-zero balances for every address for every token in a
@@ -51,14 +49,14 @@ func AddToBalance(address string, value int64) (err error) {
 	}
 	Balances[prefix][addressBytes] = prev + value
 
-	log.WithFields(log.Fields{
-		"address":       address,
-		"prefix":        prefix,
-		"address_bytes": hex.EncodeToString(addressBytes[:]),
-		"prev_balance":  prev,
-		"value":         value,
-		"new_balance":   prev + value,
-	}).Debug("Add to balance")
+	//log.WithFields(log.Fields{
+	//	"address":       address,
+	//	"prefix":        prefix,
+	//	"address_bytes": hex.EncodeToString(addressBytes[:]),
+	//	"prev_balance":  prev,
+	//	"value":         value,
+	//	"new_balance":   prev + value,
+	//}).Debug("Add to balance")
 	return
 }
 
