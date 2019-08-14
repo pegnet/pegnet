@@ -70,7 +70,7 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 	}
 
 	dbpath, _ := c.cmd.Flags().GetString("mienrdb")
-	if dbtype != "" {
+	if dbpath != "" {
 		settings[common.ConfigMinerDBPath] = dbpath
 	}
 
