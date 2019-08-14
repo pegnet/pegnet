@@ -67,6 +67,8 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   LogFile=
 
 [Miner]
+  FactomdLocation="localhost:8088"
+  WalletdLocation="localhost:8089"
   NetworkType=LOCAL
   NumberOfMiners=15
 # The number of records to submit per block. The top N records are chosen, where N is the config value

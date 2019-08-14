@@ -54,7 +54,7 @@ func init() {
 	rootCmd.PersistentPreRunE = rootPreRunSetup
 
 	// Run a few functions (in the order specified) to initialize some globals
-	cobra.OnInitialize(initLogger, initFactomdLocs)
+	cobra.OnInitialize(initLogger)
 }
 
 // The cli enter point
@@ -129,11 +129,6 @@ func initLogger() {
 	}
 }
 
-func initFactomdLocs() {
-	factom.SetFactomdServer(FactomdLocation)
-	factom.SetWalletServer(WalletdLocation)
-}
-
 // rootPreRunSetup is run before all cmd commands. It will:
 //		1: Parse the config
 //		2: Parse the cmd flags that overwrite the config
@@ -158,6 +153,11 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	iniFile := config.NewINIFile(configFile)
 	flags := NewCmdFlagProvider(cmd)
 	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
+
+	factomd, _ := Config.String("Miner.FactomdLocation")
+	walletd, _ := Config.String("Miner.WalletdLocation")
+	factom.SetFactomdServer(factomd)
+	factom.SetWalletServer(walletd)
 
 	// Profiling setup
 	if on, _ := cmd.Flags().GetBool("profile"); on {
