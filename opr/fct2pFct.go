@@ -10,18 +10,20 @@ import (
 
 var FctDbht int64
 
-func UpdateBurns(c *config.Config) {
+// TODO: Rework this a bit to handle errors
+func UpdateBurns(c *config.Config, grader *QuickGrader) {
 
 	network, err := common.LoadConfigNetwork(c)
 	if err != nil {
 		panic("cannot find the network designation for updating burn txs")
 	}
 
-	if len(OPRBlocks) == 0 {
-		return // There is nothing to do if there is no OPR chain with valid OPR blocks
-	}
 	if FctDbht == 0 {
-		FctDbht = OPRBlocks[0].Dbht
+		block := grader.GetFirstOPRBlock()
+		if block == nil {
+			return // There is nothing to do if there is no OPR chain with valid OPR blocks
+		}
+		FctDbht = block.Dbht
 	}
 	for i := FctDbht + 1; ; i++ {
 		fc, _, _ := factom.GetFBlockByHeight(i)
