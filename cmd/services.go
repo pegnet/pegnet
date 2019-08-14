@@ -38,8 +38,8 @@ func LaunchStatistics(config *config.Config, ctx context.Context) *mining.Global
 	return statTracker
 }
 
-func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker) *api.APIServer {
-	s := api.NewApiServer()
+func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader) *api.APIServer {
+	s := api.NewApiServer(grader)
 
 	go s.Listen(8099) // TODO: Do not hardcode this
 	return s

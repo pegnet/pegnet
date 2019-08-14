@@ -17,12 +17,14 @@ import (
 type APIServer struct {
 	Statistics *mining.GlobalStatTracker
 	Server     *http.Server
+	Grader     *opr.QuickGrader
 }
 
-func NewApiServer() *APIServer {
+func NewApiServer(grader *opr.QuickGrader) *APIServer {
 	s := new(APIServer)
 	s.Server = &http.Server{}
 	s.Server.Handler = s
+	s.Grader = grader
 
 	return s
 }
@@ -65,11 +67,12 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 	var apiError *Error
 	switch request.Method {
 	case "performance":
-		result, apiError = getPerformance(request.Params)
+		result, apiError = h.getPerformance(request.Params)
 
 	case "all-oprs":
-		result = &GenericResult{OPRBlocks: opr.OPRBlocks}
-
+		// TODO: This is not thread safe. This call could be exceedingly large too
+		// 		I think it should be tossed
+		result = &GenericResult{OPRBlocks: h.Grader.GetBlocks()}
 	case "balances":
 		result = &GenericResult{Balances: opr.Balances}
 
@@ -80,35 +83,35 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 		result = &GenericResult{ChainID: opr.OPRChainID}
 
 	case "current-oprs":
-		result, apiError = getCurrentOPRs()
+		result, apiError = h.getCurrentOPRs()
 
 	case "leaderheight":
 		result = &GenericResult{LeaderHeight: getLeaderHeight()}
 
 	case "oprs-by-height":
-		result, apiError = getOPRsByHeight(request.Params)
+		result, apiError = h.getOPRsByHeight(request.Params)
 
 	case "oprs-by-id":
-		result, apiError = getOprsByDigitalID(request.Params)
+		result, apiError = h.getOprsByDigitalID(request.Params)
 
 	case "opr-by-hash":
-		result, apiError = getOprByHash(request.Params)
+		result, apiError = h.getOprByHash(request.Params)
 
 	case "opr-by-shorthash":
-		result, apiError = getOprByShortHash(request.Params)
+		result, apiError = h.getOprByShortHash(request.Params)
 
 	case "winners":
-		winners := getWinners()
+		winners := h.getWinners()
 		result = &GenericResult{Winners: winners[:]}
 
 	case "winner":
-		winner := getWinner()
+		winner := h.getWinner()
 		result = &GenericResult{Winner: winner}
 
 	// Failing method - shorthash needs to be fixed
 	case "winning-opr":
-		winner := getWinner()
-		winningOPR := oprByShortHash(winner)
+		winner := h.getWinner()
+		winningOPR := h.Grader.OprByShortHash(winner)
 		result = &GenericResult{OPR: &winningOPR}
 
 	default:

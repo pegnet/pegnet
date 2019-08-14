@@ -17,7 +17,6 @@ import (
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/dustin/go-humanize"
 	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/polling"
@@ -234,22 +233,13 @@ func (opr *OraclePriceRecord) String() (str string) {
 
 	str = str + fmt.Sprintf("\nWinners\n\n")
 
-	pwin := GetPreviousOPRs(opr.Dbht - 1)
-
 	// If there were previous winners, we need to make sure this miner is running
 	// the software to detect them, and that we agree with their conclusions.
-	if pwin != nil {
-		for i, v := range opr.WinPreviousOPR {
-			balance := GetBalance(pwin[i].CoinbasePNTAddress)
-			hbal := humanize.Comma(balance)
-			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
-				v,
-				pwin[i].EntryHash[:8],
-				pwin[i].FactomDigitalID,
-				pwin[i].CoinbasePNTAddress,
-				hbal,
-			)
-		}
+	for i, v := range opr.WinPreviousOPR {
+		str = str + fmt.Sprintf("   %2d\t%16s\n",
+			i,
+			v,
+		)
 	}
 	return str
 }

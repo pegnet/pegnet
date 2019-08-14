@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/binary"
@@ -43,8 +44,10 @@ type QuickGrader struct {
 
 	Config *config.Config
 
-	// oprblks is all the eblocks that contain the oprs
-	oprblks []*OprBlock
+	// oprBlks is all the eblocks that contain the oprs
+	oprBlks    []*OprBlock
+	oprBlkLock sync.Mutex
+
 	// lastGraded is the last graded oprblk, so we know
 	// where to start grading
 	lastGraded int
@@ -73,14 +76,14 @@ func NewQuickGrader(config *config.Config) *QuickGrader {
 	g.alerts = make(map[string]chan *OPRs)
 
 	g.OPRChain = NewEntryBlockSync(g.OPRChainIDString)
-	g.oprblks = make([]*OprBlock, 0)
+	g.oprBlks = make([]*OprBlock, 0)
 
 	return g
 }
 
 // GetBlocks should only be used in unit tests. It is not thread safe
 func (g *QuickGrader) GetBlocks() []*OprBlock {
-	return g.oprblks
+	return g.oprBlks
 }
 
 // GetAlert registers a new request for alerts.
@@ -130,6 +133,10 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 		break // Initial sync done
 	}
 
+	// Update burn calcs
+	// TODO: This should be another routine, not affecting grading
+	UpdateBurns(g.Config, g)
+
 	fdAlert := monitor.NewListener()
 	for {
 		var fds common.MonitorEvent
@@ -170,6 +177,9 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 
 			// Alert followers that we have graded the previous block
 			g.SendToListeners(&winners)
+
+			// TODO: This should be another routine, not affecting grading
+			UpdateBurns(g.Config, g)
 		}
 
 	}
@@ -229,12 +239,14 @@ func (g *QuickGrader) Sync() error {
 				continue                       // Not enough to be complete
 			}
 
+			g.oprBlkLock.Lock()
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
-			g.oprblks = append(g.oprblks, &OprBlock{
+			g.oprBlks = append(g.oprBlks, &OprBlock{
 				Dbht:       block.EntryBlock.Header.DBHeight,
 				OPRs:       oprs,
 				GradedOPRs: graded,
 			})
+			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
 			for place, winner := range graded[:10] { // Only top 10 matter
@@ -272,7 +284,10 @@ type OPRWorkResponse struct {
 func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
-	prevWinners := g.Winners(len(g.oprblks) - 1)
+	g.oprBlkLock.Lock()
+	prevWinners := g.Winners(len(g.oprBlks) - 1)
+	g.oprBlkLock.Unlock()
+
 	numThreads := 4
 
 	work := make(chan *OPRWorkRequest, numThreads*2)
@@ -347,7 +362,9 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
-	prevWinners := g.Winners(len(g.oprblks) - 1)
+	g.oprBlkLock.Lock()
+	prevWinners := g.Winners(len(g.oprBlks) - 1)
+	g.oprBlkLock.Unlock()
 
 	var oprs []*OraclePriceRecord
 	for _, entryHash := range block.EntryBlock.EntryList {
@@ -375,9 +392,12 @@ func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePri
 
 // GetPreviousOPRBlock returns the winners of the previous OPR block
 func (g *QuickGrader) GetPreviousOPRBlock(dbht int32) *OprBlock {
-	for i := len(g.oprblks) - 1; i >= 0; i-- {
-		if g.oprblks[i].Dbht < int64(dbht) {
-			return g.oprblks[i]
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	for i := len(g.oprBlks) - 1; i >= 0; i-- {
+		if g.oprBlks[i].Dbht < int64(dbht) {
+			return g.oprBlks[i]
 		}
 	}
 	return nil
@@ -393,12 +413,23 @@ func (g *QuickGrader) GetPreviousOPRs(dbht int32) []*OraclePriceRecord {
 	return nil
 }
 
+func (g *QuickGrader) GetFirstOPRBlock() *OprBlock {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	if len(g.oprBlks) == 0 {
+		return nil
+	}
+
+	return g.oprBlks[0]
+}
+
 func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
 	if index == -1 {
 		return winners // empty array is the base case
 	}
 
-	return g.oprblks[index].GradedOPRs[:10]
+	return g.oprBlks[index].GradedOPRs[:10]
 }
 
 // ParseOPREntry will return the oracle price record for a given entry.
@@ -458,22 +489,70 @@ func (g *QuickGrader) SendToListeners(winners *OPRs) {
 	g.alertsMutex.Unlock()
 }
 
+// oprBlockByHeight returns a single OPRBlock
+func (g *QuickGrader) OprBlockByHeight(dbht int64) *OprBlock {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	for _, block := range g.oprBlks {
+		if block.Dbht == dbht {
+			return block
+		}
+	}
+	return nil
+}
+
+// oprsByDigitalID returns every OPR created by a given ID
+// Multiple ID's per miner or single daemon are possible.
+// This function searches through every possible ID and returns all.
+func (g *QuickGrader) OprsByDigitalID(did string) []OraclePriceRecord {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	var subset []OraclePriceRecord
+	for _, block := range g.oprBlks {
+		for _, record := range block.OPRs {
+			if record.FactomDigitalID == did {
+				subset = append(subset, *record)
+			}
+		}
+	}
+	return subset
+}
+
+// oprByHash returns the entire OPR based on it's hash
+func (g *QuickGrader) OprByHash(hash string) OraclePriceRecord {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	for _, block := range g.oprBlks {
+		for _, record := range block.OPRs {
+			if hash == hex.EncodeToString(record.OPRHash) {
+				return *record
+			}
+		}
+	}
+	return OraclePriceRecord{}
+}
+
+// Failing tests. Need to grok how the short 8 byte winning oprhashes are done.
+func (g *QuickGrader) OprByShortHash(shorthash string) OraclePriceRecord {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+
+	hashBytes, _ := hex.DecodeString(shorthash)
+	// hashbytes = reverseBytes(hashbytes)
+	for _, block := range g.oprBlks {
+		for _, record := range block.OPRs {
+			if bytes.Compare(hashBytes, record.OPRHash[:8]) == 0 {
+				return *record
+			}
+		}
+	}
+	return OraclePriceRecord{}
+}
+
 /// -----
-
-// Grader is responsible for evaluating the previous block of OPRs and
-// determines who should be paid.
-// This also informs the miners which records should be included in their OPR records
-type Grader struct {
-	alerts      map[string]chan *OPRs
-	alertsMutex sync.Mutex // Maps are not thread safe
-}
-
-func NewGrader() *Grader {
-	g := new(Grader)
-	g.alerts = make(map[string]chan *OPRs)
-
-	return g
-}
 
 // OPRs is the message sent by the Grader
 type OPRs struct {
@@ -482,91 +561,4 @@ type OPRs struct {
 
 	// Since this is used as a message, we need a way to send an error
 	Error error
-}
-
-// GetAlert registers a new request for alerts.
-// Data will be sent when the grades from the last block are ready
-func (g *Grader) GetAlert(id string) (alert chan *OPRs) {
-	g.alertsMutex.Lock()
-	defer g.alertsMutex.Unlock()
-
-	// If the alert already exists for the id, close it.
-	// We only want 1 alert per id
-	alert, ok := g.alerts[id]
-	if ok {
-		close(alert)
-	}
-
-	alert = make(chan *OPRs, 10)
-	g.alerts[id] = alert
-	return g.alerts[id]
-}
-
-// StopAlert allows cleanup of alerts that are no longer used
-func (g *Grader) StopAlert(id string) {
-	g.alertsMutex.Lock()
-	defer g.alertsMutex.Unlock()
-
-	alert, ok := g.alerts[id]
-	if ok {
-		close(alert)
-	}
-	delete(g.alerts, id)
-}
-
-func (g *Grader) Run(config *config.Config, monitor *common.Monitor) {
-	InitLX() // We intend to use the LX hash
-	fdAlert := monitor.NewListener()
-	for {
-		fds := <-fdAlert
-		fLog := gLog.WithFields(log.Fields{"minute": fds.Minute, "dbht": fds.Dbht})
-		if fds.Minute == 1 {
-			var err error
-			tries := 0
-			// Try 3 times
-			for tries = 0; tries < 3; tries++ {
-				err = nil
-				err = GetEntryBlocks(config)
-				if err == nil {
-					break
-				}
-				if err != nil {
-					// If this fails, we probably can't recover this block.
-					// Can't hurt to try though
-					time.Sleep(200 * time.Millisecond)
-				}
-			}
-
-			if err != nil {
-				fLog.WithError(err).WithField("tries", tries).Errorf("Grader failed to grade blocks. Sitting out this block")
-				g.SendToListeners(&OPRs{Error: fmt.Errorf("failed to grade")})
-				continue
-			}
-
-			oprs := GetPreviousOPRs(fds.Dbht)
-			gradedOPRs, sortedOPRs := GradeBlock(oprs)
-
-			var winners OPRs
-			if len(gradedOPRs) >= 10 {
-				winners.ToBePaid = gradedOPRs[:10]
-			}
-			winners.AllOPRs = sortedOPRs
-
-			// Alert followers that we have graded the previous block
-			g.SendToListeners(&winners)
-		}
-
-	}
-}
-
-func (g *Grader) SendToListeners(winners *OPRs) {
-	g.alertsMutex.Lock() // Lock map to prevent another thread mucking with our loop
-	for _, a := range g.alerts {
-		select { // Don't block if someone isn't pulling from the winner channel
-		case a <- winners:
-		default:
-			// This means the channel is full
-		}
-	}
-	g.alertsMutex.Unlock()
 }
