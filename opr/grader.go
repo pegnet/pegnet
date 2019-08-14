@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pegnet/pegnet/database"
+
 	"github.com/FactomProject/factom"
 
 	"github.com/pegnet/pegnet/common"
@@ -48,6 +50,8 @@ type QuickGrader struct {
 	oprBlks    []*OprBlock
 	oprBlkLock sync.Mutex
 
+	blockStore *OPRBlockStore
+
 	// lastGraded is the last graded oprblk, so we know
 	// where to start grading
 	lastGraded int
@@ -56,7 +60,7 @@ type QuickGrader struct {
 	alertsMutex sync.Mutex // Maps are not thread safe
 }
 
-func NewQuickGrader(config *config.Config) *QuickGrader {
+func NewQuickGrader(config *config.Config, db database.IDatabase) *QuickGrader {
 	InitLX()
 	g := new(QuickGrader)
 	g.Config = config
@@ -77,6 +81,8 @@ func NewQuickGrader(config *config.Config) *QuickGrader {
 
 	g.OPRChain = NewEntryBlockSync(g.OPRChainIDString)
 	g.oprBlks = make([]*OprBlock, 0)
+
+	g.blockStore = NewOPRBlockStore(db)
 
 	return g
 }
@@ -117,6 +123,7 @@ func (g *QuickGrader) StopAlert(id string) {
 }
 
 func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
+	log.WithField("id", "grader").Info("Running initial sync")
 	InitLX() // We intend to use the LX hash
 	for {    // We need to first sync our grader before we start syncing new blocks
 		select { // If we get stuck in the sync loop, this is how can cancel it
@@ -187,69 +194,72 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 
 // Sync will sync our opr chain to the latest eblock head of the OPR chain
 func (g *QuickGrader) Sync() error {
+	fLog := log.WithField("id", "gradersync")
+
 	// Syncblocks will take our chain and gather all the eblocks
 	// that might remain to be synced. This means this function ONLY syncs eblocks
 	// and from there we can sync the blocks one by one
+	fLog.Debugf("syncing eblocks")
 	err := g.OPRChain.SyncBlocks()
 	if err != nil {
 		return err
 	}
 
+	fLog.Debugf("syncing entries")
+	startAmt := len(g.OPRChain.BlocksToBeParsed)
 	// If we have eblocks to sync, this is where we go through them one by one.
 	if !g.OPRChain.Synced() {
+		c := 0
 		// We have eblocks to sync!
 		// NextEBlock() will return the next eblock in the chain that we still need to sync
 		// it's entries. So we can walk, NextEblock -> NextEblock -> ... to sync the whole chain.
 		for block := g.OPRChain.NextEBlock(); block != nil; block = g.OPRChain.NextEBlock() {
-			// There is not enough entries in this block, so there is no point in looking at it.
-			if len(block.EntryBlock.EntryList) < 10 {
-				g.OPRChain.BlockParsed(*block) // This block is done being processed
-				continue
+			c++
+			done := startAmt - len(g.OPRChain.BlocksToBeParsed)
+			if c%30 == 0 || done == startAmt {
+				fLog.WithFields(log.Fields{
+					"dbht": block.EntryBlock.Header.DBHeight,
+				}).Debugf("syncing entries, %.2f%%", float64(done)/float64(startAmt)*100)
 			}
 
-			var oprs []*OraclePriceRecord
 			var err error
-			if len(block.EntryBlock.EntryList) > 50 {
-				// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
-				oprs, err = g.ParallelFetchOPRsFromEBlock(block)
+			// Before we try to fetch from the net, we try and fetch from disk
+			oprblock, _ := g.blockStore.FetchOPRBlock(block.EntryBlock.Header.DBHeight)
+			if oprblock == nil {
+				// Fetch from factomd
+				oprblock, err = g.FetchOPRBlock(block)
 			} else {
-				oprs, err = g.FetchOPRsFromEBlock(block)
+				if oprblock.EmptyOPRBlock {
+					g.OPRChain.BlockParsed(*block)
+					continue // This eblock does not have a valid opr block
+				}
 			}
+
+			// If we have an error from factomd
 			if err != nil {
 				return err
 			}
 
-			// Check if we have enough oprs for this block. If we have less than 10, there is no point in
-			// trying to grade it.
-			if len(oprs) < 10 {
+			if oprblock == nil {
+				err := g.blockStore.WriteInvalidOPRBlock(block.EntryBlock.Header.DBHeight)
+				if err != nil {
+					return err
+				}
 				g.OPRChain.BlockParsed(*block) // This block is done being processed
-				continue                       // Not enough oprs for this block be a valid oprblock
-			}
-
-			// Sort the OPRs by self reported difficulty
-			// We will toss dishonest ones when we grade.
-			sort.SliceStable(oprs, func(i, j int) bool {
-				return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
-			})
-
-			// GradeMinimum will only grade the first 50 honest records
-			graded := GradeMinimum(oprs)
-			if len(graded) < 10 { // We might lose some when we reject dishonest records
-				g.OPRChain.BlockParsed(*block) // This block is done being processed
-				continue                       // Not enough to be complete
+				continue
 			}
 
 			g.oprBlkLock.Lock()
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
-			g.oprBlks = append(g.oprBlks, &OprBlock{
-				Dbht:       block.EntryBlock.Header.DBHeight,
-				OPRs:       oprs,
-				GradedOPRs: graded,
-			})
+			g.oprBlks = append(g.oprBlks, oprblock)
+			err = g.blockStore.WriteOPRBlock(oprblock)
+			if err != nil {
+				return err
+			}
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
-			for place, winner := range graded[:10] { // Only top 10 matter
+			for place, winner := range oprblock.GradedOPRs[:10] { // Only top 10 matter
 				reward := GetRewardFromPlace(place)
 				if reward > 0 {
 					err := AddToBalance(winner.CoinbasePNTAddress, reward)
@@ -260,15 +270,55 @@ func (g *QuickGrader) Sync() error {
 				}
 			}
 
-			// Debug log that the block was graded
-			log.WithFields(log.Fields{
-				"dbht":   block.EntryBlock.Header.DBHeight,
-				"graded": len(oprs),
-			}).Debugf("block graded")
+			g.OPRChain.BlockParsed(*block)
 		}
 	}
 
 	return nil
+}
+
+func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) {
+	// There is not enough entries in this block, so there is no point in looking at it.
+	if len(block.EntryBlock.EntryList) < 10 {
+		return nil, nil
+	}
+
+	var oprs []*OraclePriceRecord
+	var err error
+	if len(block.EntryBlock.EntryList) > 50 {
+		// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
+		oprs, err = g.ParallelFetchOPRsFromEBlock(block)
+	} else {
+		oprs, err = g.FetchOPRsFromEBlock(block)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if we have enough oprs for this block. If we have less than 10, there is no point in
+	// trying to grade it.
+	if len(oprs) < 10 {
+		return nil, nil // Not enough oprs for this block be a valid oprblock
+	}
+
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(oprs, func(i, j int) bool {
+		return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
+	})
+
+	// GradeMinimum will only grade the first 50 honest records
+	graded := GradeMinimum(oprs)
+	if len(graded) < 10 { // We might lose some when we reject dishonest records
+		return nil, nil // Not enough to be complete
+	}
+
+	oprblock := &OprBlock{
+		Dbht:       block.EntryBlock.Header.DBHeight,
+		OPRs:       oprs,
+		GradedOPRs: graded,
+	}
+	return oprblock, nil
 }
 
 type OPRWorkRequest struct {
@@ -299,6 +349,9 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*O
 	}
 	count := len(block.EntryBlock.EntryList)
 
+	var wg sync.WaitGroup
+	wg.Add(count)
+
 	var oprs []*OraclePriceRecord
 	var collectErr error
 	go func() {
@@ -310,6 +363,7 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*O
 			if resp.opr != nil {
 				oprs = append(oprs, resp.opr)
 			}
+			wg.Done()
 			count--
 			if count == 0 {
 				break
@@ -321,6 +375,8 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*O
 	for _, entryHash := range block.EntryBlock.EntryList {
 		work <- &OPRWorkRequest{entryhash: entryHash.EntryHash}
 	}
+
+	wg.Wait()
 
 	return oprs, collectErr
 }

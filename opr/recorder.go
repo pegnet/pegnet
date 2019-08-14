@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/pegnet/pegnet/database"
+
 	"github.com/pegnet/pegnet/common"
 
 	log "github.com/sirupsen/logrus"
@@ -39,7 +41,7 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	file := f
 	writer := csv.NewWriter(file)
 
-	g := NewQuickGrader(c.config)
+	g := NewQuickGrader(c.config, database.NewMapDb())
 	err = g.Sync()
 	if err != nil {
 		return err

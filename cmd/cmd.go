@@ -5,12 +5,15 @@ package cmd
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/pegnet/pegnet/database"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
@@ -301,10 +304,24 @@ var grader = &cobra.Command{
 		//}
 		//fmt.Println()
 
-		q := opr.NewQuickGrader(Config)
+		ldb := new(database.Ldb)
+		err = ldb.Open("tmp")
+		if err != nil {
+			panic(err)
+		}
+		q := opr.NewQuickGrader(Config, ldb)
 		err = q.Sync()
 		if err != nil {
 			panic(err)
+		}
+
+		for _, block := range q.GetBlocks() {
+			winners := block.GradedOPRs[:10]
+			str := ""
+			for _, win := range winners {
+				str += string(win.EntryHash)
+			}
+			fmt.Printf("%d %x\n", block.Dbht, sha256.Sum256([]byte(str)))
 		}
 
 		//news := q.GetBlocks()
