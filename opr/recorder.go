@@ -4,7 +4,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/pegnet/pegnet/common"
 
@@ -40,23 +39,13 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	file := f
 	writer := csv.NewWriter(file)
 
-	recLog.Infof("fetching entry blocks")
-	for tries := 0; tries < 3; tries++ {
-		err = GetEntryBlocks(c.config)
-		if err == nil {
-			break
-		} else {
-			// If this fails, we probably can't recover this block.
-			// Can't hurt to try though
-			time.Sleep(200 * time.Millisecond)
-		}
-	}
-
+	g := NewQuickGrader(c.config)
+	err = g.Sync()
 	if err != nil {
 		return err
 	}
 
-	recLog.WithField("blockcount", len(OPRBlocks)).Infof("writing to csv")
+	recLog.WithField("blockcount", len(g.GetBlocks())).Infof("writing to csv")
 	cutoff, _ := c.config.Int(common.ConfigSubmissionCutOff)
 	err = writer.Write([]string{
 		"blockheight", "records",
@@ -70,7 +59,7 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	}
 
 	// Build the csv
-	for i, block := range OPRBlocks {
+	for i, block := range g.GetBlocks() {
 		var _ = i
 		last := 50
 		if len(block.OPRs) < 50 {
