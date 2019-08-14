@@ -33,8 +33,8 @@ func init() {
 	rootCmd.AddCommand(completionCmd)
 
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
-	rootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
-	rootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
+	rootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
+	rootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
 	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Flags that affect the config file. Should not be loaded into globals
@@ -43,6 +43,8 @@ func init() {
 	rootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
 	rootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
 	rootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
+	rootCmd.PersistentFlags().String("mienrdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
+	rootCmd.PersistentFlags().String("mienrdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
 
 	// Persist flags that run in PreRun, and not in the config
 	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
@@ -144,7 +146,13 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
 
-	configFile := fmt.Sprintf("%s/.pegnet/defaultconfig.ini", u.HomeDir)
+	// Set the PegnetHome for pegnet files
+	pegnethome := os.Getenv("PEGNETHOME")
+	if pegnethome == "" {
+		var _ = os.Setenv("PEGNETHOME", filepath.Join(u.HomeDir, ".pegnet"))
+	}
+
+	configFile := os.ExpandEnv(filepath.Join("$PEGNETHOME", "defaultconfig.ini"))
 	customPath, _ := cmd.Flags().GetString("config")
 	if customPath != "" {
 		absPath, err := filepath.Abs(customPath)

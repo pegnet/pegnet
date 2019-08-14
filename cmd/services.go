@@ -2,15 +2,17 @@ package cmd
 
 import (
 	"context"
+	"os"
+	"strings"
 	"time"
-
-	"github.com/pegnet/pegnet/database"
 
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/controlPanel"
+	"github.com/pegnet/pegnet/database"
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
@@ -28,7 +30,34 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 }
 
 func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context) *opr.QuickGrader {
-	grader := opr.NewQuickGrader(config, database.NewMapDb())
+	dbtype, err := config.String(common.ConfigMinerDBType)
+	if err != nil {
+		log.WithError(err).Fatal("Database.MinerDatabaseType needs to be set in the config file or cmd line")
+		os.Exit(1)
+	}
+
+	var db database.IDatabase
+
+	switch strings.ToLower(dbtype) {
+	case "map":
+		db = database.NewMapDb()
+	case "ldb":
+		dbpath, err := config.String(common.ConfigMinerDBPath)
+		if err != nil {
+			log.WithError(err).Fatal("Database.MinerDatabase needs to be set in the config file or cmd line")
+			os.Exit(1)
+		}
+
+		ldb := new(database.Ldb)
+		err = ldb.Open(os.ExpandEnv(dbpath))
+		if err != nil {
+			log.WithError(err).Fatal("ldb failed to open")
+			os.Exit(1)
+		}
+		db = ldb
+	}
+
+	grader := opr.NewQuickGrader(config, db)
 	go grader.Run(monitor, ctx)
 	return grader
 }

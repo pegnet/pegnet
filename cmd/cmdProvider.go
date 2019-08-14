@@ -55,5 +55,15 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 		}
 	}
 
+	dbtype, _ := c.cmd.Flags().GetString("mienrdbtype")
+	if dbtype != "" {
+		settings[common.ConfigMinerDBType] = dbtype
+	}
+
+	dbpath, _ := c.cmd.Flags().GetString("mienrdb")
+	if dbtype != "" {
+		settings[common.ConfigMinerDBPath] = dbpath
+	}
+
 	return settings, nil
 }
