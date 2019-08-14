@@ -14,6 +14,13 @@ type MapDb struct {
 	lock sync.Mutex
 }
 
+func NewMapDb() *MapDb {
+	m := new(MapDb)
+	m.data = make(map[string][]byte)
+
+	return m
+}
+
 func (db *MapDb) Open(pathname string) (err error) {
 	db.data = make(map[string][]byte)
 	return

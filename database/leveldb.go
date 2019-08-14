@@ -27,7 +27,7 @@ type Ldb struct {
 // separated from the key by one zero. We set the high order bit
 func BuildKey(bucket Bucket, key []byte) (bkey []byte) {
 	for {
-		bkey = append(bkey, byte(bucket)|0x80)
+		bkey = append(key, byte(bucket)|0x80)
 		if bucket == 0 {
 			return bkey
 		}

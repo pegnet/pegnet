@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/pegnet/pegnet/database"
+
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/controlPanel"
@@ -26,7 +28,7 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 }
 
 func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context) *opr.QuickGrader {
-	grader := opr.NewQuickGrader(config)
+	grader := opr.NewQuickGrader(config, database.NewMapDb())
 	go grader.Run(monitor, ctx)
 	return grader
 }

@@ -138,9 +138,10 @@ func RemoveDuplicateSubmissions(list []*OraclePriceRecord) []*OraclePriceRecord 
 
 // block data at a specific height
 type OprBlock struct {
-	OPRs       []*OraclePriceRecord
-	GradedOPRs []*OraclePriceRecord
-	Dbht       int64
+	OPRs          []*OraclePriceRecord
+	GradedOPRs    []*OraclePriceRecord
+	Dbht          int64
+	EmptyOPRBlock bool // An empty opr block is an eblock that could not totally validate
 }
 
 // VerifyWinners takes an opr and compares its list of winners to the winners of previousHeight
