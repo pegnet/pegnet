@@ -13,8 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pegnet/pegnet/database"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
@@ -297,23 +295,11 @@ var grader = &cobra.Command{
 			err := <-errListener
 			panic("Monitor threw error: " + err.Error())
 		}()
-		var err error
 
-		//err = opr.GetEntryBlocks(Config)
-		//if err != nil {
-		//	panic(err)
-		//}
-		//fmt.Println()
+		q := LaunchGrader(Config, monitor, context.Background())
 
-		ldb := new(database.Ldb)
-		err = ldb.Open("tmp")
-		if err != nil {
-			panic(err)
-		}
-		q := opr.NewQuickGrader(Config, ldb)
-		err = q.Sync()
-		if err != nil {
-			panic(err)
+		for {
+			time.Sleep(3 * time.Second)
 		}
 
 		for _, block := range q.GetBlocks() {
