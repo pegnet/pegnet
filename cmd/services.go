@@ -55,6 +55,9 @@ func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Co
 			os.Exit(1)
 		}
 		db = ldb
+	default:
+		log.Fatalf("%s is not a valid db type", dbtype)
+		os.Exit(1)
 	}
 
 	grader := opr.NewQuickGrader(config, db)
