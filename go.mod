@@ -3,6 +3,7 @@ module github.com/pegnet/pegnet
 go 1.12
 
 require (
+	cloud.google.com/go v0.44.3 // indirect
 	github.com/FactomProject/FactomCode v0.3.5 // indirect
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/bolt v1.1.0 // indirect
@@ -32,12 +33,19 @@ require (
 	github.com/btcsuitereleases/btcutil v0.0.0-20150612230727-f2b1058a8255 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
+	github.com/denisenkom/go-mssqldb v0.0.0-20190806190131-db2462fef53b // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/go-ini/ini v1.44.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.3.1 // indirect
+	github.com/google/pprof v0.0.0-20190723021845-34ac40c74b70 // indirect
 	github.com/hashicorp/go-plugin v1.0.1 // indirect
+	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/howeyc/fsnotify v0.9.0 // indirect
-	github.com/kr/pretty v0.1.0 // indirect
+	github.com/jinzhu/gorm v1.9.10
+	github.com/kr/pty v1.1.8 // indirect
+	github.com/lib/pq v1.2.0 // indirect
+	github.com/mattn/go-sqlite3 v1.11.0 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
 	github.com/pegnet/LXRHash v0.0.0-20190804152355-33fa380b63d6
@@ -48,12 +56,14 @@ require (
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/zpatrick/go-config v0.0.0-20190509173111-460869022dbd
 	go.uber.org/ratelimit v0.1.0
-	golang.org/x/crypto v0.0.0-20190621222207-cc06ce4a13d4 // indirect
-	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
-	golang.org/x/sys v0.0.0-20190621203818-d432491b9138 // indirect
-	golang.org/x/text v0.3.2 // indirect
-	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect
+	golang.org/x/mobile v0.0.0-20190814143026-e8b3e6111d02 // indirect
+	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
+	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // indirect
+	golang.org/x/tools v0.0.0-20190815144358-9065c182e3b6 // indirect
+	google.golang.org/grpc v1.23.0 // indirect
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	honnef.co/go/tools v0.0.1-2019.2.2 // indirect
 )

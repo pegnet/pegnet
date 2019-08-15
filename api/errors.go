@@ -17,8 +17,9 @@ import (
 // 3: Error Decoding JSON
 // 4: Internal Error
 type Error struct {
-	Code   int    `json:"code"`
-	Reason string `json:"reason"`
+	Code   int         `json:"code"`
+	Reason string      `json:"reason"`
+	Data   interface{} `json:"data"`
 }
 
 // errorResponse is a wrapper around all errors to be served
