@@ -141,7 +141,9 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
 
-	// Set the PegnetHome for pegnet files
+	// Set the PegnetHome for pegnet files.
+	// This is so we know where to place all the pegnet files. We can then use
+	// the $PEGNETHOME in place of ~/.pegnet and be able to change it in only 1 spot.
 	pegnethome := os.Getenv("PEGNETHOME")
 	if pegnethome == "" {
 		var _ = os.Setenv("PEGNETHOME", filepath.Join(u.HomeDir, ".pegnet"))
