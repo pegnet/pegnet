@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -297,52 +296,14 @@ var grader = &cobra.Command{
 
 		q := LaunchGrader(Config, monitor, context.Background())
 
+		alert := q.GetAlert("cmd")
+
 		for {
-			time.Sleep(3 * time.Second)
-		}
-
-		for _, block := range q.GetBlocks() {
-			winners := block.GradedOPRs[:10]
-			str := ""
-			for _, win := range winners {
-				str += string(win.EntryHash)
+			select {
+			case a := <-alert:
+				fmt.Println(a)
 			}
-			fmt.Printf("%d %x\n", block.Dbht, sha256.Sum256([]byte(str)))
 		}
-
-		//news := q.GetBlocks()
-		//if len(news) != len(opr.OPRBlocks) {
-		//	panic("diff lengths")
-		//}
-		//for i, orig := range opr.OPRBlocks {
-		//	new := news[i]
-		//	oWinners := orig.GradedOPRs[:10]
-		//	nWinners := new.GradedOPRs[:10]
-		//
-		//	for i := range oWinners {
-		//		if bytes.Compare(oWinners[i].EntryHash, nWinners[i].EntryHash) != 0 {
-		//			panic("winners are different")
-		//		}
-		//
-		//		if oWinners[i].Grade != nWinners[i].Grade {
-		//			panic("grades are different")
-		//		}
-		//	}
-		//}
-
-		//fmt.Println(len(news), len(opr.OPRBlocks))
-
-		//grader := opr.NewGrader()
-		//go grader.Run(Config, monitor)
-		//
-		//alert := grader.GetAlert("cmd")
-		//
-		//for {
-		//	select {
-		//	case a := <-alert:
-		//		fmt.Println(a)
-		//	}
-		//}
 	},
 }
 
