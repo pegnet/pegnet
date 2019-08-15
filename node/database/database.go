@@ -33,8 +33,8 @@ func InsertTimeSeries(db *gorm.DB, r interface{}) error {
 	return err.Error
 }
 
+// FetchTimeSeries fetches the timeseries from the sqlite given the parameters
 func FetchTimeSeries(db *gorm.DB, target interface{}, opts *FetchTimeSeriesParams) error {
-	//var test []DifficultyTimeSeries
 	res := opts.Apply(db).Find(target)
 	return res.Error
 }
@@ -43,6 +43,8 @@ func (p *PegnetNodeDatabase) Migrate() {
 	AutoMigrateTimeSeries(p.DB)
 }
 
+// FetchTimeSeriesParams is the customizable params the user
+// can filter on.
 type FetchTimeSeriesParams struct {
 	Limit       int   `json:"limit"`
 	Offset      int   `json:"offset"`
