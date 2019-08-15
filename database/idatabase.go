@@ -44,6 +44,7 @@ type IDatabase interface {
 	Iterate(bucket Bucket) Iterator
 }
 
+// Decode is a gob decode into the target object
 func Decode(o interface{}, data []byte) error {
 	var buf bytes.Buffer
 	buf.Write(data)
@@ -55,6 +56,7 @@ func Decode(o interface{}, data []byte) error {
 	return nil
 }
 
+// Encode is a gob encode
 func Encode(o interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
