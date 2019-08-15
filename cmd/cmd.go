@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pegnet/pegnet/node"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
@@ -35,6 +37,7 @@ func init() {
 	rootCmd.AddCommand(networkCoordinator)
 	rootCmd.AddCommand(networkMinerCmd)
 	rootCmd.AddCommand(datasources)
+	rootCmd.AddCommand(pegnetNode)
 
 	dataWriter.AddCommand(minerStats)
 	rootCmd.AddCommand(dataWriter)
@@ -295,7 +298,7 @@ var grader = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		q := LaunchGrader(Config, monitor, context.Background())
+		q := LaunchGrader(Config, monitor, context.Background(), true)
 
 		alert := q.GetAlert("cmd")
 
@@ -385,9 +388,9 @@ var networkCoordinator = &cobra.Command{
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor, ctx)
+		grader := LaunchGrader(Config, monitor, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker, grader)
+		apiserver := LaunchAPI(Config, statTracker, grader, true)
 		LaunchControlPanel(Config, ctx, monitor, statTracker)
 		var _ = apiserver
 
@@ -442,6 +445,34 @@ var networkMinerCmd = &cobra.Command{
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
+	},
+}
+
+var pegnetNode = &cobra.Command{
+	Use:   "node",
+	Short: "Runs a pegnet node",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+		grader := LaunchGrader(Config, monitor, ctx, false)
+
+		pegnetnode, err := node.NewPegnetNode(Config, monitor, grader)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		go pegnetnode.Run(ctx)
+
+		var _ = cancel
+		apiserver := LaunchAPI(Config, nil, grader, false)
+		apiserver.Mux.Handle("/node/v1", pegnetnode.APIMux())
+		// Let's add the pegnet node timeseries to the handle
+		apiserver.Listen(8099)
+		var _ = apiserver
+
 	},
 }
 

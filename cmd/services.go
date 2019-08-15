@@ -29,7 +29,7 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 	return monitor
 }
 
-func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context) *opr.QuickGrader {
+func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context, run bool) *opr.QuickGrader {
 	dbtype, err := config.String(common.ConfigMinerDBType)
 	if err != nil {
 		log.WithError(err).Fatal("Database.MinerDatabaseType needs to be set in the config file or cmd line")
@@ -61,7 +61,9 @@ func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Co
 	}
 
 	grader := opr.NewQuickGrader(config, db)
-	go grader.Run(monitor, ctx)
+	if run {
+		go grader.Run(monitor, ctx)
+	}
 	return grader
 }
 
@@ -72,10 +74,12 @@ func LaunchStatistics(config *config.Config, ctx context.Context) *mining.Global
 	return statTracker
 }
 
-func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader) *api.APIServer {
+func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader, run bool) *api.APIServer {
 	s := api.NewApiServer(grader)
 
-	go s.Listen(8099) // TODO: Do not hardcode this
+	if run {
+		go s.Listen(8099) // TODO: Do not hardcode this
+	}
 	return s
 }
 

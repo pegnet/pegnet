@@ -18,15 +18,27 @@ type APIServer struct {
 	Statistics *mining.GlobalStatTracker
 	Server     *http.Server
 	Grader     *opr.QuickGrader
+	Mux        *http.ServeMux
 }
 
 func NewApiServer(grader *opr.QuickGrader) *APIServer {
 	s := new(APIServer)
 	s.Server = &http.Server{}
-	s.Server.Handler = s
+	mux := http.NewServeMux()
+	mux.Handle("/v1", s)
+	s.Server.Handler = corsHeader(mux)
+	s.Mux = mux
 	s.Grader = grader
 
 	return s
+}
+
+func corsHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Our middleware logic goes here...
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *APIServer) Listen(port int) {

@@ -7,6 +7,12 @@ import (
 	"github.com/pegnet/pegnet/database"
 )
 
+type IOPRBlockStore interface {
+	WriteInvalidOPRBlock(dbht int64) error
+	WriteOPRBlock(opr *OprBlock) error
+	FetchOPRBlock(height int64) (*OprBlock, error)
+}
+
 // OPRBlockStore is where we store the oprblock list
 type OPRBlockStore struct {
 	DB database.IDatabase
@@ -37,9 +43,10 @@ func (d *OPRBlockStore) WriteOPRBlock(opr *OprBlock) error {
 	// To save space, we can just keep the graded component, and resort the oprs when we pull them.
 
 	obj := OPRBlockDatabaseObject{
-		GradedOprs:    opr.GradedOPRs,
-		DblockHeight:  opr.Dbht,
-		EmptyOPRBlock: opr.EmptyOPRBlock,
+		GradedOprs:         opr.GradedOPRs,
+		DblockHeight:       opr.Dbht,
+		EmptyOPRBlock:      opr.EmptyOPRBlock,
+		TotalNumberRecords: opr.TotalNumberRecords,
 	}
 
 	data, err := database.Encode(obj)
@@ -76,9 +83,10 @@ func (d *OPRBlockStore) FetchOPRBlock(height int64) (*OprBlock, error) {
 }
 
 type OPRBlockDatabaseObject struct {
-	GradedOprs    []*OraclePriceRecord
-	DblockHeight  int64
-	EmptyOPRBlock bool
+	GradedOprs         []*OraclePriceRecord
+	DblockHeight       int64
+	EmptyOPRBlock      bool
+	TotalNumberRecords int
 }
 
 func (o *OPRBlockDatabaseObject) ToOPRBlock() *OprBlock {

@@ -50,7 +50,7 @@ type QuickGrader struct {
 	oprBlks    []*OprBlock
 	oprBlkLock sync.Mutex
 
-	blockStore *OPRBlockStore
+	BlockStore IOPRBlockStore
 
 	// lastGraded is the last graded oprblk, so we know
 	// where to start grading
@@ -82,7 +82,7 @@ func NewQuickGrader(config *config.Config, db database.IDatabase) *QuickGrader {
 	g.OPRChain = NewEntryBlockSync(g.OPRChainIDString)
 	g.oprBlks = make([]*OprBlock, 0)
 
-	g.blockStore = NewOPRBlockStore(db)
+	g.BlockStore = NewOPRBlockStore(db)
 
 	return g
 }
@@ -205,6 +205,7 @@ func (g *QuickGrader) Sync() error {
 		return err
 	}
 
+	dbheight := int64(0)
 	fLog.Debugf("syncing entries")
 	startAmt := len(g.OPRChain.BlocksToBeParsed)
 	// If we have eblocks to sync, this is where we go through them one by one.
@@ -214,6 +215,7 @@ func (g *QuickGrader) Sync() error {
 		// NextEBlock() will return the next eblock in the chain that we still need to sync
 		// it's entries. So we can walk, NextEblock -> NextEblock -> ... to sync the whole chain.
 		for block := g.OPRChain.NextEBlock(); block != nil; block = g.OPRChain.NextEBlock() {
+			dbheight = block.EntryBlock.Header.DBHeight
 			c++
 			done := startAmt - len(g.OPRChain.BlocksToBeParsed)
 			if c%30 == 0 || done == startAmt {
@@ -224,7 +226,7 @@ func (g *QuickGrader) Sync() error {
 
 			var err error
 			// Before we try to fetch from the net, we try and fetch from disk
-			oprblock, _ := g.blockStore.FetchOPRBlock(block.EntryBlock.Header.DBHeight)
+			oprblock, _ := g.BlockStore.FetchOPRBlock(block.EntryBlock.Header.DBHeight)
 			if oprblock == nil {
 				// Fetch from factomd
 				oprblock, err = g.FetchOPRBlock(block)
@@ -241,7 +243,7 @@ func (g *QuickGrader) Sync() error {
 			}
 
 			if oprblock == nil {
-				err := g.blockStore.WriteInvalidOPRBlock(block.EntryBlock.Header.DBHeight)
+				err := g.BlockStore.WriteInvalidOPRBlock(block.EntryBlock.Header.DBHeight)
 				if err != nil {
 					return err
 				}
@@ -251,11 +253,12 @@ func (g *QuickGrader) Sync() error {
 
 			g.oprBlkLock.Lock()
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
-			g.oprBlks = append(g.oprBlks, oprblock)
-			err = g.blockStore.WriteOPRBlock(oprblock)
+			err = g.BlockStore.WriteOPRBlock(oprblock)
 			if err != nil {
+				g.oprBlkLock.Unlock()
 				return err
 			}
+			g.oprBlks = append(g.oprBlks, oprblock)
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
@@ -273,6 +276,7 @@ func (g *QuickGrader) Sync() error {
 			g.OPRChain.BlockParsed(*block)
 		}
 	}
+	fLog.WithField("height", dbheight).Debugf("synced!")
 
 	return nil
 }
@@ -313,10 +317,13 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 		return nil, nil // Not enough to be complete
 	}
 
+	// We are saving all of the oprs here, even the ones that were not graded.
+	// TODO: Should we save them all? Or truncate here
 	oprblock := &OprBlock{
-		Dbht:       block.EntryBlock.Header.DBHeight,
-		OPRs:       oprs,
-		GradedOPRs: graded,
+		Dbht:               block.EntryBlock.Header.DBHeight,
+		OPRs:               oprs,
+		GradedOPRs:         graded,
+		TotalNumberRecords: len(oprs),
 	}
 	return oprblock, nil
 }
