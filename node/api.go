@@ -28,9 +28,11 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 	var apiError *api.Error
 	switch request.Method {
 	case "network-difficulty":
-		result, apiError = n.HandleDifficultyTimeSeries(request.Params)
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NetworkHashrateTimeSeries{})
 	case "hash-rate":
-		result, apiError = n.HandleNetworkHashRateTimeSeries(request.Params)
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NetworkHashrateTimeSeries{})
+	case "num-records":
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NumberOPRRecords{})
 	default:
 		apiError = api.NewMethodNotFoundError()
 	}
@@ -44,14 +46,6 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 	api.Respond(w, response)
 }
 
-//
-//func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Error) {
-//	performanceParams := new(PerformanceParameters)
-//	err := MapToObject(params, performanceParams)
-//	if err != nil {
-//		return nil, NewJSONDecodingError()
-//	}
-
 type TimeSeriesParam struct {
 	// These params change the response
 	AsArray string   `json:"asarray"` // Must choose "time" or "height"
@@ -61,55 +55,35 @@ type TimeSeriesParam struct {
 	DBParams database.FetchTimeSeriesParams `json:"dbparams"`
 }
 
-func (n *PegnetNode) HandleDifficultyTimeSeries(gparams interface{}) (interface{}, *api.Error) {
+// HandleGenericTimeSeries will handle the time series api call for a given type. It will handle filtering by time
+// or block height, converting to a 2d array or array of json objects. It will even handle letting users specify
+// the fields in the 2d array format.
+//		target		 A type like this &[]database.NetworkHashrateTimeSeries{}
+func (n *PegnetNode) HandleGenericTimeSeries(gparams interface{}, target interface{}) (interface{}, *api.Error) {
 	params := new(TimeSeriesParam)
 	err := api.MapToObject(gparams, params)
 	if err != nil {
 		return nil, api.NewJSONDecodingError()
 	}
 
-	var diffs interface{} = &[]database.DifficultyTimeSeries{}
-	err = database.FetchTimeSeries(n.NodeDatabase.DB, diffs, &params.DBParams)
+	err = database.FetchTimeSeries(n.NodeDatabase.DB, target, &params.DBParams)
 	if err != nil {
 		e := api.NewInternalError()
 		e.Data = err
 		return nil, e
 	}
 
-	data := diffs.(*[]database.DifficultyTimeSeries)
-
 	if params.AsArray != "" {
-		return AsArray(*data, params)
+		arr := reflect.Indirect(reflect.ValueOf(target)).Interface()
+		return As2DArray(arr, params)
 	}
 
-	return *data, nil
+	return target, nil
 }
 
-func (n *PegnetNode) HandleNetworkHashRateTimeSeries(gparams interface{}) (interface{}, *api.Error) {
-	params := new(TimeSeriesParam)
-	err := api.MapToObject(gparams, params)
-	if err != nil {
-		return nil, api.NewJSONDecodingError()
-	}
-
-	var diffs interface{} = &[]database.NetworkHashrateTimeSeries{}
-	err = database.FetchTimeSeries(n.NodeDatabase.DB, diffs, &params.DBParams)
-	if err != nil {
-		e := api.NewInternalError()
-		e.Data = err
-		return nil, e
-	}
-
-	data := diffs.(*[]database.NetworkHashrateTimeSeries)
-
-	if params.AsArray != "" {
-		return AsArray(*data, params)
-	}
-
-	return *data, nil
-}
-
-func AsArray(rawdata interface{}, params *TimeSeriesParam) ([][]interface{}, *api.Error) {
+// As2DArray changes the response format from an array of objects to a 2d array for easier
+// graph integration.
+func As2DArray(rawdata interface{}, params *TimeSeriesParam) ([][]interface{}, *api.Error) {
 	rawArray := reflect.ValueOf(rawdata)
 	rawArray.Len()
 

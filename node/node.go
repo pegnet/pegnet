@@ -39,18 +39,8 @@ func NewPegnetNode(config *config.Config, monitor common.IMonitor, grader *opr.Q
 		return nil, err
 	}
 
+	// Migrating updates the tables with anything new
 	n.NodeDatabase.Migrate()
-
-	//x := database.DifficultyTimeSeries{
-	//	TimeSeries: database.TimeSeries{
-	//		BlockHeight: 1,
-	//	},
-	//	HighestDifficulty: math.MaxUint64,
-	//}
-	//err = database.InsertTimeSeries(n.NodeDatabase.DB, &x)
-	//if err != nil {
-	//	panic(err)
-	//}
 
 	// Overwrite the blockstore with our node, so we capture every new opr synced.
 	n.IOPRBlockStore = grader.BlockStore
@@ -117,6 +107,7 @@ func (n *PegnetNode) Run(ctx context.Context) {
 
 // WriteOPRBlock will hijack the opr write to also write to our sqldb
 func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
+	// This will write 1 entry for each time series if the block is valid (meaning has > 10 oprs)
 	if !block.EmptyOPRBlock {
 		// Only keep the graded ones
 		sorted := make([]*opr.OraclePriceRecord, len(block.GradedOPRs))
@@ -142,6 +133,18 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 			tx.Rollback()
 			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 		}
+
+		recs := database.NumberOPRRecords{
+			TimeSeries:       t,
+			NumberOfOPRs:     len(block.OPRs),
+			NumberGradedOPRs: len(block.GradedOPRs)}
+		err = database.InsertTimeSeries(tx, &recs)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
+		}
+
+		// TODO: Write all asset prices
 
 		dberr := tx.Commit()
 		if dberr.Error != nil {

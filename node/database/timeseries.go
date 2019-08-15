@@ -42,11 +42,11 @@ func (t TimeSeries) Height() int64 {
 type DifficultyTimeSeries struct {
 	TimeSeries
 	// The most difficulty opr submitted in this block
-	HighestDifficulty uint64 `json:"highestdifficulty",sql:"type:int unsigned"`
+	HighestDifficulty uint64 `sql:"type:int unsigned"`
 	// LastGradedDifficulty is the last graded opr's difficulty (usually the 50th)
 	// 	If we have less than 50, the index will be detailed here.
-	LastGradedIndex      int    `json:"lastgradedindex"`
-	LastGradedDifficulty uint64 `json:"lastgradeddifficulty",sql:"type:int unsigned"`
+	LastGradedIndex      int
+	LastGradedDifficulty uint64 `sql:"type:int unsigned"`
 }
 
 func HasHighBit(v uint64) bool {
@@ -81,15 +81,23 @@ func (d *DifficultyTimeSeries) AfterFind() (err error) {
 type NetworkHashrateTimeSeries struct {
 	TimeSeries
 	// BasedOnBest is a network hashrate estimate based on the most difficult opr
-	BasedOnBest float64 `json:"basedonbest"`
+	BasedOnBest float64
 
 	// BasedOnLast is a network hashrate estimate based on the last graded opr
-	BasedOnLast float64 `json:"basedonlast"`
+	BasedOnLast float64
+}
+
+// NumberOPRRecords is the number of oprs submitted in a given block
+type NumberOPRRecords struct {
+	TimeSeries
+	NumberOfOPRs     int
+	NumberGradedOPRs int
 }
 
 func AutoMigrateTimeSeries(db *gorm.DB) {
 	db.AutoMigrate(&DifficultyTimeSeries{})
 	db.AutoMigrate(&NetworkHashrateTimeSeries{})
+	db.AutoMigrate(&NumberOPRRecords{})
 }
 
 func TimeSeriesFromOPRBlock(block *opr.OprBlock) (t TimeSeries, err error) {
