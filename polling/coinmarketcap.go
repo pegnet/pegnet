@@ -7,10 +7,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strings"
 	"time"
 
@@ -155,8 +153,7 @@ func (d *CoinMarketCapDataSource) FetchPeggedPrices() ([]byte, error) {
 	client := NewHTTPClient()
 	req, err := http.NewRequest("GET", d.ApiUrl()+"cryptocurrency/quotes/latest", nil)
 	if err != nil {
-		log.Print(err)
-		os.Exit(1)
+		return nil, err
 	}
 
 	mapping := d.CurrencyIDMapping()

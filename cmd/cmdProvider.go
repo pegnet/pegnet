@@ -40,6 +40,15 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 		settings["Miner.IdentityChain"] = id
 	}
 
+	factomd, _ := c.cmd.Flags().GetString("factomdlocation")
+	if factomd != "localhost:8088" {
+		settings["Miner.FactomdLocation"] = factomd
+	}
+	walletd, _ := c.cmd.Flags().GetString("walletdlocation")
+	if walletd != "localhost:8089" {
+		settings["Miner.WalletdLocation"] = walletd
+	}
+
 	// Use the same flag for the client and server.
 	addr, _ := c.cmd.Flags().GetString("caddr")
 	if addr != "" {
