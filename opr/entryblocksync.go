@@ -8,10 +8,10 @@ import (
 // EntryBlockSync has the current eblock synced to, and the target Eblock
 //	It also has the blocks in between in order. This makes it so traversing only needs to happen once
 type EntryBlockSync struct {
-	ChainID          string
-	Current          EntryBlockMarker
-	Target           EntryBlockMarker
-	BlocksToBeParsed []EntryBlockMarker
+	ChainID          string             // Chainid of the eblock chain
+	Current          EntryBlockMarker   // The current eblock we have synced
+	Target           EntryBlockMarker   // The target is the chainhead
+	BlocksToBeParsed []EntryBlockMarker // The eblocks between the current and target (including target)
 }
 
 func NewEntryBlockSync(chainid string) *EntryBlockSync {
@@ -21,6 +21,8 @@ func NewEntryBlockSync(chainid string) *EntryBlockSync {
 	return e
 }
 
+// SyncBlocks will query factomd and check if the chainhead has been updated,
+// and fill in the non synced eblocks
 func (a *EntryBlockSync) SyncBlocks() error {
 	// First check to see if the chainhead has been updated
 	expChainHead := a.Head()
