@@ -186,6 +186,9 @@ func GetEntryBlocks(config *config.Config) error {
 				// Keep this entry
 				opr.EntryHash = entry.Hash()
 				opr.Nonce = entry.ExtIDs[0]
+				if len(entry.ExtIDs[1]) != 8 { // self reported difficulty must be a uint64
+					continue
+				}
 				opr.SelfReportedDifficulty = entry.ExtIDs[1]
 				if len(entry.ExtIDs[2]) != 1 {
 					continue // Version is 1 byte
