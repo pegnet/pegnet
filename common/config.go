@@ -21,6 +21,8 @@ const (
 	ConfigMinerDBType      = "Database.MinerDatabaseType"
 	ConfigPegnetNodeDBPath = "Database.NodeDatabase"
 
+	ConfigAPIPort = "API.APIPort"
+
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
 
@@ -45,6 +47,7 @@ func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
 	// Include default settings here
 	settings[ConfigSubmissionCutOff] = "200"
+	settings[ConfigAPIPort] = "8099"
 
 	return settings, nil
 }

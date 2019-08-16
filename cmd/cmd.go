@@ -470,7 +470,11 @@ var pegnetNode = &cobra.Command{
 		apiserver := LaunchAPI(Config, nil, grader, false)
 		apiserver.Mux.Handle("/node/v1", pegnetnode.APIMux())
 		// Let's add the pegnet node timeseries to the handle
-		apiserver.Listen(8099)
+		apiport, err := Config.Int(common.ConfigAPIPort)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		apiserver.Listen(apiport)
 		var _ = apiserver
 
 	},
