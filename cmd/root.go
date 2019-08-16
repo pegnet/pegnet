@@ -163,6 +163,15 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	flags := NewCmdFlagProvider(cmd)
 	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
 
+	pegnetnetwork := os.Getenv("PEGNETNETWORK")
+	if pegnetnetwork == "" {
+		net, err := common.LoadConfigNetwork(Config)
+		if err != nil {
+			return err
+		}
+		var _ = os.Setenv("PEGNETNETWORK", net)
+	}
+
 	factomd, _ := Config.String("Miner.FactomdLocation")
 	walletd, _ := Config.String("Miner.WalletdLocation")
 	factom.SetFactomdServer(factomd)
