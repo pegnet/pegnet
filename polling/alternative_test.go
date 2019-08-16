@@ -4,9 +4,9 @@ import (
 	"testing"
 )
 
-func TestActualAlternativePeggedAssets(t *testing.T) {
-	ActualDataSourceTest(t, "AlternativeMe")
-}
+//func TestActualAlternativePeggedAssets(t *testing.T) {
+//	ActualDataSourceTest(t, "AlternativeMe")
+//}
 
 func TestFixedAlternativePeggedAssets(t *testing.T) {
 	FixedDataSourceTest(t, "AlternativeMe", []byte(alternativeResp))
