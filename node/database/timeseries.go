@@ -87,17 +87,25 @@ type NetworkHashrateTimeSeries struct {
 	BasedOnLast float64
 }
 
-// NumberOPRRecords is the number of oprs submitted in a given block
-type NumberOPRRecords struct {
+// NumberOPRRecordsTimeSeries is the number of oprs submitted in a given block
+type NumberOPRRecordsTimeSeries struct {
 	TimeSeries
 	NumberOfOPRs     int
 	NumberGradedOPRs int
 }
 
+// AssetPricing
+type AssetPricingTimeSeries struct {
+	TimeSeries
+	Asset string
+	Price float64
+}
+
 func AutoMigrateTimeSeries(db *gorm.DB) {
 	db.AutoMigrate(&DifficultyTimeSeries{})
 	db.AutoMigrate(&NetworkHashrateTimeSeries{})
-	db.AutoMigrate(&NumberOPRRecords{})
+	db.AutoMigrate(&NumberOPRRecordsTimeSeries{})
+	db.AutoMigrate(&AssetPricingTimeSeries{})
 }
 
 func TimeSeriesFromOPRBlock(block *opr.OprBlock) (t TimeSeries, err error) {
