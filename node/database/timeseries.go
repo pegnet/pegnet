@@ -101,11 +101,18 @@ type AssetPricingTimeSeries struct {
 	Price float64
 }
 
+type UniqueGradedCoinbasesTimeSeries struct {
+	TimeSeries
+	UniqueGradedCoinbases  int
+	UniqueWinningCoinbases int
+}
+
 func AutoMigrateTimeSeries(db *gorm.DB) {
 	db.AutoMigrate(&DifficultyTimeSeries{})
 	db.AutoMigrate(&NetworkHashrateTimeSeries{})
 	db.AutoMigrate(&NumberOPRRecordsTimeSeries{})
 	db.AutoMigrate(&AssetPricingTimeSeries{})
+	db.AutoMigrate(&UniqueGradedCoinbasesTimeSeries{})
 }
 
 func TimeSeriesFromOPRBlock(block *opr.OprBlock) (t TimeSeries, err error) {

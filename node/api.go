@@ -37,6 +37,8 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NumberOPRRecordsTimeSeries{})
 	case "asset-price":
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.AssetPricingTimeSeries{})
+	case "unique-coinbase":
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.UniqueGradedCoinbasesTimeSeries{})
 	case "asset-list":
 		result = common.AllAssets
 	default:
