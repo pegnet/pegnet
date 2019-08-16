@@ -144,6 +144,7 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 		}
 
+		// Asset pricing
 		winner := block.GradedOPRs[0]
 		for asset, price := range winner.Assets {
 			at := database.AssetPricingTimeSeries{
@@ -156,6 +157,27 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 				tx.Rollback()
 				return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 			}
+		}
+
+		// Unique coinbases
+		uniqueGraded := make(map[string]int)
+		uniqueWining := make(map[string]int)
+		for i, r := range block.GradedOPRs {
+			if opr.GetRewardFromPlace(i) > 0 {
+				uniqueWining[r.CoinbaseAddress] += 1
+			}
+			uniqueGraded[r.CoinbaseAddress] += 1
+		}
+		uc := database.UniqueGradedCoinbasesTimeSeries{
+			TimeSeries:             t,
+			UniqueGradedCoinbases:  len(uniqueGraded),
+			UniqueWinningCoinbases: len(uniqueWining),
+		}
+
+		err = database.InsertTimeSeries(tx, &uc)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 		}
 
 		dberr := tx.Commit()
