@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/pegnet/pegnet/node/database"
 
 	"github.com/pegnet/pegnet/api"
@@ -32,7 +34,11 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 	case "hash-rate":
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NetworkHashrateTimeSeries{})
 	case "num-records":
-		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NumberOPRRecords{})
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NumberOPRRecordsTimeSeries{})
+	case "asset-price":
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.AssetPricingTimeSeries{})
+	case "asset-list":
+		result = common.AllAssets
 	default:
 		apiError = api.NewMethodNotFoundError()
 	}

@@ -134,7 +134,7 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 		}
 
-		recs := database.NumberOPRRecords{
+		recs := database.NumberOPRRecordsTimeSeries{
 			TimeSeries:       t,
 			NumberOfOPRs:     len(block.OPRs),
 			NumberGradedOPRs: len(block.GradedOPRs)}
@@ -144,7 +144,19 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 			return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
 		}
 
-		// TODO: Write all asset prices
+		winner := block.GradedOPRs[0]
+		for asset, price := range winner.Assets {
+			at := database.AssetPricingTimeSeries{
+				TimeSeries: t,
+				Asset:      asset,
+				Price:      price,
+			}
+			err = database.InsertTimeSeries(tx, &at)
+			if err != nil {
+				tx.Rollback()
+				return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
+			}
+		}
 
 		dberr := tx.Commit()
 		if dberr.Error != nil {
