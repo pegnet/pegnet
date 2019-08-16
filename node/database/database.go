@@ -53,13 +53,14 @@ func (p *PegnetNodeDatabase) Migrate() {
 // FetchTimeSeriesParams is the customizable params the user
 // can filter on.
 type FetchTimeSeriesParams struct {
-	Limit       int   `json:"limit"`
-	Offset      int   `json:"offset"`
-	StartHeight int   `json:"startheight"`
-	StopHeight  int   `json:"stopheight"`
-	UnixStart   int64 `json:"unixstart"`
-	UnixStop    int64 `json:"unixstop"`
-	Descend     bool  `json:"descend"`
+	Limit       int    `json:"limit"`
+	Offset      int    `json:"offset"`
+	StartHeight int    `json:"startheight"`
+	StopHeight  int    `json:"stopheight"`
+	UnixStart   int64  `json:"unixstart"`
+	UnixStop    int64  `json:"unixstop"`
+	Descend     bool   `json:"descend"`
+	Asset       string `json:"asset"`
 }
 
 func (p *FetchTimeSeriesParams) Apply(db *gorm.DB) *gorm.DB {
@@ -92,6 +93,10 @@ func (p *FetchTimeSeriesParams) Apply(db *gorm.DB) *gorm.DB {
 		r = r.Order("block_height DESC")
 	} else {
 		r = r.Order("block_height ASC")
+	}
+
+	if p.Asset != "" {
+		r = r.Where("asset = ?", p.Asset)
 	}
 
 	return r
