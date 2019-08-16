@@ -35,7 +35,7 @@ func (d *FixedUSDDataSource) SupportedPegs() []string {
 func (d *FixedUSDDataSource) FetchPegPrices() (peg PegAssets, err error) {
 	peg = make(map[string]PegItem)
 	timestamp := time.Now()
-	// The USD price is 1/rate
+	// The USD price is always 1
 	peg["USD"] = PegItem{Value: 1, WhenUnix: timestamp.Unix(), When: timestamp}
 	return
 }
