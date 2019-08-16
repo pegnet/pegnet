@@ -179,6 +179,7 @@ func GetEntryBlocks(config *config.Config) error {
 				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress); err != nil {
 					continue
 				}
+
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry
 				if !opr.Validate(config, oprblk.Dbht) {
 					continue
