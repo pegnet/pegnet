@@ -127,6 +127,10 @@ type Token struct {
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
 func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
+	net, _ := common.LoadConfigNetwork(c)
+	if !common.NetworkActive(net, dbht) {
+		return false
+	}
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
@@ -343,6 +347,15 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	err = opr.GetOPRecord(c)
 	if err != nil {
 		return nil, err
+	}
+
+	if !opr.Validate(c, int64(dbht)) {
+		// TODO: Remove this custom error handle once the network is live.
+		//		This is just to give a better error when are waiting for activation.
+		if !common.NetworkActive(opr.Network, int64(dbht)) {
+			return nil, fmt.Errorf("Waiting for activation height")
+		}
+		return nil, fmt.Errorf("opr invalid")
 	}
 
 	return opr, nil
