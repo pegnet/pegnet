@@ -18,8 +18,7 @@ import (
 
 // ExchangeRatesDataSource is the datasource at "https://exchangeratesapi.io"
 type ExchangeRatesDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewExchangeRatesDataSource(config *config.Config) (*ExchangeRatesDataSource, error) {

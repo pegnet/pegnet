@@ -18,8 +18,7 @@ import (
 
 // OpenExchangeRatesDataSource is the datasource at "https://openexchangerates.org/"
 type OpenExchangeRatesDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewOpenExchangeRatesDataSource(config *config.Config) (*OpenExchangeRatesDataSource, error) {

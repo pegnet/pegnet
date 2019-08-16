@@ -17,8 +17,7 @@ import (
 
 // APILayerDataSource is the datasource at http://www.apilayer.net
 type APILayerDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewAPILayerDataSource(config *config.Config) (*APILayerDataSource, error) {

@@ -19,8 +19,7 @@ import (
 
 // KitcoDataSource is the datasource at "https://www.kitco.com/"
 type KitcoDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewKitcoDataSource(config *config.Config) (*KitcoDataSource, error) {
