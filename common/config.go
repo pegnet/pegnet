@@ -16,8 +16,10 @@ const (
 	ConfigCoordinatorSecret            = "Miner.CoordinatorSecret"
 	ConfigCoordinatorUseAuthentication = "Miner.UseCoordinatorAuthentication"
 	ConfigSubmissionCutOff             = "Miner.SubmissionCutOff"
-	ConfigMinerDBPath                  = "Database.MinerDatabase"
-	ConfigMinerDBType                  = "Database.MinerDatabaseType"
+
+	ConfigMinerDBPath      = "Database.MinerDatabase"
+	ConfigMinerDBType      = "Database.MinerDatabaseType"
+	ConfigPegnetNodeDBPath = "Database.NodeDatabase"
 
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"

@@ -1,7 +1,10 @@
 package database
 
 import (
+	"os"
 	"time"
+
+	"github.com/pegnet/pegnet/common"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -17,8 +20,12 @@ type PegnetNodeDatabase struct {
 
 func NewPegnetNodeDatabase(config *config.Config) (*PegnetNodeDatabase, error) {
 	n := new(PegnetNodeDatabase)
-	var err error
-	n.DB, err = gorm.Open("sqlite3", "test.db")
+	path, err := config.String(common.ConfigPegnetNodeDBPath)
+	if err != nil {
+		return nil, err
+	}
+
+	n.DB, err = gorm.Open("sqlite3", os.ExpandEnv(path))
 	if err != nil {
 		return nil, err
 	}
