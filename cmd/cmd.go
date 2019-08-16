@@ -50,6 +50,7 @@ func init() {
 	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
 		"(negative numbers are ignored)")
 	rootCmd.AddCommand(getPerformance)
+	rootCmd.AddCommand(getBalance)
 }
 
 var getEncoding = &cobra.Command{
@@ -340,6 +341,32 @@ var getPerformance = &cobra.Command{
 			Params: api.PerformanceParameters{
 				BlockRange: blockRange,
 				DigitalID:  id,
+			},
+		}
+		sendRequestAndPrintResults(&req)
+	},
+}
+
+var getBalance = &cobra.Command{
+	Use:     "balance <factoid address>",
+	Short:   "Returns the PNT balance for the given Factoid address",
+	Example: "pegnet balance FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
+	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress)),
+	Run: func(cmd *cobra.Command, args []string) {
+		address := args[0]
+
+		networkString, err := common.LoadConfigNetwork(Config)
+		if err != nil {
+			fmt.Println("Error: invalid network string")
+		}
+		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, common.PNTAsset[0], address)
+		if err != nil {
+			fmt.Println("Error: invalid Factoid address")
+		}
+		req := api.PostRequest{
+			Method: "balance",
+			Params: api.GenericParameters{
+				Address: &pntAddress,
 			},
 		}
 		sendRequestAndPrintResults(&req)
