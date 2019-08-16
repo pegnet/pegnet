@@ -348,18 +348,19 @@ var getPerformance = &cobra.Command{
 }
 
 var getBalance = &cobra.Command{
-	Use:     "balance <factoid address>",
-	Short:   "Returns the PNT balance for the given Factoid address",
-	Example: "pegnet balance FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
-	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorFCTAddress)),
+	Use:     "balance <type> <factoid address>",
+	Short:   "Returns the balance for the given asset type and Factoid address",
+	Example: "pegnet balance PNT FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
+	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorAsset, ArgValidatorFCTAddress)),
 	Run: func(cmd *cobra.Command, args []string) {
-		address := args[0]
+		ticker := args[0]
+		address := args[1]
 
 		networkString, err := common.LoadConfigNetwork(Config)
 		if err != nil {
 			fmt.Println("Error: invalid network string")
 		}
-		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, common.PNTAsset[0], address)
+		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
 		if err != nil {
 			fmt.Println("Error: invalid Factoid address")
 		}
