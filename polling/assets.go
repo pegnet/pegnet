@@ -25,11 +25,12 @@ var AllDataSources = map[string]IDataSource{
 	// ExchangeRates is daily,  don't show people this
 	//"ExchangeRates":     new(ExchangeRatesDataSource),
 	"Kitco": new(KitcoDataSource),
-	// OpenExchangeRates is hourly,  don't show people this
-	//"OpenExchangeRates": new(OpenExchangeRatesDataSource),
-	"CoinMarketCap": new(CoinMarketCapDataSource),
-	"FreeForexAPI":  new(FreeForexAPIDataSource),
-	"1Forge":        new(OneForgeDataSource),
+	// OpenExchangeRates is hourly, but has commodities
+	"OpenExchangeRates": new(OpenExchangeRatesDataSource),
+	"CoinMarketCap":     new(CoinMarketCapDataSource),
+	"FreeForexAPI":      new(FreeForexAPIDataSource),
+	"1Forge":            new(OneForgeDataSource),
+	"AlternativeMe":     new(AlternativeMeDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -89,6 +90,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOneForgeDataSourceDataSource(config)
 	case "FixedUSD":
 		ds, err = NewFixedUSDDataSource(config)
+	case "AlternativeMe":
+		ds, err = NewAlternativeMeDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
