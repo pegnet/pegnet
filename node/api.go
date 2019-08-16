@@ -89,7 +89,7 @@ func As2DArray(rawdata interface{}, params *TimeSeriesParam) ([][]interface{}, *
 
 	key := params.AsArray
 	switch key {
-	case "time", "height": // Valid
+	case "time", "height", "timems": // Valid
 	default: // Invalid
 		e := api.NewInvalidParametersError()
 		e.Data = fmt.Errorf("'asarray' must be 'time' or 'height'")
@@ -111,6 +111,8 @@ func As2DArray(rawdata interface{}, params *TimeSeriesParam) ([][]interface{}, *
 
 func dataKey(data database.ITimeSeriesData, key string) interface{} {
 	switch key {
+	case "timems":
+		return data.Time().Unix() * 1000
 	case "time":
 		return data.Time().Unix()
 	case "height":
