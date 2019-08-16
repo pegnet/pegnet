@@ -28,7 +28,7 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 	var apiError *api.Error
 	switch request.Method {
 	case "network-difficulty":
-		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NetworkHashrateTimeSeries{})
+		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.DifficultyTimeSeries{})
 	case "hash-rate":
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.NetworkHashrateTimeSeries{})
 	case "num-records":
