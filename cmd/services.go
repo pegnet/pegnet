@@ -78,7 +78,12 @@ func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *o
 	s := api.NewApiServer(grader)
 
 	if run {
-		go s.Listen(8099) // TODO: Do not hardcode this
+		apiport, err := config.Int(common.ConfigAPIPort)
+		if err != nil {
+			log.WithError(err).Fatal("can't find api port")
+			os.Exit(1)
+		}
+		go s.Listen(apiport) // TODO: Do not hardcode this
 	}
 	return s
 }
