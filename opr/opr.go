@@ -12,10 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
-	"runtime"
 	"strconv"
-	"strings"
 	"sync"
 
 	"github.com/FactomProject/btcutil/base58"
@@ -28,6 +25,19 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
+// TODO: Do not make this a global.
+//		currently the OPR does the asset polling, this is bit backwards.
+//		We should poll the asset prices, and set the OPR. Not create the OPR
+//		and have it find it's own prices.
+var PollingDataSource *polling.DataSources
+var pollingDataSourceInitializer sync.Once
+
+func InitDataSource(config *config.Config) {
+	pollingDataSourceInitializer.Do(func() {
+		PollingDataSource = polling.NewDataSources(config)
+	})
+}
+
 // OraclePriceRecord is the data used and created by miners
 type OraclePriceRecord struct {
 	// These fields are not part of the OPR, but track values associated with the OPR.
@@ -38,6 +48,10 @@ type OraclePriceRecord struct {
 	OPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
 	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
 	CoinbasePNTAddress string  `json:"-"` // [base58]  PNT Address to pay PNT
+
+	// This can be attached to an OPR, which indicates how low we should expect a mined
+	// opr to be. Any OPRs mined below this are not worth submitting to the network.
+	MinimumDifficulty uint64 `json:"-"`
 
 	// Factom Entry data
 	EntryHash              []byte `json:"-"` // Entry to record this record
@@ -110,42 +124,13 @@ type Token struct {
 	value float64
 }
 
-func check(e error) {
-	if e != nil {
-		_, file, line, _ := runtime.Caller(1) // The line that called this function
-		shortFile := ShortenPegnetFilePath(file, "", 0)
-		log.WithField("caller", fmt.Sprintf("%s:%d", shortFile, line)).WithError(e).Fatal("An error in OPR was encountered")
-	}
-}
-
-func detailError(e error) error {
-	_, file, line, _ := runtime.Caller(1) // The line that called this function
-	shortFile := ShortenPegnetFilePath(file, "", 0)
-	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
-}
-
-// ShortenPegnetFilePath takes a long path url to pegnet, and shortens it:
-//	"/home/billy/go/src/github.com/pegnet/pegnet/opr.go" -> "pegnet/opr.go"
-//	This is nice for errors that print the file + line number
-//
-// 		!! Only use for error printing !!
-//
-func ShortenPegnetFilePath(path, acc string, depth int) (trimmed string) {
-	if depth > 5 || path == "." {
-		// Recursive base case
-		// If depth > 5 probably no pegnet dir exists
-		return filepath.ToSlash(filepath.Join(path, acc))
-	}
-	dir, base := filepath.Split(path)
-	if strings.ToLower(base) == "pegnet" { // Used to be named PegNet. Not everyone changed I bet
-		return filepath.ToSlash(filepath.Join(base, acc))
-	}
-	return ShortenPegnetFilePath(filepath.Clean(dir), filepath.Join(base, acc), depth+1)
-}
-
 // Validate performs sanity checks of the structure and values of the OPR.
 // It does not validate the winners of the previous block.
 func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
+	net, _ := common.LoadConfigNetwork(c)
+	if !common.NetworkActive(net, dbht) {
+		return false
+	}
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
@@ -177,7 +162,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 		return opr.OPRHash
 	}
 	data, err := json.Marshal(opr)
-	check(err)
+	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
 	return opr.OPRHash
@@ -351,9 +336,26 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 	}
 
+	if len(winners.AllOPRs) > 0 {
+		cutoff, _ := c.Int(common.ConfigSubmissionCutOff)
+		if cutoff > 0 { // <= 0 disables it
+			// This will calculate a minimum difficulty floor for our target cutoff.
+			opr.MinimumDifficulty = CalculateMinimumDifficultyFromOPRs(winners.AllOPRs, cutoff)
+		}
+	}
+
 	err = opr.GetOPRecord(c)
 	if err != nil {
 		return nil, err
+	}
+
+	if !opr.Validate(c, int64(dbht)) {
+		// TODO: Remove this custom error handle once the network is live.
+		//		This is just to give a better error when are waiting for activation.
+		if !common.NetworkActive(opr.Network, int64(dbht)) {
+			return nil, fmt.Errorf("Waiting for activation height")
+		}
+		return nil, fmt.Errorf("opr invalid")
 	}
 
 	return opr, nil
@@ -361,8 +363,9 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
+	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := polling.PullPEGAssets(c)
+	Peg, err := PollingDataSource.PullAllPEGAssets()
 	if err != nil {
 		return err
 	}

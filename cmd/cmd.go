@@ -18,6 +18,7 @@ import (
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/networkMiner"
 	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/polling"
 	"github.com/spf13/cobra"
 )
 
@@ -33,9 +34,15 @@ func init() {
 	rootCmd.AddCommand(grader)
 	rootCmd.AddCommand(networkCoordinator)
 	rootCmd.AddCommand(networkMinerCmd)
+	rootCmd.AddCommand(datasources)
+
+	dataWriter.AddCommand(minerStats)
+	rootCmd.AddCommand(dataWriter)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
+
+	minerStats.Flags().StringP("output", "o", "minerstats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
@@ -43,6 +50,7 @@ func init() {
 	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
 		"(negative numbers are ignored)")
 	rootCmd.AddCommand(getPerformance)
+	rootCmd.AddCommand(getBalance)
 }
 
 var getEncoding = &cobra.Command{
@@ -202,6 +210,75 @@ var burn = &cobra.Command{
 	},
 }
 
+var datasources = &cobra.Command{
+	Use:   "datasources [assets or datasource]",
+	Short: "Reads a config and outputs the data sources and their priorities",
+	Long: "When setting up a datasource config, this cmd will help you verify your config is set " +
+		"correctly. It will also help you ensure you have redudent data sources. " +
+		"This command can also provide all datasources, and what assets they support. As well as the " +
+		"opposite; given an asset what datasources include it.",
+	Example:   "pegnet datasources FCT\npegnet datasources CoinMarketCap",
+	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(false, ArgValidatorAssetOrExchange)),
+	ValidArgs: append(common.AllAssets, polling.AllDataSourcesList()...),
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config) // Will fatal log if it fails
+
+		// User selected a data source or asset
+		if len(args) == 1 {
+			if common.AssetListContainsCaseInsensitive(common.AllAssets, args[0]) {
+				// Specified an asset
+				asset := strings.ToUpper(args[0])
+
+				// Find all exchanges for the asset
+				fmt.Printf("Asset : %s\n", asset)
+
+				var sources []string
+				for k, v := range polling.AllDataSources {
+					if common.AssetListContains(v.SupportedPegs(), asset) {
+						sources = append(sources, k)
+					}
+				}
+				fmt.Printf("Datasources : %v\n", sources)
+			} else if common.AssetListContainsCaseInsensitive(polling.AllDataSourcesList(), args[0]) {
+				// Specified an exchange
+				source := polling.CorrectCasing(args[0])
+				s, ok := polling.AllDataSources[source]
+				if !ok {
+					CmdErrorf(cmd, "%s is not a supported datasource", args[0])
+				}
+
+				fmt.Printf("Datasource : %s\n", s.Name())
+				fmt.Printf("Datasource URL : %s\n", s.Url())
+				fmt.Printf("Supported peg pricing\n")
+				for _, asset := range s.SupportedPegs() {
+					fmt.Printf("\t%s\n", asset)
+				}
+			} else {
+				// Should never happen
+				fmt.Println("This should never happen. The provided argument is invalid")
+			}
+			return
+		}
+
+		// Default to printing everything
+		d := polling.NewDataSources(Config)
+
+		// Time to print
+		fmt.Println("Data sources in priority order")
+		fmt.Printf("\t%s\n", d.PriorityListString())
+
+		fmt.Println()
+		fmt.Println("Assets and their data source order. The order left to right is the fallback order.")
+		for _, asset := range common.AllAssets {
+			if asset == "PNT" {
+				continue
+			}
+			str := d.AssetPriorityString(asset)
+			fmt.Printf("\t%4s (%d) : %s\n", asset, len(d.AssetSources[asset]), str)
+		}
+	},
+}
+
 // TODO: Flesh this out, just using it for testing the miner
 var grader = &cobra.Command{
 	Use: "grader ",
@@ -264,6 +341,33 @@ var getPerformance = &cobra.Command{
 			Params: api.PerformanceParameters{
 				BlockRange: blockRange,
 				DigitalID:  id,
+			},
+		}
+		sendRequestAndPrintResults(&req)
+	},
+}
+
+var getBalance = &cobra.Command{
+	Use:     "balance <type> <factoid address>",
+	Short:   "Returns the balance for the given asset type and Factoid address",
+	Example: "pegnet balance PNT FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
+	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorAsset, ArgValidatorFCTAddress)),
+	Run: func(cmd *cobra.Command, args []string) {
+		ticker := args[0]
+		address := args[1]
+
+		networkString, err := common.LoadConfigNetwork(Config)
+		if err != nil {
+			fmt.Println("Error: invalid network string")
+		}
+		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
+		if err != nil {
+			fmt.Println("Error: invalid Factoid address")
+		}
+		req := api.PostRequest{
+			Method: "balance",
+			Params: api.GenericParameters{
+				Address: &pntAddress,
 			},
 		}
 		sendRequestAndPrintResults(&req)
@@ -338,5 +442,39 @@ var networkMinerCmd = &cobra.Command{
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
+	},
+}
+
+var dataWriter = &cobra.Command{
+	Use:   "csv <data_request>",
+	Short: "Ability to create csvs for some analysis",
+	Long: "Adds the ability to run analysis commands on a network and output csvs. " +
+		"This is helpful as this cmd already has access to the pegnet internals, and could " +
+		"help us create analysis tooling.",
+	Example: "csv minerstats",
+}
+
+var minerStats = &cobra.Command{
+	Use:   "minerstats",
+	Short: "Creates a csv showing the miner related stats from the blocks on chain.",
+	Long: "Will let you analyze the difficulty changes over time, and test difficulty targeting" +
+		" against on chain data.",
+	Example: "csv minerstats",
+	Run: func(cmd *cobra.Command, args []string) {
+		// minerstats.csv
+		path, err := cmd.Flags().GetString("output")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		c, err := opr.NewChainRecorder(Config, path)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		err = c.WriteMinerCSV()
+		if err != nil {
+			CmdError(cmd, err)
+		}
 	},
 }

@@ -5,14 +5,63 @@ package polling
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/cenkalti/backoff"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// APILayerDataSource is the datasource at http://www.apilayer.net
+type APILayerDataSource struct {
+	config *config.Config
+}
+
+func NewAPILayerDataSource(config *config.Config) (*APILayerDataSource, error) {
+	s := new(APILayerDataSource)
+	s.config = config
+	return s, nil
+}
+
+func (d *APILayerDataSource) Name() string {
+	return "APILayer"
+}
+
+func (d *APILayerDataSource) Url() string {
+	return "https://apilayer.com/"
+}
+
+func (d *APILayerDataSource) SupportedPegs() []string {
+	return common.CurrencyAssets
+}
+
+func (d *APILayerDataSource) FetchPegPrices() (peg PegAssets, err error) {
+	resp, err := CallAPILayer(d.config)
+	if err != nil {
+		return nil, err
+	}
+
+	peg = make(map[string]PegItem)
+
+	timestamp := time.Unix(resp.Timestamp, 0)
+	for _, currencyISO := range d.SupportedPegs() {
+		// Search for USDXXX pairs
+		if v, ok := resp.Quotes["USD"+currencyISO]; ok {
+			peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
+		}
+	}
+
+	return
+}
+
+func (d *APILayerDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
+	return FetchPegPrice(peg, d.FetchPegPrices)
+}
+
+// ----
 
 type APILayerResponse struct {
 	Success   bool               `json:"success"`
@@ -68,28 +117,4 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 		}
 	}
 	return APILayerResponse, err
-}
-
-func HandleAPILayer(response APILayerResponse, peg PegAssets) {
-
-	// Handle Response Errors
-	if !response.Success {
-		log.WithFields(log.Fields{
-			"code": response.Error.Code,
-			"type": response.Error.Type,
-			"info": response.Error.Info,
-		}).Fatal("Failed to access APILayer")
-	}
-
-	UpdatePegAssets(response.Quotes, response.Timestamp, peg, "USD")
-}
-
-func APILayerInterface(config *config.Config, peg PegAssets) error {
-	log.Debug("Pulling Asset data from APILayer")
-	APILayerResponse, err := CallAPILayer(config)
-	if err != nil {
-		return fmt.Errorf("failed to access APILayer : %s", err.Error())
-	}
-	HandleAPILayer(APILayerResponse, peg)
-	return nil
 }

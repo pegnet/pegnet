@@ -41,7 +41,7 @@ type Monitor struct {
 	errors        []chan error
 }
 
-// MonitorEvent is the data sent to all listeners when being notified
+// MonitorEvent is the Data sent to all listeners when being notified
 type MonitorEvent struct {
 	Minute int64 `json:"minute"`
 	Dbht   int32 `json:"dbht"`
@@ -100,11 +100,11 @@ func (f *Monitor) getMinute() (*factom.CurrentMinuteInfo, error) {
 func (f *Monitor) waitForNextMinute(current factom.CurrentMinuteInfo) (factom.CurrentMinuteInfo, error) {
 	for {
 		info, err := f.getMinute()
-		info.DirectoryBlockHeight += 1 // Add one so that the height represents the block being built
-
 		if err != nil {
 			return factom.CurrentMinuteInfo{}, err
 		}
+
+		info.DirectoryBlockHeight += 1 // Add one so that the height represents the block being built
 
 		if info.DirectoryBlockHeight > current.DirectoryBlockHeight {
 			return *info, nil

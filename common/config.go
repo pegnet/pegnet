@@ -5,9 +5,8 @@ package common
 import (
 	"fmt"
 
-	"github.com/zpatrick/go-config"
-
 	"github.com/go-ini/ini"
+	"github.com/zpatrick/go-config"
 )
 
 // Config names
@@ -16,10 +15,35 @@ const (
 	ConfigCoordinatorLocation          = "Miner.MiningCoordinatorHost"
 	ConfigCoordinatorSecret            = "Miner.CoordinatorSecret"
 	ConfigCoordinatorUseAuthentication = "Miner.UseCoordinatorAuthentication"
+	ConfigSubmissionCutOff             = "Miner.SubmissionCutOff"
 
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
+
+	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
+	Config1ForgeKey        = "Oracle.1ForgeKey"
 )
+
+// DefaultConfigOptions gives us the ability to add configurable settings that really
+// should not be tinkered with often. Making the config file long and overly complex
+// is just daunting to new users. Many of the settings that will likely never be touched
+// can be inclued in here.
+type DefaultConfigOptions struct {
+}
+
+func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
+	d := new(DefaultConfigOptions)
+
+	return d
+}
+
+func (c *DefaultConfigOptions) Load() (map[string]string, error) {
+	settings := map[string]string{}
+	// Include default settings here
+	settings[ConfigSubmissionCutOff] = "200"
+
+	return settings, nil
+}
 
 func NewUnitTestConfig() *config.Config {
 	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})
@@ -29,12 +53,12 @@ func NewUnitTestConfig() *config.Config {
 //	This way we don't have to deal with pathing to find the
 //	`defaultconfig.ini`.
 type UnitTestConfigProvider struct {
-	data string
+	Data string
 }
 
 func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 	d := new(UnitTestConfigProvider)
-	d.data = `
+	d.Data = `
 [Debug]
 # Randomize adds a random factor +/- the give percent.  3.1 for 3.1%
   Randomize=0.1
@@ -44,6 +68,8 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   LogFile=
 
 [Miner]
+  FactomdLocation="localhost:8088"
+  WalletdLocation="localhost:8089"
   NetworkType=LOCAL
   NumberOfMiners=15
 # The number of records to submit per block. The top N records are chosen, where N is the config value
@@ -62,13 +88,26 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   CoinbasePNTAddress=tPNT_mEU1i4M5rn7bnrxNKdVVf4HXLG15Q798oaVAMrXq7zdbhQ9pv
   IdentityChain=prototype
 [Oracle]
-  APILayerKey=f6c9765ef81279e8891d40e34ef7ab01
-  OpenExchangeRatesKey=bogus
-  CoinCap=1
-  APILayer=1
-  ExchangeRatesAPI=0
-  OpenExchangeRates=0
-  Kitco=1
+  APILayerKey=CHANGEME
+  OpenExchangeRatesKey=CHANGEME
+  CoinMarketCapKey=CHANGEME
+  1ForgeKey=CHANGEME
+
+
+[OracleDataSources]
+  FreeForexAPI=-1
+  APILayer=-1
+  ExchangeRates=-1
+  OpenExchangeRates=-1
+  1Forge=-1
+
+  # Crypto
+  CoinMarketCap=-1
+  CoinCap=-1
+
+  # Commodities
+  Kitco=-1
+
 `
 	return d
 }
@@ -76,7 +115,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 func (this *UnitTestConfigProvider) Load() (map[string]string, error) {
 	settings := map[string]string{}
 
-	file, err := ini.Load([]byte(this.data))
+	file, err := ini.Load([]byte(this.Data))
 	if err != nil {
 		return nil, err
 	}

@@ -126,20 +126,20 @@ func GetEntryBlocks(config *config.Config) error {
 	defer ebMutex.Unlock()
 
 	network, err := common.LoadConfigNetwork(config)
-	check(err)
+	common.CheckAndPanic(err)
 	p, err := config.String("Miner.Protocol")
-	check(err)
+	common.CheckAndPanic(err)
 	n, err := common.LoadConfigNetwork(config)
-	check(err)
+	common.CheckAndPanic(err)
 	opr := [][]byte{[]byte(p), []byte(n), []byte(common.OPRChainTag)}
 
 	heb, _, err := factom.GetChainHead(hex.EncodeToString(common.ComputeChainIDFromFields(opr)))
 	if err != nil {
-		return detailError(err)
+		return common.DetailError(err)
 	}
 	eb, err := factom.GetEBlock(heb)
 	if err != nil {
-		return detailError(err)
+		return common.DetailError(err)
 	}
 
 	// A temp list of candidate oprblocks to evaluate to see if they fit nicely together
@@ -160,7 +160,7 @@ func GetEntryBlocks(config *config.Config) error {
 			for _, ebentry := range eb.EntryList {
 				entry, err := factom.GetEntry(ebentry.EntryHash)
 				if err != nil {
-					return detailError(err)
+					return common.DetailError(err)
 				}
 
 				// Do some quick collecting of data and checks of the entry.
@@ -179,6 +179,7 @@ func GetEntryBlocks(config *config.Config) error {
 				if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress); err != nil {
 					continue
 				}
+
 				// Run some basic checks on the values.  If they don't check out, then ignore the entry
 				if !opr.Validate(config, oprblk.Dbht) {
 					continue
@@ -186,6 +187,9 @@ func GetEntryBlocks(config *config.Config) error {
 				// Keep this entry
 				opr.EntryHash = entry.Hash()
 				opr.Nonce = entry.ExtIDs[0]
+				if len(entry.ExtIDs[1]) != 8 { // self reported difficulty must be a uint64
+					continue
+				}
 				opr.SelfReportedDifficulty = entry.ExtIDs[1]
 				if len(entry.ExtIDs[2]) != 1 {
 					continue // Version is 1 byte

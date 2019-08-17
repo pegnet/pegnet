@@ -2,6 +2,8 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package common
 
+import "strings"
+
 /*          All the assets on pegnet
  *
  *          PegNet,                 PNT,        PNT
@@ -90,8 +92,19 @@ var (
 		"DCR",
 	}
 
-	AllAssets = merge(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 )
+
+// AssetListContainsCaseInsensitive is for when using user input. It's helpful for the
+// cmd line.
+func AssetListContainsCaseInsensitive(assetList []string, asset string) bool {
+	for _, a := range assetList {
+		if strings.ToLower(asset) == strings.ToLower(a) {
+			return true
+		}
+	}
+	return false
+}
 
 func AssetListContains(assetList []string, asset string) bool {
 	for _, a := range assetList {
@@ -102,7 +115,7 @@ func AssetListContains(assetList []string, asset string) bool {
 	return false
 }
 
-func merge(assets ...[]string) []string {
+func MergeLists(assets ...[]string) []string {
 	acc := []string{}
 	for _, list := range assets {
 		acc = append(acc, list...)

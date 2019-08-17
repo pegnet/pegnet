@@ -114,15 +114,6 @@ func (c *ControlPanel) ServeControlPanel() {
 			select {
 			case e := <-alert:
 
-				hr := common.Stats.GetHashRate()
-				diff := common.Stats.Difficulty
-				if hr > 0 && hr != CurrentHashRate {
-					CurrentHashRate = hr
-				}
-				if diff > 0 && diff != CurrentDifficulty {
-					CurrentDifficulty = diff
-				}
-
 				r := CommonResponse{Minute: e.Minute, Dbht: e.Dbht, HashRate: CurrentHashRate, Difficulty: CurrentDifficulty}
 				r.Balance = opr.GetBalance(CoinbasePNTAddress)
 
