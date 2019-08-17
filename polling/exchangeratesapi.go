@@ -96,7 +96,7 @@ func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
 	if err == nil {
 		// Price is inverted
 		for k, v := range ExchangeRatesAPIResponse.Rates {
-			ExchangeRatesAPIResponse.Rates[k] = 1 / v
+			ExchangeRatesAPIResponse.Rates[k] = v
 		}
 	}
 
