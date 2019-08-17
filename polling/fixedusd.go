@@ -10,7 +10,6 @@ import (
 // USD is always 1 USD = 1USD.
 type FixedUSDDataSource struct {
 	config *config.Config
-	apikey string
 }
 
 func NewFixedUSDDataSource(config *config.Config) (*FixedUSDDataSource, error) {
