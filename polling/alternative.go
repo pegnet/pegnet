@@ -23,13 +23,6 @@ func NewAlternativeMeDataSource(config *config.Config) (*AlternativeMeDataSource
 	s := new(AlternativeMeDataSource)
 	s.config = config
 
-	var err error
-	// Load api key
-	s.apikey, err = s.config.String(common.Config1ForgeKey)
-	if err != nil {
-		return nil, err
-	}
-
 	return s, nil
 }
 
