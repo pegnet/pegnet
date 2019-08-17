@@ -110,6 +110,19 @@ func ValidateConfig(config *config.Config) {
 	if !valid {
 		log.WithError(err).Fatal("only alphanumeric characters and commas are allowed in the identity")
 	}
+
+	// Validate that the user has provided a FCT address that mining can send any Rewards to
+	addr, err := config.String("Miner.CoinbaseAddress")
+	if err != nil {
+		log.WithError(err).Fatal("Expected a FCT address for CoinbaseAddress but found '" + addr + "'." +
+			"  Update the PegNet config file")
+	} else {
+		_, err := common.ConvertFCTtoRaw(addr)
+		if err != nil {
+			log.WithError(err).Fatal("Expected a FCT address for CoinbaseAddress but found '" + addr + "'." +
+				"  Update the PegNet config file")
+		}
+	}
 }
 
 func initLogger() {
@@ -140,20 +153,31 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
 
-	configFile := fmt.Sprintf("%s/.pegnet/defaultconfig.ini", u.HomeDir)
-	customPath, _ := cmd.Flags().GetString("config")
-	if customPath != "" {
-		absPath, err := filepath.Abs(customPath)
+	// We are going to look for two files to find our configuration.  config.ini first
+	// and then if that isn't there, look for defaultconfig.ini
+	files := []string{"config.ini", "defaultconfig.ini"}
+	for _, fn := range files {
+		configFile := fmt.Sprintf("%s/.pegnet/%s", u.HomeDir, fn)
+		customPath, _ := cmd.Flags().GetString("config")
+		if customPath != "" {
+			absPath, err := filepath.Abs(customPath)
+			if err == nil {
+				configFile = absPath
+				log.Info("Using config file: ", configFile)
+			}
+		}
+
+		iniFile := config.NewINIFile(configFile)
+		flags := NewCmdFlagProvider(cmd)
+		Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
+
+		// Make sure this config file at least has the Protocol specified
+		_, err := Config.String("Miner.Protocol")
 		if err == nil {
-			configFile = absPath
-			log.Info("Using config file: ", configFile)
+			log.Println("didn't find this config file: " + fn)
+			break
 		}
 	}
-
-	iniFile := config.NewINIFile(configFile)
-	flags := NewCmdFlagProvider(cmd)
-	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
-
 	factomd, _ := Config.String("Miner.FactomdLocation")
 	walletd, _ := Config.String("Miner.WalletdLocation")
 	factom.SetFactomdServer(factomd)
