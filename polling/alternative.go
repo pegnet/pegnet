@@ -16,19 +16,11 @@ import (
 // AlternativeMeDataSource is the datasource at https://alternative.me/crypto/api/
 type AlternativeMeDataSource struct {
 	config *config.Config
-	apikey string
 }
 
 func NewAlternativeMeDataSource(config *config.Config) (*AlternativeMeDataSource, error) {
 	s := new(AlternativeMeDataSource)
 	s.config = config
-
-	var err error
-	// Load api key
-	s.apikey, err = s.config.String(common.Config1ForgeKey)
-	if err != nil {
-		return nil, err
-	}
 
 	return s, nil
 }
@@ -152,7 +144,6 @@ func (d *AlternativeMeDataSource) FetchPeggedPrices() ([]byte, error) {
 	q.Add("limit", "300")
 
 	req.Header.Set("Accepts", "application/json")
-	req.Header.Add("X-CMC_PRO_API_KEY", d.apikey)
 	req.URL.RawQuery = q.Encode()
 
 	resp, err := client.Do(req)

@@ -18,7 +18,6 @@ import (
 // FreeForexAPIDataSource is the datasource at https://www.freeforexapi.com
 type FreeForexAPIDataSource struct {
 	config *config.Config
-	apikey string
 }
 
 func NewFreeForexAPIDataSource(config *config.Config) (*FreeForexAPIDataSource, error) {
