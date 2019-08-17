@@ -109,5 +109,11 @@ func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse
 	}
 
 	err = backoff.Retry(operation, PollingExponentialBackOff())
+	// Price is inverted
+	if err == nil {
+		for k, v := range OpenExchangeRatesResponse.Rates {
+			OpenExchangeRatesResponse.Rates[k] = 1 / v
+		}
+	}
 	return OpenExchangeRatesResponse, err
 }

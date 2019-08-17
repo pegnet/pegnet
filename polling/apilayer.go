@@ -110,5 +110,11 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 	}
 
 	err = backoff.Retry(operation, PollingExponentialBackOff())
+	// Price is inverted
+	if err == nil {
+		for k, v := range APILayerResponse.Quotes {
+			APILayerResponse.Quotes[k] = 1 / v
+		}
+	}
 	return APILayerResponse, err
 }
