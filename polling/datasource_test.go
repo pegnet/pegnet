@@ -29,17 +29,7 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
 		t.Error(err)
 	}
 
-	pegs, err := s.FetchPegPrices()
-	if err != nil {
-		t.Error(err)
-	}
-
-	for _, asset := range s.SupportedPegs() {
-		_, ok := pegs[asset]
-		if !ok {
-			t.Errorf("Missing %s", asset)
-		}
-	}
+	testDataSource(t, s)
 }
 
 // ActualDataSourceTest actually fetches the resp over the internet
@@ -54,6 +44,10 @@ func ActualDataSourceTest(t *testing.T, source string) {
 		t.Error(err)
 	}
 
+	testDataSource(t, s)
+}
+
+func testDataSource(t *testing.T, s polling.IDataSource) {
 	pegs, err := s.FetchPegPrices()
 	if err != nil {
 		t.Error(err)
@@ -82,6 +76,10 @@ func PriceCheck(asset string, rate float64) error {
 	case "XAU":
 		if rate < 1 {
 			return fmt.Errorf("gold(%s) found to be %.2f, less than $1, this seems wrong", asset, rate)
+		}
+	case "XPD":
+		if rate < 1 {
+			return fmt.Errorf("%s found to be %.2f, less than $1, this seems wrong", asset, rate)
 		}
 	case "MXN":
 		if rate > 1 {
