@@ -125,10 +125,10 @@ func (c *ControlPanel) ServeControlPanel() {
 	}()
 
 	port, err := c.Config.Int("Miner.ControlPanelPort")
-	if err != nil || port < 1 || port > 65536 {
+	if err != nil || port < 1 || port > 65535 {
 		panic("Error parsing ControlPanelPort value in config file")
 	} 
 	log.Info("Starting control panel on localhost:", port)
-	
+
 	c.Listen(port)
 }
