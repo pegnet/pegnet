@@ -113,7 +113,7 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 	// Price is inverted
 	if err == nil {
 		for k, v := range APILayerResponse.Quotes {
-			APILayerResponse.Quotes[k] = 1 / v
+			APILayerResponse.Quotes[k] = v
 		}
 	}
 	return APILayerResponse, err

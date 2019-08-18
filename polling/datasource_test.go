@@ -35,9 +35,14 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
 	}
 
 	for _, asset := range s.SupportedPegs() {
-		_, ok := pegs[asset]
+		r, ok := pegs[asset]
 		if !ok {
 			t.Errorf("Missing %s", asset)
+		}
+
+		err := PriceCheck(asset, r.Value)
+		if err != nil {
+			t.Error(err)
 		}
 	}
 }
@@ -82,6 +87,10 @@ func PriceCheck(asset string, rate float64) error {
 	case "XAU":
 		if rate < 1 {
 			return fmt.Errorf("gold(%s) found to be %.2f, less than $1, this seems wrong", asset, rate)
+		}
+	case "XPD":
+		if rate < 1 {
+			return fmt.Errorf("%s found to be %.2f, less than $1, this seems wrong", asset, rate)
 		}
 	case "MXN":
 		if rate > 1 {
