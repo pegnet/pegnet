@@ -82,8 +82,6 @@ type CommonResponse struct {
 }
 
 func (c *ControlPanel) ServeControlPanel() {
-	log.Info("Starting control panel on localhost:8080")
-
 	alert := c.Monitor.NewListener()
 	statsUpStream := c.Statistics.GetUpstream("control-panel")
 
@@ -126,6 +124,11 @@ func (c *ControlPanel) ServeControlPanel() {
 		}
 	}()
 
-	c.Listen(8080) // TODO: Do not hardcode
-
+	port, err := c.Config.Int("Miner.ControlPanelPort")
+	if err != nil || port < 1 || port > 65536 {
+		panic("Error parsing ControlPanelPort value in config file")
+	} 
+	log.Info("Starting control panel on localhost:", port)
+	
+	c.Listen(port)
 }
