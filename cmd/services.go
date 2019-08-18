@@ -40,8 +40,12 @@ func LaunchStatistics(config *config.Config, ctx context.Context) *mining.Global
 
 func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker) *api.APIServer {
 	s := api.NewApiServer()
-
-	go s.Listen(8099) // TODO: Do not hardcode this
+	port, err := config.Int("Miner.APIPort")
+	if err != nil || port < 1 || port > 65536 {
+		panic("Error parsing APIPort value in config file")
+	}
+	
+	go s.Listen(port)
 	return s
 }
 
