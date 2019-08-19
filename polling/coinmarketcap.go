@@ -20,9 +20,8 @@ import (
 
 // CoinMarketCapDataSource is the datasource at https://coinmarketcap.com/
 type CoinMarketCapDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
-	apikey  string
+	config *config.Config
+	apikey string
 }
 
 func NewCoinMarketCapDataSource(config *config.Config) (*CoinMarketCapDataSource, error) {

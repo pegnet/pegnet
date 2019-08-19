@@ -27,6 +27,7 @@ const (
 	ConfigPegnetNetwork   = "Miner.Network"
 
 	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
+	Config1ForgeKey        = "Oracle.1ForgeKey"
 )
 
 // DefaultConfigOptions gives us the ability to add configurable settings that really
@@ -45,7 +46,7 @@ func NewDefaultConfigOptionsProvider() *DefaultConfigOptions {
 func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
 	// Include default settings here
-	settings[ConfigSubmissionCutOff] = "175"
+	settings[ConfigSubmissionCutOff] = "200"
 	settings[ConfigAPIPort] = "8099"
 
 	return settings, nil
@@ -97,19 +98,22 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   APILayerKey=CHANGEME
   OpenExchangeRatesKey=CHANGEME
   CoinMarketCapKey=CHANGEME
+  1ForgeKey=CHANGEME
 
 
 [OracleDataSources]
-  APILayer=1
-  ExchangeRates=3
-  OpenExchangeRates=2
+  FreeForexAPI=-1
+  APILayer=-1
+  ExchangeRates=-1
+  OpenExchangeRates=-1
+  1Forge=-1
 
   # Crypto
-  CoinMarketCap=3
-  CoinCap=4
+  CoinMarketCap=-1
+  CoinCap=-1
 
   # Commodities
-  Kitco=10
+  Kitco=-1
 
 `
 	return d

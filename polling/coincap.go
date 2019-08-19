@@ -19,8 +19,7 @@ import (
 
 // CoinCapDataSource is the datasource at https://coincap.io/
 type CoinCapDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewCoinCapDataSource(config *config.Config) (*CoinCapDataSource, error) {

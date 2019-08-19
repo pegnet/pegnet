@@ -19,13 +19,18 @@ var dLog = log.WithField("id", "DataSources")
 // The reason I have the `new(DataSource` is so I can get the name, url, and supported
 // pegs from this map. It's useful in the cmdline to fetch the datasources dynamically.
 var AllDataSources = map[string]IDataSource{
-	"APILayer":          new(APILayerDataSource),
-	"CoinCap":           new(CoinCapDataSource),
-	"ExchangeRates":     new(ExchangeRatesDataSource),
-	"Kitco":             new(KitcoDataSource),
+	"APILayer": new(APILayerDataSource),
+	"CoinCap":  new(CoinCapDataSource),
+	"FixedUSD": new(FixedUSDDataSource),
+	// ExchangeRates is daily,  don't show people this
+	//"ExchangeRates":     new(ExchangeRatesDataSource),
+	"Kitco": new(KitcoDataSource),
+	// OpenExchangeRates is hourly, but has commodities
 	"OpenExchangeRates": new(OpenExchangeRatesDataSource),
 	"CoinMarketCap":     new(CoinMarketCapDataSource),
 	"FreeForexAPI":      new(FreeForexAPIDataSource),
+	"1Forge":            new(OneForgeDataSource),
+	"AlternativeMe":     new(AlternativeMeDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -81,6 +86,12 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewCoinMarketCapDataSource(config)
 	case "FreeForexAPI":
 		ds, err = NewFreeForexAPIDataSource(config)
+	case "1Forge":
+		ds, err = NewOneForgeDataSourceDataSource(config)
+	case "FixedUSD":
+		ds, err = NewFixedUSDDataSource(config)
+	case "AlternativeMe":
+		ds, err = NewAlternativeMeDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:

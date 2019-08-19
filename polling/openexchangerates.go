@@ -18,8 +18,7 @@ import (
 
 // OpenExchangeRatesDataSource is the datasource at "https://openexchangerates.org/"
 type OpenExchangeRatesDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
+	config *config.Config
 }
 
 func NewOpenExchangeRatesDataSource(config *config.Config) (*OpenExchangeRatesDataSource, error) {
@@ -110,5 +109,11 @@ func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse
 	}
 
 	err = backoff.Retry(operation, PollingExponentialBackOff())
+	// Price is inverted
+	if err == nil {
+		for k, v := range OpenExchangeRatesResponse.Rates {
+			OpenExchangeRatesResponse.Rates[k] = v
+		}
+	}
 	return OpenExchangeRatesResponse, err
 }

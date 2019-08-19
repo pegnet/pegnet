@@ -17,9 +17,7 @@ import (
 
 // FreeForexAPIDataSource is the datasource at https://www.freeforexapi.com
 type FreeForexAPIDataSource struct {
-	config  *config.Config
-	lastPeg PegAssets
-	apikey  string
+	config *config.Config
 }
 
 func NewFreeForexAPIDataSource(config *config.Config) (*FreeForexAPIDataSource, error) {
@@ -99,7 +97,6 @@ func (d *FreeForexAPIDataSource) ParseFetchedPrices(data []byte) (*FreeForexAPID
 	var resp FreeForexAPIDataSourceResponse
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
-		fmt.Println(string(data))
 		return nil, err
 	}
 	return &resp, nil
@@ -146,7 +143,6 @@ func (d *FreeForexAPIDataSource) FetchPeggedPrices() ([]byte, error) {
 	q.Add("pairs", strings.Join(ids, ","))
 	req.URL.RawQuery = q.Encode()
 
-	fmt.Println(req.URL.String())
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
