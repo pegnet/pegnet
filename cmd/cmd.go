@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/pegnet/pegnet/node"
 
 	"github.com/FactomProject/factom"
@@ -298,7 +300,8 @@ var grader = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		q := LaunchGrader(Config, monitor, context.Background(), true)
+		b := balances.NewBalanceTracker()
+		q := LaunchGrader(Config, monitor, b, context.Background(), true)
 
 		alert := q.GetAlert("cmd")
 
@@ -386,12 +389,13 @@ var networkCoordinator = &cobra.Command{
 		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
 
+		b := balances.NewBalanceTracker()
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor, ctx, true)
+		grader := LaunchGrader(Config, monitor, b, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker, grader, true)
-		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		apiserver := LaunchAPI(Config, statTracker, grader, b, true)
+		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
 		srv := networkMiner.NewMiningServer(Config, monitor, grader, statTracker)
@@ -454,10 +458,11 @@ var pegnetNode = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
 		ValidateConfig(Config) // Will fatal log if it fails
+		b := balances.NewBalanceTracker()
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor, ctx, false)
+		grader := LaunchGrader(Config, monitor, b, ctx, false)
 
 		pegnetnode, err := node.NewPegnetNode(Config, monitor, grader)
 		if err != nil {
@@ -467,7 +472,7 @@ var pegnetNode = &cobra.Command{
 		go pegnetnode.Run(ctx)
 
 		var _ = cancel
-		apiserver := LaunchAPI(Config, nil, grader, false)
+		apiserver := LaunchAPI(Config, nil, grader, b, false)
 		apiserver.Mux.Handle("/node/v1", pegnetnode.APIMux())
 		// Let's add the pegnet node timeseries to the handle
 		apiport, err := Config.Int(common.ConfigAPIPort)
