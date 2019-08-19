@@ -11,6 +11,7 @@ import (
 var FctDbht int64
 
 func UpdateBurns(c *config.Config) {
+	return // Disable burns
 
 	network, err := common.LoadConfigNetwork(c)
 	if err != nil {
