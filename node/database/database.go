@@ -40,6 +40,13 @@ func InsertTimeSeries(db *gorm.DB, r interface{}) error {
 	return err.Error
 }
 
+// InsertAssetTimeSeries will insert a time series if it is not already added
+func InsertAssetTimeSeries(db *gorm.DB, r interface{}) error {
+	// If we have a conflict, the data should already be there
+	err := db.Set("gorm:insert_option", "ON CONFLICT(asset, block_height) DO NOTHING").Create(r)
+	return err.Error
+}
+
 // FetchTimeSeries fetches the timeseries from the sqlite given the parameters
 func FetchTimeSeries(db *gorm.DB, target interface{}, opts *FetchTimeSeriesParams) error {
 	res := opts.Apply(db).Find(target)
