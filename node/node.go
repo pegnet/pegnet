@@ -152,7 +152,7 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 				Asset:      asset,
 				Price:      price,
 			}
-			err = database.InsertTimeSeries(tx, &at)
+			err = database.InsertAssetTimeSeries(tx, &at)
 			if err != nil {
 				tx.Rollback()
 				return fmt.Errorf("%d %s", block.Dbht, common.DetailError(err))
