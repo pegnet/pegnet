@@ -6,9 +6,11 @@ package opr
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"sort"
 
 	"github.com/pegnet/pegnet/common"
+	log "github.com/sirupsen/logrus"
 )
 
 // Avg computes the average answer for the price of each token reported
@@ -61,13 +63,17 @@ func GradeMinimum(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord)
 
 	// Find the top 50 with the correct difficulties
 	top50 := make([]*OraclePriceRecord, 0)
-	for _, opr := range sortedList {
+	for i, opr := range sortedList {
 		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
 		if f != opr.Difficulty {
+			log.WithFields(log.Fields{
+				"place":     i,
+				"entryhash": fmt.Sprintf("%x", opr.EntryHash),
+				"id":        opr.FactomDigitalID,
+			}).Warnf("Self reported difficulty incorrect Exp %x, found %x", opr.Difficulty, opr.SelfReportedDifficulty)
 			continue
 		}
-
 		// Honest record
 		top50 = append(top50, opr)
 		if len(top50) == 50 {
