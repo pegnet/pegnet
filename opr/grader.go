@@ -15,6 +15,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/pegnet/pegnet/database"
 
 	"github.com/FactomProject/factom"
@@ -42,6 +44,8 @@ type QuickGrader struct {
 	OPRChainID       []byte
 	OPRChainIDString string
 
+	Balances *balances.BalanceTracker
+	Burns    *balances.BurnTracking
 	OPRChain *EntryBlockSync
 
 	Config *config.Config
@@ -60,7 +64,7 @@ type QuickGrader struct {
 	alertsMutex sync.Mutex // Maps are not thread safe
 }
 
-func NewQuickGrader(config *config.Config, db database.IDatabase) *QuickGrader {
+func NewQuickGrader(config *config.Config, db database.IDatabase, balanceTraker *balances.BalanceTracker) *QuickGrader {
 	InitLX()
 	g := new(QuickGrader)
 	g.Config = config
@@ -83,6 +87,8 @@ func NewQuickGrader(config *config.Config, db database.IDatabase) *QuickGrader {
 	g.oprBlks = make([]*OprBlock, 0)
 
 	g.BlockStore = NewOPRBlockStore(db)
+	g.Balances = balanceTraker
+	g.Burns = balances.NewBurnTracking(g.Balances)
 
 	return g
 }
@@ -140,10 +146,6 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 		break // Initial sync done
 	}
 
-	// Update burn calcs
-	// TODO: This should be another routine, not affecting grading
-	UpdateBurns(g.Config, g)
-
 	fdAlert := monitor.NewListener()
 	for {
 		var fds common.MonitorEvent
@@ -186,7 +188,10 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 			g.SendToListeners(&winners)
 
 			// TODO: This should be another routine, not affecting grading
-			UpdateBurns(g.Config, g)
+			err = g.Burns.UpdateBurns(g.Config, g.GetFirstOPRBlock().Dbht)
+			if err != nil {
+				log.WithField("id", "grader").WithError(err).Errorf("error processing burns")
+			}
 		}
 
 	}
@@ -265,7 +270,7 @@ func (g *QuickGrader) Sync() error {
 			for place, winner := range oprblock.GradedOPRs[:10] { // Only top 10 matter
 				reward := GetRewardFromPlace(place)
 				if reward > 0 {
-					err := AddToBalance(winner.CoinbasePNTAddress, reward)
+					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)
 					if err != nil {
 						log.WithError(err).Fatal("Failed to update balance")
 					}

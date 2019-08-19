@@ -4,6 +4,7 @@
 package opr
 
 import (
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/database"
 	"github.com/zpatrick/go-config"
 )
@@ -13,9 +14,9 @@ type FakeGrader struct {
 	*QuickGrader
 }
 
-func NewFakeGrader(config *config.Config) *FakeGrader {
+func NewFakeGrader(config *config.Config, balances *balances.BalanceTracker) *FakeGrader {
 	f := new(FakeGrader)
-	f.QuickGrader = NewQuickGrader(config, database.NewMapDb())
+	f.QuickGrader = NewQuickGrader(config, database.NewMapDb(), balances)
 
 	return f
 }
