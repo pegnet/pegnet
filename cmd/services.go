@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/controlPanel"
@@ -29,7 +31,7 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 	return monitor
 }
 
-func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Context, run bool) *opr.QuickGrader {
+func LaunchGrader(config *config.Config, monitor *common.Monitor, balances *balances.BalanceTracker, ctx context.Context, run bool) *opr.QuickGrader {
 	dbtype, err := config.String(common.ConfigMinerDBType)
 	if err != nil {
 		log.WithError(err).Fatal("Database.MinerDatabaseType needs to be set in the config file or cmd line")
@@ -60,7 +62,7 @@ func LaunchGrader(config *config.Config, monitor *common.Monitor, ctx context.Co
 		os.Exit(1)
 	}
 
-	grader := opr.NewQuickGrader(config, db)
+	grader := opr.NewQuickGrader(config, db, balances)
 	if run {
 		go grader.Run(monitor, ctx)
 	}
@@ -74,8 +76,8 @@ func LaunchStatistics(config *config.Config, ctx context.Context) *mining.Global
 	return statTracker
 }
 
-func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader, run bool) *api.APIServer {
-	s := api.NewApiServer(grader)
+func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader, bals *balances.BalanceTracker, run bool) *api.APIServer {
+	s := api.NewApiServer(grader, bals)
 
 	if run {
 		apiport, err := config.Int(common.ConfigAPIPort)
@@ -88,8 +90,8 @@ func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *o
 	return s
 }
 
-func LaunchControlPanel(config *config.Config, ctx context.Context, monitor common.IMonitor, stats *mining.GlobalStatTracker) *controlPanel.ControlPanel {
-	cp := controlPanel.NewControlPanel(config, monitor, stats)
+func LaunchControlPanel(config *config.Config, ctx context.Context, monitor common.IMonitor, stats *mining.GlobalStatTracker, bals *balances.BalanceTracker) *controlPanel.ControlPanel {
+	cp := controlPanel.NewControlPanel(config, monitor, stats, bals)
 	go cp.ServeControlPanel()
 	return cp
 }

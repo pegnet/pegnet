@@ -8,6 +8,8 @@ import (
 	"net"
 	"time"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
@@ -47,9 +49,10 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	}
 
 	s.entryChannel = make(chan *factom.Entry, 25)
+	b := balances.NewBalanceTracker()
 	// The "Fakes" allow us to emit events
 	s.Monitor = common.NewFakeMonitor()
-	s.Grader = opr.NewFakeGrader(config)
+	s.Grader = opr.NewFakeGrader(config, b)
 	s.OPRMaker = mining.NewBlockingOPRMaker()
 
 	// We need to put our data in it

@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
@@ -64,15 +66,16 @@ var rootCmd = &cobra.Command{
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		b := balances.NewBalanceTracker()
 
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor, ctx, true)
+		grader := LaunchGrader(Config, monitor, b, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker, grader, true)
-		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		apiserver := LaunchAPI(Config, statTracker, grader, b, true)
+		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
 		// This is a blocking call

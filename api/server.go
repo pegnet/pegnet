@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pegnet/pegnet/balances"
+
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
@@ -18,10 +20,11 @@ type APIServer struct {
 	Statistics *mining.GlobalStatTracker
 	Server     *http.Server
 	Grader     *opr.QuickGrader
+	Balances   *balances.BalanceTracker
 	Mux        *http.ServeMux
 }
 
-func NewApiServer(grader *opr.QuickGrader) *APIServer {
+func NewApiServer(grader *opr.QuickGrader, balances *balances.BalanceTracker) *APIServer {
 	s := new(APIServer)
 	s.Server = &http.Server{}
 	mux := http.NewServeMux()
@@ -29,6 +32,7 @@ func NewApiServer(grader *opr.QuickGrader) *APIServer {
 	s.Server.Handler = corsHeader(mux)
 	s.Mux = mux
 	s.Grader = grader
+	s.Balances = balances
 
 	return s
 }
@@ -85,11 +89,8 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO: This is not thread safe. This call could be exceedingly large too
 		// 		I think it should be tossed
 		result = &GenericResult{OPRBlocks: h.Grader.GetBlocks()}
-	case "balances":
-		result = &GenericResult{Balances: opr.Balances}
-
 	case "balance":
-		result, apiError = getBalance(request.Params)
+		result, apiError = h.getBalance(request.Params)
 
 	case "chainid":
 		result = &GenericResult{ChainID: opr.OPRChainID}
