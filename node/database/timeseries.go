@@ -27,7 +27,7 @@ func FieldValue(item interface{}, field string) interface{} {
 // TimeSeries is the base of all time series
 type TimeSeries struct {
 	Timestamp   time.Time `gorm:"index"`
-	BlockHeight int64     `gorm:"primary_key"`
+	BlockHeight int64     `gorm:"index;type:integer;primary_key"`
 }
 
 func (t TimeSeries) Time() time.Time {
@@ -97,7 +97,7 @@ type NumberOPRRecordsTimeSeries struct {
 // AssetPricing
 type AssetPricingTimeSeries struct {
 	TimeSeries
-	Asset string
+	Asset string `gorm:"type:varchar;primary_key"`
 	Price float64
 }
 
@@ -111,8 +111,9 @@ func AutoMigrateTimeSeries(db *gorm.DB) {
 	db.AutoMigrate(&DifficultyTimeSeries{})
 	db.AutoMigrate(&NetworkHashrateTimeSeries{})
 	db.AutoMigrate(&NumberOPRRecordsTimeSeries{})
-	db.AutoMigrate(&AssetPricingTimeSeries{})
 	db.AutoMigrate(&UniqueGradedCoinbasesTimeSeries{})
+
+	db.AutoMigrate(&AssetPricingTimeSeries{})
 }
 
 func TimeSeriesFromOPRBlock(block *opr.OprBlock) (t TimeSeries, err error) {
