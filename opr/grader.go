@@ -450,7 +450,7 @@ func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePri
 			continue // This entry is not correctly formatted
 		}
 		if !VerifyWinners(opr, prevWinners) {
-			log.WithFields(log.Fields{"entryhash": entryHash.EntryHash, "id": opr.FactomDigitalID}).Warnf("Bad winners")
+			log.WithFields(log.Fields{"entryhash": entryHash.EntryHash, "id": opr.FactomDigitalID}).Warnf("bad previous winners in opr")
 			continue // This entry does not have the correct previous winners
 		}
 
