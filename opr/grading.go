@@ -71,6 +71,7 @@ func GradeMinimum(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord)
 				"place":     i,
 				"entryhash": fmt.Sprintf("%x", opr.EntryHash),
 				"id":        opr.FactomDigitalID,
+				"dbht":      opr.Dbht,
 			}).Warnf("Self reported difficulty incorrect Exp %x, found %x", opr.Difficulty, opr.SelfReportedDifficulty)
 			continue
 		}
