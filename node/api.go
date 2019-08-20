@@ -41,6 +41,8 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.UniqueGradedCoinbasesTimeSeries{})
 	case "asset-list":
 		result = common.AllAssets
+	case "pnt-addresses":
+		result = n.PegnetGrader.Balances.AssetHumanReadable("PNT")
 	default:
 		apiError = api.NewMethodNotFoundError()
 	}

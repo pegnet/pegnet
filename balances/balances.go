@@ -33,6 +33,16 @@ func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
 	return
 }
 
+func (b *BalanceTracker) AssetHumanReadable(prefix string) map[string]int64 {
+	b.Lock()
+	defer b.Unlock()
+	r := make(map[string]int64)
+	for k, v := range b.Balances[prefix] {
+		r[common.ConvertRawToFCT(k[:])] = v
+	}
+	return r
+}
+
 // AddToBalance adds the given value to the human-readable address
 // Note that add to balance takes a signed update, so this can be used to add to or
 // subtract from a balance.  An error is returned if the value would drive the balance
