@@ -1,5 +1,5 @@
 vendor
-myconfig.ini
+config/pegnetconfig.ini
 
 # Binaries for programs and plugins
 *.exe

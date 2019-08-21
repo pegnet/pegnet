@@ -11,10 +11,16 @@ To be able to run PegNet you must have Docker and docker-compose, docker version
 ## Initial Steps
 From wherever you have cloned this repo
 
-- Create your config file from `defaultconfig.ini` using
+- Create your config file from `config/defaultconfig.ini` using
 
 ```bash
-cp defaultconfig.ini myconfig.ini
+cp config/defaultconfig.ini config/pegnetconfig.ini
+```
+
+- Edit the following values on `pegnetconfig.ini`
+```ini
+FactomdLocation="factomd:8088"
+WalletdLocation="walletd:8089"
 ```
 
 - After you have copied and setup your config file, run
@@ -61,9 +67,9 @@ Or a node with a set number of miners:
 docker-compose run --rm pegnet go run main.go --log=debug --miners=4
 ```
 
-# Other usefull commands
-- run `docker-compose up -d` (running in deamon mode)
-- run `docker-compose build --no-cache pegnet` (builds the penget image) 
+# Other useful commands
+- run `docker-compose up -d` (running in daemon mode)
+- run `docker-compose build --no-cache pegnet` (builds the pegnet image) 
 - run `docker-compose run --rm pegnet bash` (run a temp pegnet container with bash)
 
 # Destroy (reset all data)
