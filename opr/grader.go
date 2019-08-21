@@ -592,14 +592,14 @@ func (g *QuickGrader) OprsByDigitalID(did string) []OraclePriceRecord {
 	return subset
 }
 
-// oprByHash returns the entire OPR based on it's hash
+// oprByHash returns the entire OPR based on it's entry hash
 func (g *QuickGrader) OprByHash(hash string) OraclePriceRecord {
 	g.oprBlkLock.Lock()
 	defer g.oprBlkLock.Unlock()
 
 	for _, block := range g.oprBlks {
 		for _, record := range block.OPRs {
-			if hash == hex.EncodeToString(record.OPRHash) {
+			if hash == hex.EncodeToString(record.EntryHash) {
 				return *record
 			}
 		}
@@ -616,15 +616,13 @@ func (g *QuickGrader) OprByShortHash(shorthash string) OraclePriceRecord {
 	// hashbytes = reverseBytes(hashbytes)
 	for _, block := range g.oprBlks {
 		for _, record := range block.OPRs {
-			if bytes.Compare(hashBytes, record.OPRHash[:8]) == 0 {
+			if bytes.Compare(hashBytes, record.EntryHash[:8]) == 0 {
 				return *record
 			}
 		}
 	}
 	return OraclePriceRecord{}
 }
-
-/// -----
 
 // OPRs is the message sent by the Grader
 type OPRs struct {
@@ -633,4 +631,12 @@ type OPRs struct {
 
 	// Since this is used as a message, we need a way to send an error
 	Error error
+}
+
+/// -----
+
+// DEBUGAddOPRBlock is used for unit tests. We need access to the private field
+// to setup some basic testing
+func (g *QuickGrader) DEBUGAddOPRBlock(oprBlock *OprBlock) {
+	g.oprBlks = append(g.oprBlks, oprBlock)
 }

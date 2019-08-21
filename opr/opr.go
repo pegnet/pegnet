@@ -33,7 +33,9 @@ var pollingDataSourceInitializer sync.Once
 
 func InitDataSource(config *config.Config) {
 	pollingDataSourceInitializer.Do(func() {
-		PollingDataSource = polling.NewDataSources(config)
+		if PollingDataSource == nil { // This can be inited fro
+			PollingDataSource = polling.NewDataSources(config)
+		}
 	})
 }
 

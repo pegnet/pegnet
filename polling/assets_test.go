@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
+	"github.com/pegnet/pegnet/testutils"
 	"github.com/zpatrick/go-config"
 )
 
@@ -19,18 +19,18 @@ func TestBasicPollingSources(t *testing.T) {
 	end := 6
 	// Create the unit test creator
 	NewTestingDataSource = func(config *config.Config, source string) (IDataSource, error) {
-		s := new(UnitTestDataSource)
+		s := new(testutils.UnitTestDataSource)
 		v, err := strconv.Atoi(string(source[8]))
 		if err != nil {
 			panic(err)
 		}
-		s.value = float64(v)
-		s.assets = []string{common.AllAssets[v]}
-		s.name = fmt.Sprintf("UnitTest%d", v)
+		s.Value = float64(v)
+		s.Assets = []string{common.AllAssets[v]}
+		s.SourceName = fmt.Sprintf("UnitTest%d", v)
 
 		// Catch all
 		if v >= end {
-			s.assets = common.AllAssets[1:]
+			s.Assets = common.AllAssets[1:]
 		}
 		return s, nil
 	}
@@ -124,43 +124,4 @@ func TestBasicPollingSources(t *testing.T) {
 			t.Errorf("Exp UnitTest8, got %s", s.AssetSources["USD"][0])
 		}
 	})
-}
-
-// UnitTestDataSource just reports the value for the supported assets
-type UnitTestDataSource struct {
-	value  float64
-	assets []string
-	name   string
-}
-
-func NewUnitTestDataSource(config *config.Config) (*UnitTestDataSource, error) {
-	s := new(UnitTestDataSource)
-	return s, nil
-}
-
-func (d *UnitTestDataSource) Name() string {
-	return d.name
-}
-
-func (d *UnitTestDataSource) Url() string {
-	return "https://unit.test/"
-}
-
-func (d *UnitTestDataSource) SupportedPegs() []string {
-	return d.assets
-}
-
-func (d *UnitTestDataSource) FetchPegPrices() (peg PegAssets, err error) {
-	peg = make(map[string]PegItem)
-
-	timestamp := time.Now()
-	for _, asset := range d.SupportedPegs() {
-		peg[asset] = PegItem{Value: d.value, When: timestamp, WhenUnix: timestamp.Unix()}
-	}
-
-	return peg, nil
-}
-
-func (d *UnitTestDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	return FetchPegPrice(peg, d.FetchPegPrices)
 }
