@@ -168,8 +168,17 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 			}
 			uniqueGraded[r.CoinbaseAddress] += 1
 		}
+
+		largestMiner := 0
+		for _, v := range uniqueGraded {
+			if v > largestMiner {
+				largestMiner = v
+			}
+		}
+
 		uc := database.UniqueGradedCoinbasesTimeSeries{
 			TimeSeries:             t,
+			BiggestMiner:           largestMiner,
 			UniqueGradedCoinbases:  len(uniqueGraded),
 			UniqueWinningCoinbases: len(uniqueWining),
 		}
