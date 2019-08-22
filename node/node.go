@@ -49,6 +49,11 @@ func NewPegnetNode(config *config.Config, monitor common.IMonitor, grader *opr.Q
 	return n, nil
 }
 
+func (n *PegnetNode) Close() error {
+	n.logger().Info("closing pegnet node db")
+	return n.NodeDatabase.DB.Close()
+}
+
 //  Run will run the sync everytime we hit a new block
 func (n *PegnetNode) Run(ctx context.Context) {
 	fLog := n.logger()

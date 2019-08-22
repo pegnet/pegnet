@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
 	"strings"
@@ -21,7 +22,8 @@ import (
 )
 
 var (
-	Config *config.Config
+	Config      *config.Config
+	ExitHandler *common.ExitHandler
 	// Global Flags
 	LogLevel        string
 	FactomdLocation string
@@ -185,6 +187,19 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		p, _ := cmd.Flags().GetInt("profileport")
 		go StartProfiler(p)
 	}
+
+	// Catch ctl+c
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		<-signalChan
+		log.Info("Gracefully closing")
+		common.GlobalExitHandler.Close()
+
+		log.Info("closing application")
+		// If something is hanging, we have to kill it
+		os.Exit(0)
+	}()
 
 	return nil
 }

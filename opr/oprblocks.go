@@ -11,6 +11,7 @@ type IOPRBlockStore interface {
 	WriteInvalidOPRBlock(dbht int64) error
 	WriteOPRBlock(opr *OprBlock) error
 	FetchOPRBlock(height int64) (*OprBlock, error)
+	Close() error
 }
 
 // OPRBlockStore is where we store the oprblock list
@@ -24,6 +25,9 @@ func NewOPRBlockStore(db database.IDatabase) *OPRBlockStore {
 	o.DB = db
 
 	return o
+}
+func (d *OPRBlockStore) Close() error {
+	return d.DB.Close()
 }
 
 // WriteInvalidOPRBlock is for writing a dbht to disk that has an invalid oprblock. This could

@@ -41,6 +41,8 @@ type IDatabase interface {
 	Put(bucket Bucket, key []byte, Value []byte) error
 	Get(bucket Bucket, key []byte) ([]byte, error)
 	Delete(bucket Bucket, key []byte) error
+	Close() error
+
 	Iterate(bucket Bucket) Iterator
 }
 

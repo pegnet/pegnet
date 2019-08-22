@@ -93,6 +93,11 @@ func NewQuickGrader(config *config.Config, db database.IDatabase, balanceTraker 
 	return g
 }
 
+func (g *QuickGrader) Close() error {
+	log.Info("closing grader db")
+	return g.BlockStore.Close()
+}
+
 // GetBlocks should only be used in unit tests. It is not thread safe
 func (g *QuickGrader) GetBlocks() []*OprBlock {
 	return g.oprBlks
@@ -267,7 +272,11 @@ func (g *QuickGrader) Sync() error {
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
-			for place, winner := range oprblock.GradedOPRs[:25] { // Only top 10 matter
+			max := 25
+			if len(oprblock.GradedOPRs) < max {
+				max = len(oprblock.GradedOPRs)
+			}
+			for place, winner := range oprblock.GradedOPRs[:max] { // The top 25 matter in version 2
 				reward := GetRewardFromPlace(place, g.Network, block.EntryBlock.Header.DBHeight)
 				if reward > 0 {
 					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)

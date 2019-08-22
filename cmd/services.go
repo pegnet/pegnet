@@ -66,6 +66,7 @@ func LaunchGrader(config *config.Config, monitor *common.Monitor, balances *bala
 	if run {
 		go grader.Run(monitor, ctx)
 	}
+	common.GlobalExitHandler.AddExit(grader.Close)
 	return grader
 }
 
