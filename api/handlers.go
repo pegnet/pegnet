@@ -86,7 +86,7 @@ func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Err
 			// TODO: Rename param to fit coinbase option
 			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
 				submissions += 1
-				if i <= 50 {
+				if i < 50 {
 					difficultyPlacementsCount += 1
 					difficultyPlacementsSum += int64(i + 1)
 					for k := range difficultyPlacements {
