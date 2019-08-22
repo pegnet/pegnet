@@ -192,10 +192,16 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 			// Alert followers that we have graded the previous block
 			g.SendToListeners(&winners)
 
-			// TODO: This should be another routine, not affecting grading
-			err = g.Burns.UpdateBurns(g.Config, g.GetFirstOPRBlock().Dbht)
-			if err != nil {
-				log.WithField("id", "grader").WithError(err).Errorf("error processing burns")
+			firstOPR := g.GetFirstOPRBlock()
+			if firstOPR != nil {
+				// TODO: This should be another routine, not affecting grading
+				err = g.Burns.UpdateBurns(g.Config, firstOPR.Dbht)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"id":   "grader",
+						"dbht": firstOPR.Dbht,
+					}).WithError(err).Errorf("error processing burns")
+				}
 			}
 		}
 

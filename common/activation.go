@@ -24,7 +24,11 @@ var (
 			return 2 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			return 1
+			switch {
+			case height < 206869:
+				return 1
+			}
+			return 2
 		},
 	}
 )

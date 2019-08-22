@@ -152,7 +152,14 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 	}
 
 	// Validate all the Assets exists
-	return opr.Assets.ContainsExactly(common.AllAssets)
+	switch opr.Version {
+	case 1:
+		return opr.Assets.ContainsExactly(common.VersionOneAssets)
+	case 2:
+		return opr.Assets.ContainsExactly(common.VersionTwoAssets)
+	default:
+		return false
+	}
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
