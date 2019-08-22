@@ -148,7 +148,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false // DBHeight is not reported correctly
 	}
 
-	if opr.Version != OPRVersion {
+	if opr.Version != common.OPRVersion(net, int64(dbht)) {
 		return false // We only support this version
 	}
 

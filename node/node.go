@@ -163,7 +163,7 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 		uniqueGraded := make(map[string]int)
 		uniqueWining := make(map[string]int)
 		for i, r := range block.GradedOPRs {
-			if opr.GetRewardFromPlace(i) > 0 {
+			if opr.GetRewardFromPlace(i, n.PegnetGrader.Network, int64(r.Dbht)) > 0 {
 				uniqueWining[r.CoinbaseAddress] += 1
 			}
 			uniqueGraded[r.CoinbaseAddress] += 1

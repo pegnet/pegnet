@@ -77,7 +77,7 @@ func LaunchStatistics(config *config.Config, ctx context.Context) *mining.Global
 }
 
 func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *opr.QuickGrader, bals *balances.BalanceTracker, run bool) *api.APIServer {
-	s := api.NewApiServer(grader, bals)
+	s := api.NewApiServer(grader, bals, config)
 
 	if run {
 		apiport, err := config.Int(common.ConfigAPIPort)

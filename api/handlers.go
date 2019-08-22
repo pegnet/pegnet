@@ -6,6 +6,8 @@ package api
 import (
 	"strconv"
 
+	"github.com/pegnet/pegnet/common"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/opr"
 )
@@ -14,8 +16,13 @@ import (
 // Required for M1
 
 func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Error) {
+	net, err := common.LoadConfigNetwork(a.config)
+	if err != nil {
+		return nil, NewInternalError()
+	}
+
 	performanceParams := new(PerformanceParameters)
-	err := MapToObject(params, performanceParams)
+	err = MapToObject(params, performanceParams)
 	if err != nil {
 		return nil, NewJSONDecodingError()
 	}
@@ -94,7 +101,7 @@ func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Err
 		for i, record := range block.GradedOPRs {
 			// TODO: Rename param to fit coinbase option
 			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
-				rewards += int64(opr.GetRewardFromPlace(i))
+				rewards += int64(opr.GetRewardFromPlace(i, net, int64(record.Dbht)))
 				gradingPlacementsCount += 1
 				gradingPlacementsSum += int64(i + 1)
 				for k := range gradingPlacements {

@@ -78,3 +78,23 @@ func (b *BalanceTracker) GetBalance(address string) (balance int64) {
 	balance = b.Balances[prefix][adr]
 	return
 }
+
+// DiagnosticAssetHumanReadablePNTBalances is used to monitor the PNT distribution. It's mainly a diagnosing/debugging
+// function.
+func (b *BalanceTracker) DiagnosticAssetHumanReadablePNTBalances(prefix string) map[string]string {
+	b.Lock()
+	defer b.Unlock()
+	r := make(map[string]string)
+	total := int64(0)
+	for k, v := range b.Balances[prefix] {
+		r[common.ConvertRawToFCT(k[:])] = fmt.Sprintf("%d", v/1e8)
+		total += v / 1e8
+	}
+
+	for k, v := range b.Balances[prefix] {
+		r[common.ConvertRawToFCT(k[:])+"%"] = fmt.Sprintf("%.2f%%", float64(v/1e8)/float64(total)*100)
+	}
+
+	r["all"] = fmt.Sprintf("%d", total)
+	return r
+}

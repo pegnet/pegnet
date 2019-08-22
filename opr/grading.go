@@ -13,6 +13,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	// 0.5%
+	GradeBand float64 = 0.005
+)
+
 // Avg computes the average answer for the price of each token reported
 func Avg(list []*OraclePriceRecord) (avg []float64) {
 	avg = make([]float64, len(common.AllAssets))
@@ -41,21 +46,105 @@ func Avg(list []*OraclePriceRecord) (avg []float64) {
 }
 
 // CalculateGrade takes the averages and grades the individual OPRs
-func CalculateGrade(avg []float64, opr *OraclePriceRecord) float64 {
+func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
 	for i, v := range tokens {
 		if avg[i] > 0 {
 			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
-			opr.Grade = opr.Grade + d*d*d*d  // the grade is the sum of the square of the square of the differences
+			if band > 0 {
+				d = ApplyBand(d, band)
+			}
+			opr.Grade = opr.Grade + d*d*d*d // the grade is the sum of the square of the square of the differences
 		}
 	}
 	return opr.Grade
 }
 
+// ApplyBand
+func ApplyBand(diff float64, band float64) float64 {
+	if diff <= band {
+		return 0
+	}
+	return diff - band
+}
+
 // GradeMinimum only grades the top 50 honest records. The input must be the records sorted by
 // self reported difficulty.
-func GradeMinimum(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (graded []*OraclePriceRecord) {
+	// No grade algo can handle 0
+	if len(sortedList) == 0 {
+		return nil
+	}
+
+	switch common.OPRVersion(network, dbht) {
+	case 1:
+		return gradeMinimumVersionOne(sortedList)
+	case 2:
+		return gradeMinimumVersionTwo(sortedList)
+	}
+	panic("Grading version unspecified")
+}
+
+// gradeMinimumVersionTwo is version 2 grading algo
+// 1. PoW to top 50
+// 2. Grade with band to top 25
+// 3. Pay top 25 equally (not done here)
+// 4. Grade to 1
+// 5. Wining price is the last one
+func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(sortedList)
+	if len(list) < 25 {
+		return nil
+	}
+
+	// Find the top 50 with the correct difficulties
+	// 1. top50 is the top 50 PoW
+	top50 := make([]*OraclePriceRecord, 0)
+	for i, opr := range sortedList {
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+		if f != opr.Difficulty {
+			log.WithFields(log.Fields{
+				"place":     i,
+				"entryhash": fmt.Sprintf("%x", opr.EntryHash),
+				"id":        opr.FactomDigitalID,
+				"dbtht":     opr.Dbht,
+			}).Warnf("Self reported difficulty incorrect Exp %x, found %x", opr.Difficulty, opr.SelfReportedDifficulty)
+			continue
+		}
+		// Honest record
+		top50 = append(top50, opr)
+		if len(top50) == 50 {
+			break // We have enough to grade
+		}
+	}
+
+	// 2. Grade with Band to top 25
+	// 3. Pay top 25 (does not happen here)
+	// 4. Grade to 1
+	for i := len(top50); i >= 1; i-- {
+		avg := Avg(top50[:i])
+		for j := 0; j < i; j++ {
+			band := 0.0
+			if i >= 25 { // Use the band until we hit the 25
+				band = GradeBand
+			}
+			CalculateGrade(avg, top50[j], band)
+		}
+
+		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Difficulty > top50[j].Difficulty })
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Grade < top50[j].Grade })
+	}
+	return top50
+}
+
+// gradeMinimumVersionOne is the version 1 grading algorithm
+// 1. PoW to top 50
+// 2. Grading to top 10
+// 3. Pay top 10 according to their place
+func gradeMinimumVersionOne(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
 	list := RemoveDuplicateSubmissions(sortedList)
 	if len(list) < 10 {
 		return nil
@@ -84,7 +173,7 @@ func GradeMinimum(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord)
 	for i := len(top50); i >= 10; i-- {
 		avg := Avg(top50[:i])
 		for j := 0; j < i; j++ {
-			CalculateGrade(avg, top50[j])
+			CalculateGrade(avg, top50[j], 0)
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
 		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Difficulty > top50[j].Difficulty })
@@ -118,7 +207,7 @@ func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted 
 	for i := len(topDifficulty); i >= 10; i-- {
 		avg := Avg(topDifficulty[:i])
 		for j := 0; j < i; j++ {
-			CalculateGrade(avg, topDifficulty[j])
+			CalculateGrade(avg, topDifficulty[j], 0)
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
 		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > topDifficulty[j].Difficulty })
@@ -164,7 +253,25 @@ func VerifyWinners(opr *OraclePriceRecord, winners []*OraclePriceRecord) bool {
 	return true
 }
 
-func GetRewardFromPlace(place int) int64 {
+func GetRewardFromPlace(place int, network string, height int64) int64 {
+	switch common.OPRVersion(network, height) {
+	case 1:
+		return getRewardFromPlaceVersionOne(place)
+	case 2:
+		return getRewardFromPlaceVersionTwo(place)
+	}
+	panic("opr version not found")
+}
+
+// getRewardFromPlaceVersionTwo pays top 25 evenly
+func getRewardFromPlaceVersionTwo(place int) int64 {
+	if place >= 25 {
+		return 0 // There's no participation trophy. Return zero.
+	}
+	return 200 * 1e8
+}
+
+func getRewardFromPlaceVersionOne(place int) int64 {
 	if place >= 10 {
 		return 0 // There's no participation trophy. Return zero.
 	}

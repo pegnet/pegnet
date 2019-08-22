@@ -267,8 +267,8 @@ func (g *QuickGrader) Sync() error {
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
-			for place, winner := range oprblock.GradedOPRs[:10] { // Only top 10 matter
-				reward := GetRewardFromPlace(place)
+			for place, winner := range oprblock.GradedOPRs[:25] { // Only top 10 matter
+				reward := GetRewardFromPlace(place, g.Network, block.EntryBlock.Header.DBHeight)
 				if reward > 0 {
 					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)
 					if err != nil {
@@ -317,7 +317,7 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 	})
 
 	// GradeMinimum will only grade the first 50 honest records
-	graded := GradeMinimum(oprs)
+	graded := GradeMinimum(oprs, g.Network, block.EntryBlock.Header.DBHeight)
 	if len(graded) < 10 { // We might lose some when we reject dishonest records
 		return nil, nil // Not enough to be complete
 	}
@@ -418,6 +418,11 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 				continue
 			}
 			if !VerifyWinners(opr, prevWinners) {
+				log.WithFields(log.Fields{
+					"entryhash": fmt.Sprintf("%x", opr.EntryHash),
+					"id":        opr.FactomDigitalID,
+					"dbht":      opr.Dbht,
+				}).Warnf("bad previous winners in opr")
 				results <- &OPRWorkResponse{opr: nil} // This entry does not have the correct previous winners
 				continue
 			}
@@ -450,7 +455,11 @@ func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePri
 			continue // This entry is not correctly formatted
 		}
 		if !VerifyWinners(opr, prevWinners) {
-			log.WithFields(log.Fields{"entryhash": entryHash.EntryHash, "id": opr.FactomDigitalID}).Warnf("bad previous winners in opr")
+			log.WithFields(log.Fields{
+				"entryhash": entryHash.EntryHash,
+				"id":        opr.FactomDigitalID,
+				"dbht":      opr.Dbht,
+			}).Warnf("bad previous winners in opr")
 			continue // This entry does not have the correct previous winners
 		}
 
