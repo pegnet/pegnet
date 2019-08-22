@@ -21,7 +21,8 @@ const (
 	ConfigMinerDBType      = "Database.MinerDatabaseType"
 	ConfigPegnetNodeDBPath = "Database.NodeDatabase"
 
-	ConfigAPIPort = "API.APIPort"
+	ConfigAPIPort          = "API.APIPort"
+	ConfigControlPanelPort = "API.ControlPanelPort"
 
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
@@ -51,6 +52,7 @@ func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings[ConfigMinerDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/miner.ldb"
 	settings[ConfigMinerDBType] = "ldb"
 	settings[ConfigPegnetNodeDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/node.sqlite"
+	settings[ConfigControlPanelPort] = "8080"
 
 	return settings, nil
 }
