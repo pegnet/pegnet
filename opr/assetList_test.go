@@ -1,12 +1,15 @@
 package opr_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/pegnet/pegnet/polling"
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
@@ -105,8 +108,15 @@ func TestOPRJsonMarshal(t *testing.T) {
 	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
 	o.FactomDigitalID = "random"
 
-	for _, asset := range common.AllAssets {
+	for i, asset := range common.AllAssets {
 		o.Assets[asset] = rand.Float64() * 1000
+
+		// Test truncate does not affect json
+		if i%3 == 0 {
+			o.Assets[asset] = polling.TruncateTo4(o.Assets[asset])
+		} else if i%3 == 1 {
+			o.Assets[asset] = polling.TruncateTo8(o.Assets[asset])
+		}
 	}
 
 	if !o.Validate(c, int64(o.Dbht)) {
@@ -122,6 +132,14 @@ func TestOPRJsonMarshal(t *testing.T) {
 	err = json.Unmarshal(data, o2)
 	if err != nil {
 		t.Error(err)
+	}
+
+	data2, err := json.Marshal(o2)
+	if err != nil {
+		t.Error(err)
+	}
+	if bytes.Compare(data, data2) != 0 {
+		t.Error("Json different after remarshal")
 	}
 
 	if !reflect.DeepEqual(o, o2) {

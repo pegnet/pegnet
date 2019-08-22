@@ -528,6 +528,13 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 
 	// Okay, it looks sort of okay.  Lets unmarshal the JSON
 	opr := NewOraclePriceRecord()
+
+	// Need the version number
+	if len(entry.ExtIDs[2]) != 1 {
+		return nil, nil
+	}
+	opr.Version = entry.ExtIDs[2][0]
+
 	if err := json.Unmarshal(entry.Content, opr); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
@@ -546,10 +553,6 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 		return nil, nil
 	}
 	opr.SelfReportedDifficulty = entry.ExtIDs[1]
-	if len(entry.ExtIDs[2]) != 1 {
-		return nil, nil // Version is 1 byte
-	}
-	opr.Version = entry.ExtIDs[2][0]
 
 	// Looking good.  Go ahead and compute the OPRHash
 	sha := sha256.Sum256(entry.Content)

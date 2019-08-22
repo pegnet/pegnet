@@ -32,6 +32,10 @@ func PollingExponentialBackOff() *backoff.ExponentialBackOff {
 	return b
 }
 
-func Round(v float64) float64 {
-	return float64(int64(v*10000)) / 10000
+func TruncateTo4(v float64) float64 {
+	return float64(int64(v*1e4)) / 1e4
+}
+
+func TruncateTo8(v float64) float64 {
+	return float64(int64(v*1e8)) / 1e8
 }

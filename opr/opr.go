@@ -73,7 +73,6 @@ type OraclePriceRecord struct {
 func NewOraclePriceRecord() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
-	o.Version = OPRVersion
 
 	return o
 }
@@ -259,8 +258,19 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 
 // SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-	for asset, v := range assets {
-		opr.Assets[asset] = v.Value
+	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
+	case 1:
+		for asset, v := range assets {
+			opr.Assets[asset] = v.Value
+		}
+	case 2:
+		for asset, v := range assets {
+			// Skip XPT and XPD
+			if asset == "XPT" || asset == "XPD" {
+				continue
+			}
+			opr.Assets[asset] = v.Value
+		}
 	}
 }
 
@@ -295,6 +305,8 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 
 	opr.Dbht = dbht
+	opr.Version = common.OPRVersion(opr.Network, int64(opr.Dbht))
+	OPRVersion = opr.Version // Update this for the polling to know
 
 	// If this is a test network, then give multiple miners their own tPNT address
 	// because that is way more useful debugging than giving all miners the same
@@ -361,7 +373,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets()
+	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version)
 	if err != nil {
 		return err
 	}
