@@ -40,8 +40,17 @@ func (o OraclePriceRecordAssetList) List() []Token {
 
 // from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
 func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
+	var assets []string
+	switch OPRVersion {
+	case 1:
+		assets = common.VersionOneAssets
+	case 2:
+		assets = common.VersionTwoAssets
+	}
+
 	s := "{"
-	for _, k := range common.AllAssets {
+
+	for _, k := range assets {
 		// add key
 		kEscaped := strings.Replace(k, `"`, `\"`, -1)
 		s = s + `"` + kEscaped + `":`

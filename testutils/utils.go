@@ -19,7 +19,7 @@ func GetClientWithFixedResp(resp []byte) *http.Client {
 			StatusCode: 200,
 			// Send response to be tested
 			Body: ioutil.NopCloser(bytes.NewBuffer(resp)),
-			// Must be set to non-nil value or it panics
+			// Must be set to non-nil Value or it panics
 			Header: make(http.Header),
 		}
 	})

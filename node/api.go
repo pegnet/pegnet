@@ -42,7 +42,9 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 	case "asset-list":
 		result = common.AllAssets
 	case "pnt-addresses":
-		result = n.PegnetGrader.Balances.AssetHumanReadable("PNT")
+		// This is kind of a debugging api call. I don't necessarily want to document it as something we should
+		// support, and therefore be used, as the format is in FCT addr and PNT output.
+		result = n.PegnetGrader.Balances.DiagnosticAssetHumanReadablePNTBalances("PNT")
 	default:
 		apiError = api.NewMethodNotFoundError()
 	}

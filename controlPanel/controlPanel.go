@@ -128,6 +128,10 @@ func (c *ControlPanel) ServeControlPanel() {
 		}
 	}()
 
-	c.Listen(8080) // TODO: Do not hardcode
+	port, err := c.Config.Int(common.ConfigControlPanelPort)
+	if err != nil {
+		panic(fmt.Sprintf("Do not have a control panel port in the config file: %v", err))
+	}
+	c.Listen(port)
 
 }

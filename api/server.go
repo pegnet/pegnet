@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/zpatrick/go-config"
 	"github.com/pegnet/pegnet/balances"
-
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
@@ -22,9 +22,10 @@ type APIServer struct {
 	Grader     *opr.QuickGrader
 	Balances   *balances.BalanceTracker
 	Mux        *http.ServeMux
+	config     *config.Config
 }
 
-func NewApiServer(grader *opr.QuickGrader, balances *balances.BalanceTracker) *APIServer {
+func NewApiServer(grader *opr.QuickGrader, balances *balances.BalanceTracker, config *config.Config) *APIServer {
 	s := new(APIServer)
 	s.Server = &http.Server{}
 	mux := http.NewServeMux()
@@ -33,6 +34,7 @@ func NewApiServer(grader *opr.QuickGrader, balances *balances.BalanceTracker) *A
 	s.Mux = mux
 	s.Grader = grader
 	s.Balances = balances
+	s.config = config
 
 	return s
 }

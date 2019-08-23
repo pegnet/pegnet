@@ -93,6 +93,11 @@ func NewQuickGrader(config *config.Config, db database.IDatabase, balanceTraker 
 	return g
 }
 
+func (g *QuickGrader) Close() error {
+	log.Info("closing grader db")
+	return g.BlockStore.Close()
+}
+
 // GetBlocks should only be used in unit tests. It is not thread safe
 func (g *QuickGrader) GetBlocks() []*OprBlock {
 	return g.oprBlks
@@ -181,16 +186,27 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 			oprs := g.GetPreviousOPRBlock(fds.Dbht)
 
 			var winners OPRs
-			winners.ToBePaid = oprs.GradedOPRs[:10]
-			winners.AllOPRs = oprs.OPRs
+			if oprs != nil && len(oprs.GradedOPRs) > 0 {
+				// top 10 get paid for v1, top 25 for v2
+				amt := g.MinRecords(int64(oprs.GradedOPRs[0].Dbht))
+				if len(oprs.GradedOPRs) >= amt {
+					winners.ToBePaid = oprs.GradedOPRs[:amt]
+				}
+				winners.AllOPRs = oprs.OPRs
+			}
 
 			// Alert followers that we have graded the previous block
 			g.SendToListeners(&winners)
 
-			// TODO: This should be another routine, not affecting grading
-			err = g.Burns.UpdateBurns(g.Config, g.GetFirstOPRBlock().Dbht)
-			if err != nil {
-				log.WithField("id", "grader").WithError(err).Errorf("error processing burns")
+			firstOPR := g.GetFirstOPRBlock()
+			if firstOPR != nil {
+				// TODO: This should be another routine, not affecting grading
+				err = g.Burns.UpdateBurns(g.Config, firstOPR.Dbht)
+				if err != nil {
+					log.WithFields(log.Fields{
+						"id": "grader",
+					}).WithError(err).Errorf("error processing burns")
+				}
 			}
 		}
 
@@ -267,8 +283,12 @@ func (g *QuickGrader) Sync() error {
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
-			for place, winner := range oprblock.GradedOPRs[:10] { // Only top 10 matter
-				reward := GetRewardFromPlace(place)
+			max := 25
+			if len(oprblock.GradedOPRs) < max {
+				max = len(oprblock.GradedOPRs)
+			}
+			for place, winner := range oprblock.GradedOPRs[:max] { // The top 25 matter in version 2
+				reward := GetRewardFromPlace(place, g.Network, block.EntryBlock.Header.DBHeight)
 				if reward > 0 {
 					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)
 					if err != nil {
@@ -287,8 +307,9 @@ func (g *QuickGrader) Sync() error {
 }
 
 func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) {
+	min := g.MinRecords(block.EntryBlock.Header.DBHeight)
 	// There is not enough entries in this block, so there is no point in looking at it.
-	if len(block.EntryBlock.EntryList) < 10 {
+	if len(block.EntryBlock.EntryList) < min {
 		return nil, nil
 	}
 
@@ -306,7 +327,7 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 
 	// Check if we have enough oprs for this block. If we have less than 10, there is no point in
 	// trying to grade it.
-	if len(oprs) < 10 {
+	if len(oprs) < min {
 		return nil, nil // Not enough oprs for this block be a valid oprblock
 	}
 
@@ -317,8 +338,8 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 	})
 
 	// GradeMinimum will only grade the first 50 honest records
-	graded := GradeMinimum(oprs)
-	if len(graded) < 10 { // We might lose some when we reject dishonest records
+	graded := GradeMinimum(oprs, g.Network, block.EntryBlock.Header.DBHeight)
+	if len(graded) < min { // We might lose some when we reject dishonest records
 		return nil, nil // Not enough to be complete
 	}
 
@@ -418,6 +439,11 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 				continue
 			}
 			if !VerifyWinners(opr, prevWinners) {
+				log.WithFields(log.Fields{
+					"entryhash": fmt.Sprintf("%x", opr.EntryHash),
+					"id":        opr.FactomDigitalID,
+					"dbht":      opr.Dbht,
+				}).Warnf("bad previous winners in opr")
 				results <- &OPRWorkResponse{opr: nil} // This entry does not have the correct previous winners
 				continue
 			}
@@ -501,8 +527,10 @@ func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
 	if index == -1 {
 		return winners // empty array is the base case
 	}
+	block := g.oprBlks[index]
+	amt := g.MinRecords(block.Dbht)
 
-	return g.oprBlks[index].GradedOPRs[:10]
+	return block.GradedOPRs[:amt]
 }
 
 // ParseOPREntry will return the oracle price record for a given entry.
@@ -523,6 +551,13 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 
 	// Okay, it looks sort of okay.  Lets unmarshal the JSON
 	opr := NewOraclePriceRecord()
+
+	// Need the version number
+	if len(entry.ExtIDs[2]) != 1 {
+		return nil, nil
+	}
+	opr.Version = entry.ExtIDs[2][0]
+
 	if err := json.Unmarshal(entry.Content, opr); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
@@ -541,16 +576,23 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 		return nil, nil
 	}
 	opr.SelfReportedDifficulty = entry.ExtIDs[1]
-	if len(entry.ExtIDs[2]) != 1 {
-		return nil, nil // Version is 1 byte
-	}
-	opr.Version = entry.ExtIDs[2][0]
 
 	// Looking good.  Go ahead and compute the OPRHash
 	sha := sha256.Sum256(entry.Content)
 	opr.OPRHash = sha[:] // Save the OPRHash
 
 	return opr, nil
+}
+
+func (g *QuickGrader) MinRecords(dbht int64) int {
+	switch common.OPRVersion(g.Network, dbht) {
+	case 1:
+		return 10
+	case 2:
+		return 25
+	default:
+		panic("didn't get a valid opr version")
+	}
 }
 
 func (g *QuickGrader) SendToListeners(winners *OPRs) {
@@ -596,14 +638,14 @@ func (g *QuickGrader) OprsByDigitalID(did string) []OraclePriceRecord {
 	return subset
 }
 
-// oprByHash returns the entire OPR based on it's hash
+// oprByHash returns the entire OPR based on it's entry hash
 func (g *QuickGrader) OprByHash(hash string) OraclePriceRecord {
 	g.oprBlkLock.Lock()
 	defer g.oprBlkLock.Unlock()
 
 	for _, block := range g.oprBlks {
 		for _, record := range block.OPRs {
-			if hash == hex.EncodeToString(record.OPRHash) {
+			if hash == hex.EncodeToString(record.EntryHash) {
 				return *record
 			}
 		}
@@ -620,15 +662,13 @@ func (g *QuickGrader) OprByShortHash(shorthash string) OraclePriceRecord {
 	// hashbytes = reverseBytes(hashbytes)
 	for _, block := range g.oprBlks {
 		for _, record := range block.OPRs {
-			if bytes.Compare(hashBytes, record.OPRHash[:8]) == 0 {
+			if bytes.Compare(hashBytes, record.EntryHash[:8]) == 0 {
 				return *record
 			}
 		}
 	}
 	return OraclePriceRecord{}
 }
-
-/// -----
 
 // OPRs is the message sent by the Grader
 type OPRs struct {
@@ -637,4 +677,12 @@ type OPRs struct {
 
 	// Since this is used as a message, we need a way to send an error
 	Error error
+}
+
+/// -----
+
+// DEBUGAddOPRBlock is used for unit tests. We need access to the private field
+// to setup some basic testing
+func (g *QuickGrader) DEBUGAddOPRBlock(oprBlock *OprBlock) {
+	g.oprBlks = append(g.oprBlks, oprBlock)
 }

@@ -1,6 +1,7 @@
 package opr_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -8,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pegnet/pegnet/polling"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/zpatrick/go-config"
 )
 
 // The correct marshal format
@@ -101,16 +102,21 @@ func TestOPRJsonMarshal(t *testing.T) {
 		o.Assets[asset] = rand.Float64()
 	}
 
-	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
+	//c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
 	o.FactomDigitalID = "random"
+	o.Network = common.TestNetwork
+	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
-	for _, asset := range common.AllAssets {
+	for i, asset := range common.AllAssets {
 		o.Assets[asset] = rand.Float64() * 1000
-	}
 
-	if !o.Validate(c, int64(o.Dbht)) {
-		t.Error("Should be valid")
+		// Test truncate does not affect json
+		if i%3 == 0 {
+			o.Assets[asset] = polling.TruncateTo4(o.Assets[asset])
+		} else if i%3 == 1 {
+			o.Assets[asset] = polling.TruncateTo8(o.Assets[asset])
+		}
 	}
 
 	data, err := json.Marshal(o)
@@ -119,9 +125,20 @@ func TestOPRJsonMarshal(t *testing.T) {
 	}
 
 	o2 := opr.NewOraclePriceRecord()
+	// These two not set by json
+	o2.Network = common.TestNetwork
+	o2.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 	err = json.Unmarshal(data, o2)
 	if err != nil {
 		t.Error(err)
+	}
+
+	data2, err := json.Marshal(o2)
+	if err != nil {
+		t.Error(err)
+	}
+	if bytes.Compare(data, data2) != 0 {
+		t.Error("Json different after remarshal")
 	}
 
 	if !reflect.DeepEqual(o, o2) {

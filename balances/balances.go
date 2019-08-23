@@ -33,16 +33,6 @@ func ConvertAddress(address string) (prefix string, adr [32]byte, err error) {
 	return
 }
 
-func (b *BalanceTracker) AssetHumanReadable(prefix string) map[string]int64 {
-	b.Lock()
-	defer b.Unlock()
-	r := make(map[string]int64)
-	for k, v := range b.Balances[prefix] {
-		r[common.ConvertRawToFCT(k[:])] = v
-	}
-	return r
-}
-
 // AddToBalance adds the given value to the human-readable address
 // Note that add to balance takes a signed update, so this can be used to add to or
 // subtract from a balance.  An error is returned if the value would drive the balance
@@ -87,4 +77,24 @@ func (b *BalanceTracker) GetBalance(address string) (balance int64) {
 	defer b.Unlock()
 	balance = b.Balances[prefix][adr]
 	return
+}
+
+// DiagnosticAssetHumanReadablePNTBalances is used to monitor the PNT distribution. It's mainly a diagnosing/debugging
+// function.
+func (b *BalanceTracker) DiagnosticAssetHumanReadablePNTBalances(prefix string) map[string]string {
+	b.Lock()
+	defer b.Unlock()
+	r := make(map[string]string)
+	total := int64(0)
+	for k, v := range b.Balances[prefix] {
+		r[common.ConvertRawToFCT(k[:])] = fmt.Sprintf("%d", v/1e8)
+		total += v / 1e8
+	}
+
+	for k, v := range b.Balances[prefix] {
+		r[common.ConvertRawToFCT(k[:])+"%"] = fmt.Sprintf("%.2f%%", float64(v/1e8)/float64(total)*100)
+	}
+
+	r["all"] = fmt.Sprintf("%d", total)
+	return r
 }
