@@ -13,7 +13,6 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	"github.com/zpatrick/go-config"
 )
 
 // The correct marshal format
@@ -104,9 +103,11 @@ func TestOPRJsonMarshal(t *testing.T) {
 		o.Assets[asset] = rand.Float64()
 	}
 
-	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
+	//c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
 	o.FactomDigitalID = "random"
+	o.Network = common.TestNetwork
+	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
 	for i, asset := range common.AllAssets {
 		o.Assets[asset] = rand.Float64() * 1000
@@ -119,16 +120,15 @@ func TestOPRJsonMarshal(t *testing.T) {
 		}
 	}
 
-	if !o.Validate(c, int64(o.Dbht)) {
-		t.Error("Should be valid")
-	}
-
 	data, err := json.Marshal(o)
 	if err != nil {
 		t.Error(err)
 	}
 
 	o2 := opr.NewOraclePriceRecord()
+	// These two not set by json
+	o2.Network = common.TestNetwork
+	o2.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 	err = json.Unmarshal(data, o2)
 	if err != nil {
 		t.Error(err)

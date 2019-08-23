@@ -186,8 +186,14 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 			oprs := g.GetPreviousOPRBlock(fds.Dbht)
 
 			var winners OPRs
-			winners.ToBePaid = oprs.GradedOPRs[:10]
-			winners.AllOPRs = oprs.OPRs
+			if oprs != nil && len(oprs.GradedOPRs) > 0 {
+				// top 10 get paid for v1, top 25 for v2
+				amt := g.MinRecords(int64(oprs.GradedOPRs[0].Dbht))
+				if len(oprs.GradedOPRs) >= amt {
+					winners.ToBePaid = oprs.GradedOPRs[:amt]
+				}
+				winners.AllOPRs = oprs.OPRs
+			}
 
 			// Alert followers that we have graded the previous block
 			g.SendToListeners(&winners)
@@ -302,8 +308,9 @@ func (g *QuickGrader) Sync() error {
 }
 
 func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) {
+	min := g.MinRecords(block.EntryBlock.Header.DBHeight)
 	// There is not enough entries in this block, so there is no point in looking at it.
-	if len(block.EntryBlock.EntryList) < 10 {
+	if len(block.EntryBlock.EntryList) < min {
 		return nil, nil
 	}
 
@@ -321,7 +328,7 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 
 	// Check if we have enough oprs for this block. If we have less than 10, there is no point in
 	// trying to grade it.
-	if len(oprs) < 10 {
+	if len(oprs) < min {
 		return nil, nil // Not enough oprs for this block be a valid oprblock
 	}
 
@@ -333,7 +340,7 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 
 	// GradeMinimum will only grade the first 50 honest records
 	graded := GradeMinimum(oprs, g.Network, block.EntryBlock.Header.DBHeight)
-	if len(graded) < 10 { // We might lose some when we reject dishonest records
+	if len(graded) < min { // We might lose some when we reject dishonest records
 		return nil, nil // Not enough to be complete
 	}
 
@@ -521,8 +528,10 @@ func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
 	if index == -1 {
 		return winners // empty array is the base case
 	}
+	block := g.oprBlks[index]
+	amt := g.MinRecords(block.Dbht)
 
-	return g.oprBlks[index].GradedOPRs[:10]
+	return block.GradedOPRs[:amt]
 }
 
 // ParseOPREntry will return the oracle price record for a given entry.
@@ -574,6 +583,17 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	opr.OPRHash = sha[:] // Save the OPRHash
 
 	return opr, nil
+}
+
+func (g *QuickGrader) MinRecords(dbht int64) int {
+	switch common.OPRVersion(g.Network, dbht) {
+	case 1:
+		return 10
+	case 2:
+		return 25
+	default:
+		panic("didn't get a valid opr version")
+	}
 }
 
 func (g *QuickGrader) SendToListeners(winners *OPRs) {

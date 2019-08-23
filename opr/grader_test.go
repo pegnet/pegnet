@@ -7,35 +7,76 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/pegnet/pegnet/testutils"
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/database"
 	. "github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/testutils"
 )
 
 func TestOPRParse(t *testing.T) {
-	config := common.NewUnitTestConfig()
-	alerts := make(chan *OPRs, 1)
-	// Need to make some random winners
-	list := new(OPRs)
-	list.ToBePaid = make([]*OraclePriceRecord, 10)
-	for i := range list.ToBePaid {
-		opr := RandomOPR()
-		opr.Dbht = 1
-		list.ToBePaid[i] = opr
-	}
-	alerts <- list
-
-	PollingDataSource = testutils.AlwaysOnePolling()
-
-	// An OPR made by our codebase should always be valid
-	opr, err := NewOpr(context.Background(), 0, 1, config, alerts)
-	if err != nil {
-		t.Error(err)
+	makeList := func(a int) []*OraclePriceRecord {
+		return make([]*OraclePriceRecord, a)
 	}
 
-	var _ = opr
+	dbht := int32(10)
+
+	test := func(t *testing.T) {
+		config := common.NewUnitTestConfig()
+		net, _ := common.LoadConfigNetwork(config)
+
+		alerts := make(chan *OPRs, 1)
+		// Need to make some random winners
+		v := common.OPRVersion(net, 10)
+		a := 10
+		if v == 2 {
+			a = 25
+		}
+
+		list := new(OPRs)
+		list.ToBePaid = makeList(a)
+		for i := range list.ToBePaid {
+			opr := RandomOPR()
+			opr.Dbht = 1
+			list.ToBePaid[i] = opr
+		}
+		alerts <- list
+
+		PollingDataSource = testutils.AlwaysOnePolling()
+
+		// An OPR made by our codebase should always be valid
+		opr, err := NewOpr(context.Background(), 0, dbht, config, alerts)
+		if err != nil {
+			t.Error(err)
+			t.FailNow()
+		}
+
+		if !opr.Validate(config, int64(opr.Dbht)) {
+			t.Errorf("Should be valid")
+		}
+
+	}
+
+	// At low height
+	t.Run("with winner", test)
+
+	makeList = func(a int) []*OraclePriceRecord {
+		return nil
+	}
+	t.Run("with no winners", test)
+
+	// At high heights
+	dbht = 999999999
+	makeList = func(a int) []*OraclePriceRecord {
+		return make([]*OraclePriceRecord, a)
+	}
+	t.Run("with winner", test)
+
+	makeList = func(a int) []*OraclePriceRecord {
+		return nil
+	}
+	t.Run("with no winners", test)
+
 }
 
 func RandomOPRBlock() *OPRBlockDatabaseObject {

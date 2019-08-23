@@ -25,7 +25,7 @@ var (
 		},
 		TestNetwork: func(height int64) uint8 {
 			switch {
-			case height < 206869:
+			case height < 0:
 				return 1
 			}
 			return 2

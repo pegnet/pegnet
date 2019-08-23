@@ -721,7 +721,7 @@ type winner struct {
 
 func genWinnerOPR(prev [10]string, winners []string) winner {
 	opr := new(OraclePriceRecord)
-	opr.WinPreviousOPR = prev
+	opr.WinPreviousOPR = prev[:]
 
 	if winners == nil {
 		return winner{opr, nil}

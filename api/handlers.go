@@ -217,7 +217,7 @@ func (a *APIServer) getBalance(params interface{}) (*GenericResult, *Error) {
 // Helpers
 
 // getWinners returns the current 10 winners entry shorthashes from the last recorded block
-func (a *APIServer) getWinners() [10]string {
+func (a *APIServer) getWinners() []string {
 	height := getLeaderHeight()
 	currentOPRS := a.Grader.OprBlockByHeight(height)
 	record := currentOPRS.OPRs[0]
