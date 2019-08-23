@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/FactomProject/factom"
 	"github.com/FactomProject/btcutil/base58"
 )
 
@@ -55,7 +56,92 @@ func TestLoadConfigNetwork(t *testing.T) {
 		t.Error("LoadConfigNetwork Failed")
 	}
 
-	if n, err := GetNetwork("testNet"); err != nil || n != TestNetwork {
-		t.Error("GetNetwork Failed")
+	type NetTest struct {
+		Vector string
+		Exp    string
+	}
+	vects := []NetTest{
+		{Vector: "TestNet", Exp: TestNetwork},
+		{Vector: "testnet", Exp: TestNetwork},
+		{Vector: "TESTNET", Exp: TestNetwork},
+
+		{Vector: "MainNet", Exp: MainNetwork},
+		{Vector: "mainnet", Exp: MainNetwork},
+		{Vector: "MAINNET", Exp: MainNetwork},
+	}
+
+	for _, v := range vects {
+		if n, err := GetNetwork(v.Vector); err != nil || n != v.Exp {
+			t.Error("GetNetwork Failed")
+		}
+	}
+
+	// Test an invalid
+	_, err := GetNetwork("random")
+	if err == nil {
+		t.Error("getNetwork expected an error")
+	}
+}
+
+func TestPegnetBurnAddress(t *testing.T) {
+	addr := PegnetBurnAddress(MainNetwork)
+	if !factom.IsValidAddress(addr) {
+		t.Error("Burn addr is not valid")
+	}
+
+	addr = PegnetBurnAddress(TestNetwork)
+	if !factom.IsValidAddress(addr) {
+		t.Error("Burn addr is not valid")
+	}
+}
+
+func TestFormatDiff(t *testing.T) {
+	type Format struct {
+		Vector    uint64
+		Precision uint
+		Exp       string
+	}
+	vects := []Format{
+		{1e8, 0, "1e+08"},
+		{1e8, 1, "1.0e+08"},
+		{1e8, 2, "1.00e+08"},
+		{123456789, 1, "1.2e+08"},
+		{123456789, 2, "1.23e+08"},
+		{123456789, 3, "1.235e+08"}, // Rounds up
+		{123456789, 8, "1.23456789e+08"},
+		{1, 8, "1.00000000e+00"},
+	}
+
+	for _, v := range vects {
+		if s := FormatDiff(v.Vector, v.Precision); s != v.Exp {
+			t.Errorf("Exp %s, got %s", v.Exp, s)
+		}
+	}
+}
+
+func TestFormatGrade(t *testing.T) {
+	type Format struct {
+		Vector    float64
+		Precision uint
+		Exp       string
+	}
+	vects := []Format{
+		{1e8, 0, "1e+08"},
+		{1e8, 1, "1.0e+08"},
+		{1e8, 2, "1.00e+08"},
+		{123456789, 1, "1.2e+08"},
+		{123456789, 2, "1.23e+08"},
+		{123456789, 3, "1.235e+08"}, // Rounds up
+		{123456789, 8, "1.23456789e+08"},
+		{1, 8, "1.00000000e+00"},
+		{0.1, 8, "1.00000000e-01"},
+		{0.01, 8, "1.00000000e-02"},
+		{0.001, 8, "1.00000000e-03"},
+	}
+
+	for _, v := range vects {
+		if s := FormatGrade(v.Vector, v.Precision); s != v.Exp {
+			t.Errorf("Exp %s, got %s", v.Exp, s)
+		}
 	}
 }

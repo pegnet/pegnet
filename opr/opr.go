@@ -33,7 +33,9 @@ var pollingDataSourceInitializer sync.Once
 
 func InitDataSource(config *config.Config) {
 	pollingDataSourceInitializer.Do(func() {
-		PollingDataSource = polling.NewDataSources(config)
+		if PollingDataSource == nil { // This can be inited from unit tests
+			PollingDataSource = polling.NewDataSources(config)
+		}
 	})
 }
 
@@ -59,10 +61,10 @@ type OraclePriceRecord struct {
 	Version                uint8  `json:"-"`
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	CoinbaseAddress string     `json:"coinbase"` // [base58]  PNT Address to pay PNT
-	Dbht            int32      `json:"dbht"`     //           The Directory Block Height of the OPR.
-	WinPreviousOPR  [10]string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
-	FactomDigitalID string     `json:"minerid"`  // [unicode] Digital Identity of the miner
+	CoinbaseAddress string   `json:"coinbase"` // [base58]  PNT Address to pay PNT
+	Dbht            int32    `json:"dbht"`     //           The Directory Block Height of the OPR.
+	WinPreviousOPR  []string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
+	FactomDigitalID string   `json:"minerid"`  // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	Assets OraclePriceRecordAssetList `json:"assets"`
@@ -71,7 +73,6 @@ type OraclePriceRecord struct {
 func NewOraclePriceRecord() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
-	o.Version = OPRVersion
 
 	return o
 }
@@ -79,10 +80,11 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 // CloneEntryData will clone the OPR data needed to make a factom entry.
 //	This needs to be done because I need to marshal this into my factom entry.
 func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
-	n := new(OraclePriceRecord)
+	n := NewOraclePriceRecord()
 	n.OPRChainID = c.OPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
+	n.WinPreviousOPR = make([]string, len(c.WinPreviousOPR), len(c.WinPreviousOPR))
 	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
 	n.CoinbaseAddress = c.CoinbaseAddress
 	n.CoinbasePNTAddress = c.CoinbasePNTAddress
@@ -146,12 +148,25 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false // DBHeight is not reported correctly
 	}
 
-	if opr.Version != OPRVersion {
+	if opr.Version != common.OPRVersion(net, int64(dbht)) {
 		return false // We only support this version
 	}
 
 	// Validate all the Assets exists
-	return opr.Assets.ContainsExactly(common.AllAssets)
+	switch opr.Version {
+	case 1:
+		if len(opr.WinPreviousOPR) != 10 {
+			return false
+		}
+		return opr.Assets.ContainsExactly(common.VersionOneAssets)
+	case 2:
+		if len(opr.WinPreviousOPR) != 25 {
+			return false
+		}
+		return opr.Assets.ContainsExactly(common.VersionTwoAssets)
+	default:
+		return false
+	}
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
@@ -257,8 +272,20 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 
 // SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-	for asset, v := range assets {
-		opr.Assets[asset] = v.Value
+	// TODO: Remove when version 2 is activated
+	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
+	case 1:
+		for asset, v := range assets {
+			opr.Assets[asset] = v.Value
+		}
+	case 2:
+		for asset, v := range assets {
+			// Skip XPT and XPD
+			if asset == "XPT" || asset == "XPD" {
+				continue
+			}
+			opr.Assets[asset] = v.Value
+		}
 	}
 }
 
@@ -293,6 +320,8 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 
 	opr.Dbht = dbht
+	opr.Version = common.OPRVersion(opr.Network, int64(opr.Dbht))
+	OPRVersion = opr.Version // Update this for the polling to know
 
 	// If this is a test network, then give multiple miners their own tPNT address
 	// because that is way more useful debugging than giving all miners the same
@@ -326,8 +355,22 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		return nil, winners.Error
 	}
 
-	for i, w := range winners.ToBePaid {
-		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+	min := 0
+	switch common.OPRVersion(network, int64(dbht)) {
+	case 1:
+		min = 10
+	case 2:
+		min = 25
+	}
+	opr.WinPreviousOPR = make([]string, min, min)
+	if len(winners.ToBePaid) > 0 {
+		if len(winners.ToBePaid) != min {
+			return nil, fmt.Errorf("exp %d winners, got %d", min, len(winners.ToBePaid))
+		}
+
+		for i, w := range winners.ToBePaid {
+			opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+		}
 	}
 
 	if len(winners.AllOPRs) > 0 {
@@ -359,7 +402,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets()
+	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version)
 	if err != nil {
 		return err
 	}

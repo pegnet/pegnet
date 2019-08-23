@@ -22,7 +22,6 @@ func NewBurnTracking(balanceTracker *BalanceTracker) *BurnTracking {
 }
 
 func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
-	return nil // Disable this for now, we are not using it
 	network, err := common.LoadConfigNetwork(c)
 	if err != nil {
 		panic("cannot find the network designation for updating burn txs")
@@ -32,7 +31,12 @@ func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
 		b.FctDbht = startBlock
 	}
 
-	for i := b.FctDbht + 1; ; i++ {
+	heights, err := factom.GetHeights()
+	if err != nil {
+		return err
+	}
+
+	for i := b.FctDbht + 1; i < heights.DirectoryBlockHeight; i++ {
 		deltas := make(map[string]int64)
 
 		fc, _, err := factom.GetFBlockByHeight(i)
@@ -88,6 +92,7 @@ func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
 		}
 		b.FctDbht = i
 	}
+	return nil
 }
 
 type FactoidTransaction struct {

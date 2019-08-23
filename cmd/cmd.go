@@ -387,6 +387,7 @@ var networkCoordinator = &cobra.Command{
 		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		b := balances.NewBalanceTracker()
@@ -410,6 +411,7 @@ var networkMinerCmd = &cobra.Command{
 	Use: "netminer",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
@@ -457,6 +459,7 @@ var pegnetNode = &cobra.Command{
 	Short: "Runs a pegnet node",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 		b := balances.NewBalanceTracker()
 
@@ -468,6 +471,7 @@ var pegnetNode = &cobra.Command{
 		if err != nil {
 			CmdError(cmd, err)
 		}
+		common.GlobalExitHandler.AddExit(pegnetnode.Close)
 
 		go pegnetnode.Run(ctx)
 

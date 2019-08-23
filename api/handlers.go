@@ -6,6 +6,7 @@ package api
 import (
 	"strconv"
 
+	"github.com/pegnet/pegnet/common"
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/opr"
 )
@@ -14,8 +15,13 @@ import (
 // Required for M1
 
 func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Error) {
+	net, err := common.LoadConfigNetwork(a.config)
+	if err != nil {
+		return nil, NewInternalError()
+	}
+
 	performanceParams := new(PerformanceParameters)
-	err := MapToObject(params, performanceParams)
+	err = MapToObject(params, performanceParams)
 	if err != nil {
 		return nil, NewJSONDecodingError()
 	}
@@ -79,7 +85,7 @@ func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Err
 			// TODO: Rename param to fit coinbase option
 			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
 				submissions += 1
-				if i <= 50 {
+				if i < 50 {
 					difficultyPlacementsCount += 1
 					difficultyPlacementsSum += int64(i + 1)
 					for k := range difficultyPlacements {
@@ -94,7 +100,7 @@ func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Err
 		for i, record := range block.GradedOPRs {
 			// TODO: Rename param to fit coinbase option
 			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
-				rewards += int64(opr.GetRewardFromPlace(i))
+				rewards += int64(opr.GetRewardFromPlace(i, net, int64(record.Dbht)))
 				gradingPlacementsCount += 1
 				gradingPlacementsSum += int64(i + 1)
 				for k := range gradingPlacements {
@@ -210,7 +216,7 @@ func (a *APIServer) getBalance(params interface{}) (*GenericResult, *Error) {
 // Helpers
 
 // getWinners returns the current 10 winners entry shorthashes from the last recorded block
-func (a *APIServer) getWinners() [10]string {
+func (a *APIServer) getWinners() []string {
 	height := getLeaderHeight()
 	currentOPRS := a.Grader.OprBlockByHeight(height)
 	record := currentOPRS.OPRs[0]

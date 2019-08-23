@@ -49,6 +49,11 @@ func NewPegnetNode(config *config.Config, monitor common.IMonitor, grader *opr.Q
 	return n, nil
 }
 
+func (n *PegnetNode) Close() error {
+	n.logger().Info("closing pegnet node db")
+	return n.NodeDatabase.DB.Close()
+}
+
 //  Run will run the sync everytime we hit a new block
 func (n *PegnetNode) Run(ctx context.Context) {
 	fLog := n.logger()
@@ -163,13 +168,22 @@ func (n *PegnetNode) WriteOPRBlock(block *opr.OprBlock) error {
 		uniqueGraded := make(map[string]int)
 		uniqueWining := make(map[string]int)
 		for i, r := range block.GradedOPRs {
-			if opr.GetRewardFromPlace(i) > 0 {
+			if opr.GetRewardFromPlace(i, n.PegnetGrader.Network, int64(r.Dbht)) > 0 {
 				uniqueWining[r.CoinbaseAddress] += 1
 			}
 			uniqueGraded[r.CoinbaseAddress] += 1
 		}
+
+		largestMiner := 0
+		for _, v := range uniqueGraded {
+			if v > largestMiner {
+				largestMiner = v
+			}
+		}
+
 		uc := database.UniqueGradedCoinbasesTimeSeries{
 			TimeSeries:             t,
+			BiggestMiner:           largestMiner,
 			UniqueGradedCoinbases:  len(uniqueGraded),
 			UniqueWinningCoinbases: len(uniqueWining),
 		}

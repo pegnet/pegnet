@@ -92,7 +92,10 @@ var (
 		"DCR",
 	}
 
-	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AllAssets        = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	VersionOneAssets = AllAssets
+	// Version One, subtract 2 assets
+	VersionTwoAssets = SubtractFromSet(VersionOneAssets, "XPD", "XPT")
 )
 
 // AssetListContainsCaseInsensitive is for when using user input. It's helpful for the
@@ -113,6 +116,16 @@ func AssetListContains(assetList []string, asset string) bool {
 		}
 	}
 	return false
+}
+
+func SubtractFromSet(set []string, sub ...string) []string {
+	var result []string
+	for _, r := range set {
+		if !AssetListContains(sub, r) {
+			result = append(result, r)
+		}
+	}
+	return result
 }
 
 func MergeLists(assets ...[]string) []string {

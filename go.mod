@@ -12,7 +12,7 @@ require (
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/FactomProject/dynrsrc v0.3.1 // indirect
 	github.com/FactomProject/factoid v0.3.4
-	github.com/FactomProject/factom v0.0.0-20190617201959-b9c573abee92
+	github.com/FactomProject/factom v0.0.0-20190712163801-e7717c4ab072
 	github.com/FactomProject/factomd v6.3.2+incompatible // indirect
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
