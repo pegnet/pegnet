@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"math/rand"
-	"reflect"
 	"testing"
 
 	"github.com/pegnet/pegnet/balances"
