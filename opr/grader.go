@@ -283,11 +283,8 @@ func (g *QuickGrader) Sync() error {
 			g.oprBlkLock.Unlock()
 
 			// Let's add the winner's rewards. They will be happy that we do this step :)
-			max := 25
-			if len(oprblock.GradedOPRs) < max {
-				max = len(oprblock.GradedOPRs)
-			}
-			for place, winner := range oprblock.GradedOPRs[:max] { // The top 25 matter in version 2
+			payouts := g.MinRecords(dbheight)
+			for place, winner := range oprblock.GradedOPRs[:payouts] { // The top 25 matter in version 2
 				reward := GetRewardFromPlace(place, g.Network, block.EntryBlock.Header.DBHeight)
 				if reward > 0 {
 					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)

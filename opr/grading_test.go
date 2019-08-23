@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -47,19 +48,22 @@ func dupeCheck(got []*OraclePriceRecord, want []string) error {
 }
 
 func TestApplyBand(t *testing.T) {
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 200; i++ {
 		f := rand.Float64()
-		if d := ApplyBand(f, 0); d != f {
+		if i&1 == 0 {
+			f = f * -1
+		}
+		if d := ApplyBand(f, 0); d != math.Abs(f) {
 			t.Errorf("exp %.4f, got %.4f", f, d)
 		}
 
-		if d := ApplyBand(f, 0.1); d != f {
-			if f <= 0.1 {
+		if d := ApplyBand(f, 0.1); d != math.Abs(f) {
+			if math.Abs(f) <= 0.1 {
 				if d != 0 {
 					t.Errorf("1] from %.4f, exp %.4f, got %.4f", f, float64(0), d)
 				}
 			} else {
-				if d != f-0.1 {
+				if d != math.Abs(f)-0.1 {
 					t.Errorf("2] from %.4f, exp %.4f, got %.4f, %t, %t", f, f-0.1, d, f <= 0.1, d == 0)
 				}
 			}

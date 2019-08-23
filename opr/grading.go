@@ -7,6 +7,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math"
 	"sort"
 
 	"github.com/pegnet/pegnet/common"
@@ -52,6 +53,8 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64
 	for i, v := range tokens {
 		if avg[i] > 0 {
 			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
+			// TODO: Look into truncation
+			//d = float64(int64(d*1000)) / 1000
 			if band > 0 {
 				d = ApplyBand(d, band)
 			}
@@ -63,6 +66,7 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64
 
 // ApplyBand
 func ApplyBand(diff float64, band float64) float64 {
+	diff = math.Abs(diff)
 	if diff <= band {
 		return 0
 	}
