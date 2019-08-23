@@ -204,8 +204,7 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 				err = g.Burns.UpdateBurns(g.Config, firstOPR.Dbht)
 				if err != nil {
 					log.WithFields(log.Fields{
-						"id":   "grader",
-						"dbht": firstOPR.Dbht,
+						"id": "grader",
 					}).WithError(err).Errorf("error processing burns")
 				}
 			}

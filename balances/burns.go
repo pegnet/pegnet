@@ -31,7 +31,12 @@ func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
 		b.FctDbht = startBlock
 	}
 
-	for i := b.FctDbht + 1; ; i++ {
+	heights, err := factom.GetHeights()
+	if err != nil {
+		return err
+	}
+
+	for i := b.FctDbht + 1; i < heights.DirectoryBlockHeight; i++ {
 		deltas := make(map[string]int64)
 
 		fc, _, err := factom.GetFBlockByHeight(i)
@@ -87,6 +92,7 @@ func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
 		}
 		b.FctDbht = i
 	}
+	return nil
 }
 
 type FactoidTransaction struct {
