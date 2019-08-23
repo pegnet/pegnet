@@ -9,8 +9,11 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pegnet/pegnet/database"
 
 	"github.com/pegnet/pegnet/balances"
 
@@ -42,12 +45,13 @@ func init() {
 	rootCmd.AddCommand(pegnetNode)
 
 	dataWriter.AddCommand(minerStats)
+	dataWriter.AddCommand(priceStats)
 	rootCmd.AddCommand(dataWriter)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
 
-	minerStats.Flags().StringP("output", "o", "minerstats.csv", "output file for the csv")
+	dataWriter.PersistentFlags().StringP("output", "o", "minerstats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
@@ -496,6 +500,37 @@ var dataWriter = &cobra.Command{
 		"This is helpful as this cmd already has access to the pegnet internals, and could " +
 		"help us create analysis tooling.",
 	Example: "csv minerstats",
+}
+
+var priceStats = &cobra.Command{
+	Use:     "pricestats <height>",
+	Short:   "Creates a csv showing the price related stats from the blocks on chain.",
+	Args:    cobra.ExactArgs(1),
+	Example: "csv pricestats",
+	Run: func(cmd *cobra.Command, args []string) {
+		height, err := strconv.Atoi(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// minerstats.csv
+		path, err := cmd.Flags().GetString("output")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		c, err := opr.NewChainRecorder(Config, path)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		ldb := database.NewMapDb()
+
+		err = c.WritePriceCSV(ldb, int64(height))
+		if err != nil {
+			CmdError(cmd, err)
+		}
+	},
 }
 
 var minerStats = &cobra.Command{

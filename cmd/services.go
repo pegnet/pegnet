@@ -32,6 +32,17 @@ func LaunchFactomMonitor(config *config.Config) *common.Monitor {
 }
 
 func LaunchGrader(config *config.Config, monitor *common.Monitor, balances *balances.BalanceTracker, ctx context.Context, run bool) *opr.QuickGrader {
+	db := OpenDB(Config)
+
+	grader := opr.NewQuickGrader(config, db, balances)
+	if run {
+		go grader.Run(monitor, ctx)
+	}
+	common.GlobalExitHandler.AddExit(grader.Close)
+	return grader
+}
+
+func OpenDB(config *config.Config) database.IDatabase {
 	dbtype, err := config.String(common.ConfigMinerDBType)
 	if err != nil {
 		log.WithError(err).Fatal("Database.MinerDatabaseType needs to be set in the config file or cmd line")
@@ -44,30 +55,28 @@ func LaunchGrader(config *config.Config, monitor *common.Monitor, balances *bala
 	case "map":
 		db = database.NewMapDb()
 	case "ldb":
-		dbpath, err := config.String(common.ConfigMinerDBPath)
-		if err != nil {
-			log.WithError(err).Fatal("Database.MinerDatabase needs to be set in the config file or cmd line")
-			os.Exit(1)
-		}
-
-		ldb := new(database.Ldb)
-		err = ldb.Open(os.ExpandEnv(dbpath))
-		if err != nil {
-			log.WithError(err).Fatal("ldb failed to open")
-			os.Exit(1)
-		}
-		db = ldb
+		db = OpenLevelDB(config)
 	default:
 		log.Fatalf("%s is not a valid db type", dbtype)
 		os.Exit(1)
 	}
+	return db
+}
 
-	grader := opr.NewQuickGrader(config, db, balances)
-	if run {
-		go grader.Run(monitor, ctx)
+func OpenLevelDB(config *config.Config) *database.Ldb {
+	dbpath, err := config.String(common.ConfigMinerDBPath)
+	if err != nil {
+		log.WithError(err).Fatal("Database.MinerDatabase needs to be set in the config file or cmd line")
+		os.Exit(1)
 	}
-	common.GlobalExitHandler.AddExit(grader.Close)
-	return grader
+
+	ldb := new(database.Ldb)
+	err = ldb.Open(os.ExpandEnv(dbpath))
+	if err != nil {
+		log.WithError(err).Fatal("ldb failed to open")
+		os.Exit(1)
+	}
+	return ldb
 }
 
 func LaunchStatistics(config *config.Config, ctx context.Context) *mining.GlobalStatTracker {
