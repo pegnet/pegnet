@@ -48,12 +48,12 @@ func (d *KitcoDataSource) FetchPegPrices() (peg PegAssets, err error) {
 
 	peg = make(map[string]PegItem)
 
-	peg["XAU"], err = d.parseData(resp.Silver)
+	peg["XAG"], err = d.parseData(resp.Silver)
 	if err != nil {
 		return nil, err
 	}
 
-	peg["XAG"], err = d.parseData(resp.Gold)
+	peg["XAU"], err = d.parseData(resp.Gold)
 	if err != nil {
 		return nil, err
 	}
