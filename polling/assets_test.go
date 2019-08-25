@@ -147,10 +147,4 @@ func TestTruncateTo4(t *testing.T) {
 			t.Errorf("exp %f, got %f", v.Exp8, r)
 		}
 	}
-
-	return peg, nil
-}
-
-func (d *UnitTestDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	return FetchPegPrice(peg, d.FetchPegPrices)
 }
