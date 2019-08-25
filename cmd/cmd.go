@@ -51,7 +51,7 @@ func init() {
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
 	rootCmd.AddCommand(burn)
 
-	dataWriter.PersistentFlags().StringP("output", "o", "minerstats.csv", "output file for the csv")
+	dataWriter.PersistentFlags().StringP("output", "o", "stats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
@@ -502,9 +502,12 @@ var dataWriter = &cobra.Command{
 	Example: "csv minerstats",
 }
 
+// priceStats is used to analyse data sources chosen
 var priceStats = &cobra.Command{
-	Use:     "pricestats <height>",
-	Short:   "Creates a csv showing the price related stats from the blocks on chain.",
+	Use:   "pricestats <height>",
+	Short: "Creates a csv showing the price related stats from the blocks on chain.",
+	Long: "Will output each opr and a column per asset. Each column is the % difference from the average of the " +
+		"entire set. They are ordered in self reported difficulty order.",
 	Args:    cobra.ExactArgs(1),
 	Example: "csv pricestats",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -513,7 +516,6 @@ var priceStats = &cobra.Command{
 			CmdError(cmd, err)
 		}
 
-		// minerstats.csv
 		path, err := cmd.Flags().GetString("output")
 		if err != nil {
 			CmdError(cmd, err)
@@ -524,6 +526,8 @@ var priceStats = &cobra.Command{
 			CmdError(cmd, err)
 		}
 
+		// Use a mapdb over a ldb so we can get the full oprs
+		// vs just graded
 		ldb := database.NewMapDb()
 
 		err = c.WritePriceCSV(ldb, int64(height))
