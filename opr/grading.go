@@ -67,6 +67,7 @@ func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64
 // ApplyBand
 func ApplyBand(diff float64, band float64) float64 {
 	diff = math.Abs(diff)
+	// If the diff is less than the band, then our diff goes to 0
 	if diff <= band {
 		return 0
 	}
