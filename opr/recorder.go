@@ -4,9 +4,10 @@ import (
 	"encoding/binary"
 	"encoding/csv"
 	"fmt"
-	"math/rand"
 	"os"
 	"sort"
+
+	"github.com/pegnet/pegnet/testutils"
 
 	"github.com/pegnet/pegnet/balances"
 
@@ -65,22 +66,19 @@ func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error
 	})
 
 	// Build the csv
+OPRLoop:
 	for i, opr := range all {
-		// fmt.Println(opr.FactomDigitalID)
-		avgs := Avg(block.OPRs)[1:]
-		line := []string{fmt.Sprintf("%d", i)}
-		for i, asset := range common.AllAssets[1:] {
-			// line = append(line, fmt.Sprintf("%d", int64(opr.Assets[asset]*1e4)%10000))
-			v := opr.Assets[asset]
-			v = (v - avgs[i]) / avgs[i]
-			// jitter
-			sub := 1.0
-			if rand.Intn(2) == 1 {
-				sub = -1.0
+		for asset, v := range opr.Assets {
+			// Skip bogus
+			if err := testutils.PriceCheck(asset, v); err != nil {
+				continue OPRLoop
 			}
-			jitter := (rand.Float64() / 1000) * sub
-			var _ = jitter
-			// v = v + jitter
+		}
+
+		// fmt.Println(opr.FactomDigitalID)
+		line := []string{fmt.Sprintf("%d", i)}
+		for _, asset := range common.AllAssets[1:] {
+			v := opr.Assets[asset]
 			line = append(line, fmt.Sprintf("%.4f", v))
 		}
 

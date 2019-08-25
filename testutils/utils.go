@@ -53,3 +53,33 @@ func NewHTTPServerWithFixedResp(port int, resp []byte) *http.Server {
 	srv := http.Server{Addr: fmt.Sprintf(":%d", port), Handler: mux}
 	return &srv
 }
+
+// PriceCheck checks if the price is "reasonable" to see if we inverted the prices
+func PriceCheck(asset string, rate float64) error {
+	switch asset {
+	case "XBT":
+		// BTC < $500? That sounds wrong
+		if rate < 500 {
+			return fmt.Errorf("bitcoin(%s) found to be %.2f, less than $500, this seems wrong", asset, rate)
+		}
+	case "XAU":
+		// Gold < $50? That sounds wrong
+		if rate < 50 {
+			return fmt.Errorf("gold(%s) found to be %.2f, less than $50, this seems wrong", asset, rate)
+		}
+	case "XPD":
+		// Silver < $5? That sounds wrong
+		if rate < 5 {
+			return fmt.Errorf("%s found to be %.2f, less than $5, this seems wrong", asset, rate)
+		}
+	case "MXN":
+		if rate > 1 {
+			return fmt.Errorf("the peso(%s) found to be %.2f, greater than $1, this seems wrong", asset, rate)
+		}
+	case "ETH":
+		if rate < 20 {
+			return fmt.Errorf("%s found to be %.2f, less than $20, this seems wrong", asset, rate)
+		}
+	}
+	return nil
+}
