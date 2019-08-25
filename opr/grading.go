@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	// 0.5%
-	GradeBand float64 = 0.005
+	// 1%
+	GradeBand float64 = 0.01
 )
 
 // Avg computes the average answer for the price of each token reported
