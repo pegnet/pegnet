@@ -1,9 +1,12 @@
 package opr
 
 import (
+	"encoding/binary"
 	"encoding/csv"
 	"fmt"
+	"math/rand"
 	"os"
+	"sort"
 
 	"github.com/pegnet/pegnet/balances"
 
@@ -51,26 +54,33 @@ func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error
 	}
 	recLog.WithField("height", height).Infof("writing to csv")
 
-	err = writer.Write(append([]string{"ID"}, common.AllAssets...)) // Write headers
+	err = writer.Write(append([]string{"ID"}, common.AllAssets[1:]...)) // Write headers
 	if err != nil {
 		return err
 	}
 
+	all := block.OPRs
+	sort.SliceStable(all, func(i, j int) bool {
+		return binary.BigEndian.Uint64(all[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(all[j].SelfReportedDifficulty)
+	})
+
 	// Build the csv
-	for i, opr := range block.OPRs {
+	for i, opr := range all {
 		// fmt.Println(opr.FactomDigitalID)
+		avgs := Avg(block.OPRs)[1:]
 		line := []string{fmt.Sprintf("%d", i)}
-		for _, asset := range common.AllAssets {
+		for i, asset := range common.AllAssets[1:] {
 			// line = append(line, fmt.Sprintf("%d", int64(opr.Assets[asset]*1e4)%10000))
 			v := opr.Assets[asset]
+			v = (v - avgs[i]) / avgs[i]
 			// jitter
-			// sub := 1.0
-			// if rand.Intn(2) == 1 {
-			// 	sub = -1.0
-			// }
-			// jitter := (rand.Float64() / 1000) * sub
-			// v = v * jitter
-			// fmt.Println(jitter)
+			sub := 1.0
+			if rand.Intn(2) == 1 {
+				sub = -1.0
+			}
+			jitter := (rand.Float64() / 1000) * sub
+			var _ = jitter
+			// v = v + jitter
 			line = append(line, fmt.Sprintf("%.4f", v))
 		}
 
