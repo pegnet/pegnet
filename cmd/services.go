@@ -95,7 +95,7 @@ func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *o
 			log.WithError(err).Fatal("can't find api port")
 			os.Exit(1)
 		}
-		go s.Listen(apiport) // TODO: Do not hardcode this
+		go s.Listen(apiport)
 	}
 	return s
 }

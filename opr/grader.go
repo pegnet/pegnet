@@ -364,9 +364,7 @@ type OPRWorkResponse struct {
 func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
-	g.oprBlkLock.Lock()
-	prevWinners := g.Winners(len(g.oprBlks) - 1)
-	g.oprBlkLock.Unlock()
+	prevWinners := g.GetPreviousWinners(int32(block.EntryBlock.Header.DBHeight))
 
 	numThreads := 4
 
@@ -453,9 +451,7 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
-	g.oprBlkLock.Lock()
-	prevWinners := g.Winners(len(g.oprBlks) - 1)
-	g.oprBlkLock.Unlock()
+	prevWinners := g.GetPreviousWinners(int32(block.EntryBlock.Header.DBHeight))
 
 	var oprs []*OraclePriceRecord
 	for _, entryHash := range block.EntryBlock.EntryList {
@@ -520,14 +516,14 @@ func (g *QuickGrader) GetFirstOPRBlock() *OprBlock {
 	return g.oprBlks[0]
 }
 
-func (g *QuickGrader) Winners(index int) (winners []*OraclePriceRecord) {
-	if index == -1 {
+func (g *QuickGrader) GetPreviousWinners(dbht int32) (winners []*OraclePriceRecord) {
+	prev := g.GetPreviousOPRBlock(dbht)
+	if prev == nil {
 		return winners // empty array is the base case
 	}
-	block := g.oprBlks[index]
-	amt := g.MinRecords(block.Dbht)
+	amt := g.MinRecords(prev.Dbht)
 
-	return block.GradedOPRs[:amt]
+	return prev.GradedOPRs[:amt]
 }
 
 // ParseOPREntry will return the oracle price record for a given entry.

@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/sirupsen/logrus"
 
 	"github.com/pegnet/pegnet/common"
 
@@ -72,6 +75,17 @@ func (c *CmdFlagProvider) Load() (map[string]string, error) {
 	dbpath, _ := c.cmd.Flags().GetString("mienrdb")
 	if dbpath != "" {
 		settings[common.ConfigMinerDBPath] = dbpath
+	}
+
+	// Overrride
+	arr, _ := c.cmd.Flags().GetStringArray("override")
+	for _, v := range arr {
+		values := strings.Split(v, "=")
+		if len(values) == 2 {
+			settings[values[0]] = values[1]
+		} else {
+			logrus.Warn("Override fields expect format as 'Section.Option=Value'")
+		}
 	}
 
 	return settings, nil

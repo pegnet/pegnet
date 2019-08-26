@@ -160,9 +160,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		}
 		return opr.Assets.ContainsExactly(common.VersionOneAssets)
 	case 2:
-		if len(opr.WinPreviousOPR) != 25 {
-			return false
-		}
+		// It can contain 10 winners when it is a transition record
 		return opr.Assets.ContainsExactly(common.VersionTwoAssets)
 	default:
 		return false
@@ -355,22 +353,23 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		return nil, winners.Error
 	}
 
-	min := 0
-	switch common.OPRVersion(network, int64(dbht)) {
-	case 1:
-		min = 10
-	case 2:
-		min = 25
-	}
-	opr.WinPreviousOPR = make([]string, min, min)
+	// For the transition, we need to support a 10 winner opr.
+	// The winner's should be correct from our grader, so we will accept it
 	if len(winners.ToBePaid) > 0 {
-		if len(winners.ToBePaid) != min {
-			return nil, fmt.Errorf("exp %d winners, got %d", min, len(winners.ToBePaid))
-		}
-
+		opr.WinPreviousOPR = make([]string, len(winners.ToBePaid), len(winners.ToBePaid))
 		for i, w := range winners.ToBePaid {
 			opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
 		}
+	} else {
+		// If there are no previous winners, this is a bootstrap record
+		min := 0
+		switch common.OPRVersion(network, int64(dbht)) {
+		case 1:
+			min = 10
+		case 2:
+			min = 25
+		}
+		opr.WinPreviousOPR = make([]string, min, min)
 	}
 
 	if len(winners.AllOPRs) > 0 {

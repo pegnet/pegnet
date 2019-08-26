@@ -12,6 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pegnet/pegnet/api"
+
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
@@ -38,6 +40,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
 	rootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
 	rootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
+	rootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnode", "g", "localhost:8099", "IPAddr:port# of the pegnet node")
 	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Flags that affect the config file. Should not be loaded into globals
@@ -53,6 +56,8 @@ func init() {
 	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
 	rootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
 	rootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+
+	rootCmd.PersistentFlags().StringArrayP("override", "o", []string{}, "Custom config overrides. Can override any setting")
 
 	// Initialize the config file with the config, then with cmd flags
 	rootCmd.PersistentPreRunE = rootPreRunSetup

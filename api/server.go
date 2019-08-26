@@ -48,6 +48,7 @@ func corsHeader(next http.Handler) http.Handler {
 }
 
 func (s *APIServer) Listen(port int) {
+	log.Infof("Launching api on port :%d", port)
 	s.Server.Addr = fmt.Sprintf(":%d", port)
 	err := s.Server.ListenAndServe()
 	if err != nil {

@@ -41,10 +41,16 @@ func (n *PegnetNode) NodeAPI(w http.ResponseWriter, r *http.Request) {
 		result, apiError = n.HandleGenericTimeSeries(request.Params, &[]database.UniqueGradedCoinbasesTimeSeries{})
 	case "asset-list":
 		result = common.AllAssets
-	case "pnt-addresses":
+	case "debug-pnt-addresses":
+		prefix := "PNT"
+		if net, _ := common.LoadConfigNetwork(n.config); net == common.TestNetwork {
+			prefix = "tPNT"
+		}
+
 		// This is kind of a debugging api call. I don't necessarily want to document it as something we should
 		// support, and therefore be used, as the format is in FCT addr and PNT output.
-		result = n.PegnetGrader.Balances.DiagnosticAssetHumanReadablePNTBalances("PNT")
+		// The output is good to see the PNT allocation, as it will print the % of the total supply for each addr.
+		result = n.PegnetGrader.Balances.DiagnosticAssetHumanReadablePNTBalances(prefix)
 	default:
 		apiError = api.NewMethodNotFoundError()
 	}
