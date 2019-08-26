@@ -47,3 +47,10 @@ func NetworkActive(network string, height int64) bool {
 func OPRVersion(network string, height int64) uint8 {
 	return GradingHeights[network](height)
 }
+
+// SetTestingHeight is used for unit test
+func SetTestingVersion(version uint8) {
+	GradingHeights[UnitTestNetwork] = func(height int64) uint8 {
+		return version
+	}
+}

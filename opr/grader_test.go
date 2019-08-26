@@ -3,14 +3,19 @@ package opr_test
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"math/rand"
+	"sort"
 	"testing"
 
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/database"
 	. "github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/polling"
 	"github.com/pegnet/pegnet/testutils"
 )
 
@@ -93,6 +98,10 @@ func RandomOPRBlock() *OPRBlockDatabaseObject {
 }
 
 func RandomOPR() *OraclePriceRecord {
+	return RandomOPROfVersion(1)
+}
+
+func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	tmp := new(OraclePriceRecord)
 	tmp.OPRHash = make([]byte, 32)
 	rand.Read(tmp.OPRHash)
@@ -100,8 +109,32 @@ func RandomOPR() *OraclePriceRecord {
 	rand.Read(tmp.EntryHash)
 	tmp.Dbht = rand.Int31()
 	tmp.FactomDigitalID = "test"
+	tmp.Version = version
+
+	tmp.SelfReportedDifficulty = make([]byte, 8)
+	tmp.Nonce = make([]byte, 8)
+	rand.Read(tmp.Nonce)
+	tmp.Difficulty = tmp.ComputeDifficulty(tmp.Nonce)
+	binary.BigEndian.PutUint64(tmp.SelfReportedDifficulty, tmp.Difficulty)
+
+	assets := common.VersionOneAssets
+	if version == 2 {
+		assets = common.VersionTwoAssets
+	}
+	tmp.Assets = make(OraclePriceRecordAssetList)
+	for _, asset := range assets {
+		tmp.Assets[asset] = rand.Float64() * 100
+	}
+
 	// TODO: Add more fields to this
 	return tmp
+}
+
+func SetOPRPriceClose(opr *OraclePriceRecord, center float64, std float64) {
+	for asset := range opr.Assets {
+		d := (rand.Float64() - .5) * 2 * std
+		opr.Assets[asset] = polling.TruncateTo8(center + d)
+	}
 }
 
 func TestOPRQuery(t *testing.T) {
@@ -165,4 +198,86 @@ func TestOPRQuery(t *testing.T) {
 			t.Errorf("was found, but it should not be")
 		}
 	})
+}
+
+// TestGradingOrder for any different ordering and using floats
+func TestGradingOrder(t *testing.T) {
+	cycles := 25
+	orig := make([]string, len(common.AllAssets))
+	copy(orig, common.AllAssets)
+	// Version 1
+	t.Run("version 1", func(t *testing.T) {
+		testGradingOrderVersion(t, 1, cycles)
+	})
+	t.Run("version 2", func(t *testing.T) {
+		testGradingOrderVersion(t, 2, cycles)
+	})
+}
+
+func testGradingOrderVersion(t *testing.T, version uint8, cycles int) {
+	common.SetTestingVersion(version)
+	for i := 0; i < cycles; i++ {
+		set := make([]*OraclePriceRecord, 50)
+		for i := range set {
+			set[i] = RandomOPROfVersion(version)
+			set[i].Network = common.UnitTestNetwork
+			// All prices are super close. Within 0.001%
+			SetOPRPriceClose(set[i], 1, 0.00001)
+		}
+
+		sort.SliceStable(set, func(i, j int) bool { return set[i].Difficulty > set[j].Difficulty })
+
+		// Check graded order remains the same
+		// mess with order
+		graded := make([][]*OraclePriceRecord, 5)
+		for i := 0; i < 5; i++ {
+			rand.Shuffle(len(set), func(i, j int) {
+				set[i], set[j] = set[j], set[i]
+			})
+			graded[i] = GradeMinimum(set, common.UnitTestNetwork, 0)
+			shuffleList()
+		}
+
+		// Check for diffs
+		o := order(graded[0])
+		for i := 1; i < 5; i++ {
+			nextO := order(graded[i])
+			if bytes.Compare(o, nextO) != 0 {
+				t.Errorf("%d has a different order", i)
+			}
+		}
+
+	}
+}
+
+func sameAvgs(a []float64, b []float64) error {
+	if len(a) != len(b) {
+		return nil
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return fmt.Errorf("index %d is %.8f and %.8f", i, a[i], b[i])
+		}
+	}
+	return nil
+}
+
+func order(list []*OraclePriceRecord) []byte {
+	hash := sha256.New()
+	for _, o := range list {
+		_, err := hash.Write(o.OPRHash)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return hash.Sum(nil)
+}
+
+func shuffleList() {
+	rand.Shuffle(len(common.AllAssets), func(i, j int) {
+		common.AllAssets[i], common.AllAssets[j] = common.AllAssets[j], common.AllAssets[i]
+	})
+	common.VersionOneAssets = common.AllAssets
+	// Version One, subtract 2 assets
+	common.VersionTwoAssets = common.SubtractFromSet(common.VersionOneAssets, "XPD", "XPT")
 }
