@@ -578,6 +578,10 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	sha := sha256.Sum256(entry.Content)
 	opr.OPRHash = sha[:] // Save the OPRHash
 
+	// Set this information so we know what grading version to use
+	opr.Network = g.Network
+	opr.Protocol = g.Protocol
+
 	return opr, nil
 }
 
