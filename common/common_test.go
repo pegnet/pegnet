@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/FactomProject/factom"
 	"github.com/FactomProject/btcutil/base58"
+	"github.com/FactomProject/factom"
 )
 
 func TestBurnAddresses(t *testing.T) {

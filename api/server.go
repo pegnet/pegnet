@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/zpatrick/go-config"
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 // APIServer as the base handler

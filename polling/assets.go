@@ -36,7 +36,7 @@ var AllDataSources = map[string]IDataSource{
 func AllDataSourcesList() []string {
 	list := make([]string, len(AllDataSources))
 	i := 0
-	for k, _ := range AllDataSources {
+	for k := range AllDataSources {
 		list[i] = k
 		i++
 	}
@@ -147,7 +147,7 @@ func NewDataSources(config *config.Config) *DataSources {
 	datasourceRegex, err := regexp.Compile(`OracleDataSources\.[a-zA-Z0-9]+`)
 	common.CheckAndPanic(err)
 
-	for setting, _ := range allSettings {
+	for setting := range allSettings {
 		if datasourceRegex.Match([]byte(setting)) {
 			// Get the priority. Priorities CANNOT be the same.
 			p, err := config.Int(setting)

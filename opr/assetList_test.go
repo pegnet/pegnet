@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pegnet/pegnet/polling"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/polling"
 )
 
 // The correct marshal format

@@ -6,8 +6,8 @@ package api
 import (
 	"strconv"
 
-	"github.com/pegnet/pegnet/common"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
 )
 

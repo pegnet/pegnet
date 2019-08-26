@@ -12,8 +12,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pegnet/pegnet/balances"
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"

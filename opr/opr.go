@@ -427,7 +427,7 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 	binary.BigEndian.PutUint64(buf, difficulty)
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	e.ExtIDs = [][]byte{nonce, buf, []byte{opr.Version}}
+	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
 	e.Content, err = json.Marshal(opr)
 	if err != nil {
 		return nil, err
