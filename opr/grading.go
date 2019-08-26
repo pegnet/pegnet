@@ -22,16 +22,16 @@ const (
 // Avg computes the average answer for the price of each token reported
 //	The list has to be in sorted in difficulty order before calling this function
 func Avg(list []*OraclePriceRecord) (avg []float64) {
-	avg = make([]float64, len(common.AllAssets))
+	avg = make([]float64, len(list[0].GetTokens()))
 
 	// Sum up all the prices
 	for _, opr := range list {
 		tokens := opr.GetTokens()
 		for i, token := range tokens {
-			if token.value >= 0 { // Make sure no OPR has negative values for
-				avg[i] += token.value // assets.  Simply treat all values as positive.
+			if token.Value >= 0 { // Make sure no OPR has negative values for
+				avg[i] += token.Value // assets.  Simply treat all values as positive.
 			} else {
-				avg[i] -= token.value
+				avg[i] -= token.Value
 			}
 		}
 	}
@@ -48,12 +48,12 @@ func Avg(list []*OraclePriceRecord) (avg []float64) {
 }
 
 // CalculateGrade takes the averages and grades the individual OPRs
-func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64, uint8 int) float64 {
+func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64, version uint) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
 	for i, v := range tokens {
 		if avg[i] > 0 {
-			d := (v.value - avg[i]) / avg[i] // compute the difference from the average
+			d := (v.Value - avg[i]) / avg[i] // compute the difference from the average
 			if band > 0 {
 				d = ApplyBand(d, band)
 			}

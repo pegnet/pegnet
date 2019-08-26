@@ -15,6 +15,30 @@ import (
 	. "github.com/pegnet/pegnet/opr"
 )
 
+func TestOPRTokens(t *testing.T) {
+	opr := NewOraclePriceRecord()
+	opr.Version = 1
+
+	if len(opr.GetTokens()) != len(common.VersionOneAssets) {
+		t.Errorf("exp %d tokens, found %d", len(common.VersionOneAssets), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.VersionOneAssets[i] {
+			t.Errorf("exp %s got %s", token.Code, common.VersionOneAssets[i])
+		}
+	}
+
+	opr.Version = 2
+	if len(opr.GetTokens()) != len(common.VersionTwoAssets) {
+		t.Errorf("exp %d tokens, found %d", len(common.VersionTwoAssets), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.VersionTwoAssets[i] {
+			t.Errorf("exp %s got %s", token.Code, common.VersionTwoAssets[i])
+		}
+	}
+}
+
 func TestOPR_JSON_Marshal(t *testing.T) {
 	LX.Init(0x123412341234, 25, 256, 5)
 	opr := NewOraclePriceRecord()

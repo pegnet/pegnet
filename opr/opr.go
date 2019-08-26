@@ -119,10 +119,10 @@ func InitLX() {
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
 
-// Token is a combination of currency code and value
+// Token is a combination of currency Code and Value
 type Token struct {
-	code  string
-	value float64
+	Code  string
+	Value float64
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
@@ -171,7 +171,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
-	return opr.Assets.List()
+	return opr.Assets.List(opr.Version)
 }
 
 // GetHash returns the LXHash over the OPR's json representation
@@ -242,7 +242,7 @@ func (opr *OraclePriceRecord) String() (str string) {
 	// Make a display string out of the Digital Identity.
 
 	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", opr.FactomDigitalID)
-	for _, asset := range opr.Assets.List() {
+	for _, asset := range opr.Assets.List(opr.Version) {
 		str = str + fmt.Sprintf("%32s %v\n", "PNT", asset)
 	}
 
