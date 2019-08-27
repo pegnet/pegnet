@@ -48,7 +48,7 @@ func Avg(list []*OraclePriceRecord) (avg []float64) {
 }
 
 // CalculateGrade takes the averages and grades the individual OPRs
-func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64, version uint) float64 {
+func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64 {
 	tokens := opr.GetTokens()
 	opr.Grade = 0
 	for i, v := range tokens {
@@ -134,7 +134,7 @@ func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePr
 			if i >= 25 { // Use the band until we hit the 25
 				band = GradeBand
 			}
-			CalculateGrade(avg, top50[j], band, 2)
+			CalculateGrade(avg, top50[j], band)
 		}
 
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
@@ -178,47 +178,13 @@ func gradeMinimumVersionOne(sortedList []*OraclePriceRecord) (graded []*OraclePr
 	for i := len(top50); i >= 10; i-- {
 		avg := Avg(top50[:i])
 		for j := 0; j < i; j++ {
-			CalculateGrade(avg, top50[j], 0, 1)
+			CalculateGrade(avg, top50[j], 0)
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
 		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Difficulty > top50[j].Difficulty })
 		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Grade < top50[j].Grade })
 	}
 	return top50
-}
-
-// GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
-// The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
-// sorted by difficulty.
-func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
-	list = RemoveDuplicateSubmissions(list)
-
-	if len(list) < 10 {
-		return nil, nil
-	}
-
-	// Throw away all the entries but the top 50 on pure difficulty alone.
-	// Note that we are sorting in descending order.
-	sort.SliceStable(list, func(i, j int) bool { return list[i].Difficulty > list[j].Difficulty })
-
-	var topDifficulty []*OraclePriceRecord
-	if len(list) > 50 {
-		topDifficulty = make([]*OraclePriceRecord, 50)
-		copy(topDifficulty[:50], list[:50])
-	} else {
-		topDifficulty = make([]*OraclePriceRecord, len(list))
-		copy(topDifficulty, list)
-	}
-	for i := len(topDifficulty); i >= 10; i-- {
-		avg := Avg(topDifficulty[:i])
-		for j := 0; j < i; j++ {
-			CalculateGrade(avg, topDifficulty[j], 0, 1)
-		}
-		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Difficulty > topDifficulty[j].Difficulty })
-		sort.SliceStable(topDifficulty[:i], func(i, j int) bool { return topDifficulty[i].Grade < topDifficulty[j].Grade })
-	}
-	return topDifficulty, list // Return the top50 sorted by grade and then all sorted by difficulty
 }
 
 // RemoveDuplicateSubmissions filters out any duplicate OPR (same nonce and OPRHash)

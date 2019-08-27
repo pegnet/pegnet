@@ -160,11 +160,11 @@ func init() {
 	for i := 0; i < 100; i++ {
 		opr := NewOraclePriceRecord()
 		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, opr.Difficulty)
 		opr.Nonce = []byte{byte(i)}
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		binary.BigEndian.PutUint64(buf, opr.Difficulty)
 		opr.SelfReportedDifficulty = buf
 		//opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
-		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		difficulty = append(difficulty, opr)
 	}
 	sort.Slice(difficulty, func(i, j int) bool {
@@ -793,4 +793,21 @@ func TestVerifyWinners(t *testing.T) {
 			}
 		})
 	}
+}
+
+// GradeBlock is put here to maintain the old method signature
+// It is only used for v1 grading
+//
+// Old Description:
+// 	GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
+// 	The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
+// 	sorted by difficulty.
+func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
+
+	common.SetTestingVersion(1)
+	graded = GradeMinimum(list, common.UnitTestNetwork, 0)
+	return graded, list
 }
