@@ -312,12 +312,9 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 
 	var oprs []*OraclePriceRecord
 	var err error
-	if len(block.EntryBlock.EntryList) > 50 {
-		// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
-		oprs, err = g.ParallelFetchOPRsFromEBlock(block)
-	} else {
-		oprs, err = g.FetchOPRsFromEBlock(block)
-	}
+	// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
+	oprs, err = g.ParallelFetchOPRsFromEBlock(block, 4)
+
 	if err != nil {
 		return nil, err
 	}
@@ -361,18 +358,17 @@ type OPRWorkResponse struct {
 }
 
 // ParallelFetchOPRsFromEBlock is so we can parallelize our factomd requests.
-func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
+func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, workerCount int) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
 	prevWinners := g.GetPreviousWinners(int32(block.EntryBlock.Header.DBHeight))
 
-	numThreads := 4
-
-	work := make(chan *OPRWorkRequest, numThreads*2)
-	collect := make(chan *OPRWorkResponse, numThreads*2)
+	// Using *2 just gives us a buffer so nothing is every blocking
+	work := make(chan *OPRWorkRequest, workerCount*2)
+	collect := make(chan *OPRWorkResponse, workerCount*2)
 
 	// 10 threads
-	for i := 0; i < numThreads; i++ {
+	for i := 0; i < workerCount; i++ {
 		go g.fetchOPRWorker(work, collect, prevWinners, block.EntryBlock.Header.DBHeight)
 	}
 	count := len(block.EntryBlock.EntryList)
@@ -446,40 +442,6 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 			results <- &OPRWorkResponse{opr: opr}
 		}
 	}
-}
-
-func (g *QuickGrader) FetchOPRsFromEBlock(block *EntryBlockMarker) ([]*OraclePriceRecord, error) {
-	// Previous winners so we know if the opr is valid
-	// The Winners() wrapper just handles the base case for us, where there is no winners
-	prevWinners := g.GetPreviousWinners(int32(block.EntryBlock.Header.DBHeight))
-
-	var oprs []*OraclePriceRecord
-	for _, entryHash := range block.EntryBlock.EntryList {
-		entry, err := factom.GetEntry(entryHash.EntryHash)
-		if err != nil {
-			return nil, fmt.Errorf("entry %s : %s", entryHash.EntryHash, err.Error())
-		}
-		// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
-		// that we need to retry. So the sync failed
-		opr, err := g.ParseOPREntry(entry, block.EntryBlock.Header.DBHeight)
-		if err != nil {
-			return nil, err
-		}
-		if opr == nil {
-			continue // This entry is not correctly formatted
-		}
-		if !VerifyWinners(opr, prevWinners) {
-			log.WithFields(log.Fields{
-				"entryhash": entryHash.EntryHash,
-				"id":        opr.FactomDigitalID,
-				"dbht":      opr.Dbht,
-			}).Warnf("bad previous winners in opr")
-			continue // This entry does not have the correct previous winners
-		}
-
-		oprs = append(oprs, opr)
-	}
-	return oprs, nil
 }
 
 // GetPreviousOPRBlock returns the winners of the previous OPR block
