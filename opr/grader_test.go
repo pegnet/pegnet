@@ -117,9 +117,9 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	tmp.Difficulty = tmp.ComputeDifficulty(tmp.Nonce)
 	binary.BigEndian.PutUint64(tmp.SelfReportedDifficulty, tmp.Difficulty)
 
-	assets := common.VersionOneAssets
+	assets := common.AssetsV1
 	if version == 2 {
-		assets = common.VersionTwoAssets
+		assets = common.AssetsV2
 	}
 	tmp.Assets = make(OraclePriceRecordAssetList)
 	for _, asset := range assets {
@@ -277,7 +277,7 @@ func shuffleList() {
 	rand.Shuffle(len(common.AllAssets), func(i, j int) {
 		common.AllAssets[i], common.AllAssets[j] = common.AllAssets[j], common.AllAssets[i]
 	})
-	common.VersionOneAssets = common.AllAssets
+	common.AssetsV1 = common.AllAssets
 	// Version One, subtract 2 assets
-	common.VersionTwoAssets = common.SubtractFromSet(common.VersionOneAssets, "XPD", "XPT")
+	common.AssetsV2 = common.SubtractFromSet(common.AssetsV1, "XPD", "XPT")
 }

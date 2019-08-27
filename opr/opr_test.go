@@ -19,22 +19,22 @@ func TestOPRTokens(t *testing.T) {
 	opr := NewOraclePriceRecord()
 	opr.Version = 1
 
-	if len(opr.GetTokens()) != len(common.VersionOneAssets) {
-		t.Errorf("exp %d tokens, found %d", len(common.VersionOneAssets), len(opr.GetTokens()))
+	if len(opr.GetTokens()) != len(common.AssetsV1) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV1), len(opr.GetTokens()))
 	}
 	for i, token := range opr.GetTokens() {
-		if token.Code != common.VersionOneAssets[i] {
-			t.Errorf("exp %s got %s", token.Code, common.VersionOneAssets[i])
+		if token.Code != common.AssetsV1[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV1[i])
 		}
 	}
 
 	opr.Version = 2
-	if len(opr.GetTokens()) != len(common.VersionTwoAssets) {
-		t.Errorf("exp %d tokens, found %d", len(common.VersionTwoAssets), len(opr.GetTokens()))
+	if len(opr.GetTokens()) != len(common.AssetsV2) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV2), len(opr.GetTokens()))
 	}
 	for i, token := range opr.GetTokens() {
-		if token.Code != common.VersionTwoAssets[i] {
-			t.Errorf("exp %s got %s", token.Code, common.VersionTwoAssets[i])
+		if token.Code != common.AssetsV2[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV2[i])
 		}
 	}
 }

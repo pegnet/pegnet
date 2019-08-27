@@ -158,10 +158,10 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		if len(opr.WinPreviousOPR) != 10 {
 			return false
 		}
-		return opr.Assets.ContainsExactly(common.VersionOneAssets)
+		return opr.Assets.ContainsExactly(common.AssetsV1)
 	case 2:
 		// It can contain 10 winners when it is a transition record
-		return opr.Assets.ContainsExactly(common.VersionTwoAssets)
+		return opr.Assets.ContainsExactly(common.AssetsV2)
 	default:
 		return false
 	}

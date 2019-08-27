@@ -30,9 +30,9 @@ func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {
 
 // List returns the list of assets in the global order
 func (o OraclePriceRecordAssetList) List(version uint8) []Token {
-	assets := common.VersionOneAssets
+	assets := common.AssetsV1
 	if version == 2 {
-		assets = common.VersionTwoAssets
+		assets = common.AssetsV2
 	}
 	tokens := make([]Token, len(assets))
 	for i, asset := range assets {
@@ -47,9 +47,9 @@ func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
 	var assets []string
 	switch OPRVersion {
 	case 1:
-		assets = common.VersionOneAssets
+		assets = common.AssetsV1
 	case 2:
-		assets = common.VersionTwoAssets
+		assets = common.AssetsV2
 	}
 
 	s := "{"

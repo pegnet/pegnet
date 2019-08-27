@@ -92,10 +92,10 @@ var (
 		"DCR",
 	}
 
-	AllAssets        = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
-	VersionOneAssets = AllAssets
+	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AssetsV1  = AllAssets
 	// Version One, subtract 2 assets
-	VersionTwoAssets = SubtractFromSet(VersionOneAssets, "XPD", "XPT")
+	AssetsV2 = SubtractFromSet(AssetsV1, "XPD", "XPT")
 )
 
 // AssetListContainsCaseInsensitive is for when using user input. It's helpful for the

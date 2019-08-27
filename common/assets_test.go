@@ -21,7 +21,7 @@ func TestBasicAssetList(t *testing.T) {
 }
 
 func TestSetSubtract(t *testing.T) {
-	for _, asset := range VersionTwoAssets {
+	for _, asset := range AssetsV2 {
 		if asset == "XPD" || asset == "XPT" {
 			t.Errorf("contains %s when it should not", asset)
 		}
