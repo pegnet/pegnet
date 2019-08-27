@@ -105,7 +105,7 @@ func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePr
 	// Find the top 50 with the correct difficulties
 	// 1. top50 is the top 50 PoW
 	top50 := make([]*OraclePriceRecord, 0)
-	for i, opr := range sortedList {
+	for i, opr := range list {
 		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
 		if f != opr.Difficulty {
@@ -156,7 +156,7 @@ func gradeMinimumVersionOne(sortedList []*OraclePriceRecord) (graded []*OraclePr
 
 	// Find the top 50 with the correct difficulties
 	top50 := make([]*OraclePriceRecord, 0)
-	for i, opr := range sortedList {
+	for i, opr := range list {
 		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
 		if f != opr.Difficulty {
