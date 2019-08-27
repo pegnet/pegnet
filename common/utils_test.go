@@ -33,24 +33,24 @@ func TestConvertFctToPegAssets(t *testing.T) {
 		fmt.Println(fct)
 		raw = factoid.ConvertUserStrToAddress(fct)
 		fmt.Printf("%x\n", raw)
-		pnt, err := ConvertRawToPegNetAsset("PNT", raw)
+		peg, err := ConvertRawToPegNetAsset("PEG", raw)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
-		fmt.Println(pnt)
-		pre, raw2, err := ConvertPegNetAssetToRaw(pnt)
-		if pre != "PNT" || !bytes.Equal(raw, raw2) || err != nil {
-			t.Fatal("Round trip failed with PNT")
+		fmt.Println(peg)
+		pre, raw2, err := ConvertPegNetAssetToRaw(peg)
+		if pre != "PEG" || !bytes.Equal(raw, raw2) || err != nil {
+			t.Fatal("Round trip failed with PEG")
 		}
 		fmt.Printf("%x\n", raw2)
-		tpnt, err := ConvertRawToPegNetAsset("tPNT", raw)
+		tpeg, err := ConvertRawToPegNetAsset("tPEG", raw)
 		if err != nil {
 			t.Fatal(fa, " ", err)
 		}
-		fmt.Println(tpnt)
-		pre, raw2, err = ConvertPegNetAssetToRaw(tpnt)
-		if pre != "tPNT" || !bytes.Equal(raw, raw2) || err != nil {
-			t.Fatal("Round trip failed with tPNT")
+		fmt.Println(tpeg)
+		pre, raw2, err = ConvertPegNetAssetToRaw(tpeg)
+		if pre != "tPEG" || !bytes.Equal(raw, raw2) || err != nil {
+			t.Fatal("Round trip failed with tPEG")
 		}
 		fmt.Printf("%x\n", raw2)
 
@@ -122,7 +122,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		return nil
 	}
 
-	if err := ConvertToHuman("PNT"); err != nil {
+	if err := ConvertToHuman("PEG"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -166,7 +166,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 		t.Error(err)
 	}
 
-	if err := ConvertToHuman("PNT"); err != nil {
+	if err := ConvertToHuman("PEG"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -195,13 +195,13 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 	if err := ConvertToHuman("YEN"); err == nil {
 		t.Error(err)
 	}
-	if err := ConvertToHuman("pPNT"); err == nil {
+	if err := ConvertToHuman("pPEG"); err == nil {
 		t.Error(err)
 	}
 
 	setAdr("2222222222222222222222222222222222222222222222222222222222222222")
 
-	if err := ConvertToHuman("PNT"); err != nil {
+	if err := ConvertToHuman("PEG"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {
@@ -213,7 +213,7 @@ func TestConvertRawAddrToPegT(t *testing.T) {
 
 	setAdr("FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF")
 
-	if err := ConvertToHuman("PNT"); err != nil {
+	if err := ConvertToHuman("PEG"); err != nil {
 		t.Error(err)
 	}
 	if err := ValidatePegNetAssetAddress(HumanAdr); err != nil {

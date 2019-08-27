@@ -69,7 +69,7 @@ func TestBasicPollingSources(t *testing.T) {
 			}
 
 			// Let's also check there is 4 sources
-			if len(s.AssetSources[asset]) != 4 && asset != "PNT" {
+			if len(s.AssetSources[asset]) != 4 && asset != "PEG" {
 				t.Errorf("exp %d sources for %s, found %d", 4, asset, len(s.AssetSources[asset]))
 			}
 		} else {

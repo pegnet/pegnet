@@ -77,7 +77,7 @@ var getEncoding = &cobra.Command{
 		if len(args) == 2 {
 			asset = strings.ToLower(args[1])
 		}
-		assets, err := common.ConvertFCTtoAllPegNetAssets(os.Args[2])
+		assets, err := common.ConvertFCTtoAllPegNetAssets(args[0])
 		if err != nil {
 			// TODO: Verify this error message?
 			fmt.Println("Must provide a valid FCT public key")
@@ -85,9 +85,10 @@ var getEncoding = &cobra.Command{
 		}
 		sort.Strings(assets)
 		for _, s := range assets {
-			if asset == "all" || asset == strings.ToLower(s[1:4]) {
-				if strings.Contains(s, "PNT_") {
-					fmt.Println("  *", s[1:4], " ", s)
+			if asset == "all" || asset == strings.ToLower(s[1:4]) || // If the asset is what 'all' or what we are looking for
+				(asset == strings.ToLower("PEG") && s[0:3] == "PEG") { // Or if we choose PEG, then the indexing is off
+				if strings.Contains(s, "PEG_") {
+					fmt.Println("  *", "PEG", " ", s)
 				} else {
 					fmt.Println("   ", s[1:4], " ", s)
 				}
@@ -124,7 +125,7 @@ var newAddress = &cobra.Command{
 		}
 		sort.Strings(assets)
 		for _, s := range assets {
-			if strings.Contains(s, "PNT_") {
+			if strings.Contains(s, "PEG_") {
 				fmt.Println("  *", s[1:4], " ", s)
 			} else {
 				fmt.Println("   ", s[1:4], " ", s)
@@ -135,8 +136,8 @@ var newAddress = &cobra.Command{
 
 var burn = &cobra.Command{
 	Use:   "burn <fct address> <fct amount>",
-	Short: "Burns the specied amount of FCT into PNT",
-	Long: "Burning FCT will turn it into PNT. The PNT burn address is an EC address, and the transaction has " +
+	Short: "Burns the specied amount of FCT into pFCT",
+	Long: "Burning FCT will turn it into pFCT. The pFCT burn address is an EC address, and the transaction has " +
 		"an input with # of FCT, and an output of 0 EC. This means the entire tx input becomes the fee. " +
 		"This command costs FCT, so be careful when using it.",
 	Example: "pegnet burn FA3EPZYqodgyEGXNMbiZKE5TS2x2J9wF8J9MvPZb52iGR78xMgCb 1",
@@ -276,7 +277,7 @@ var datasources = &cobra.Command{
 		fmt.Println()
 		fmt.Println("Assets and their data source order. The order left to right is the fallback order.")
 		for _, asset := range common.AllAssets {
-			if asset == "PNT" {
+			if asset == "PEG" {
 				continue
 			}
 			str := d.AssetPriorityString(asset)
@@ -357,7 +358,7 @@ var getPerformance = &cobra.Command{
 var getBalance = &cobra.Command{
 	Use:     "balance <type> <factoid address>",
 	Short:   "Returns the balance for the given asset type and Factoid address",
-	Example: "pegnet balance PNT FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
+	Example: "pegnet balance PEG FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
 	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorAsset, ArgValidatorFCTAddress)),
 	Run: func(cmd *cobra.Command, args []string) {
 		ticker := args[0]
@@ -367,14 +368,14 @@ var getBalance = &cobra.Command{
 		if err != nil {
 			fmt.Println("Error: invalid network string")
 		}
-		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
+		pegAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
 		if err != nil {
 			fmt.Println("Error: invalid Factoid address")
 		}
 		req := api.PostRequest{
 			Method: "balance",
 			Params: api.GenericParameters{
-				Address: &pntAddress,
+				Address: &pegAddress,
 			},
 		}
 		sendRequestAndPrintResults(&req)

@@ -24,7 +24,7 @@ var TestPegAssetNames []string
 
 func init() {
 	for _, asset := range AllAssets {
-		if asset != "PNT" {
+		if asset != "PEG" {
 			PegAssetNames = append(PegAssetNames, "p"+asset)
 		} else {
 			PegAssetNames = append(PegAssetNames, asset)
@@ -245,9 +245,10 @@ func ConvertFCTtoAllPegNetAssets(userFctAddr string) (assets []string, err error
 
 	for _, asset := range AllAssets {
 		pAsset := "p" + asset
-		if asset == "PNT" {
-			pAsset = "PNT"
+		if asset == "PEG" {
+			pAsset = "PEG"
 		}
+
 		assets = append(assets, cvt(pAsset))
 		assets = append(assets, cvt("t"+asset))
 	}
@@ -265,14 +266,14 @@ func ConvertFCTtoPegNetAsset(network string, asset string, userFAdr string) (Peg
 	case TestNetwork:
 		PegNetAsset, err = ConvertRawToPegNetAsset("t"+asset, raw)
 	case MainNetwork:
-		if asset != "PNT" {
+		if asset != "PEG" {
 			PegNetAsset, err = ConvertRawToPegNetAsset("p"+asset, raw)
 		} else {
 			PegNetAsset, err = ConvertRawToPegNetAsset(asset, raw)
 		}
 	}
 	if err != nil {
-		log.Errorf("Invalid RCD, could not create PNT address")
+		log.Errorf("Invalid RCD, could not create PEG address")
 	}
 	return
 }

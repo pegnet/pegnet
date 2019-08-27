@@ -287,7 +287,7 @@ func (g *QuickGrader) Sync() error {
 			for place, winner := range oprblock.GradedOPRs[:payouts] { // The top 25 matter in version 2
 				reward := GetRewardFromPlace(place, g.Network, block.EntryBlock.Header.DBHeight)
 				if reward > 0 {
-					err := g.Balances.AddToBalance(winner.CoinbasePNTAddress, reward)
+					err := g.Balances.AddToBalance(winner.CoinbasePEGAddress, reward)
 					if err != nil {
 						log.WithError(err).Fatal("Failed to update balance")
 					}
@@ -516,7 +516,7 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	if err := json.Unmarshal(entry.Content, opr); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
-	if opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PNT", opr.CoinbaseAddress); err != nil {
+	if opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PEG", opr.CoinbaseAddress); err != nil {
 		return nil, nil // Invalid Coinbase Address
 	}
 	// Run some basic checks on the values.  If they don't check out, then ignore the entry
