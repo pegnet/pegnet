@@ -92,9 +92,9 @@ func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (
 
 // gradeMinimumVersionTwo is version 2 grading algo
 // 1. PoW to top 50
-// 2. Grade with band to top 25
+// 2. Grade with 1% tolerance band to top 25
 // 3. Pay top 25 equally (not done here)
-// 4. Grade to 1
+// 4. Grade to 1 without any tolerance band
 // 5. Wining price is the last one
 func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
 	list := RemoveDuplicateSubmissions(sortedList)
@@ -124,9 +124,9 @@ func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePr
 		}
 	}
 
-	// 2. Grade with Band to top 25
+	// 2. Grade with 1% tolerance Band to top 25
 	// 3. Pay top 25 (does not happen here)
-	// 4. Grade to 1
+	// 4. Grade to 1 without any tolerance band
 	for i := len(top50); i >= 1; i-- {
 		avg := Avg(top50[:i])
 		for j := 0; j < i; j++ {
