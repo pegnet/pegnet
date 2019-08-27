@@ -36,8 +36,6 @@ func NewChainRecorder(con *config.Config, filpath string) (*ChainRecorder, error
 }
 
 func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error {
-	InitLX() // We intend to use the LX hash
-
 	f, err := os.OpenFile(c.filepath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err
@@ -96,8 +94,6 @@ OPRLoop:
 // WriteMinerCSV will write all the miner related stats for a given chain to a csv. This includes
 // number of records, difficulties hit, and more.
 func (c *ChainRecorder) WriteMinerCSV() error {
-	InitLX() // We intend to use the LX hash
-
 	f, err := os.OpenFile(c.filepath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err
