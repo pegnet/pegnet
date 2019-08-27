@@ -177,7 +177,9 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	if len(opr.OPRHash) > 0 {
 		return opr.OPRHash
 	}
-	data, err := json.Marshal(opr)
+
+	// SafeMarshal handles the PNT/PEG issue
+	data, err := opr.SafeMarshalJson()
 	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
@@ -407,7 +409,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	}
 	opr.SetPegValues(Peg)
 
-	data, err := json.Marshal(opr)
+	data, err := opr.SafeMarshalJson()
 	if err != nil {
 		panic(err)
 	}
@@ -427,9 +429,78 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
 	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
-	e.Content, err = json.Marshal(opr)
+	e.Content, err = opr.SafeMarshalJson()
 	if err != nil {
 		return nil, err
 	}
 	return e, nil
+}
+
+// SafeMarshalJson will marshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeMarshalJson() ([]byte, error) {
+	// our opr version must be set before entering this
+	if opr.Version == 0 {
+		return nil, fmt.Errorf("opr version is 0")
+	}
+
+	// This function relies on the assets, so check up front
+	if opr.Assets == nil {
+		return nil, fmt.Errorf("assets is nil, cannot marshal")
+	}
+
+	// When we marshal a version 1 opr, we need to change PEG -> PNT
+	// No opr in the code should ever have 'PNT'. We only use PNT in the marshal
+	// function, no where else.
+	if _, ok := opr.Assets["PNT"]; ok {
+		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
+	}
+
+	// Do the swap if on version 1
+	if opr.Version == 1 {
+		opr.Assets["PNT"] = opr.Assets["PEG"]
+		delete(opr.Assets, "PEG")
+	}
+
+	// Version 2 we do nothing
+
+	// This is a known key that will be removed by the marshal json function. It indicates
+	// to the marshaler that it was called from a safe path. This is not the cleanest method,
+	// but to override the json function, and still use the default, it would require an odd
+	// structure nesting and a lot of code changes
+	opr.Assets["version"] = float64(opr.Version)
+	data, err := json.Marshal(opr)
+	delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
+
+	// Revert version 1 changes
+	if opr.Version == 1 {
+		opr.Assets["PEG"] = opr.Assets["PNT"]
+		delete(opr.Assets, "PNT")
+	}
+
+	return data, err
+}
+
+// SafeMarshalJson will unmarshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeUnmarshalJSON(data []byte) error {
+	// our opr version must be set before entering this
+	if opr.Version == 0 {
+		return fmt.Errorf("opr version is 0")
+	}
+
+	err := json.Unmarshal(data, opr)
+	if err != nil {
+		return err
+	}
+
+	// If version 1, we need to swap PNT and PEG
+	if opr.Version == 1 {
+		if v, ok := opr.Assets["PNT"]; ok {
+			opr.Assets["PEG"] = v
+			delete(opr.Assets, "PNT")
+		} else {
+			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
+		}
+	}
+
+	return nil
 }
