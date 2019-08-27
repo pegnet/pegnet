@@ -94,6 +94,10 @@ var (
 
 	AllAssets        = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 	VersionOneAssets = AllAssets
+	// This is with the PNT instead of PEG. Should never be used unless absolutely necessary.
+	//
+	// Deprecated: Was used for version 1 before PNT -> PEG
+	VersionOneWithPNT = MergeLists([]string{"PNT"}, SubtractFromSet(VersionOneAssets, "PEG"))
 	// Version One, subtract 2 assets
 	VersionTwoAssets = SubtractFromSet(VersionOneAssets, "XPD", "XPT")
 )

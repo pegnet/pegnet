@@ -2,6 +2,7 @@ package opr
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pegnet/pegnet/common"
@@ -44,10 +45,22 @@ func (o OraclePriceRecordAssetList) List(version uint8) []Token {
 
 // from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
 func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
+	if _, ok := o["version"]; !ok {
+		return nil, fmt.Errorf("marshaling json must be called through a safe function")
+	}
+	version := int(o["version"])
+	delete(o, "version")
+
+	if version == 0 {
+		return nil, fmt.Errorf("version unset for json marshalling")
+	}
+
 	var assets []string
-	switch OPRVersion {
+	switch version {
 	case 1:
-		assets = common.VersionOneAssets
+		// We need to read the PNT code instead of peg so the hashes match.
+		// When we digest this, we should immediately switch it to PEG
+		assets = common.VersionOneWithPNT
 	case 2:
 		assets = common.VersionTwoAssets
 	}

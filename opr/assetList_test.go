@@ -20,14 +20,14 @@ import (
 func TestVerifyFunction(t *testing.T) {
 	badOrder := `{"PEG":0, "DCR":0, "USD":0,"EUR":0,"JPY":0,"GBP":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"TWD":0,"KRW":0,"ARS":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0}`
 
-	errs := verifyAssetStringOrder(badOrder)
+	errs := verifyAssetStringOrder(badOrder, common.AllAssets)
 	if len(errs) != 1 {
 		t.Errorf("Expected 1 err, found %d", len(errs))
 	}
 
 	badOrder = `{"PEG":0, "GBP":0, "DCR":0, "USD":0,"EUR":0,"JPY":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"TWD":0,"KRW":0,"ARS":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0}`
 
-	errs = verifyAssetStringOrder(badOrder)
+	errs = verifyAssetStringOrder(badOrder, common.AllAssets)
 	if len(errs) != 2 {
 		t.Errorf("Expected 2 err, found %d", len(errs))
 	}
@@ -36,61 +36,96 @@ func TestVerifyFunction(t *testing.T) {
 func TestAssetListJSONMarshal(t *testing.T) {
 	a := make(opr.OraclePriceRecordAssetList)
 	// Add them in reverse order
-	for i := len(common.AllAssets) - 1; i >= 0; i-- {
-		asset := common.AllAssets[i]
+	for i := len(common.VersionTwoAssets) - 1; i >= 0; i-- {
+		asset := common.VersionTwoAssets[i]
 		a[asset] = 0
 	}
 
+	a["version"] = 2
 	data, err := json.Marshal(a)
 	if err != nil {
 		t.Error(err)
 	}
 
-	errs := verifyAssetStringOrder(string(data))
+	errs := verifyAssetStringOrder(string(data), common.VersionTwoAssets)
 	for _, err := range errs {
 		t.Error(err)
 	}
 
-	if !a.ContainsExactly(common.AllAssets) {
+	if !a.ContainsExactly(common.VersionTwoAssets) {
 		t.Error("Missing items in the set")
 	}
 
 	// Test adding a new one
 	a["random"] = 0
-	if a.ContainsExactly(common.AllAssets) {
+	if a.ContainsExactly(common.VersionTwoAssets) {
 		t.Error("Should fail but did not")
 	}
 
 	// Test missing one
 	delete(a, "random")
 	delete(a, "PEG")
-	if a.ContainsExactly(common.AllAssets) {
+	if a.ContainsExactly(common.VersionTwoAssets) {
 		t.Error("Should fail but did not")
 	}
 
 }
 
 func TestAssetListUnmarshal(t *testing.T) {
-	j := `{"PEG":0,"USD":0,"EUR":0,"JPY":0,"GBP":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"KRW":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0,"DCR":0}`
+	j := `{"PEG":0,"USD":0,"EUR":0,"JPY":0,"GBP":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"KRW":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0,"DCR":0}`
 
-	m := new(opr.OraclePriceRecordAssetList)
-	err := json.Unmarshal([]byte(j), m)
+	m := make(opr.OraclePriceRecordAssetList)
+	err := json.Unmarshal([]byte(j), &m)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if !m.Contains(common.AllAssets) {
+	if !m.Contains(common.VersionTwoAssets) {
 		t.Error("Missing asset in unmarshal")
 	}
 
-	data, err := m.MarshalJSON()
+	m["version"] = 2
+	data, err := json.Marshal(m)
 	if err != nil {
 		t.Error(err)
 	}
 
 	if string(data) != j {
 		t.Error("Marshal is different than unmarshaled original")
-		fmt.Println(string(data))
+		fmt.Println(string(data), "\n", j)
+	}
+}
+
+func TestAssetListVersionOneUnmarshal(t *testing.T) {
+	// Safe unmarshal switches PNT for PEG
+	j := `{"PEG":0,"USD":0,"EUR":0,"JPY":0,"GBP":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"KRW":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0,"DCR":0}`
+
+	m := make(opr.OraclePriceRecordAssetList)
+	err := json.Unmarshal([]byte(j), &m)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if !m.Contains(common.VersionOneAssets) {
+		t.Error("Missing asset in unmarshal")
+	}
+
+	if _, ok := m["PEG"]; ok {
+		// Swap peg and pnt, as we expect pnt in the output
+		j = strings.Replace(j, "PEG", "PNT", -1)
+	} else {
+		t.Errorf("PEG not found")
+	}
+
+	m["version"] = 1
+	data, err := json.Marshal(m)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(data) != j {
+		t.Error("Marshal is different than unmarshaled original")
+		fmt.Println(string(data), "\n", j)
 	}
 }
 
@@ -98,17 +133,18 @@ func TestAssetListUnmarshal(t *testing.T) {
 func TestOPRJsonMarshal(t *testing.T) {
 	var err error
 	o := opr.NewOraclePriceRecord()
-	for _, asset := range common.AllAssets {
+	for _, asset := range common.VersionTwoAssets {
 		o.Assets[asset] = rand.Float64()
 	}
 
+	common.SetTestingVersion(2)
 	//c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
 	o.FactomDigitalID = "random"
-	o.Network = common.TestNetwork
+	o.Network = common.UnitTestNetwork
 	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
-	for i, asset := range common.AllAssets {
+	for i, asset := range common.VersionTwoAssets {
 		o.Assets[asset] = rand.Float64() * 1000
 
 		// Test truncate does not affect json
@@ -119,21 +155,21 @@ func TestOPRJsonMarshal(t *testing.T) {
 		}
 	}
 
-	data, err := json.Marshal(o)
+	data, err := o.SafeMarshalJson()
 	if err != nil {
 		t.Error(err)
 	}
 
 	o2 := opr.NewOraclePriceRecord()
 	// These two not set by json
-	o2.Network = common.TestNetwork
+	o2.Network = common.UnitTestNetwork
 	o2.Version = common.OPRVersion(o.Network, int64(o.Dbht))
-	err = json.Unmarshal(data, o2)
+	err = o2.SafeUnmarshalJSON(data)
 	if err != nil {
 		t.Error(err)
 	}
 
-	data2, err := json.Marshal(o2)
+	data2, err := o2.SafeMarshalJson()
 	if err != nil {
 		t.Error(err)
 	}
@@ -154,10 +190,10 @@ func TestOPRJsonMarshal(t *testing.T) {
 }
 
 // verifyAssetStringOrder will verify the resulting string has the assets in the same order as the global order
-func verifyAssetStringOrder(str string) []error {
+func verifyAssetStringOrder(str string, list []string) []error {
 	index := 0
 	errs := []error{}
-	for _, asset := range common.AllAssets {
+	for _, asset := range list {
 		i := strings.Index(str, asset)
 		if i < index {
 			errs = append(errs, fmt.Errorf("asset %s in the wrong order", asset))

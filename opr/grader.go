@@ -9,7 +9,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"sort"
 	"sync"
@@ -304,6 +303,11 @@ func (g *QuickGrader) Sync() error {
 }
 
 func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) {
+	// We want to set the OPR version for the network. This is kinda hacky, but the marshal json
+	// override function on the asset list cannot accept params. So we set a global so the marshal
+	// json function knows what asset list to use for the global ordering.
+	OPRVersion = common.OPRVersion(g.Network, block.EntryBlock.Header.DBHeight)
+
 	min := g.MinRecords(block.EntryBlock.Header.DBHeight)
 	// There is not enough entries in this block, so there is no point in looking at it.
 	if len(block.EntryBlock.EntryList) < min {
@@ -513,7 +517,7 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	}
 	opr.Version = entry.ExtIDs[2][0]
 
-	if err := json.Unmarshal(entry.Content, opr); err != nil {
+	if err := opr.SafeUnmarshalJSON(entry.Content); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
 	if opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PEG", opr.CoinbaseAddress); err != nil {
