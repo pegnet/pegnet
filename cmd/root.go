@@ -35,39 +35,39 @@ var (
 func init() {
 	// TODO: Review how this completion works
 	//		The autotab stuff doesn't update automatically
-	rootCmd.AddCommand(completionCmd)
+	RootCmd.AddCommand(completionCmd)
 
-	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
-	rootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
-	rootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
-	rootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnode", "g", "localhost:8099", "IPAddr:port# of the pegnet node")
-	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
+	RootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
+	RootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
+	RootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
+	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnode", "g", "localhost:8099", "IPAddr:port# of the pegnet node")
+	RootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Flags that affect the config file. Should not be loaded into globals
-	rootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
-	rootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
-	rootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
-	rootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
-	rootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
-	rootCmd.PersistentFlags().String("mienrdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
-	rootCmd.PersistentFlags().String("mienrdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
+	RootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
+	RootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
+	RootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
+	RootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
+	RootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
+	RootCmd.PersistentFlags().String("mienrdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
+	RootCmd.PersistentFlags().String("mienrdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
 
 	// Persist flags that run in PreRun, and not in the config
-	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
-	rootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
-	rootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+	RootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
+	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
+	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
 
-	rootCmd.PersistentFlags().StringArrayP("override", "o", []string{}, "Custom config overrides. Can override any setting")
+	RootCmd.PersistentFlags().StringArrayP("override", "o", []string{}, "Custom config overrides. Can override any setting")
 
 	// Initialize the config file with the config, then with cmd flags
-	rootCmd.PersistentPreRunE = rootPreRunSetup
+	RootCmd.PersistentPreRunE = rootPreRunSetup
 
 	// Run a few functions (in the order specified) to initialize some globals
 	cobra.OnInitialize(initLogger)
 }
 
 // The cli enter point
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "pegnet",
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -93,7 +93,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -217,7 +217,7 @@ var completionCmd = &cobra.Command{
 pegnet completion > /tmp/ntc && source /tmp/ntc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addGetEncodingCommands()
-		rootCmd.GenBashCompletion(os.Stdout)
+		RootCmd.GenBashCompletion(os.Stdout)
 	},
 }
 

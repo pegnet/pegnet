@@ -36,20 +36,20 @@ var (
 
 func init() {
 	// Add commands to the root cmd
-	rootCmd.AddCommand(getEncoding)
-	rootCmd.AddCommand(newAddress)
-	rootCmd.AddCommand(grader)
-	rootCmd.AddCommand(networkCoordinator)
-	rootCmd.AddCommand(networkMinerCmd)
-	rootCmd.AddCommand(datasources)
-	rootCmd.AddCommand(pegnetNode)
+	RootCmd.AddCommand(getEncoding)
+	RootCmd.AddCommand(newAddress)
+	RootCmd.AddCommand(grader)
+	RootCmd.AddCommand(networkCoordinator)
+	RootCmd.AddCommand(networkMinerCmd)
+	RootCmd.AddCommand(datasources)
+	RootCmd.AddCommand(pegnetNode)
 
 	dataWriter.AddCommand(minerStats)
 	dataWriter.AddCommand(priceStats)
-	rootCmd.AddCommand(dataWriter)
+	RootCmd.AddCommand(dataWriter)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
-	rootCmd.AddCommand(burn)
+	RootCmd.AddCommand(burn)
 
 	dataWriter.PersistentFlags().StringP("output", "o", "stats.csv", "output file for the csv")
 
@@ -58,8 +58,8 @@ func init() {
 		"(negative numbers are interpreted relative to current block head)")
 	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
 		"(negative numbers are ignored)")
-	rootCmd.AddCommand(getPerformance)
-	rootCmd.AddCommand(getBalance)
+	RootCmd.AddCommand(getPerformance)
+	RootCmd.AddCommand(getBalance)
 }
 
 var getEncoding = &cobra.Command{
