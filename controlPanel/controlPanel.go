@@ -106,7 +106,7 @@ func (c *ControlPanel) ServeControlPanel() {
 			CoinbaseAddress = str
 		}
 
-		CoinbasePNTAddress, err := common.ConvertFCTtoPegNetAsset(network, "PNT", CoinbaseAddress)
+		CoinbasePEGAddress, err := common.ConvertFCTtoPegNetAsset(network, "PEG", CoinbaseAddress)
 		if err != nil {
 			panic("no valid coinbase address in the config file")
 		}
@@ -117,7 +117,7 @@ func (c *ControlPanel) ServeControlPanel() {
 			case e := <-alert:
 
 				r := CommonResponse{Minute: e.Minute, Dbht: e.Dbht, HashRate: CurrentHashRate, Difficulty: CurrentDifficulty}
-				r.Balance = c.Balances.GetBalance(CoinbasePNTAddress)
+				r.Balance = c.Balances.GetBalance(CoinbasePEGAddress)
 
 				data, _ := json.Marshal(r)
 				c.SSEServer.SendMessage("/events/common", sse.SimpleMessage(string(data)))

@@ -79,9 +79,9 @@ func (b *BalanceTracker) GetBalance(address string) (balance int64) {
 	return
 }
 
-// DiagnosticAssetHumanReadablePNTBalances is used to monitor the PNT distribution. It's mainly a diagnosing/debugging
+// DiagnosticAssetHumanReadablePEGBalances is used to monitor the PEG distribution. It's mainly a diagnosing/debugging
 // function.
-func (b *BalanceTracker) DiagnosticAssetHumanReadablePNTBalances(prefix string) map[string]string {
+func (b *BalanceTracker) DiagnosticAssetHumanReadablePEGBalances(prefix string) map[string]string {
 	b.Lock()
 	defer b.Unlock()
 	r := make(map[string]string)

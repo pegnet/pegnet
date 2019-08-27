@@ -185,7 +185,7 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 			evt.FactomDigitalID = id
 
 			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
-			evt.CoinbasePNTAddress = addr
+			evt.CoinbasePEGAddress = addr
 			evt.OPRHash = nil // Reset the oprhash since we changed some fields
 
 			c.OPRMaker.RecOPR(evt)

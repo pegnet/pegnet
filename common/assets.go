@@ -6,7 +6,7 @@ import "strings"
 
 /*          All the assets on pegnet
  *
- *          PegNet,                 PNT,        PNT
+ *          PegNet,                 PEG,        PEG
  *
  *          US Dollar,              USD,        pUSD
  *          Euro,                   EUR,        pEUR
@@ -46,8 +46,8 @@ import "strings"
  */
 
 var (
-	PNTAsset = []string{
-		"PNT",
+	PEGAsset = []string{
+		"PEG",
 	}
 
 	CurrencyAssets = []string{
@@ -92,7 +92,7 @@ var (
 		"DCR",
 	}
 
-	AllAssets        = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AllAssets        = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 	VersionOneAssets = AllAssets
 	// Version One, subtract 2 assets
 	VersionTwoAssets = SubtractFromSet(VersionOneAssets, "XPD", "XPT")
