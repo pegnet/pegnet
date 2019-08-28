@@ -4,6 +4,7 @@
 package polling
 
 import (
+	"math"
 	"time"
 
 	"github.com/cenkalti/backoff"
@@ -38,4 +39,8 @@ func TruncateTo4(v float64) float64 {
 
 func TruncateTo8(v float64) float64 {
 	return float64(int64(v*1e8)) / 1e8
+}
+
+func RoundTo8(v float64) float64 {
+	return math.Round(v*1e8) / 1e8
 }

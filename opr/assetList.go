@@ -2,6 +2,8 @@ package opr
 
 import (
 	"encoding/json"
+	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/pegnet/pegnet/common"
@@ -9,6 +11,8 @@ import (
 
 // OraclePriceRecordAssetList is used such that the marshaling of the assets
 // is in the same order, and we still can use map access in the code
+// 	Key: Asset
+//	Value: Exchange rate to USD
 type OraclePriceRecordAssetList map[string]float64
 
 func (o OraclePriceRecordAssetList) Contains(list []string) bool {
@@ -18,6 +22,86 @@ func (o OraclePriceRecordAssetList) Contains(list []string) bool {
 		}
 	}
 	return true
+}
+
+// Exchange tells us how much we need to spend given the amount we want is fixed.
+//	?? FROM -> X TO
+//
+//   X TO         to_usd               1
+//  ------    *  --------- = USD * -------- = FROM
+//     1            1               from_usd
+func (o OraclePriceRecordAssetList) ExchangeTo(from string, to string, want int64) (int64, error) {
+	return o.Exchange(to, want, from)
+}
+
+// Exchange tells us how much we need to spend given the amount we have is fixed.
+//  X FROM -> ?? TO
+//
+//  X FROM       from_usd             1
+//  ------    *  --------- = USD * -------- = TO
+//     1            1               to_usd
+//
+func (o OraclePriceRecordAssetList) ExchangeFrom(from string, have int64, to string) (int64, error) {
+	return o.Exchange(from, have, to)
+}
+
+// Exchange will use big ints to avoid overflows.
+// TODO: Will we ever overflow a int64?
+func (o OraclePriceRecordAssetList) Exchange(input string, amount int64, output string) (int64, error) {
+	fromRate, toRate, err := o.ExchangeRates(input, output)
+	if err != nil {
+		return 0, err
+	}
+
+	// Convert the rates to integers. Because these rates are in USD, we will switch all our inputs to
+	// 1e-8 fixed point. The `want` should already be in this format. This should be the most amount of
+	// accuracy a miner reports. Anything beyond the 8th decimal point, we cannot account for.
+	fr := big.NewInt(int64(fromRate * 1e8))
+	tr := big.NewInt(int64(toRate * 1e8))
+	amt := big.NewInt(amount)
+
+	// Now we can run the conversion
+	// ALWAYS multiply first. If you do not adhere to the order of operations shown
+	// explicitly below, your answer will be incorrect. When doing a conversion,
+	// always multiply before you divide.
+	//  (amt * fromrate) / torate
+	num := big.NewInt(0).Mul(amt, fr)
+	num = num.Div(num, tr)
+	return num.Int64(), nil
+}
+
+// ExchangeRate finds the exchange rates for FROM and TO in usd as the base pair.
+func (o OraclePriceRecordAssetList) ExchangeRates(from, to string) (fromRate float64, toRate float64, err error) {
+	var ok bool
+	// First we need to ensure we have the pricing for each side of the exchange
+	fromRate, ok = o[from]
+	if !ok {
+		return 0, 0, fmt.Errorf("did not find a rate for %s", from)
+	}
+
+	toRate, ok = o[to]
+	if !ok {
+		return 0, 0, fmt.Errorf("did not find a rate for %s", to)
+	}
+
+	if toRate == 0 || fromRate == 0 {
+		return 0, 0, fmt.Errorf("one of the rates found is 0")
+	}
+
+	// fromRate / toRate
+	return fromRate, toRate, nil
+}
+
+// ExchangeRate finds the exchange rate going from `FROM` to `TO`.
+//	To do the exchange rate, USD is the base pair and used as the intermediary.
+//	So to go from FCT -> BTC, the math goes:
+//		FCT -> USD -> BTC
+func (o OraclePriceRecordAssetList) ExchangeRate(from, to string) (float64, error) {
+	fromRate, toRate, err := o.ExchangeRates(from, to)
+	if err != nil {
+		return 0, err
+	}
+	return fromRate / toRate, nil
 }
 
 func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {

@@ -284,6 +284,23 @@ func Abs(v int) int {
 	return v
 }
 
+func Abs64(v int64) int64 {
+	if v < 0 {
+		return v * -1
+	}
+	return v
+}
+
+func Max64(vs ...int64) int64 {
+	max := int64(0)
+	for _, v := range vs {
+		if v > max {
+			max = v
+		}
+	}
+	return max
+}
+
 func CheckAndPanic(e error) {
 	if e != nil {
 		_, file, line, _ := runtime.Caller(1) // The line that called this function
