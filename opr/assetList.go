@@ -24,7 +24,8 @@ func (o OraclePriceRecordAssetList) Contains(list []string) bool {
 	return true
 }
 
-// Exchange tells us how much we need to spend given the amount we want is fixed.
+// ExchangeTo tells us how much we need to spend given the amount we want is fixed. All inputs must be in their
+// lowest divisible unit as whole numbers.
 //	?? FROM -> X TO
 //
 //   X TO         to_usd               1
@@ -34,7 +35,8 @@ func (o OraclePriceRecordAssetList) ExchangeTo(from string, to string, want int6
 	return o.Exchange(to, want, from)
 }
 
-// Exchange tells us how much we need to spend given the amount we have is fixed.
+// ExchangeFrom tells us how much we need to spend given the amount we have is fixed. All inputs must be in their
+// lowest divisible unit as whole numbers.
 //  X FROM -> ?? TO
 //
 //  X FROM       from_usd             1
@@ -45,7 +47,8 @@ func (o OraclePriceRecordAssetList) ExchangeFrom(from string, have int64, to str
 	return o.Exchange(from, have, to)
 }
 
-// Exchange will use big ints to avoid overflows.
+// Exchange will use big ints to avoid overflows. All inputs must be in their
+// lowest divisible unit as whole numbers.
 // TODO: Will we ever overflow a int64?
 func (o OraclePriceRecordAssetList) Exchange(input string, amount int64, output string) (int64, error) {
 	fromRate, toRate, err := o.ExchangeRates(input, output)
@@ -70,7 +73,7 @@ func (o OraclePriceRecordAssetList) Exchange(input string, amount int64, output 
 	return num.Int64(), nil
 }
 
-// ExchangeRate finds the exchange rates for FROM and TO in usd as the base pair.
+// ExchangeRates finds the exchange rates for FROM and TO in usd as the base pair.
 func (o OraclePriceRecordAssetList) ExchangeRates(from, to string) (fromRate float64, toRate float64, err error) {
 	var ok bool
 	// First we need to ensure we have the pricing for each side of the exchange
@@ -93,6 +96,8 @@ func (o OraclePriceRecordAssetList) ExchangeRates(from, to string) (fromRate flo
 }
 
 // ExchangeRate finds the exchange rate going from `FROM` to `TO`.
+// Don't use this for any math.
+// TODO: Remove this from core? It's just for printing purposes and informing users.
 //	To do the exchange rate, USD is the base pair and used as the intermediary.
 //	So to go from FCT -> BTC, the math goes:
 //		FCT -> USD -> BTC
