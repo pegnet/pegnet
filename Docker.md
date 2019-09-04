@@ -1,9 +1,9 @@
 # PegNet Docker
 
-The pegnet docker will help you get up an running for development in no time.
+The pegnet docker will help you get up and running for development in no time.
 
 ## Prerequisites
-To be able to run PegNet you must have Docker and docker-compose, docker versions change depending of your setup.
+To be able to run PegNet you must have Docker and docker-compose, docker versions change depending on your setup.
 - Docker and docker-compose installed.
 - Follow instructions at https://docs.docker.com/compose/install/
 - factom-cli installed in your host.
@@ -34,10 +34,10 @@ docker-compose will create and run 3 services:
 - walletd (walletd_container)
 - pegnet (pegnet_container)
 
-You should have factomd and walletd running at this point.
+You should have factomd and walletd running at this point. You will have to start the miner separately (see below).
 
 ## Initial Funding
-Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run
+Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run (not in docker)
 
 ```bash
 ./initialization/fundEC.sh
@@ -47,14 +47,14 @@ This will fund the EC address *(requires factom-cli)*
 
 ---
 
-Make sure the chains are created, run
+After making sure the chains are created, run
 
 ```bash
 docker-compose run --rm pegnet go run initialization/main.go
 ```
 
 # Running a PegNet node
-Now that we have everything setup, we can run a basic validator node:
+Now that we have everything set up, we can run a basic validator node:
 
 ```bash
 docker-compose run --rm pegnet go run pegnet.go --log=debug

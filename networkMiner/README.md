@@ -76,7 +76,7 @@ If you read the mining documentation, then you are halfway there to running a ne
 pegnet netcoordinator --caddr :1234
 ```
 
-Once the netcoordinator is running, you can not run netminers to communicate with the coordinator. The configuration needed is:
+Once the netcoordinator is running, you can now run netminers to communicate with the coordinator. The configuration needed is:
 
 - `MiningCoordinatorHost` in the config or `--caddr` for the ip:port of the coordinator.
 - `CoordinatorSecret` should match the coordinator
