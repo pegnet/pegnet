@@ -17,8 +17,6 @@ import (
 
 	"github.com/pegnet/pegnet/balances"
 
-	"github.com/pegnet/pegnet/node"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
@@ -42,7 +40,6 @@ func init() {
 	RootCmd.AddCommand(networkCoordinator)
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
-	RootCmd.AddCommand(pegnetNode)
 
 	dataWriter.AddCommand(minerStats)
 	dataWriter.AddCommand(priceStats)
@@ -455,41 +452,6 @@ var networkMinerCmd = &cobra.Command{
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel
-	},
-}
-
-var pegnetNode = &cobra.Command{
-	Use:   "node",
-	Short: "Runs a pegnet node",
-	Run: func(cmd *cobra.Command, args []string) {
-		ctx, cancel := context.WithCancel(context.Background())
-		common.GlobalExitHandler.AddCancel(cancel)
-		ValidateConfig(Config) // Will fatal log if it fails
-		b := balances.NewBalanceTracker()
-
-		// Services
-		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor, b, ctx, false)
-
-		pegnetnode, err := node.NewPegnetNode(Config, monitor, grader)
-		if err != nil {
-			CmdError(cmd, err)
-		}
-		common.GlobalExitHandler.AddExit(pegnetnode.Close)
-
-		go pegnetnode.Run(ctx)
-
-		var _ = cancel
-		apiserver := LaunchAPI(Config, nil, grader, b, false)
-		apiserver.Mux.Handle("/node/v1", pegnetnode.APIMux())
-		// Let's add the pegnet node timeseries to the handle
-		apiport, err := Config.Int(common.ConfigAPIPort)
-		if err != nil {
-			CmdError(cmd, err)
-		}
-		apiserver.Listen(apiport)
-		var _ = apiserver
-
 	},
 }
 
