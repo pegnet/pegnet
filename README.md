@@ -30,14 +30,14 @@ For any questions, troubleshooting or further information head to [discord](http
 
 #### Setup
 
-Create a `.pegnet` folder inside your home directory. Copy the `defaultconfig.ini` [file](https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini) there. 
+Create a `.pegnet` folder inside your home directory. Copy the `config/defaultconfig.ini` [file](https://raw.githubusercontent.com/pegnet/pegnet/master/config/defaultconfig.ini) there. 
 
 On Windows this is your `%USERPROFILE%` folder
 
 Linux example:
 ```bash
 mkdir ~/.pegnet
-wget https://raw.githubusercontent.com/pegnet/pegnet/master/defaultconfig.ini -P ~/.pegnet/
+wget https://raw.githubusercontent.com/pegnet/pegnet/master/config/defaultconfig.ini -P ~/.pegnet/
 ```
 
 * Sign up for an API Key from https://currencylayer.com, replace APILayerKey in the config with your own
