@@ -4,6 +4,7 @@
 package cmd
 
 import (
+	"encoding/hex"
 	"fmt"
 	"math"
 	"regexp"
@@ -127,6 +128,15 @@ func ArgValidatorAsset(cmd *cobra.Command, arg string) error {
 		}
 	}
 	return fmt.Errorf("not a valid asset. Assets include: %v", common.AllAssets)
+}
+
+// ArgValidatorHexHash checks for valid hash
+func ArgValidatorHexHash(cmd *cobra.Command, arg string) error {
+	if len(arg) != 64 {
+		return fmt.Errorf("a hash is a 64 character hex string")
+	}
+	_, err := hex.DecodeString(arg)
+	return err
 }
 
 // Custom Completion args

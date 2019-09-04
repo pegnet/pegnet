@@ -41,6 +41,11 @@ func init() {
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
 
+	decodeEntry.Flags().IntP("version", "v", 2, "OPR version to decode")
+	decode.AddCommand(decodeEntry)
+	decode.AddCommand(decodeEblock)
+	RootCmd.AddCommand(decode)
+
 	dataWriter.AddCommand(minerStats)
 	dataWriter.AddCommand(priceStats)
 	RootCmd.AddCommand(dataWriter)
@@ -522,5 +527,93 @@ var minerStats = &cobra.Command{
 		if err != nil {
 			CmdError(cmd, err)
 		}
+	},
+}
+
+var decode = &cobra.Command{
+	Use:     "decode",
+	Short:   "Attempt to decode an opr from an entry/eblock",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read.",
+	Example: "pegnet decode entry <entryhash>",
+}
+
+var decodeEblock = &cobra.Command{
+	Use:     "eblock",
+	Short:   "Attempt to decode all oprs from an eblock",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read all entries in an eblock.",
+	Example: "pegnet decode eblock <keymr>",
+	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config)
+		var err error
+
+		g := new(opr.QuickGrader)
+		g.Network, err = common.LoadConfigNetwork(Config)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		g.Protocol, err = Config.String("Miner.Protocol")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		g.Config = Config
+
+		eblock, err := factom.GetEBlock(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		if eblock == nil {
+			CmdError(cmd, fmt.Errorf("block %s not found", args[0]))
+		}
+
+		oprs, err := g.ParallelFetchOPRsFromEBlock(&opr.EntryBlockMarker{KeyMr: args[0], EntryBlock: eblock}, 4, false)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// We have to manually set this, as version 2
+		// is never json marshalled
+		for _, opr := range oprs {
+			opr.Assets["version"] = uint64(opr.Version)
+		}
+
+		data, err := json.Marshal(oprs)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		fmt.Println(string(data))
+	},
+}
+
+var decodeEntry = &cobra.Command{
+	Use:     "entry",
+	Short:   "Attempt to decode an opr from an entry",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read a single entry.",
+	Example: "pegnet decode entry <entryhash>",
+	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
+	Run: func(cmd *cobra.Command, args []string) {
+		v, _ := cmd.Flags().GetInt("version")
+
+		entry, err := factom.GetEntry(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		opr := opr.NewOraclePriceRecord()
+		opr.Version = uint8(v)
+
+		err = opr.SafeUnmarshal(entry.Content)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// We have to manually set this, as version 2
+		// is never json marshalled
+		opr.Assets["version"] = 2
+		data, err := json.Marshal(opr)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		fmt.Println(string(data))
 	},
 }
