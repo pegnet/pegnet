@@ -134,7 +134,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 	var err error
 	o := opr.NewOraclePriceRecord()
 	for _, asset := range common.AssetsV2 {
-		o.Assets[asset] = rand.Float64()
+		o.Assets.SetValue(asset, rand.Float64())
 	}
 
 	common.SetTestingVersion(2)
@@ -145,17 +145,17 @@ func TestOPRJsonMarshal(t *testing.T) {
 	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
 	for i, asset := range common.AssetsV2 {
-		o.Assets[asset] = rand.Float64() * 1000
+		o.Assets.SetValue(asset, rand.Float64()*1000)
 
 		// Test truncate does not affect json
 		if i%3 == 0 {
-			o.Assets[asset] = polling.TruncateTo4(o.Assets[asset])
+			o.Assets.SetValue(asset, polling.TruncateTo4(o.Assets.Value(asset)))
 		} else if i%3 == 1 {
-			o.Assets[asset] = polling.TruncateTo8(o.Assets[asset])
+			o.Assets.SetValue(asset, polling.TruncateTo8(o.Assets.Value(asset)))
 		}
 	}
 
-	data, err := o.SafeMarshalJson()
+	data, err := o.SafeMarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,12 +164,12 @@ func TestOPRJsonMarshal(t *testing.T) {
 	// These two not set by json
 	o2.Network = common.UnitTestNetwork
 	o2.Version = common.OPRVersion(o.Network, int64(o.Dbht))
-	err = o2.SafeUnmarshalJSON(data)
+	err = o2.SafeUnmarshal(data)
 	if err != nil {
 		t.Error(err)
 	}
 
-	data2, err := o2.SafeMarshalJson()
+	data2, err := o2.SafeMarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -181,7 +181,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 		t.Errorf("did not marshal into the same")
 	}
 
-	o2.Assets["PEG"] = 0.123
+	o2.Assets.SetValue("PEG", 0.123)
 	// Ensure not just a deep equal oddity
 	if reflect.DeepEqual(o, o2) {
 		t.Errorf("I changed it, they should not be different")

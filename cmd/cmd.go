@@ -41,7 +41,6 @@ func init() {
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
 
-	decodeEntry.Flags().IntP("version", "v", 2, "OPR version to decode")
 	decode.AddCommand(decodeEntry)
 	decode.AddCommand(decodeEblock)
 	RootCmd.AddCommand(decode)
@@ -592,13 +591,16 @@ var decodeEntry = &cobra.Command{
 	Example: "pegnet decode entry <entryhash>",
 	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
 	Run: func(cmd *cobra.Command, args []string) {
-		v, _ := cmd.Flags().GetInt("version")
-
 		entry, err := factom.GetEntry(args[0])
 		if err != nil {
 			CmdError(cmd, err)
 		}
 
+		if len(entry.ExtIDs) != 3 {
+			CmdError(cmd, fmt.Errorf("not an opr entry"))
+		}
+
+		v := uint8(entry.ExtIDs[2][0])
 		opr := opr.NewOraclePriceRecord()
 		opr.Version = uint8(v)
 
