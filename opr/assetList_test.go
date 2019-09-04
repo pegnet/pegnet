@@ -36,8 +36,8 @@ func TestVerifyFunction(t *testing.T) {
 func TestAssetListJSONMarshal(t *testing.T) {
 	a := make(opr.OraclePriceRecordAssetList)
 	// Add them in reverse order
-	for i := len(common.VersionTwoAssets) - 1; i >= 0; i-- {
-		asset := common.VersionTwoAssets[i]
+	for i := len(common.AssetsV2) - 1; i >= 0; i-- {
+		asset := common.AssetsV2[i]
 		a[asset] = 0
 	}
 
@@ -47,25 +47,25 @@ func TestAssetListJSONMarshal(t *testing.T) {
 		t.Error(err)
 	}
 
-	errs := verifyAssetStringOrder(string(data), common.VersionTwoAssets)
+	errs := verifyAssetStringOrder(string(data), common.AssetsV2)
 	for _, err := range errs {
 		t.Error(err)
 	}
 
-	if !a.ContainsExactly(common.VersionTwoAssets) {
+	if !a.ContainsExactly(common.AssetsV2) {
 		t.Error("Missing items in the set")
 	}
 
 	// Test adding a new one
 	a["random"] = 0
-	if a.ContainsExactly(common.VersionTwoAssets) {
+	if a.ContainsExactly(common.AssetsV2) {
 		t.Error("Should fail but did not")
 	}
 
 	// Test missing one
 	delete(a, "random")
 	delete(a, "PEG")
-	if a.ContainsExactly(common.VersionTwoAssets) {
+	if a.ContainsExactly(common.AssetsV2) {
 		t.Error("Should fail but did not")
 	}
 
@@ -80,7 +80,7 @@ func TestAssetListUnmarshal(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !m.Contains(common.VersionTwoAssets) {
+	if !m.Contains(common.AssetsV2) {
 		t.Error("Missing asset in unmarshal")
 	}
 
@@ -106,7 +106,7 @@ func TestAssetListVersionOneUnmarshal(t *testing.T) {
 		t.Error(err)
 	}
 
-	if !m.Contains(common.VersionOneAssets) {
+	if !m.Contains(common.AssetsV1) {
 		t.Error("Missing asset in unmarshal")
 	}
 
@@ -133,7 +133,7 @@ func TestAssetListVersionOneUnmarshal(t *testing.T) {
 func TestOPRJsonMarshal(t *testing.T) {
 	var err error
 	o := opr.NewOraclePriceRecord()
-	for _, asset := range common.VersionTwoAssets {
+	for _, asset := range common.AssetsV2 {
 		o.Assets[asset] = rand.Float64()
 	}
 
@@ -144,7 +144,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 	o.Network = common.UnitTestNetwork
 	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
-	for i, asset := range common.VersionTwoAssets {
+	for i, asset := range common.AssetsV2 {
 		o.Assets[asset] = rand.Float64() * 1000
 
 		// Test truncate does not affect json
