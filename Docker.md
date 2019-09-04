@@ -57,7 +57,7 @@ docker-compose run --rm pegnet go run initialization/main.go
 Now that we have everything setup, we can run a basic validator node:
 
 ```bash
-docker-compose run --rm pegnet go run main.go --log=debug
+docker-compose run --rm pegnet go run pegnet.go --log=debug
 ```
 
 # Running a PegNet node with miners
