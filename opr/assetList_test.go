@@ -2,8 +2,10 @@ package opr_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"reflect"
 	"strings"
@@ -134,7 +136,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 	var err error
 	o := opr.NewOraclePriceRecord()
 	for _, asset := range common.VersionTwoAssets {
-		o.Assets[asset] = rand.Float64()
+		o.Assets.SetValue(asset, rand.Float64())
 	}
 
 	common.SetTestingVersion(2)
@@ -145,17 +147,17 @@ func TestOPRJsonMarshal(t *testing.T) {
 	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
 
 	for i, asset := range common.VersionTwoAssets {
-		o.Assets[asset] = rand.Float64() * 1000
+		o.Assets.SetValue(asset, rand.Float64()*1000)
 
 		// Test truncate does not affect json
 		if i%3 == 0 {
-			o.Assets[asset] = polling.TruncateTo4(o.Assets[asset])
+			o.Assets.SetValue(asset, polling.TruncateTo4(o.Assets.Value(asset)))
 		} else if i%3 == 1 {
-			o.Assets[asset] = polling.TruncateTo8(o.Assets[asset])
+			o.Assets.SetValue(asset, polling.TruncateTo8(o.Assets.Value(asset)))
 		}
 	}
 
-	data, err := o.SafeMarshalJson()
+	data, err := o.SafeMarshal()
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,16 +166,25 @@ func TestOPRJsonMarshal(t *testing.T) {
 	// These two not set by json
 	o2.Network = common.UnitTestNetwork
 	o2.Version = common.OPRVersion(o.Network, int64(o.Dbht))
-	err = o2.SafeUnmarshalJSON(data)
+	err = o2.SafeUnmarshal(data)
 	if err != nil {
 		t.Error(err)
 	}
 
-	data2, err := o2.SafeMarshalJson()
+	data2, err := o2.SafeMarshal()
 	if err != nil {
 		t.Error(err)
 	}
 	if bytes.Compare(data, data2) != 0 {
+		o.Assets["version"] = 2
+		o2.Assets["version"] = 2
+		jData, err1 := json.Marshal(o)
+		jData2, err2 := json.Marshal(o2)
+		delete(o.Assets, "version")
+		delete(o2.Assets, "version")
+		fmt.Println(err1, err2)
+		fmt.Println(" ", string(jData), "\n", string(jData2))
+		fmt.Println(hex.EncodeToString(data), "\n", hex.EncodeToString(data2))
 		t.Error("Json different after remarshal")
 	}
 
@@ -181,7 +192,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 		t.Errorf("did not marshal into the same")
 	}
 
-	o2.Assets["PEG"] = 0.123
+	o2.Assets.SetValue("PEG", 0.123)
 	// Ensure not just a deep equal oddity
 	if reflect.DeepEqual(o, o2) {
 		t.Errorf("I changed it, they should not be different")
@@ -201,4 +212,63 @@ func verifyAssetStringOrder(str string, list []string) []error {
 		index = i
 	}
 	return errs
+}
+
+func TestValueSetting(t *testing.T) {
+	list := make(opr.OraclePriceRecordAssetList)
+
+	t.Run("float only", func(t *testing.T) {
+		for i := 0; i < 10000; i++ {
+			v := polling.TruncateTo8(rand.Float64())
+			list.SetValue("test", v)
+			v2 := list.Value("test")
+			// 1e-8 diff is truncation
+			if v != v2 && math.Abs(v-v2) > float64(1/1e8) {
+				t.Errorf("exp %.8f, got %.8f", v, v2)
+			}
+		}
+	})
+
+	t.Run("float -> uint64 -> float", func(t *testing.T) {
+		for i := 0; i < 10000; i++ {
+			v := polling.TruncateTo8(rand.Float64())
+			// Set value from float
+			list.SetValue("test", v)
+
+			// Get the uint64 val
+			uv := list.Uint64Value("test")
+			// Set the value as uint64
+			list.SetValueFromUint64("test", uv)
+
+			// Try it as a float again
+			v2 := list.Value("test")
+			if v != v2 && math.Abs(v-v2) > float64(1/1e8) {
+				t.Errorf("exp %.8f, got %.8f", v, v2)
+			}
+
+			// This test is kinda pointless. Just checking the float always has the same uint out
+			list.SetValue("test", v)
+			uv2 := list.Uint64Value("test")
+			if uv != uv2 {
+				t.Errorf("exp %d, got %d", uv, uv2)
+			}
+		}
+	})
+
+	t.Run("uint64 -> float -> uint64", func(t *testing.T) {
+		for i := 0; i < 10000; i++ {
+			v := rand.Uint64() / 1e8
+			list.SetValueFromUint64("test", v)
+			v2 := list.Uint64Value("test")
+			if v != v2 {
+				t.Errorf("exp %d, got %d", v, v2)
+			}
+
+			f := list.Value("test")
+			list.SetValue("test", f)
+			if v3 := list.Uint64Value("test"); v3 != v {
+				t.Errorf("exp %d, got %d, diff %d", v3, v, v3-v)
+			}
+		}
+	})
 }

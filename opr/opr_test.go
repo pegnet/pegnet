@@ -83,15 +83,16 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	opr.Assets["FCT"] = 10128
 
 	opr.Version = 1
-	v, _ := opr.SafeMarshalJson()
+	v, _ := opr.SafeMarshal()
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := NewOraclePriceRecord()
 	opr2.Version = 1
-	err := opr2.SafeUnmarshalJSON(v)
+	err := opr2.SafeUnmarshal(v)
 	if err != nil {
+		t.Error(err)
 		t.Fail()
 	}
-	v2, _ := opr2.SafeMarshalJson()
+	v2, _ := opr2.SafeMarshal()
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
 		t.Error("JSON is different")
@@ -114,7 +115,7 @@ func genJSONOPR() *OraclePriceRecord {
 	opr.FactomDigitalID = rstring(25)
 	opr.Assets = make(OraclePriceRecordAssetList)
 	for _, a := range common.AllAssets {
-		opr.Assets[a] = rand.Float64() * 5000
+		opr.Assets.SetValue(a, rand.Float64()*5000)
 	}
 	return opr
 }
@@ -128,7 +129,7 @@ func BenchmarkJSONMarshal(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		data[i].SafeMarshalJson()
+		data[i].SafeMarshal()
 	}
 }
 
@@ -137,7 +138,7 @@ func BenchmarkSingleOPRHash(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := genJSONOPR().SafeMarshalJson()
+		json, _ := genJSONOPR().SafeMarshal()
 		data = append(data, json)
 	}
 	b.StartTimer()
@@ -151,7 +152,7 @@ func BenchmarkSingleSha256(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := genJSONOPR().SafeMarshalJson()
+		json, _ := genJSONOPR().SafeMarshal()
 		data = append(data, json)
 	}
 	b.StartTimer()
