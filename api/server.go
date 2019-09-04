@@ -8,26 +8,47 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
+	"github.com/zpatrick/go-config"
 )
 
 // APIServer as the base handler
 type APIServer struct {
 	Statistics *mining.GlobalStatTracker
 	Server     *http.Server
+	Grader     *opr.QuickGrader
+	Balances   *balances.BalanceTracker
+	Mux        *http.ServeMux
+	config     *config.Config
 }
 
-func NewApiServer() *APIServer {
+func NewApiServer(grader *opr.QuickGrader, balances *balances.BalanceTracker, config *config.Config) *APIServer {
 	s := new(APIServer)
 	s.Server = &http.Server{}
-	s.Server.Handler = s
+	mux := http.NewServeMux()
+	mux.Handle("/v1", s)
+	s.Server.Handler = corsHeader(mux)
+	s.Mux = mux
+	s.Grader = grader
+	s.Balances = balances
+	s.config = config
 
 	return s
 }
 
+func corsHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		// Our middleware logic goes here...
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (s *APIServer) Listen(port int) {
+	log.Infof("Launching api on port :%d", port)
 	s.Server.Addr = fmt.Sprintf(":%d", port)
 	err := s.Server.ListenAndServe()
 	if err != nil {
@@ -65,50 +86,48 @@ func (h *APIServer) apiHandler(w http.ResponseWriter, r *http.Request) {
 	var apiError *Error
 	switch request.Method {
 	case "performance":
-		result, apiError = getPerformance(request.Params)
+		result, apiError = h.getPerformance(request.Params)
 
 	case "all-oprs":
-		result = &GenericResult{OPRBlocks: opr.OPRBlocks}
-
-	case "balances":
-		result = &GenericResult{Balances: opr.Balances}
-
+		// TODO: This is not thread safe. This call could be exceedingly large too
+		// 		I think it should be tossed
+		result = &GenericResult{OPRBlocks: h.Grader.GetBlocks()}
 	case "balance":
-		result, apiError = getBalance(request.Params)
+		result, apiError = h.getBalance(request.Params)
 
 	case "chainid":
 		result = &GenericResult{ChainID: opr.OPRChainID}
 
 	case "current-oprs":
-		result, apiError = getCurrentOPRs()
+		result, apiError = h.getCurrentOPRs()
 
 	case "leaderheight":
 		result = &GenericResult{LeaderHeight: getLeaderHeight()}
 
 	case "oprs-by-height":
-		result, apiError = getOPRsByHeight(request.Params)
+		result, apiError = h.getOPRsByHeight(request.Params)
 
 	case "oprs-by-id":
-		result, apiError = getOprsByDigitalID(request.Params)
+		result, apiError = h.getOprsByDigitalID(request.Params)
 
 	case "opr-by-hash":
-		result, apiError = getOprByHash(request.Params)
+		result, apiError = h.getOprByHash(request.Params)
 
 	case "opr-by-shorthash":
-		result, apiError = getOprByShortHash(request.Params)
+		result, apiError = h.getOprByShortHash(request.Params)
 
 	case "winners":
-		winners := getWinners()
+		winners := h.getWinners()
 		result = &GenericResult{Winners: winners[:]}
 
 	case "winner":
-		winner := getWinner()
+		winner := h.getWinner()
 		result = &GenericResult{Winner: winner}
 
 	// Failing method - shorthash needs to be fixed
 	case "winning-opr":
-		winner := getWinner()
-		winningOPR := oprByShortHash(winner)
+		winner := h.getWinner()
+		winningOPR := h.Grader.OprByShortHash(winner)
 		result = &GenericResult{OPR: &winningOPR}
 
 	default:

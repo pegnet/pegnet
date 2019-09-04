@@ -15,6 +15,30 @@ import (
 	. "github.com/pegnet/pegnet/opr"
 )
 
+func TestOPRTokens(t *testing.T) {
+	opr := NewOraclePriceRecord()
+	opr.Version = 1
+
+	if len(opr.GetTokens()) != len(common.AssetsV1) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV1), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.AssetsV1[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV1[i])
+		}
+	}
+
+	opr.Version = 2
+	if len(opr.GetTokens()) != len(common.AssetsV2) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV2), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.AssetsV2[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV2[i])
+		}
+	}
+}
+
 func TestOPR_JSON_Marshal(t *testing.T) {
 	LX.Init(0x123412341234, 25, 256, 5)
 	opr := NewOraclePriceRecord()
@@ -24,7 +48,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	//opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
 	//opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
-	opr.WinPreviousOPR = [10]string{
+	opr.WinPreviousOPR = []string{
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
 		base58.Encode(LX.Hash([]byte("winner number 2"))),
 		base58.Encode(LX.Hash([]byte("winner number 3"))),

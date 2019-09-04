@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var APIHost = "localhost:8099"
+
 // SendRequest will send a PostRequest object to the local API server and return the PostResponse
 func SendRequest(req *PostRequest) (*PostResponse, error) {
 	j, err := json.Marshal(req)
@@ -18,7 +20,7 @@ func SendRequest(req *PostRequest) (*PostResponse, error) {
 
 	client := &http.Client{}
 	httpx := "http"
-	server := "localhost:8099"
+	server := APIHost
 
 	re, err := http.NewRequest("POST", fmt.Sprintf("%s://%s/v1", httpx, server), bytes.NewBuffer(j))
 	if err != nil {

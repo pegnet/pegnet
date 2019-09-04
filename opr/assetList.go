@@ -29,19 +29,32 @@ func (o OraclePriceRecordAssetList) ContainsExactly(list []string) bool {
 }
 
 // List returns the list of assets in the global order
-func (o OraclePriceRecordAssetList) List() []Token {
-	tokens := make([]Token, len(common.AllAssets))
-	for i, asset := range common.AllAssets {
-		tokens[i].code = asset
-		tokens[i].value = o[asset]
+func (o OraclePriceRecordAssetList) List(version uint8) []Token {
+	assets := common.AssetsV1
+	if version == 2 {
+		assets = common.AssetsV2
+	}
+	tokens := make([]Token, len(assets))
+	for i, asset := range assets {
+		tokens[i].Code = asset
+		tokens[i].Value = o[asset]
 	}
 	return tokens
 }
 
 // from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
 func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
+	var assets []string
+	switch OPRVersion {
+	case 1:
+		assets = common.AssetsV1
+	case 2:
+		assets = common.AssetsV2
+	}
+
 	s := "{"
-	for _, k := range common.AllAssets {
+
+	for _, k := range assets {
 		// add key
 		kEscaped := strings.Replace(k, `"`, `\"`, -1)
 		s = s + `"` + kEscaped + `":`
@@ -53,7 +66,7 @@ func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
 		}
 		s = s + string(vBytes) + ","
 	}
-	if len(common.AllAssets) > 0 {
+	if len(assets) > 0 {
 		s = s[0 : len(s)-1]
 	}
 	s = s + "}"

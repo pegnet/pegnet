@@ -17,6 +17,13 @@ const (
 	ConfigCoordinatorUseAuthentication = "Miner.UseCoordinatorAuthentication"
 	ConfigSubmissionCutOff             = "Miner.SubmissionCutOff"
 
+	ConfigMinerDBPath      = "Database.MinerDatabase"
+	ConfigMinerDBType      = "Database.MinerDatabaseType"
+	ConfigPegnetNodeDBPath = "Database.NodeDatabase"
+
+	ConfigAPIPort          = "API.APIPort"
+	ConfigControlPanelPort = "API.ControlPanelPort"
+
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
 
@@ -41,6 +48,11 @@ func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings := map[string]string{}
 	// Include default settings here
 	settings[ConfigSubmissionCutOff] = "200"
+	settings[ConfigAPIPort] = "8099"
+	settings[ConfigMinerDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/miner.ldb"
+	settings[ConfigMinerDBType] = "ldb"
+	settings[ConfigPegnetNodeDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/node.sqlite"
+	settings[ConfigControlPanelPort] = "8080"
 
 	return settings, nil
 }
@@ -83,9 +95,8 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 
   # For LOCAL network testing, FCT private key is
   # Fs3E9gV6DXsYzf7Fqx1fVBQPQXV695eP3k5XbmHEZVRLkMdD9qCK
-  FCTAddress=FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q
 
-  CoinbasePNTAddress=tPNT_mEU1i4M5rn7bnrxNKdVVf4HXLG15Q798oaVAMrXq7zdbhQ9pv
+  CoinbaseAddress=FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q
   IdentityChain=prototype
 [Oracle]
   APILayerKey=CHANGEME

@@ -9,8 +9,13 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pegnet/pegnet/database"
+
+	"github.com/pegnet/pegnet/balances"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
@@ -29,28 +34,29 @@ var (
 
 func init() {
 	// Add commands to the root cmd
-	rootCmd.AddCommand(getEncoding)
-	rootCmd.AddCommand(newAddress)
-	rootCmd.AddCommand(grader)
-	rootCmd.AddCommand(networkCoordinator)
-	rootCmd.AddCommand(networkMinerCmd)
-	rootCmd.AddCommand(datasources)
+	RootCmd.AddCommand(getEncoding)
+	RootCmd.AddCommand(newAddress)
+	RootCmd.AddCommand(grader)
+	RootCmd.AddCommand(networkCoordinator)
+	RootCmd.AddCommand(networkMinerCmd)
+	RootCmd.AddCommand(datasources)
 
 	dataWriter.AddCommand(minerStats)
-	rootCmd.AddCommand(dataWriter)
+	dataWriter.AddCommand(priceStats)
+	RootCmd.AddCommand(dataWriter)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
-	rootCmd.AddCommand(burn)
+	RootCmd.AddCommand(burn)
 
-	minerStats.Flags().StringP("output", "o", "minerstats.csv", "output file for the csv")
+	dataWriter.PersistentFlags().StringP("output", "o", "stats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
 		"(negative numbers are interpreted relative to current block head)")
 	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
 		"(negative numbers are ignored)")
-	rootCmd.AddCommand(getPerformance)
-	rootCmd.AddCommand(getBalance)
+	RootCmd.AddCommand(getPerformance)
+	RootCmd.AddCommand(getBalance)
 }
 
 var getEncoding = &cobra.Command{
@@ -283,6 +289,7 @@ var datasources = &cobra.Command{
 var grader = &cobra.Command{
 	Use: "grader ",
 	Run: func(cmd *cobra.Command, args []string) {
+		opr.InitLX()
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		monitor := common.GetMonitor()
@@ -294,10 +301,10 @@ var grader = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
+		b := balances.NewBalanceTracker()
+		q := LaunchGrader(Config, monitor, b, context.Background(), true)
 
-		alert := grader.GetAlert("cmd")
+		alert := q.GetAlert("cmd")
 
 		for {
 			select {
@@ -381,14 +388,16 @@ var networkCoordinator = &cobra.Command{
 		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
+		b := balances.NewBalanceTracker()
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor)
+		grader := LaunchGrader(Config, monitor, b, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker)
-		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		apiserver := LaunchAPI(Config, statTracker, grader, b, true)
+		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
 		srv := networkMiner.NewMiningServer(Config, monitor, grader, statTracker)
@@ -403,6 +412,7 @@ var networkMinerCmd = &cobra.Command{
 	Use: "netminer",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
@@ -452,6 +462,41 @@ var dataWriter = &cobra.Command{
 		"This is helpful as this cmd already has access to the pegnet internals, and could " +
 		"help us create analysis tooling.",
 	Example: "csv minerstats",
+}
+
+// priceStats is used to analyse data sources chosen
+var priceStats = &cobra.Command{
+	Use:   "pricestats <height>",
+	Short: "Creates a csv showing the price related stats from the blocks on chain.",
+	Long: "Will output each opr and a column per asset. Each column is the % difference from the average of the " +
+		"entire set. They are ordered in self reported difficulty order.",
+	Args:    cobra.ExactArgs(1),
+	Example: "csv pricestats",
+	Run: func(cmd *cobra.Command, args []string) {
+		height, err := strconv.Atoi(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		path, err := cmd.Flags().GetString("output")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		c, err := opr.NewChainRecorder(Config, path)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// Use a mapdb over a ldb so we can get the full oprs
+		// vs just graded
+		ldb := database.NewMapDb()
+
+		err = c.WritePriceCSV(ldb, int64(height))
+		if err != nil {
+			CmdError(cmd, err)
+		}
+	},
 }
 
 var minerStats = &cobra.Command{

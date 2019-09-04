@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -49,6 +50,14 @@ func PullValue(line string, howMany int) string {
 	line = line[0:pos]
 	//fmt.Println(line)
 	return line
+}
+
+func ValidIdentity(identity string) error {
+	valid, _ := regexp.MatchString("^[a-zA-Z0-9,]+$", identity)
+	if !valid {
+		return fmt.Errorf("only alphanumeric characters and commas are allowed in the identity")
+	}
+	return nil
 }
 
 // CheckPrefix()

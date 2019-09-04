@@ -35,8 +35,13 @@ func GetNetwork(network string) (string, error) {
 }
 
 const (
-	MainNetwork = "MainNet"
-	TestNetwork = "TestNet-pM1"
+	ZeroHash = "0000000000000000000000000000000000000000000000000000000000000000"
+)
+
+const (
+	MainNetwork     = "MainNet"
+	TestNetwork     = "TestNet-pM1"
+	UnitTestNetwork = "unit-test" // Only used for unit tests
 
 	MainNetworkRCD = MainNetwork + "RCD"
 	TestNetworkRCD = TestNetwork + "RCD"

@@ -23,3 +23,6 @@ config/pegnetconfig.ini
 
 # VSCode
 .vscode/*
+
+# Pycharm
+venv

@@ -36,7 +36,7 @@ var AllDataSources = map[string]IDataSource{
 func AllDataSourcesList() []string {
 	list := make([]string, len(AllDataSources))
 	i := 0
-	for k, _ := range AllDataSources {
+	for k := range AllDataSources {
 		list[i] = k
 		i++
 	}
@@ -147,7 +147,7 @@ func NewDataSources(config *config.Config) *DataSources {
 	datasourceRegex, err := regexp.Compile(`OracleDataSources\.[a-zA-Z0-9]+`)
 	common.CheckAndPanic(err)
 
-	for setting, _ := range allSettings {
+	for setting := range allSettings {
 		if datasourceRegex.Match([]byte(setting)) {
 			// Get the priority. Priorities CANNOT be the same.
 			p, err := config.Int(setting)
@@ -239,10 +239,13 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 // We pull assets from the sources in their priority order when possible.
 // If an asset from priority 1 is missing, we resort to priority 2 ONLY for
 // that missing asset.
+// 	Params:
+//		oprversion is passed in. Once we get past version 2, we can drop that from the
+//					params and default to the version 2 behavior
 // TODO: Currently we lazy eval prices, so we make the API call when we
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
-func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
+func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
 	assets := common.AllAssets // All the assets we are tracking.
 
 	// Wrap all the data sources with a quick caching layer for
@@ -284,7 +287,11 @@ func (d *DataSources) PullAllPEGAssets() (pa PegAssets, err error) {
 		// so it will be 0 here.
 		// We WILL error out if all our data sources for a peg failed, and we listed data sources. That
 		// is important to note.
-		price.Value = Round(price.Value)
+		if oprversion == 1 {
+			price.Value = TruncateTo4(price.Value)
+		} else {
+			price.Value = TruncateTo8(price.Value)
+		}
 		pa[asset] = price
 	}
 

@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/alexandrevicenzi/go-sse"
+	sse "github.com/alexandrevicenzi/go-sse"
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
-	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -20,6 +20,7 @@ type ControlPanel struct {
 	Config     *config.Config
 	Statistics *mining.GlobalStatTracker
 	Monitor    common.IMonitor
+	Balances   *balances.BalanceTracker
 
 	Server    *http.Server
 	SSEServer *sse.Server
@@ -33,11 +34,12 @@ func corsHeader(next http.Handler) http.Handler {
 	})
 }
 
-func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker *mining.GlobalStatTracker) *ControlPanel {
+func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker *mining.GlobalStatTracker, balances *balances.BalanceTracker) *ControlPanel {
 	c := new(ControlPanel)
 	c.Config = config
 	c.Monitor = monitor
 	c.Statistics = statTracker
+	c.Balances = balances
 
 	c.Server = &http.Server{}
 	// Create the server.
@@ -115,7 +117,7 @@ func (c *ControlPanel) ServeControlPanel() {
 			case e := <-alert:
 
 				r := CommonResponse{Minute: e.Minute, Dbht: e.Dbht, HashRate: CurrentHashRate, Difficulty: CurrentDifficulty}
-				r.Balance = opr.GetBalance(CoinbasePNTAddress)
+				r.Balance = c.Balances.GetBalance(CoinbasePNTAddress)
 
 				data, _ := json.Marshal(r)
 				c.SSEServer.SendMessage("/events/common", sse.SimpleMessage(string(data)))
@@ -126,6 +128,10 @@ func (c *ControlPanel) ServeControlPanel() {
 		}
 	}()
 
-	c.Listen(8080) // TODO: Do not hardcode
+	port, err := c.Config.Int(common.ConfigControlPanelPort)
+	if err != nil {
+		panic(fmt.Sprintf("Do not have a control panel port in the config file: %v", err))
+	}
+	c.Listen(port)
 
 }

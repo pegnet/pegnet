@@ -3,14 +3,20 @@
 
 package opr
 
+import (
+	"github.com/pegnet/pegnet/balances"
+	"github.com/pegnet/pegnet/database"
+	"github.com/zpatrick/go-config"
+)
+
 // FakeGrader can be used in unit tests
 type FakeGrader struct {
-	*Grader
+	*QuickGrader
 }
 
-func NewFakeGrader() *FakeGrader {
+func NewFakeGrader(config *config.Config, balances *balances.BalanceTracker) *FakeGrader {
 	f := new(FakeGrader)
-	f.Grader = NewGrader()
+	f.QuickGrader = NewQuickGrader(config, database.NewMapDb(), balances)
 
 	return f
 }
