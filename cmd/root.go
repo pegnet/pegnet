@@ -40,7 +40,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
 	RootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
 	RootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
-	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnode", "g", "localhost:8099", "IPAddr:port# of the pegnet node")
+	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnethost", "g", "localhost:8099", "IPAddr:port# of the api host to send requests too.")
 	RootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Flags that affect the config file. Should not be loaded into globals
