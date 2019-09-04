@@ -2,11 +2,11 @@ version: '3.2'
 
 services:
   factomd:
-    network_mode: host
     container_name: factomd_container
     image: factominc/factomd:latest
     entrypoint: /go/bin/factomd
     command: '--network=LOCAL --blktime=15'
+    restart: unless-stopped
     ports:
       - "8110:8110"
       - "8109:8109"
@@ -17,18 +17,18 @@ services:
       - factomd_volume:/root/.factom/
 
   walletd:
-    network_mode: host
     container_name: walletd_container
     image: factominc/factom-walletd:v2.2.14-alpine
+    restart: unless-stopped
     ports:
       - "8089:8089"
     volumes:
       - walletd_volume:/root/.factom/
+      - ./config/factomd.conf:/root/.factom/m2/factomd.conf:ro
     depends_on:
       - factomd
 
   pegnet:
-    network_mode: host
     container_name: pegnet_container
     build: .
     ports:
@@ -36,8 +36,9 @@ services:
       - "8099:8099"
     volumes:
       - .:/go/src/github.com/pegnet/pegnet
-      - ./myconfig.ini:/root/.pegnet/defaultconfig.ini:ro
+      - ./lxrhash:/root/.lxrhash
+      - ./config/pegnetconfig.ini:/root/.pegnet/defaultconfig.ini:ro
 
 volumes:
-  factomd_volume: 
-  walletd_volume: 
+  factomd_volume:
+  walletd_volume:

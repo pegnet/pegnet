@@ -19,7 +19,7 @@ ENV GO111MODULE=on
 
 # Setup the cache directory
 RUN mkdir -p /root/.pegnet/
-COPY defaultconfig.ini /root/.pegnet/defaultconfig.ini
+COPY ./config/defaultconfig.ini /root/.pegnet/defaultconfig.ini
 
 RUN go get
 RUN go build initialization/main.go
