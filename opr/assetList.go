@@ -60,7 +60,7 @@ func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
 	case 1:
 		// We need to read the PNT code instead of peg so the hashes match.
 		// When we digest this, we should immediately switch it to PEG
-		assets = common.VersionOneWithPNT
+		assets = common.AssetsV1WithPNT
 	case 2:
 		assets = common.AssetsV2
 	}
