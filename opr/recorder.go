@@ -66,9 +66,9 @@ func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error
 	// Build the csv
 OPRLoop:
 	for i, opr := range all {
-		for asset, v := range opr.Assets {
+		for asset, _ := range opr.Assets {
 			// Skip bogus
-			if err := testutils.PriceCheck(asset, v); err != nil {
+			if err := testutils.PriceCheck(asset, opr.Assets.Value(asset)); err != nil {
 				continue OPRLoop
 			}
 		}
@@ -76,7 +76,7 @@ OPRLoop:
 		// fmt.Println(opr.FactomDigitalID)
 		line := []string{fmt.Sprintf("%d", i)}
 		for _, asset := range common.AllAssets[1:] {
-			v := opr.Assets[asset]
+			v := opr.Assets.Value(asset)
 			line = append(line, fmt.Sprintf("%.4f", v))
 		}
 

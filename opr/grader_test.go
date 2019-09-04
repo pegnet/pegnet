@@ -123,7 +123,7 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	}
 	tmp.Assets = make(OraclePriceRecordAssetList)
 	for _, asset := range assets {
-		tmp.Assets[asset] = rand.Float64() * 100
+		tmp.Assets.SetValue(asset, rand.Float64()*100)
 	}
 
 	// TODO: Add more fields to this
@@ -133,7 +133,7 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 func SetOPRPriceClose(opr *OraclePriceRecord, center float64, std float64) {
 	for asset := range opr.Assets {
 		d := (rand.Float64() - .5) * 2 * std
-		opr.Assets[asset] = polling.TruncateTo8(center + d)
+		opr.Assets.SetValue(asset, polling.TruncateTo8(center+d))
 	}
 }
 

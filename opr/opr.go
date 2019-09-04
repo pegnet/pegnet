@@ -17,8 +17,10 @@ import (
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
+	"github.com/golang/protobuf/proto"
 	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/opr/oprencoding"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -140,7 +142,8 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		}
 	}
 
-	if err := common.ValidIdentity(opr.FactomDigitalID); err != nil {
+	// Only enforce on version 2 and forward
+	if err := common.ValidIdentity(opr.FactomDigitalID); opr.Version == 2 && err != nil {
 		return false
 	}
 
@@ -179,7 +182,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	}
 
 	// SafeMarshal handles the PNT/PEG issue
-	data, err := opr.SafeMarshalJson()
+	data, err := opr.SafeMarshal()
 	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
@@ -276,7 +279,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
 	case 1:
 		for asset, v := range assets {
-			opr.Assets[asset] = v.Value
+			opr.Assets.SetValue(asset, v.Value)
 		}
 	case 2:
 		for asset, v := range assets {
@@ -284,7 +287,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 			if asset == "XPT" || asset == "XPD" {
 				continue
 			}
-			opr.Assets[asset] = v.Value
+			opr.Assets.SetValue(asset, v.Value)
 		}
 	}
 }
@@ -409,7 +412,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	}
 	opr.SetPegValues(Peg)
 
-	data, err := opr.SafeMarshalJson()
+	data, err := opr.SafeMarshal()
 	if err != nil {
 		panic(err)
 	}
@@ -429,15 +432,15 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
 	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
-	e.Content, err = opr.SafeMarshalJson()
+	e.Content, err = opr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
 	return e, nil
 }
 
-// SafeMarshalJson will marshal the json depending on the opr version
-func (opr *OraclePriceRecord) SafeMarshalJson() ([]byte, error) {
+// SafeMarshal will marshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return nil, fmt.Errorf("opr version is 0")
@@ -455,52 +458,137 @@ func (opr *OraclePriceRecord) SafeMarshalJson() ([]byte, error) {
 		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
 	}
 
-	// Do the swap if on version 1
+	// Version 1 we json marshal and
+	// do the swap of PEG -> PNT
 	if opr.Version == 1 {
 		opr.Assets["PNT"] = opr.Assets["PEG"]
 		delete(opr.Assets, "PEG")
-	}
 
-	// Version 2 we do nothing
+		// This is a known key that will be removed by the marshal json function. It indicates
+		// to the marshaler that it was called from a safe path. This is not the cleanest method,
+		// but to override the json function, and still use the default, it would require an odd
+		// structure nesting and a lot of code changes
+		opr.Assets["version"] = uint64(opr.Version)
+		data, err := json.Marshal(opr)
+		delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
 
-	// This is a known key that will be removed by the marshal json function. It indicates
-	// to the marshaler that it was called from a safe path. This is not the cleanest method,
-	// but to override the json function, and still use the default, it would require an odd
-	// structure nesting and a lot of code changes
-	opr.Assets["version"] = float64(opr.Version)
-	data, err := json.Marshal(opr)
-	delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
-
-	// Revert version 1 changes
-	if opr.Version == 1 {
+		// Revert the swap
 		opr.Assets["PEG"] = opr.Assets["PNT"]
 		delete(opr.Assets, "PNT")
+		return data, err
+	} else if opr.Version == 2 {
+		// Version 2 uses Protobufs for encoding
+		pOpr := &oprencoding.ProtoOPRMin{
+			Address: opr.CoinbaseAddress,
+			Id:      opr.FactomDigitalID,
+			Height:  opr.Dbht,
+			Winners: opr.WinPreviousOPR,
+			// Hardcoded list order.
+			PEG:   opr.Assets.Uint64Value("PEG"),
+			PUSD:  opr.Assets.Uint64Value("USD"),
+			PEUR:  opr.Assets.Uint64Value("EUR"),
+			PJPY:  opr.Assets.Uint64Value("JPY"),
+			PGBP:  opr.Assets.Uint64Value("GBP"),
+			PCAD:  opr.Assets.Uint64Value("CAD"),
+			PCHF:  opr.Assets.Uint64Value("CHF"),
+			PINR:  opr.Assets.Uint64Value("INR"),
+			PSGD:  opr.Assets.Uint64Value("SGD"),
+			PCNY:  opr.Assets.Uint64Value("CNY"),
+			PHKD:  opr.Assets.Uint64Value("HKD"),
+			PKRW:  opr.Assets.Uint64Value("KRW"),
+			PBRL:  opr.Assets.Uint64Value("BRL"),
+			PPHP:  opr.Assets.Uint64Value("PHP"),
+			PMXN:  opr.Assets.Uint64Value("MXN"),
+			PXAU:  opr.Assets.Uint64Value("XAU"),
+			PXAG:  opr.Assets.Uint64Value("XAG"),
+			PXBT:  opr.Assets.Uint64Value("XBT"),
+			PETH:  opr.Assets.Uint64Value("ETH"),
+			PLTC:  opr.Assets.Uint64Value("LTC"),
+			PRVN:  opr.Assets.Uint64Value("RVN"),
+			PXBC:  opr.Assets.Uint64Value("XBC"),
+			PFCT:  opr.Assets.Uint64Value("FCT"),
+			PBNB:  opr.Assets.Uint64Value("BNB"),
+			PXLM:  opr.Assets.Uint64Value("XLM"),
+			PADA:  opr.Assets.Uint64Value("ADA"),
+			PXMR:  opr.Assets.Uint64Value("XMR"),
+			PDASH: opr.Assets.Uint64Value("DASH"),
+			PZEC:  opr.Assets.Uint64Value("ZEC"),
+			PDCR:  opr.Assets.Uint64Value("DCR"),
+		}
+		data, err := proto.Marshal(pOpr)
+		return data, err
 	}
 
-	return data, err
+	return nil, fmt.Errorf("opr version %d not supported", opr.Version)
 }
 
-// SafeMarshalJson will unmarshal the json depending on the opr version
-func (opr *OraclePriceRecord) SafeUnmarshalJSON(data []byte) error {
+// SafeMarshal will unmarshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	err := json.Unmarshal(data, opr)
-	if err != nil {
-		return err
-	}
-
-	// If version 1, we need to swap PNT and PEG
+	// If version 1, we need to json unmarshal and swap PNT and PEG
 	if opr.Version == 1 {
+		err := json.Unmarshal(data, opr)
+		if err != nil {
+			return err
+		}
+
 		if v, ok := opr.Assets["PNT"]; ok {
 			opr.Assets["PEG"] = v
 			delete(opr.Assets, "PNT")
 		} else {
 			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
 		}
+		return nil
+	} else if opr.Version == 2 {
+		oprMin := oprencoding.ProtoOPRMin{}
+		err := proto.Unmarshal(data, &oprMin)
+		if err != nil {
+			return err
+		}
+
+		opr.Assets = make(OraclePriceRecordAssetList)
+		// Populate the original opr
+		opr.CoinbaseAddress = oprMin.Address
+		opr.FactomDigitalID = oprMin.Id
+		opr.Dbht = oprMin.Height
+		opr.WinPreviousOPR = oprMin.Winners
+		// Hard coded list of assets
+		opr.Assets.SetValueFromUint64("PEG", oprMin.PEG)
+		opr.Assets.SetValueFromUint64("USD", oprMin.PUSD)
+		opr.Assets.SetValueFromUint64("EUR", oprMin.PEUR)
+		opr.Assets.SetValueFromUint64("JPY", oprMin.PJPY)
+		opr.Assets.SetValueFromUint64("GBP", oprMin.PGBP)
+		opr.Assets.SetValueFromUint64("CAD", oprMin.PCAD)
+		opr.Assets.SetValueFromUint64("CHF", oprMin.PCHF)
+		opr.Assets.SetValueFromUint64("INR", oprMin.PINR)
+		opr.Assets.SetValueFromUint64("SGD", oprMin.PSGD)
+		opr.Assets.SetValueFromUint64("CNY", oprMin.PCNY)
+		opr.Assets.SetValueFromUint64("HKD", oprMin.PHKD)
+		opr.Assets.SetValueFromUint64("KRW", oprMin.PKRW)
+		opr.Assets.SetValueFromUint64("BRL", oprMin.PBRL)
+		opr.Assets.SetValueFromUint64("PHP", oprMin.PPHP)
+		opr.Assets.SetValueFromUint64("MXN", oprMin.PMXN)
+		opr.Assets.SetValueFromUint64("XAU", oprMin.PXAU)
+		opr.Assets.SetValueFromUint64("XAG", oprMin.PXAG)
+		opr.Assets.SetValueFromUint64("XBT", oprMin.PXBT)
+		opr.Assets.SetValueFromUint64("ETH", oprMin.PETH)
+		opr.Assets.SetValueFromUint64("LTC", oprMin.PLTC)
+		opr.Assets.SetValueFromUint64("RVN", oprMin.PRVN)
+		opr.Assets.SetValueFromUint64("XBC", oprMin.PXBC)
+		opr.Assets.SetValueFromUint64("FCT", oprMin.PFCT)
+		opr.Assets.SetValueFromUint64("BNB", oprMin.PBNB)
+		opr.Assets.SetValueFromUint64("XLM", oprMin.PXLM)
+		opr.Assets.SetValueFromUint64("ADA", oprMin.PADA)
+		opr.Assets.SetValueFromUint64("XMR", oprMin.PXMR)
+		opr.Assets.SetValueFromUint64("DASH", oprMin.PDASH)
+		opr.Assets.SetValueFromUint64("ZEC", oprMin.PZEC)
+		opr.Assets.SetValueFromUint64("DCR", oprMin.PDCR)
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("opr version %d not supported", opr.Version)
 }

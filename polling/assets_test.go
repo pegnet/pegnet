@@ -126,7 +126,7 @@ func TestBasicPollingSources(t *testing.T) {
 	})
 }
 
-func TestTruncateTo4(t *testing.T) {
+func TestTruncate(t *testing.T) {
 	type Vector struct {
 		Vector float64
 		Exp4   float64
@@ -141,10 +141,10 @@ func TestTruncateTo4(t *testing.T) {
 
 	for _, v := range vects {
 		if r := TruncateTo4(v.Vector); r != v.Exp4 {
-			t.Errorf("exp %f, got %f", v.Exp4, r)
+			t.Errorf("t4 exp %f, got %f", v.Exp4, r)
 		}
 		if r := TruncateTo8(v.Vector); r != v.Exp8 {
-			t.Errorf("exp %f, got %f", v.Exp8, r)
+			t.Errorf("t8 exp %f, got %f", v.Exp8, r)
 		}
 	}
 }

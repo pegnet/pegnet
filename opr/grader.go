@@ -517,7 +517,7 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	}
 	opr.Version = entry.ExtIDs[2][0]
 
-	if err := opr.SafeUnmarshalJSON(entry.Content); err != nil {
+	if err := opr.SafeUnmarshal(entry.Content); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
 	if opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PEG", opr.CoinbaseAddress); err != nil {
