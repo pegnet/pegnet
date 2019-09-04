@@ -64,7 +64,7 @@ docker-compose run --rm pegnet go run main.go --log=debug
 Or a node with a set number of miners:
 
 ```bash
-docker-compose run --rm pegnet go run main.go --log=debug --miners=4
+docker-compose run --rm pegnet go run pegnet.go --log=debug --miners=4
 ```
 
 # Other useful commands
