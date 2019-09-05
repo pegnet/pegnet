@@ -12,6 +12,7 @@ type IGradingBlock interface {
 	Network() string
 	Version() uint8 // Indicates the OPR version and grading to be used
 
+	// ---------------------------
 	// Functions used for grading
 
 	// AddOPR adds an opr to the set to be graded. If the set is already graded,
@@ -26,10 +27,6 @@ type IGradingBlock interface {
 	//				such as the set already being graded. If the grading module is graded, the set is locked.
 	AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool, err error)
 
-	// TotalOPRs will return the total number of OPRs properly added to this grading block. If the `AddOPR` returns
-	// true, that opr will be included in this count.
-	TotalOPRs() int
-
 	// SetPreviousWinners enables checking of the previous winners in the validation function of the grading routine.
 	// If the previous winners is unset, then an empty set is accepted.
 	//
@@ -38,9 +35,6 @@ type IGradingBlock interface {
 	//				then an error is returned and the set is rejected. An error is also returned if the previousWinners
 	//				was already set.
 	SetPreviousWinners(previousWinners []string) error
-
-	// GetPreviousWinners returns the set of previous winners set by SetPreviousWinners
-	GetPreviousWinners() []string
 
 	// GradedSet performs the grading operation on the contained set in the module. If the grading is successful, the
 	// returned slice of OPRs is in sorted order by their graded rank. Meaning `graded[0]` is the wining opr. And
@@ -65,11 +59,19 @@ type IGradingBlock interface {
 	//		error		If the set is not graded, the winners cannot be asked for
 	Winners() ([]string, error)
 
+	// ---------------------------
 	// Functions used for determining the grading module state
 
 	// The set can only be graded once. Once the set is graded, all future calls to `GradedSet` are idempotent
 	// This function let's the caller know if the set is already graded, meaning all future calls will run in O(1).
 	Graded() bool
+
+	// TotalOPRs will return the total number of OPRs properly added to this grading block. If the `AddOPR` returns
+	// true, that opr will be included in this count.
+	TotalOPRs() int
+
+	// GetPreviousWinners returns the set of previous winners set by SetPreviousWinners
+	GetPreviousWinners() []string
 }
 
 // TODO: Construct another interface for the parse/validate of a single OPR for a caller to use if they wish to debug
