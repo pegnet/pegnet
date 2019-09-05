@@ -321,7 +321,6 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	opr.Dbht = dbht
 	opr.Version = common.OPRVersion(opr.Network, int64(opr.Dbht))
-	OPRVersion = opr.Version // Update this for the polling to know
 
 	// If this is a test network, then give multiple miners their own tPEG address
 	// because that is way more useful debugging than giving all miners the same
