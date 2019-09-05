@@ -7,7 +7,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type GradingBlock struct {
+type BlockGrader struct {
 	BlockHeight int32
 	OPRVersion  uint8 // OPR version to use
 
@@ -26,8 +26,8 @@ type GradingBlock struct {
 	Logger *log.Logger
 }
 
-func NewGradingBlock(height int32, version uint8) (*GradingBlock, error) {
-	g := new(GradingBlock)
+func NewGradingBlock(height int32, version uint8, prevWinners []string) (*BlockGrader, error) {
+	g := new(BlockGrader)
 	g.BlockHeight = height
 	switch version {
 	case 1, 2:
@@ -35,6 +35,12 @@ func NewGradingBlock(height int32, version uint8) (*GradingBlock, error) {
 	default:
 		return nil, fmt.Errorf("%d is not a supported grading version", version)
 	}
+
+	err := g.SetPreviousWinners(prevWinners)
+	if err != nil {
+		return nil, err
+	}
+
 	// Silence all logs by default
 	g.Logger = log.New()
 	g.Logger.SetLevel(log.PanicLevel)
@@ -42,19 +48,19 @@ func NewGradingBlock(height int32, version uint8) (*GradingBlock, error) {
 	return g, nil
 }
 
-func (g *GradingBlock) SetLogger(logger *log.Logger) {
+func (g *BlockGrader) SetLogger(logger *log.Logger) {
 	g.Logger = logger
 }
 
-func (g *GradingBlock) Height() int32 {
+func (g *BlockGrader) Height() int32 {
 	return g.BlockHeight
 }
 
-func (g *GradingBlock) Version() uint8 {
+func (g *BlockGrader) Version() uint8 {
 	return g.OPRVersion
 }
 
-func (g *GradingBlock) AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool, err error) {
+func (g *BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool, err error) {
 	// Unset the graded
 	g.graded = false
 
@@ -68,8 +74,16 @@ func (g *GradingBlock) AddOPR(entryhash []byte, extids [][]byte, content []byte)
 	return true, nil
 }
 
-func (g *GradingBlock) SetPreviousWinners(previousWinners []string) error {
+// SetPreviousWinners
+//
+// Passing in a nil will set the previous winners to an empty set
+func (g *BlockGrader) SetPreviousWinners(previousWinners []string) error {
 	g.graded = false // Even if we error, we should unset this. A failed attempt will still reset
+
+	// This means there are no prior winners, so they must be blank
+	if previousWinners == nil {
+		g.PreviousWinners = make([]string, g.winnerAmount(), g.winnerAmount())
+	}
 
 	switch g.Version() {
 	case 1:
@@ -96,7 +110,7 @@ func (g *GradingBlock) SetPreviousWinners(previousWinners []string) error {
 	return nil
 }
 
-func (g *GradingBlock) Grade() {
+func (g *BlockGrader) Grade() {
 	g.GradedOPRs = g.GradeMinimum()
 	g.graded = true
 }
@@ -104,7 +118,7 @@ func (g *GradingBlock) Grade() {
 // WinnersShortHashes
 //
 // Requires: graded state
-func (g *GradingBlock) WinnersShortHashes() ([]string, error) {
+func (g *BlockGrader) WinnersShortHashes() ([]string, error) {
 	winners, err := g.Winners()
 	if err != nil {
 		return nil, err
@@ -133,32 +147,32 @@ func (g *GradingBlock) WinnersShortHashes() ([]string, error) {
 // Winners
 //
 // Requires: graded state
-func (g *GradingBlock) Winners() (winners []*opr.OPR, err error) {
+func (g *BlockGrader) Winners() (winners []*opr.OPR, err error) {
 	return g.gradedUpTo(g.winnerAmount())
 }
 
 // Graded
 //
 // Requires: graded state
-func (g *GradingBlock) Graded() (graded []*opr.OPR, err error) {
+func (g *BlockGrader) Graded() (graded []*opr.OPR, err error) {
 	return g.gradedUpTo(50)
 }
 
-func (g *GradingBlock) IsGraded() bool {
+func (g *BlockGrader) IsGraded() bool {
 	return g.graded
 }
 
-func (g *GradingBlock) TotalOPRs() int {
+func (g *BlockGrader) TotalOPRs() int {
 	return len(g.OPRs)
 }
 
-func (g *GradingBlock) GetPreviousWinners() []string {
+func (g *BlockGrader) GetPreviousWinners() []string {
 	return g.PreviousWinners
 }
 
 // gradedUpTo will return the set up to the maximum `pos`. So if `pos` is 50, but only 25 records exist,
 // then graded[:25] is returned
-func (g *GradingBlock) gradedUpTo(pos int) (graded []*opr.OPR, err error) {
+func (g *BlockGrader) gradedUpTo(pos int) (graded []*opr.OPR, err error) {
 	if !g.graded {
 		return nil, fmt.Errorf("opr set is not graded yet")
 	}
@@ -180,7 +194,7 @@ func (g *GradingBlock) gradedUpTo(pos int) (graded []*opr.OPR, err error) {
 	return g.GradedOPRs[:pos], nil
 }
 
-func (g *GradingBlock) winnerAmount() int {
+func (g *BlockGrader) winnerAmount() int {
 	switch g.Version() {
 	case 1:
 		return 10

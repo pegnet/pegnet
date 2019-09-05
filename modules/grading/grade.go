@@ -71,7 +71,7 @@ func ApplyBand(diff float64, band float64) float64 {
 
 // GradeMinimum only grades the top 50 honest records. The input must be the records sorted by
 // self reported difficulty.
-func (g *GradingBlock) GradeMinimum() (graded []*opr.OPR) {
+func (g *BlockGrader) GradeMinimum() (graded []*opr.OPR) {
 	// No grade algo can handle 0
 	if len(g.OPRs) == 0 {
 		return nil
@@ -90,7 +90,7 @@ func (g *GradingBlock) GradeMinimum() (graded []*opr.OPR) {
 // 1. PoW to top 50
 // 2. Grading to top 10
 // 3. Pay top 10 according to their place
-func (g *GradingBlock) gradeMinimumVersionOne() (graded []*opr.OPR) {
+func (g *BlockGrader) gradeMinimumVersionOne() (graded []*opr.OPR) {
 	top50 := g.honestTop50(10)
 	if top50 == nil {
 		return nil
@@ -114,7 +114,7 @@ func (g *GradingBlock) gradeMinimumVersionOne() (graded []*opr.OPR) {
 // 3. Pay top 25 equally (not done here)
 // 4. Grade to 1 without any tolerance band
 // 5. Wining price is the last one
-func (g *GradingBlock) gradeMinimumVersionTwo() (graded []*opr.OPR) {
+func (g *BlockGrader) gradeMinimumVersionTwo() (graded []*opr.OPR) {
 	top50 := g.honestTop50(25)
 	if top50 == nil {
 		return nil
@@ -143,7 +143,7 @@ func (g *GradingBlock) gradeMinimumVersionTwo() (graded []*opr.OPR) {
 // honestTop50 goes through the oprs sorted by self reported difficulty, tossing those that
 // are dishonest until we get 50. The `want` param allows us to short circuit if we have less than that,
 // as the lxrhash is slow.
-func (g *GradingBlock) honestTop50(want int) []*opr.OPR {
+func (g *BlockGrader) honestTop50(want int) []*opr.OPR {
 	// Sort the OPRs by self reported difficulty
 	// We will toss dishonest ones as we walk down the list
 	sort.SliceStable(g.OPRs, func(i, j int) bool {
@@ -174,7 +174,7 @@ func (g *GradingBlock) honestTop50(want int) []*opr.OPR {
 
 // IsValidOPR will fully validate an opr. It will ensure the self reported difficulty is correct,
 // and it's fields are set correctly. It will also validate the opr version matches the grading version.
-func (g *GradingBlock) IsValidOPR(singleOpr *opr.OPR, dbht int32) bool {
+func (g *BlockGrader) IsValidOPR(singleOpr *opr.OPR, dbht int32) bool {
 	oprLog := g.Logger.WithFields(log.Fields{
 		"entryhash": fmt.Sprintf("%x", singleOpr.EntryHash),
 		"id":        singleOpr.FactomDigitalID,
