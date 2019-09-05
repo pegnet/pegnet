@@ -24,7 +24,7 @@ const (
 	BUCKET_ALL_EB     // OPR chain Entry Blocks indexed by Directory Block Height
 	BUCKET_VALID_EB   // OPR chain Entry Blocks that actually qualify to pay out mining fees and set asset prices
 	BUCKET_VALID_OPRS // OPR Lists of valid OPRS, indexed by Directory Block Height, ordered as graded
-	BUCKET_BALANCES   // PNT payout balances
+	BUCKET_BALANCES   // PEG payout balances
 )
 
 type Iterator interface {

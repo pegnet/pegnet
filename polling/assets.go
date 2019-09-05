@@ -283,7 +283,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 
 		// We round all prices to the same precision
 		// Keep in mind if we didn't get a price (like no data sources), this will be a 0.
-		// Validation of the price does not happen here. For example, PNT is an asset with no data source,
+		// Validation of the price does not happen here. For example, PEG is an asset with no data source,
 		// so it will be 0 here.
 		// We WILL error out if all our data sources for a peg failed, and we listed data sources. That
 		// is important to note.

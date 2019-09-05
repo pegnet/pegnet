@@ -206,7 +206,7 @@ h.each(n,function(a,b){h.fn.DataTable[a]=b});return h.fn.dataTable});
 
     $(".address-balance-form-js").on('submit', function(e) {
       e.preventDefault();
-      var addr = $("#tpnt_address").val();
+      var addr = $("#tpeg_address").val();
       request_balance(addr, function(resp){
         var balance = resp.result.balance;
 
@@ -224,7 +224,7 @@ h.each(n,function(a,b){h.fn.DataTable[a]=b});return h.fn.dataTable});
         $tr.find('td').eq(1).text(balance/1e8);
 
         $('.address-balance-table-js').removeClass('d-none');
-        $("#tpnt_address").val("");
+        $("#tpeg_address").val("");
       });
     })
 

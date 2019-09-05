@@ -5,7 +5,6 @@ package opr_test
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -60,9 +59,9 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 		base58.Encode(LX.Hash([]byte("winner number 9"))),
 		base58.Encode(LX.Hash([]byte("winner number 10"))),
 	}
-	opr.CoinbasePNTAddress = "PNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
+	opr.CoinbasePEGAddress = "PEG_2Gec4tfkeQ64xVPM1Rz2esDcy6XAW3kHEM1jvZLbTTWCDciiqN"
 	opr.FactomDigitalID = "minerone"
-	opr.Assets["PNT"] = 2
+	opr.Assets["PEG"] = 2
 	opr.Assets["USD"] = 20
 	opr.Assets["EUR"] = 200
 	opr.Assets["JPY"] = 11
@@ -83,14 +82,16 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	opr.Assets["XBC"] = 10127
 	opr.Assets["FCT"] = 10128
 
-	v, _ := json.Marshal(opr)
+	opr.Version = 1
+	v, _ := opr.SafeMarshalJson()
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := NewOraclePriceRecord()
-	err := json.Unmarshal(v, &opr2)
+	opr2.Version = 1
+	err := opr2.SafeUnmarshalJSON(v)
 	if err != nil {
 		t.Fail()
 	}
-	v2, _ := json.Marshal(opr2)
+	v2, _ := opr2.SafeMarshalJson()
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
 		t.Error("JSON is different")
@@ -127,7 +128,7 @@ func BenchmarkJSONMarshal(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		json.Marshal(data[i])
+		data[i].SafeMarshalJson()
 	}
 }
 
@@ -136,7 +137,7 @@ func BenchmarkSingleOPRHash(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := json.Marshal(genJSONOPR())
+		json, _ := genJSONOPR().SafeMarshalJson()
 		data = append(data, json)
 	}
 	b.StartTimer()
@@ -150,7 +151,7 @@ func BenchmarkSingleSha256(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := json.Marshal(genJSONOPR())
+		json, _ := genJSONOPR().SafeMarshalJson()
 		data = append(data, json)
 	}
 	b.StartTimer()
