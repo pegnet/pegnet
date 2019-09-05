@@ -190,11 +190,11 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	factom.SetFactomdServer(factomd)
 	factom.SetWalletServer(walletd)
 
-	walletUser, _ := Config.String("Miner.WalletdRPCUser")
+	walletUser, _ := Config.String("Miner.WalletdUser")
 	if len(WalletdUser) > 0 {
 		walletUser = WalletdUser
 	}
-	walletPass, _ := Config.String("Miner.WalletdRPCPass")
+	walletPass, _ := Config.String("Miner.WalletdPass")
 	if len(WalletdPass) > 0 {
 		walletPass = WalletdPass
 	}
