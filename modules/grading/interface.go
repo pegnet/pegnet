@@ -45,7 +45,7 @@ type IGradingBlock interface {
 	// The graded slice is the slice of OPRs in their sorted order by their graded rank. Meaning `graded[0]` is
 	// the wining opr. And graded[:amt] is the top `amt` (e.g to get paid).
 	//
-	// If the grading results in a empty block, such as not enough oprs, the graded slice will be of length 0,
+	// If the grading results in a empty block, such as not enough oprs, the graded slice will be nil,
 	// and `err` will be nil. The maximum length of the slice `graded` will be the number of oprs determined by
 	// pure POW. In v1 and v2, this is 50. No more than 50 will ever be returned by the accessors.
 	//
@@ -57,7 +57,7 @@ type IGradingBlock interface {
 	//
 	// Calling GradedSet more than once will not change the result as long as the set remains graded. Adding a new OPR
 	// or setting a new PreviousWinners will unlock the set, and then calling `Grade()` will regrade the oprs with the
-	// new state. As long as the set is locked, all future calls will do nothing.
+	// new state. As long as the set is graded, all future calls will do nothing.
 	Grade() (err error)
 
 	// WinnersShortHashes returns the proper number of winners for the given graded set in the format accepted by the
@@ -68,10 +68,20 @@ type IGradingBlock interface {
 	//		error		If the set is not graded, the winners cannot be asked for
 	WinnersShortHashes() ([]string, error)
 
-	// Winners returns the oprs that will get rewarded
+	// Winners returns the oprs that will get rewarded. In the case the graded set has no winners, the resulting
+	// slice will be nil
+	//
+	// Returns
+	//		[]*opr.OPR
+	//		error		If the set is not graded, the winners cannot be asked for
 	Winners() (winners []*opr.OPR, err error)
 
 	// Graded returns the full set of OPRs that were graded, meaning their POW got them into the top 50.
+	// In the case the graded set has no winners, the resulting slice will be nil
+	//
+	// Returns
+	//		[]*opr.OPR
+	//		error		If the set is not graded, the graded cannot be asked for
 	Graded() (graded []*opr.OPR, err error)
 
 	// ---------------------------
