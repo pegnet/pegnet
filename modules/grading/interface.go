@@ -3,6 +3,8 @@ Package grading implements the basic grading module unit for pegnet opr grading.
 */
 package grading
 
+import "github.com/pegnet/pegnet/modules/opr"
+
 // IGradingBlock is the grading unit that accepts a set of OPRs. A Grading block must be created with
 // a height and a version. This will determine the grading and encoding versions it will use.
 // When the Grading block is `ungraded` some functions will be unusable. A grading block becomes `graded` when the
@@ -67,10 +69,10 @@ type IGradingBlock interface {
 	WinnersShortHashes() ([]string, error)
 
 	// Winners returns the oprs that will get rewarded
-	Winners() (winners []OPR, err error)
+	Winners() (winners []*opr.OPR, err error)
 
 	// Graded returns the full set of OPRs that were graded, meaning their POW got them into the top 50.
-	Graded() (graded []OPR, err error)
+	Graded() (graded []*opr.OPR, err error)
 
 	// ---------------------------
 	// Functions used for determining the grading module state
@@ -87,34 +89,4 @@ type IGradingBlock interface {
 
 	// GetPreviousWinners returns the set of previous winners set by SetPreviousWinners
 	GetPreviousWinners() []string
-}
-
-// TODO: Construct another interface for the parse/validate of a single OPR for a caller to use if they wish to debug
-// 		a specific entry
-
-// IOPRFactory is for processing factom entries into OPRs.
-type IOPRFactory interface {
-	// ParseOPR attempts to process the OPR from a given factom entry. Assuming the extid's
-	// are proper, the version is taken from the entry itself. In the case the decoding fails
-	// the OPR returned is nil, and an error is returned.
-	ParseOPR(entryhash []byte, extids [][]byte, content []byte) (*OPR, error)
-}
-
-// TODO: Determine the minimum fields
-// 		This is a work in progress
-type OPR struct {
-	// Extid related data
-	EntryHash              []byte `json:"-"` // Entry to record this opr
-	Nonce                  []byte `json:"-"` // Nonce in the extid for the pow of the OPR
-	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty computed by lxrhash
-	Version                uint8  `json:"-"` // OPR version for encoding rules
-
-	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	CoinbaseAddress string   `json:"coinbase"` // [base58]  PEG Address to pay PEG
-	Dbht            int32    `json:"dbht"`     //           The Directory Block Height of the OPR.
-	WinPreviousOPR  []string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
-	FactomDigitalID string   `json:"minerid"`  // [unicode] Digital Identity of the miner
-
-	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
-	// Assets OraclePriceRecordAssetList `json:"assets"`
 }
