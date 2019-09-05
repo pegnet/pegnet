@@ -4,12 +4,11 @@ Package grading implements the basic grading module unit for pegnet opr grading.
 package grading
 
 // IGradingBlock is the grading unit that accepts a set of OPRs. A Grading block must be created with
-// a height and a network type. This will determine the grading and encoding versions it will use.
+// a height and a version. This will determine the grading and encoding versions it will use.
 type IGradingBlock interface {
-	// Information needed to setup a grading block. The height and network are determined at construction of
-	// the grading block by the caller. The version will be computed from those values.
-	Height() int64 // Block height in factomd
-	Network() string
+	// Information needed to setup a grading block. The height and version are determined at construction of
+	// the grading block by the caller.
+	Height() int32  // Block height in factomd
 	Version() uint8 // Indicates the OPR version and grading to be used
 
 	// ---------------------------
@@ -77,6 +76,21 @@ type IGradingBlock interface {
 // TODO: Construct another interface for the parse/validate of a single OPR for a caller to use if they wish to debug
 // 		a specific entry
 
+// TODO: Determine the minimum fields
+// 		This is a work in progress
 type OPR struct {
-	// TBD
+	// Extid related data
+	EntryHash              []byte `json:"-"` // Entry to record this opr
+	Nonce                  []byte `json:"-"` // Nonce in the extid for the pow of the OPR
+	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty computed by lxrhash
+	Version                uint8  `json:"-"` // OPR version for encoding rules
+
+	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
+	CoinbaseAddress string   `json:"coinbase"` // [base58]  PEG Address to pay PEG
+	Dbht            int32    `json:"dbht"`     //           The Directory Block Height of the OPR.
+	WinPreviousOPR  []string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
+	FactomDigitalID string   `json:"minerid"`  // [unicode] Digital Identity of the miner
+
+	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
+	// Assets OraclePriceRecordAssetList `json:"assets"`
 }
