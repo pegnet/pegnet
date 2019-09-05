@@ -112,9 +112,9 @@ func (g *GradingBlock) WinnersShortHashes() ([]string, error) {
 
 	shorthashes := make([]string, g.winnerAmount(), g.winnerAmount())
 
-	// A nil set is an empty set
+	// A nil set is an empty set of the proper length
 	if winners == nil {
-		return []string{}, nil
+		return shorthashes, nil
 	}
 
 	// This shouldn't ever happen...
@@ -172,7 +172,7 @@ func (g *GradingBlock) gradedUpTo(pos int) (graded []*opr.OPR, err error) {
 		return nil, fmt.Errorf("something is wrong with the graded set, not enough winners")
 	}
 
-	// If
+	// If the pos is outside the length, we can trim back the length
 	if len(g.GradedOPRs) < pos {
 		pos = len(g.GradedOPRs)
 	}
