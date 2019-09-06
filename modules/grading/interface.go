@@ -5,11 +5,11 @@ package grading
 
 import "github.com/pegnet/pegnet/modules/opr"
 
-// IGradingBlock is the grading unit that accepts a set of OPRs. A Grading block must be created with
+// IBlockGrader is the grading unit that accepts a set of OPRs. A Grading block must be created with
 // a height and a version. This will determine the grading and encoding versions it will use.
 // When the Grading block is `ungraded` some functions will be unusable. A grading block becomes `graded` when the
 // `Grade()` function is called. Adding a new OPR will un-grade the set.
-type IGradingBlock interface {
+type IBlockGrader interface {
 	// Information needed to setup a grading block. The height and version are determined at construction of
 	// the grading block by the caller.
 	Height() int32  // Block height in factomd
@@ -26,9 +26,8 @@ type IGradingBlock interface {
 	// The params are the components of a Factom Entry as their byte slices
 	//
 	// Returns
-	//		bool	Indicates if the opr was added to the set. An invalid/improperly formed opr will return (false, nil)
-	//		error	Indicates an error in the function call. This does not indicate a bad opr, but some other reason.
-	AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool, err error)
+	//		bool	Indicates if the opr was added to the set. An invalid/improperly formed opr will return false
+	AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool)
 
 	// SetPreviousWinners enables checking of the previous winners in the validation function of the grading routine.
 	// If the previous winners is unset, then an empty set is accepted. SetPreviousWinners will set the graded block to
@@ -53,12 +52,10 @@ type IGradingBlock interface {
 	// The grading module will only allow access the top 50 OPRs. A caller does not have access to oprs outside
 	// this range.
 	//
-	// If err != nil, there was an error in grading, and the grading process was not finished.
-	//
 	// Calling GradedSet more than once will not change the result as long as the set remains graded. Adding a new OPR
 	// or setting a new PreviousWinners will unlock the set, and then calling `Grade()` will regrade the oprs with the
 	// new state. As long as the set is graded, all future calls will do nothing.
-	Grade() (err error)
+	Grade()
 
 	// WinnersShortHashes returns the proper number of winners for the given graded set in the format accepted by the
 	// `SetPreviousWinners` function. If the set is not graded, an error is returned.

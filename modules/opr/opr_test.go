@@ -239,6 +239,72 @@ func testOPR_Validate(t *testing.T, version uint8) {
 
 }
 
+// TODO: Make a ValidFCTAddress function more thorough
+func TestValidFCTAddress(t *testing.T) {
+	tfa := func(addr string, valid bool, reason string) {
+		if v := ValidFCTAddress(addr); v != valid {
+			t.Errorf("Valid: %t, exp %t: %s", v, valid, reason)
+		}
+	}
+
+	tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpanu", true, "valid addr")
+	tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5sU9hesrRZc", true, "valid addr")
+	tfa("FA2AvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", true, "valid addr")
+
+	//tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpana", false, "bad checksum")
+	//tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5aU9hesrRZc", false, "bad checksum")
+
+	tfa("Fs2Uk1vnk2JrHHQXTDvSW6LsRTFqfim4khBk2yKHU4MWSYSnQCcg", false, "not a FA key")
+	tfa("Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq", false, "not a FA key")
+	tfa("EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg", false, "not a FA key")
+
+	tfa("", false, "empty")
+	//tfa("FA", false, "not long enough")
+	//tfa("FAs", false, "not long enough")
+	//tfa("FAAvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", false, "missing a character")
+	//tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5sU9hesrRZ_", false, "not base 58")
+}
+
+// Ensure we keep under 1EC
+func TestUnder1EC(t *testing.T) {
+	t.Run("version 1", func(t *testing.T) {
+		test1EC(t, 1)
+	})
+
+	t.Run("version 2", func(t *testing.T) {
+		test1EC(t, 2)
+	})
+}
+
+func test1EC(t *testing.T, version uint8) {
+	opr := RandomOPR(version)
+	PopulateRandomWinners(opr)
+
+	// Because this allows our prices to be wildly high, that will add bytes
+	// Let's make the prices resonable
+	mod := uint64(10000 * 1e8) // 10k Max
+	for k, v := range opr.Assets.AssetList {
+		opr.Assets.AssetList[k] = v % mod
+	}
+
+	tl := 0
+	for _, ext := range opr.ExtIDs() {
+		tl += len(ext) + 2
+	}
+
+	data, err := opr.SafeMarshal()
+	if err != nil {
+		t.Error(err)
+	}
+
+	tl += len(data)
+
+	if tl > 1024 {
+		t.Errorf("opr entry is over 1kb, found %d bytes", tl)
+	}
+	fmt.Println(tl)
+}
+
 func TestOPR_ShortEntryHash(t *testing.T) {
 	o := new(OPR)
 	if o.ShortEntryHash() != "" {

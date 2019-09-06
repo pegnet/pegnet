@@ -68,7 +68,7 @@ func RandomOPR(version uint8) *OPR {
 	}
 	o.Assets = NewOraclePriceRecordAssetList(o.Version)
 	for _, asset := range assets {
-		price := rand.Uint64()
+		price := rand.Uint64() % (1e8 * 1e6) // Max 1mil USD
 		o.Assets.SetValueFromUint64(asset, price)
 		if o.Version == 1 {
 			// V1 is truncated to 4
@@ -78,6 +78,14 @@ func RandomOPR(version uint8) *OPR {
 	o.Assets.AssetList["PEG"] = 0 // PEG is 0
 
 	return o
+}
+
+func PopulateRandomWinners(o *OPR) {
+	for i := range o.WinPreviousOPR {
+		b := make([]byte, 8, 8)
+		rand.Read(b)
+		o.WinPreviousOPR[i] = hex.EncodeToString(b)
+	}
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
@@ -104,7 +112,7 @@ func (opr *OPR) Validate(dbht int32) error {
 	}
 
 	// TODO: Enforce valid CoinbaseAddress, this is not a complete check
-	if opr.Version == 2 && len(opr.CoinbaseAddress) < 3 && opr.CoinbaseAddress[:2] != "FA" {
+	if opr.Version == 2 && !ValidFCTAddress(opr.CoinbaseAddress) {
 		return fmt.Errorf("invalid factoid address")
 	}
 

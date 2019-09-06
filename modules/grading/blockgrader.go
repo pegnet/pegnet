@@ -7,6 +7,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var _ IBlockGrader = (*BlockGrader)(nil)
+
 type BlockGrader struct {
 	BlockHeight int32
 	OPRVersion  uint8 // OPR version to use
