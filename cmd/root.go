@@ -29,6 +29,8 @@ var (
 	LogLevel        string
 	FactomdLocation string
 	WalletdLocation string
+	WalletdUser     string
+	WalletdPass     string
 	Timeout         uint
 )
 
@@ -40,6 +42,8 @@ func init() {
 	RootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
 	RootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
 	RootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
+	RootCmd.PersistentFlags().StringVarP(&WalletdUser, "walletduser", "u", "", "The RPC Username of Walletd, if enabled")
+	RootCmd.PersistentFlags().StringVarP(&WalletdPass, "walletdpass", "p", "", "The RPC Password of Walletd, if enabled")
 	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnethost", "g", "localhost:8099", "IPAddr:port# of the api host to send requests too.")
 	RootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
@@ -185,6 +189,18 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	walletd, _ := Config.String("Miner.WalletdLocation")
 	factom.SetFactomdServer(factomd)
 	factom.SetWalletServer(walletd)
+
+	walletUser, _ := Config.String("Miner.WalletdUser")
+	if len(WalletdUser) > 0 {
+		walletUser = WalletdUser
+	}
+	walletPass, _ := Config.String("Miner.WalletdPass")
+	if len(WalletdPass) > 0 {
+		walletPass = WalletdPass
+	}
+	if len(walletUser) > 0 {
+		factom.SetWalletRpcConfig(walletUser, walletPass)
+	}
 
 	// Profiling setup
 	if on, _ := cmd.Flags().GetBool("profile"); on {
