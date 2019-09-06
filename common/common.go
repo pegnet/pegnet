@@ -74,6 +74,17 @@ var (
 	ecSecPrefix = []byte{0x5d, 0xb6}
 )
 
+func NumberOfWinners(version uint8) int {
+	switch version {
+	case 1:
+		return 10
+	case 2:
+		return 25
+	default:
+		return 0
+	}
+}
+
 // FormatDiff returns a human readable string in scientific notation
 func FormatDiff(diff uint64, precision uint) string {
 	format := "%." + fmt.Sprint(precision) + "e"

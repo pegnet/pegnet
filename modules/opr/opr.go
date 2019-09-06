@@ -1,8 +1,10 @@
 package opr
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pegnet/pegnet/common"
@@ -33,6 +35,39 @@ type OPR struct {
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	Assets *OraclePriceRecordAssetList `json:"assets"`
+}
+
+// RandomOPR is useful for unit testing
+//
+//	Difficulty and grade is UNSET
+func RandomOPR(version uint8) *OPR {
+	o := new(OPR)
+
+	o.Version = version
+
+	o.EntryHash = make([]byte, 32)
+	o.OPRHash = make([]byte, 32)
+	o.SelfReportedDifficulty = make([]byte, 8)
+
+	_, _ = rand.Read(o.EntryHash)
+	_, _ = rand.Read(o.OPRHash)
+	_, _ = rand.Read(o.SelfReportedDifficulty)
+
+	o.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
+	o.Dbht = rand.Int31()
+	o.WinPreviousOPR = make([]string, common.NumberOfWinners(o.Version), common.NumberOfWinners(o.Version))
+	o.FactomDigitalID = hex.EncodeToString(o.SelfReportedDifficulty) // 16 hex characters
+
+	assets := common.AssetsV1
+	if version == 2 {
+		assets = common.AssetsV2
+	}
+	o.Assets = NewOraclePriceRecordAssetList(o.Version)
+	for _, asset := range assets {
+		o.Assets.SetValueFromUint64(asset, rand.Uint64())
+	}
+
+	return o
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
@@ -90,6 +125,14 @@ func (opr *OPR) ShortEntryHash() string {
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OPR) GetTokens() (tokens []Token) {
 	return opr.Assets.List()
+}
+
+func (opr *OPR) ExtIDs() [][]byte {
+	return [][]byte{
+		opr.Nonce,
+		opr.SelfReportedDifficulty,
+		[]byte{opr.Version},
+	}
 }
 
 // SafeMarshal will marshal the json depending on the opr version

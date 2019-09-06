@@ -60,18 +60,18 @@ func (g *BlockGrader) Version() uint8 {
 	return g.OPRVersion
 }
 
-func (g *BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool, err error) {
+func (g *BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) (added bool) {
 	// Unset the graded
 	g.graded = false
 
 	opr, err := opr.ParseOPR(entryhash, extids, content)
 	if err != nil {
 		// All errors are parse errors. We silence them here
-		return false, nil
+		return false
 	}
 
 	g.OPRs = append(g.OPRs, opr)
-	return true, nil
+	return true
 }
 
 // SetPreviousWinners
