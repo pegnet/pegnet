@@ -198,6 +198,11 @@ func testOPR_Validate(t *testing.T, version uint8) {
 	o.Assets = nil
 	shouldErrValidate(o, o.Dbht, "missing assetlist")
 
+	// Test a 0 asset
+	o = randomValidOPR()
+	o.Assets.AssetList["XBT"] = 0
+	shouldErrValidate(o, o.Dbht, "XBT is 0")
+
 	// Test nil winners
 	o = randomValidOPR()
 	o.WinPreviousOPR = nil
@@ -237,6 +242,33 @@ func testOPR_Validate(t *testing.T, version uint8) {
 		// TODO: Add more improper address checking when the full address check is in place
 	}
 
+}
+
+// TestOPR_GetTokens is fairly trivial. It is not verifying much beyond getting the right set of
+// assets for a version
+func TestOPR_GetTokens(t *testing.T) {
+	t.Run("version 1", func(t *testing.T) {
+		testOPR_GetTokens(t, 1)
+	})
+
+	t.Run("version 2", func(t *testing.T) {
+		testOPR_GetTokens(t, 2)
+	})
+}
+
+func testOPR_GetTokens(t *testing.T, version uint8) {
+	o := RandomOPR(version)
+	assets := common.AssetsForVersion(version)
+	tokens := o.GetTokens()
+	if len(tokens) != len(assets) {
+		t.Errorf("exp %d tokens, found %d", len(assets), len(tokens))
+	}
+
+	for i, token := range tokens {
+		if token.Code != assets[i] {
+			t.Errorf("tokens out of order")
+		}
+	}
 }
 
 // TODO: Make a ValidFCTAddress function more thorough

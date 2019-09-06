@@ -102,6 +102,16 @@ var (
 	AssetsV2 = SubtractFromSet(AssetsV1, "XPD", "XPT")
 )
 
+func AssetsForVersion(version uint8) []string {
+	switch version {
+	case 1:
+		return AssetsV1
+	case 2:
+		return AssetsV2
+	}
+	return []string{}
+}
+
 // AssetListContainsCaseInsensitive is for when using user input. It's helpful for the
 // cmd line.
 func AssetListContainsCaseInsensitive(assetList []string, asset string) bool {
