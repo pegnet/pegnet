@@ -6,6 +6,10 @@ message ProtoOPR {
     string id = 2;
     int32 height = 3;
     repeated string winners = 4;
+    Assets assets = 5;
+}
+
+message Assets {
     uint64 PEG = 5;
     uint64 pUSD = 6;
     uint64 pEUR = 7;

@@ -99,6 +99,33 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	}
 }
 
+func TestProtobufSize(t *testing.T) {
+	opr := NewOraclePriceRecord()
+	opr.Version = 2
+	opr.CoinbaseAddress = "FA3bGeJUkzu6BnjqkcfxAqAcKXhu5dwygGnT6qfGLRy1otkEZqpd"
+	opr.FactomDigitalID = "v2protobufmarshaltesting"
+	opr.Dbht = 200000
+	for _, asset := range common.AssetsV2 {
+		opr.Assets.SetValueFromUint64(asset, rand.Uint64())
+	}
+
+	opr.WinPreviousOPR = make([]string, 25, 25)
+	for i := range opr.WinPreviousOPR {
+		opr.WinPreviousOPR[i] = "0001000200030004"
+	}
+
+	entry, err := opr.CreateOPREntry(make([]byte, 5, 5), rand.Uint64())
+	if err != nil {
+		t.Error(err)
+	}
+
+	data, err := entry.MarshalBinary()
+	if len(data) > 1024 {
+		t.Errorf("opr entry is over 1kb, found %d bytes", len(data))
+	}
+	fmt.Println(len(data))
+}
+
 func rstring(len int) string {
 	r := make([]byte, len)
 	rand.Read(r)
