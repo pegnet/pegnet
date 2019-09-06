@@ -294,7 +294,11 @@ func CheckAndPanic(e error) {
 }
 
 func DetailError(e error) error {
-	_, file, line, _ := runtime.Caller(1) // The line that called this function
+	return DetailErrorCallStack(e, 1)
+}
+
+func DetailErrorCallStack(e error, num int) error {
+	_, file, line, _ := runtime.Caller(num) // The line that called this function
 	shortFile := ShortenPegnetFilePath(file, "", 0)
 	return fmt.Errorf("%s:%d %s", shortFile, line, e.Error())
 }

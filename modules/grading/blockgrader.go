@@ -80,9 +80,15 @@ func (g *BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) 
 func (g *BlockGrader) SetPreviousWinners(previousWinners []string) error {
 	g.graded = false // Even if we error, we should unset this. A failed attempt will still reset
 
+	winnerLength := 16
+
 	// This means there are no prior winners, so they must be blank
 	if previousWinners == nil {
-		g.PreviousWinners = make([]string, g.winnerAmount(), g.winnerAmount())
+		previousWinners = make([]string, g.winnerAmount(), g.winnerAmount())
+	}
+
+	if len(previousWinners) > 0 && len(previousWinners[0]) == 0 {
+		winnerLength = 0 // 0 length strings valid if they are all 0 length
 	}
 
 	switch g.Version() {
@@ -94,13 +100,20 @@ func (g *BlockGrader) SetPreviousWinners(previousWinners []string) error {
 		if !(len(previousWinners) == 10 || len(previousWinners) == 25) {
 			return fmt.Errorf("exp 10 or 25 winners, found %d", len(previousWinners))
 		}
+
+		// Special case for v2, an empty set must be length 25
+		if winnerLength == 0 && len(previousWinners) != 25 {
+			return fmt.Errorf("exp 25 winners for an empty set, found %d", len(previousWinners))
+		}
 	default:
 		return fmt.Errorf("%d is not a supported grading version", g.Version())
 	}
 
+	// TODO: Enforce hex strings?
+
 	// Verify they are all the right length
 	for _, win := range previousWinners {
-		if len(win) != 8 {
+		if len(win) != winnerLength {
 			return fmt.Errorf("exp winners to be of length 8, found %d", len(win))
 		}
 	}
