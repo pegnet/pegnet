@@ -2,6 +2,7 @@ package opr_test
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -129,8 +130,8 @@ func TestAssetListVersionOneUnmarshal(t *testing.T) {
 	}
 }
 
-// TestOPRJsonMarshal will ensure the json marshalling can go both ways
-func TestOPRJsonMarshal(t *testing.T) {
+// TestSingleMarshal will ensure the marshalling can go both ways
+func TestSingleMarshal(t *testing.T) {
 	var err error
 	o := opr.NewOraclePriceRecord()
 	for _, asset := range common.AssetsV2 {
@@ -143,6 +144,7 @@ func TestOPRJsonMarshal(t *testing.T) {
 	o.FactomDigitalID = "random"
 	o.Network = common.UnitTestNetwork
 	o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
+	o.WinPreviousOPR = []string{}
 
 	for i, asset := range common.AssetsV2 {
 		o.Assets.SetValue(asset, rand.Float64()*1000)
@@ -175,6 +177,86 @@ func TestOPRJsonMarshal(t *testing.T) {
 	}
 	if bytes.Compare(data, data2) != 0 {
 		t.Error("Json different after remarshal")
+	}
+
+	if !reflect.DeepEqual(o, o2) {
+		t.Errorf("did not marshal into the same")
+	}
+
+	o2.Assets.SetValue("PEG", 0.123)
+	// Ensure not just a deep equal oddity
+	if reflect.DeepEqual(o, o2) {
+		t.Errorf("I changed it, they should not be different")
+	}
+
+}
+
+// testOPRMarshaling will ensure the marshalling can go both ways
+func TestOPRMarshaling(t *testing.T) {
+	t.Run("version 1", func(t *testing.T) {
+		testOPRMarshaling(t, 1)
+	})
+	t.Run("version 2", func(t *testing.T) {
+		testOPRMarshaling(t, 2)
+	})
+}
+
+func testOPRMarshaling(t *testing.T, version uint8) {
+	common.SetTestingVersion(version)
+
+	// Test randoms
+	for i := 0; i < 10; i++ {
+		o := RandomOPROfVersion(version)
+		o.Network = common.UnitTestNetwork
+		o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
+
+		testMarshal(o, t)
+	}
+
+	// Test with winners
+	for i := 0; i < 10; i++ {
+		o := RandomOPROfVersion(version)
+		o.Network = common.UnitTestNetwork
+		o.Version = common.OPRVersion(o.Network, int64(o.Dbht))
+		for i := range o.WinPreviousOPR {
+			win := make([]byte, 8)
+			rand.Read(win)
+			o.WinPreviousOPR[i] = hex.EncodeToString(win)
+		}
+
+		testMarshal(o, t)
+	}
+
+}
+
+func testMarshal(o *opr.OraclePriceRecord, t *testing.T) {
+	data, err := o.SafeMarshal()
+	if err != nil {
+		t.Error(err)
+	}
+
+	o2 := opr.NewOraclePriceRecord()
+	// These not set by json
+	o2.Network = o.Network
+	o2.Version = o.Version
+	o2.SelfReportedDifficulty = o.SelfReportedDifficulty
+	o2.Nonce = o.Nonce
+	o2.Difficulty = o.Difficulty
+	o2.EntryHash = o.EntryHash
+	o2.OPRHash = o.OPRHash
+
+	err = o2.SafeUnmarshal(data)
+	if err != nil {
+		t.Error(err)
+	}
+
+	data2, err := o2.SafeMarshal()
+	if err != nil {
+		t.Error(err)
+	}
+
+	if bytes.Compare(data, data2) != 0 {
+		t.Error("marshaled data different after re-marshal")
 	}
 
 	if !reflect.DeepEqual(o, o2) {

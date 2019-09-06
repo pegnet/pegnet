@@ -111,6 +111,12 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	tmp.FactomDigitalID = "test"
 	tmp.Version = version
 
+	min := 10
+	if version == 2 {
+		min = 25
+	}
+	tmp.WinPreviousOPR = make([]string, min, min)
+
 	tmp.SelfReportedDifficulty = make([]byte, 8)
 	tmp.Nonce = make([]byte, 8)
 	rand.Read(tmp.Nonce)
@@ -125,6 +131,8 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	for _, asset := range assets {
 		tmp.Assets.SetValue(asset, rand.Float64()*100)
 	}
+
+	tmp.CoinbaseAddress = common.ConvertRawToFCT(common.RandomByteSliceOfLen(32))
 
 	// TODO: Add more fields to this
 	return tmp

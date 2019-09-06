@@ -482,7 +482,6 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 			Address: opr.CoinbaseAddress,
 			Id:      opr.FactomDigitalID,
 			Height:  opr.Dbht,
-			Winners: opr.WinPreviousOPR,
 			// Hardcoded list order.
 			Assets: &oprencoding.Assets{
 				PEG:   opr.Assets.Uint64Value("PEG"),
@@ -517,6 +516,17 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 				PDCR:  opr.Assets.Uint64Value("DCR"),
 			},
 		}
+
+		// Decode winners into strings
+		var err error
+		pOpr.Winners = make([][]byte, len(opr.WinPreviousOPR), len(opr.WinPreviousOPR))
+		for i, winner := range opr.WinPreviousOPR {
+			pOpr.Winners[i], err = hex.DecodeString(winner)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		data, err := proto.Marshal(pOpr)
 		return data, err
 	}
@@ -557,7 +567,7 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		opr.CoinbaseAddress = oprMin.Address
 		opr.FactomDigitalID = oprMin.Id
 		opr.Dbht = oprMin.Height
-		opr.WinPreviousOPR = oprMin.Winners
+		//opr.WinPreviousOPR = oprMin.Winners
 		// Hard coded list of assets
 		opr.Assets.SetValueFromUint64("PEG", oprMin.Assets.PEG)
 		opr.Assets.SetValueFromUint64("USD", oprMin.Assets.PUSD)
@@ -589,6 +599,13 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		opr.Assets.SetValueFromUint64("DASH", oprMin.Assets.PDASH)
 		opr.Assets.SetValueFromUint64("ZEC", oprMin.Assets.PZEC)
 		opr.Assets.SetValueFromUint64("DCR", oprMin.Assets.PDCR)
+
+		// Decode winners
+		opr.WinPreviousOPR = make([]string, len(oprMin.Winners), len(oprMin.Winners))
+		for i, winner := range oprMin.Winners {
+			opr.WinPreviousOPR[i] = hex.EncodeToString(winner)
+		}
+
 		return nil
 	}
 
