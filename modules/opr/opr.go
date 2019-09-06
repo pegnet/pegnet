@@ -103,6 +103,11 @@ func (opr *OPR) Validate(dbht int32) error {
 		return fmt.Errorf("%s is an invalid identity", opr.FactomDigitalID)
 	}
 
+	// TODO: Enforce valid CoinbaseAddress, this is not a complete check
+	if opr.Version == 2 && len(opr.CoinbaseAddress) < 3 && opr.CoinbaseAddress[:2] != "FA" {
+		return fmt.Errorf("invalid factoid address")
+	}
+
 	if opr.Dbht != dbht {
 		return fmt.Errorf("height expected %d, found %d", dbht, opr.Dbht) // DBHeight is not reported correctly
 	}

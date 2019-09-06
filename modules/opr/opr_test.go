@@ -222,6 +222,21 @@ func testOPR_Validate(t *testing.T, version uint8) {
 	shouldErrValidate(o, 0, "bad version")
 	shouldErrValidate(o, o.Dbht*-1, "bad version")
 
+	if version == 2 {
+		o = randomValidOPR()
+		o.FactomDigitalID = "-_"
+		shouldErrValidate(o, o.Dbht, "bad identity")
+
+		o = randomValidOPR()
+		o.CoinbaseAddress = ""
+		shouldErrValidate(o, o.Dbht, "bad coinbase address")
+
+		o.CoinbaseAddress = "Fs2zso56oYwpoYBipxuW6mCrmNmzdduDGcY6xdTy7Rmrpbo54mSZ"
+		shouldErrValidate(o, o.Dbht, "bad coinbase address")
+
+		// TODO: Add more improper address checking when the full address check is in place
+	}
+
 }
 
 func TestOPR_ShortEntryHash(t *testing.T) {
