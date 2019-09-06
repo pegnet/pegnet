@@ -99,6 +99,30 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	}
 }
 
+func TestValidFCTAddress(t *testing.T) {
+	tfa := func(addr string, valid bool, reason string) {
+		if v := ValidFCTAddress(addr); v != valid {
+			t.Errorf("Valid: %t, exp %t: %s", v, valid, reason)
+		}
+	}
+
+	tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpanu", true, "valid addr")
+	tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5sU9hesrRZc", true, "valid addr")
+	tfa("FA2AvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", true, "valid addr")
+
+	tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpana", false, "bad checksum")
+	tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5aU9hesrRZc", false, "bad checksum")
+
+	tfa("Fs2Uk1vnk2JrHHQXTDvSW6LsRTFqfim4khBk2yKHU4MWSYSnQCcg", false, "not a FA key")
+	tfa("Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq", false, "not a FA key")
+	tfa("EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg", false, "not a FA key")
+
+	tfa("", false, "empty")
+	tfa("FA", false, "not long enough")
+	tfa("FAs", false, "not long enough")
+	tfa("FAAvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", false, "missing a character")
+}
+
 func TestProtobufSize(t *testing.T) {
 	opr := NewOraclePriceRecord()
 	opr.Version = 2

@@ -147,6 +147,11 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false
 	}
 
+	// Only enforce on version 2 and forward, checking valid FCT address
+	if opr.Version == 2 && !ValidFCTAddress(opr.CoinbaseAddress) {
+		return false
+	}
+
 	if int64(opr.Dbht) != dbht {
 		return false // DBHeight is not reported correctly
 	}
@@ -168,6 +173,12 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 	default:
 		return false
 	}
+}
+
+// ValidFCTAddress will be removed in the grading module refactor. This is just temporary to get this
+// functionality, and be easily unit testable.
+func ValidFCTAddress(addr string) bool {
+	return len(addr) > 2 && addr[:2] == "FA" && factom.IsValidAddress(addr)
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
