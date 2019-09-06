@@ -1,7 +1,7 @@
 syntax = "proto3";
 package oprencoding;
 
-message ProtoOPRMin {
+message ProtoOPR {
     string address = 1;
     string id = 2;
     int32 height = 3;

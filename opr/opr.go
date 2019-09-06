@@ -478,7 +478,7 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 		return data, err
 	} else if opr.Version == 2 {
 		// Version 2 uses Protobufs for encoding
-		pOpr := &oprencoding.ProtoOPRMin{
+		pOpr := &oprencoding.ProtoOPR{
 			Address: opr.CoinbaseAddress,
 			Id:      opr.FactomDigitalID,
 			Height:  opr.Dbht,
@@ -544,7 +544,7 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		}
 		return nil
 	} else if opr.Version == 2 {
-		oprMin := oprencoding.ProtoOPRMin{}
+		oprMin := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &oprMin)
 		if err != nil {
 			return err
