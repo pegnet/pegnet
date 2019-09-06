@@ -114,7 +114,16 @@ func TestBlockGrader_Constructor(t *testing.T) {
 
 // Ensure the AddOPR has the very basic functionality of fliping the graded, and some basic parsing checks
 func TestBlockGrader_AddOPR(t *testing.T) {
-	b, err := NewGradingBlock(0, 2, nil)
+	t.Run("version 1", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 1)
+	})
+	t.Run("version 2", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 2)
+	})
+}
+
+func testBlockGrader_AddOPR(t *testing.T, version uint8) {
+	b, err := NewGradingBlock(0, version, nil)
 	if err != nil {
 		t.Error(err)
 		t.FailNow()
@@ -137,12 +146,12 @@ func TestBlockGrader_AddOPR(t *testing.T) {
 		}
 	}
 
-	template := opr.RandomOPR(2)
+	template := opr.RandomOPR(version)
 
 	zerohash := make([]byte, 32, 32)
 	v2ExtIds := make([][]byte, 3, 3)
 	v2ExtIds[1] = make([]byte, 8, 8)
-	v2ExtIds[2] = []byte{2}
+	v2ExtIds[2] = []byte{version}
 	content, err := template.SafeMarshal()
 	if err != nil {
 		t.Error(err)

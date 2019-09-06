@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/pegnet/pegnet/polling"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr/oprencoding"
@@ -18,13 +20,15 @@ type OPR struct {
 	Nonce                  []byte `json:"-"` // Nonce in the extid for the pow of the OPR
 	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty computed by lxrhash
 	Version                uint8  `json:"-"` // OPR version for encoding rules
+
 	// OPRHash is determined by the entry content. We should set this when we retrieve the OPR
-	OPRHash []byte
+	OPRHash []byte `json:"-"`
+	// TODO: Should we also include the raw content? If we re-marshal, for v1 the content is not canonical
 
 	// TODO: Should we include these, or find a way to exclude them?
 	// Values computed during grading
-	Grade      float64
-	Difficulty uint64
+	Grade      float64 `json:"-"`
+	Difficulty uint64  `json:"-"`
 
 	// ----- Marshaled Content into Factom Entry ----
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
@@ -64,8 +68,14 @@ func RandomOPR(version uint8) *OPR {
 	}
 	o.Assets = NewOraclePriceRecordAssetList(o.Version)
 	for _, asset := range assets {
-		o.Assets.SetValueFromUint64(asset, rand.Uint64())
+		price := rand.Uint64()
+		o.Assets.SetValueFromUint64(asset, price)
+		if o.Version == 1 {
+			// V1 is truncated to 4
+			o.Assets.SetValue(asset, polling.TruncateTo4(o.Assets.Value(asset)))
+		}
 	}
+	o.Assets.AssetList["PEG"] = 0 // PEG is 0
 
 	return o
 }
@@ -77,6 +87,10 @@ func RandomOPR(version uint8) *OPR {
 // Returns
 //		err		Error with reason if invalid
 func (opr *OPR) Validate(dbht int32) error {
+	if opr.Assets == nil {
+		return fmt.Errorf("assetlist is nil")
+	}
+
 	// Validate there are no 0's
 	for k, v := range opr.Assets.AssetList {
 		if v == 0 && k != "PEG" { // PEG is exception until we get a value for it
@@ -119,6 +133,9 @@ func (opr *OPR) Validate(dbht int32) error {
 }
 
 func (opr *OPR) ShortEntryHash() string {
+	if opr.EntryHash == nil {
+		return ""
+	}
 	return fmt.Sprintf("%x", opr.EntryHash[:8])
 }
 
@@ -152,10 +169,6 @@ func (opr *OPR) SafeMarshal() ([]byte, error) {
 	// function, no where else.
 	if _, ok := opr.Assets.AssetList["PNT"]; ok {
 		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
-	}
-
-	if opr.Assets == nil {
-		return nil, fmt.Errorf("asset list is nil")
 	}
 
 	// TODO: Do we need to set this here?
@@ -216,6 +229,10 @@ func (opr *OPR) SafeUnmarshal(data []byte) error {
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return fmt.Errorf("opr version is 0")
+	}
+
+	if data == nil {
+		return fmt.Errorf("nil data provided to marshal")
 	}
 
 	// Set this for the unmarshal functions
