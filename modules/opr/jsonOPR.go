@@ -1,5 +1,7 @@
 package opr
 
+import "encoding/json"
+
 type JSONOPR struct {
 	CoinbaseAddress string   `json:"coinbase"`
 	Dbht            int32    `json:"dbht"`
@@ -23,3 +25,7 @@ func (j *JSONOPR) GetHeight() int32     { return j.Dbht }
 func (j *JSONOPR) GetAddress() string   { return j.CoinbaseAddress }
 func (j *JSONOPR) GetWinners() []string { return j.WinPreviousOPR }
 func (j *JSONOPR) GetID() string        { return j.FactomDigitalID }
+
+func (j *JSONOPR) Marshal() ([]byte, error) {
+	return json.Marshal(j)
+}
