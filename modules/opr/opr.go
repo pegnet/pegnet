@@ -6,4 +6,5 @@ type OPR interface {
 	GetWinners() []string
 	GetID() string
 	GetOrderedAssets() []Asset
+	Marshal() ([]byte, error)
 }
