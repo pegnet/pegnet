@@ -67,6 +67,8 @@ func (v2 *V2Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 		return fmt.Errorf("must have exactly 10 or 25 previous winning shorthashes")
 	}
 
+	v2.graded = false
+
 	gopr := new(GradingOPR)
 	gopr.EntryHash = entryhash
 	gopr.Nonce = extids[0]
