@@ -17,6 +17,17 @@ type baseGrader struct {
 	prevWinners []string
 }
 
+func NewGrader(version int) Block {
+	switch version {
+	case 1:
+		return new(V1Block)
+	case 2:
+		return new(V2Block)
+	default:
+		panic("invalid grader version")
+	}
+}
+
 // Count will return the total number of OPRs properly added to this grading block. If the `AddOPR` returns
 // true, that opr will be included in this count.
 func (bg *baseGrader) Count() int {
