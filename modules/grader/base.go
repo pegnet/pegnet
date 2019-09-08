@@ -17,12 +17,16 @@ type baseGrader struct {
 	prevWinners []string
 }
 
-func NewGrader(version int) Block {
+func NewGrader(version int, height int32) Block {
 	switch version {
 	case 1:
-		return new(V1Block)
+		v1 := new(V1Block)
+		v1.height = height
+		return v1
 	case 2:
-		return new(V2Block)
+		v2 := new(V2Block)
+		v2.height = height
+		return v2
 	default:
 		panic("invalid grader version")
 	}
