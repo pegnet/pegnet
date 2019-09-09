@@ -493,27 +493,26 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 			prices[i] = opr.Assets[asset]
 		}
 
-		// Version 2 uses Protobufs for encoding
-		pOpr := &oprencoding.ProtoOPR{
-			Address: opr.CoinbaseAddress,
-			ID:      opr.FactomDigitalID,
-			Height:  opr.Dbht,
-			// Hardcoded list order.
-			Assets: prices,
-		}
-
-		// Decode winners into strings
+		// Decode winners into byte slice
 		var err error
-		pOpr.Winners = make([][]byte, len(opr.WinPreviousOPR), len(opr.WinPreviousOPR))
+		winners := make([][]byte, len(opr.WinPreviousOPR))
 		for i, winner := range opr.WinPreviousOPR {
-			pOpr.Winners[i], err = hex.DecodeString(winner)
+			winners[i], err = hex.DecodeString(winner)
 			if err != nil {
 				return nil, err
 			}
 		}
 
-		data, err := proto.Marshal(pOpr)
-		return data, err
+		// Version 2 uses Protobufs for encoding
+		pOpr := &oprencoding.ProtoOPR{
+			Address: opr.CoinbaseAddress,
+			ID:      opr.FactomDigitalID,
+			Height:  opr.Dbht,
+			Assets:  prices,
+			Winners: winners,
+		}
+
+		return proto.Marshal(pOpr)
 	}
 
 	return nil, fmt.Errorf("opr version %d not supported", opr.Version)
