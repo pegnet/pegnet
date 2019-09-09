@@ -2,7 +2,6 @@ package opr
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 )
 
@@ -12,31 +11,12 @@ type Asset struct {
 }
 type AssetList map[string]float64
 
-// from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
+// MarshalJSON marshals a golang map in a consistent order
+// implemented from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
 func (al AssetList) MarshalJSON() ([]byte, error) {
-	if _, ok := al["version"]; !ok {
-		return nil, fmt.Errorf("marshaling json must be called through a safe function")
-	}
-	version := int(al["version"])
-	delete(al, "version")
-
-	if version == 0 {
-		return nil, fmt.Errorf("version unset for json marshalling")
-	}
-
-	var assets []string
-	switch version {
-	case 1:
-		// We need to read the PNT code instead of peg so the hashes match.
-		// When we digest this, we should immediately switch it to PEG
-		assets = V1Assets
-	case 2:
-		assets = V2Assets
-	}
-
 	s := "{"
 
-	for _, k := range assets {
+	for _, k := range V1Assets {
 		// add key
 		esc := strings.Replace(k, `"`, `\"`, -1)
 		s = s + `"` + esc + `":`
@@ -48,7 +28,7 @@ func (al AssetList) MarshalJSON() ([]byte, error) {
 		}
 		s = s + string(vBytes) + ","
 	}
-	if len(assets) > 0 {
+	if len(V1Assets) > 0 {
 		s = s[0 : len(s)-1]
 	}
 	s = s + "}"

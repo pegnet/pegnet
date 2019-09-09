@@ -2,6 +2,9 @@ package grader
 
 import "math"
 
+// V2 grading works similar to V1 but the grade is banded
+// meaning a record within `band` percentage is considered to be
+// equal
 func gradeV2(avg []float64, opr *GradingOPR, band float64) float64 {
 	assets := opr.OPR.GetOrderedAssets()
 	opr.Grade = 0
