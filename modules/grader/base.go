@@ -9,26 +9,25 @@ import (
 
 // baseGrader provides common functionality that is deemed useful in all versions
 type baseGrader struct {
-	oprs    []*GradingOPR
-	winners []*GradingOPR // this can be an empty slice if there are no winners
-	graded  bool
-
+	oprs   []*GradingOPR
 	height int32
 
 	prevWinners []string
+
+	count int
 }
 
-// NewGrader instantiates a Block Grader for a specific version.
+// NewGrader instantiates a IBlockGrader Grader for a specific version.
 // Once set, the height and list of previous winners can't be changed.
-func NewGrader(version int, height int32, previousWinners []string) Block {
+func NewGrader(version int, height int32, previousWinners []string) IBlockGrader {
 	switch version {
 	case 1:
-		v1 := new(V1Block)
+		v1 := new(V1BlockGrader)
 		v1.height = height
 		v1.prevWinners = previousWinners
 		return v1
 	case 2:
-		v2 := new(V2Block)
+		v2 := new(V2BlockGrader)
 		v2.height = height
 		v2.prevWinners = previousWinners
 		return v2
@@ -75,7 +74,7 @@ func (bg *baseGrader) filterDuplicates() {
 // sortByDifficulty uses an efficient algorithm based on self-reported difficulty
 // to avoid having to LXRhash the entire set.
 // calculates at most `limit + misreported difficulties` hashes
-func (bg *baseGrader) sortByDifficulty(limit int) {
+func (bg *baseGrader) sortByDifficulty(limit int) []*GradingOPR {
 	sort.SliceStable(bg.oprs, func(i, j int) bool {
 		return bg.oprs[i].SelfReportedDifficulty > bg.oprs[i].SelfReportedDifficulty
 	})
@@ -98,5 +97,5 @@ func (bg *baseGrader) sortByDifficulty(limit int) {
 		}
 	}
 
-	bg.oprs = topX
+	return topX
 }
