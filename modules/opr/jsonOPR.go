@@ -29,3 +29,7 @@ func (j *JSONOPR) GetID() string        { return j.FactomDigitalID }
 func (j *JSONOPR) Marshal() ([]byte, error) {
 	return json.Marshal(j)
 }
+
+func (j *JSONOPR) GetType() OPRType {
+	return JSON
+}
