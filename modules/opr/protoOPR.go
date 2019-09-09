@@ -9,3 +9,7 @@ func (m *ProtoOPR) GetOrderedAssets() []Asset {
 	}
 	return list
 }
+
+func (m *ProtoOPR) GetType() OPRType {
+	return Protobuf
+}
