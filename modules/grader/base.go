@@ -92,6 +92,10 @@ func (bg *baseGrader) sortByDifficulty(limit int) {
 		}
 
 		topX = append(topX, o)
+
+		if len(topX) >= limit {
+			break
+		}
 	}
 
 	bg.oprs = topX
