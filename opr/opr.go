@@ -488,44 +488,18 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 		delete(opr.Assets, "PNT")
 		return data, err
 	} else if opr.Version == 2 {
+		prices := make([]uint64, len(opr.Assets))
+		for i, asset := range common.AssetsV2 {
+			prices[i] = opr.Assets[asset]
+		}
+
 		// Version 2 uses Protobufs for encoding
 		pOpr := &oprencoding.ProtoOPR{
 			Address: opr.CoinbaseAddress,
-			Id:      opr.FactomDigitalID,
+			ID:      opr.FactomDigitalID,
 			Height:  opr.Dbht,
 			// Hardcoded list order.
-			Assets: &oprencoding.Assets{
-				PEG:   opr.Assets.Uint64Value("PEG"),
-				PUSD:  opr.Assets.Uint64Value("USD"),
-				PEUR:  opr.Assets.Uint64Value("EUR"),
-				PJPY:  opr.Assets.Uint64Value("JPY"),
-				PGBP:  opr.Assets.Uint64Value("GBP"),
-				PCAD:  opr.Assets.Uint64Value("CAD"),
-				PCHF:  opr.Assets.Uint64Value("CHF"),
-				PINR:  opr.Assets.Uint64Value("INR"),
-				PSGD:  opr.Assets.Uint64Value("SGD"),
-				PCNY:  opr.Assets.Uint64Value("CNY"),
-				PHKD:  opr.Assets.Uint64Value("HKD"),
-				PKRW:  opr.Assets.Uint64Value("KRW"),
-				PBRL:  opr.Assets.Uint64Value("BRL"),
-				PPHP:  opr.Assets.Uint64Value("PHP"),
-				PMXN:  opr.Assets.Uint64Value("MXN"),
-				PXAU:  opr.Assets.Uint64Value("XAU"),
-				PXAG:  opr.Assets.Uint64Value("XAG"),
-				PXBT:  opr.Assets.Uint64Value("XBT"),
-				PETH:  opr.Assets.Uint64Value("ETH"),
-				PLTC:  opr.Assets.Uint64Value("LTC"),
-				PRVN:  opr.Assets.Uint64Value("RVN"),
-				PXBC:  opr.Assets.Uint64Value("XBC"),
-				PFCT:  opr.Assets.Uint64Value("FCT"),
-				PBNB:  opr.Assets.Uint64Value("BNB"),
-				PXLM:  opr.Assets.Uint64Value("XLM"),
-				PADA:  opr.Assets.Uint64Value("ADA"),
-				PXMR:  opr.Assets.Uint64Value("XMR"),
-				PDASH: opr.Assets.Uint64Value("DASH"),
-				PZEC:  opr.Assets.Uint64Value("ZEC"),
-				PDCR:  opr.Assets.Uint64Value("DCR"),
-			},
+			Assets: prices,
 		}
 
 		// Decode winners into strings
@@ -576,40 +550,17 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		opr.Assets = make(OraclePriceRecordAssetList)
 		// Populate the original opr
 		opr.CoinbaseAddress = oprMin.Address
-		opr.FactomDigitalID = oprMin.Id
+		opr.FactomDigitalID = oprMin.ID
 		opr.Dbht = oprMin.Height
-		//opr.WinPreviousOPR = oprMin.Winners
+
+		if len(oprMin.Assets) != len(common.AssetsV2) {
+			return fmt.Errorf("found %d assets, expected %d", len(oprMin.Assets), len(common.AssetsV2))
+		}
+
 		// Hard coded list of assets
-		opr.Assets.SetValueFromUint64("PEG", oprMin.Assets.PEG)
-		opr.Assets.SetValueFromUint64("USD", oprMin.Assets.PUSD)
-		opr.Assets.SetValueFromUint64("EUR", oprMin.Assets.PEUR)
-		opr.Assets.SetValueFromUint64("JPY", oprMin.Assets.PJPY)
-		opr.Assets.SetValueFromUint64("GBP", oprMin.Assets.PGBP)
-		opr.Assets.SetValueFromUint64("CAD", oprMin.Assets.PCAD)
-		opr.Assets.SetValueFromUint64("CHF", oprMin.Assets.PCHF)
-		opr.Assets.SetValueFromUint64("INR", oprMin.Assets.PINR)
-		opr.Assets.SetValueFromUint64("SGD", oprMin.Assets.PSGD)
-		opr.Assets.SetValueFromUint64("CNY", oprMin.Assets.PCNY)
-		opr.Assets.SetValueFromUint64("HKD", oprMin.Assets.PHKD)
-		opr.Assets.SetValueFromUint64("KRW", oprMin.Assets.PKRW)
-		opr.Assets.SetValueFromUint64("BRL", oprMin.Assets.PBRL)
-		opr.Assets.SetValueFromUint64("PHP", oprMin.Assets.PPHP)
-		opr.Assets.SetValueFromUint64("MXN", oprMin.Assets.PMXN)
-		opr.Assets.SetValueFromUint64("XAU", oprMin.Assets.PXAU)
-		opr.Assets.SetValueFromUint64("XAG", oprMin.Assets.PXAG)
-		opr.Assets.SetValueFromUint64("XBT", oprMin.Assets.PXBT)
-		opr.Assets.SetValueFromUint64("ETH", oprMin.Assets.PETH)
-		opr.Assets.SetValueFromUint64("LTC", oprMin.Assets.PLTC)
-		opr.Assets.SetValueFromUint64("RVN", oprMin.Assets.PRVN)
-		opr.Assets.SetValueFromUint64("XBC", oprMin.Assets.PXBC)
-		opr.Assets.SetValueFromUint64("FCT", oprMin.Assets.PFCT)
-		opr.Assets.SetValueFromUint64("BNB", oprMin.Assets.PBNB)
-		opr.Assets.SetValueFromUint64("XLM", oprMin.Assets.PXLM)
-		opr.Assets.SetValueFromUint64("ADA", oprMin.Assets.PADA)
-		opr.Assets.SetValueFromUint64("XMR", oprMin.Assets.PXMR)
-		opr.Assets.SetValueFromUint64("DASH", oprMin.Assets.PDASH)
-		opr.Assets.SetValueFromUint64("ZEC", oprMin.Assets.PZEC)
-		opr.Assets.SetValueFromUint64("DCR", oprMin.Assets.PDCR)
+		for i, asset := range common.AssetsV2 {
+			opr.Assets[asset] = oprMin.Assets[i]
+		}
 
 		// Decode winners
 		opr.WinPreviousOPR = make([]string, len(oprMin.Winners), len(oprMin.Winners))

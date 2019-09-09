@@ -21,11 +21,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type ProtoOPR struct {
-	Address              string   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	Id                   string   `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
-	Height               int32    `protobuf:"varint,3,opt,name=height,proto3" json:"height,omitempty"`
-	Winners              [][]byte `protobuf:"bytes,4,rep,name=winners,proto3" json:"winners,omitempty"`
-	Assets               *Assets  `protobuf:"bytes,5,opt,name=assets,proto3" json:"assets,omitempty"`
+	Address              string   `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
+	ID                   string   `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	Height               int32    `protobuf:"varint,3,opt,name=Height,proto3" json:"Height,omitempty"`
+	Winners              [][]byte `protobuf:"bytes,4,rep,name=Winners,proto3" json:"Winners,omitempty"`
+	Assets               []uint64 `protobuf:"varint,5,rep,packed,name=Assets,proto3" json:"Assets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -63,9 +63,9 @@ func (m *ProtoOPR) GetAddress() string {
 	return ""
 }
 
-func (m *ProtoOPR) GetId() string {
+func (m *ProtoOPR) GetID() string {
 	if m != nil {
-		return m.Id
+		return m.ID
 	}
 	return ""
 }
@@ -84,319 +84,29 @@ func (m *ProtoOPR) GetWinners() [][]byte {
 	return nil
 }
 
-func (m *ProtoOPR) GetAssets() *Assets {
+func (m *ProtoOPR) GetAssets() []uint64 {
 	if m != nil {
 		return m.Assets
 	}
 	return nil
 }
 
-type Assets struct {
-	PEG                  uint64   `protobuf:"varint,5,opt,name=PEG,proto3" json:"PEG,omitempty"`
-	PUSD                 uint64   `protobuf:"varint,6,opt,name=pUSD,proto3" json:"pUSD,omitempty"`
-	PEUR                 uint64   `protobuf:"varint,7,opt,name=pEUR,proto3" json:"pEUR,omitempty"`
-	PJPY                 uint64   `protobuf:"varint,8,opt,name=pJPY,proto3" json:"pJPY,omitempty"`
-	PGBP                 uint64   `protobuf:"varint,9,opt,name=pGBP,proto3" json:"pGBP,omitempty"`
-	PCAD                 uint64   `protobuf:"varint,10,opt,name=pCAD,proto3" json:"pCAD,omitempty"`
-	PCHF                 uint64   `protobuf:"varint,11,opt,name=pCHF,proto3" json:"pCHF,omitempty"`
-	PINR                 uint64   `protobuf:"varint,12,opt,name=pINR,proto3" json:"pINR,omitempty"`
-	PSGD                 uint64   `protobuf:"varint,13,opt,name=pSGD,proto3" json:"pSGD,omitempty"`
-	PCNY                 uint64   `protobuf:"varint,14,opt,name=pCNY,proto3" json:"pCNY,omitempty"`
-	PHKD                 uint64   `protobuf:"varint,15,opt,name=pHKD,proto3" json:"pHKD,omitempty"`
-	PKRW                 uint64   `protobuf:"varint,16,opt,name=pKRW,proto3" json:"pKRW,omitempty"`
-	PBRL                 uint64   `protobuf:"varint,17,opt,name=pBRL,proto3" json:"pBRL,omitempty"`
-	PPHP                 uint64   `protobuf:"varint,18,opt,name=pPHP,proto3" json:"pPHP,omitempty"`
-	PMXN                 uint64   `protobuf:"varint,19,opt,name=pMXN,proto3" json:"pMXN,omitempty"`
-	PXAU                 uint64   `protobuf:"varint,20,opt,name=pXAU,proto3" json:"pXAU,omitempty"`
-	PXAG                 uint64   `protobuf:"varint,21,opt,name=pXAG,proto3" json:"pXAG,omitempty"`
-	PXBT                 uint64   `protobuf:"varint,22,opt,name=pXBT,proto3" json:"pXBT,omitempty"`
-	PETH                 uint64   `protobuf:"varint,23,opt,name=pETH,proto3" json:"pETH,omitempty"`
-	PLTC                 uint64   `protobuf:"varint,24,opt,name=pLTC,proto3" json:"pLTC,omitempty"`
-	PRVN                 uint64   `protobuf:"varint,25,opt,name=pRVN,proto3" json:"pRVN,omitempty"`
-	PXBC                 uint64   `protobuf:"varint,26,opt,name=pXBC,proto3" json:"pXBC,omitempty"`
-	PFCT                 uint64   `protobuf:"varint,27,opt,name=pFCT,proto3" json:"pFCT,omitempty"`
-	PBNB                 uint64   `protobuf:"varint,28,opt,name=pBNB,proto3" json:"pBNB,omitempty"`
-	PXLM                 uint64   `protobuf:"varint,29,opt,name=pXLM,proto3" json:"pXLM,omitempty"`
-	PADA                 uint64   `protobuf:"varint,30,opt,name=pADA,proto3" json:"pADA,omitempty"`
-	PXMR                 uint64   `protobuf:"varint,31,opt,name=pXMR,proto3" json:"pXMR,omitempty"`
-	PDASH                uint64   `protobuf:"varint,32,opt,name=pDASH,proto3" json:"pDASH,omitempty"`
-	PZEC                 uint64   `protobuf:"varint,33,opt,name=pZEC,proto3" json:"pZEC,omitempty"`
-	PDCR                 uint64   `protobuf:"varint,34,opt,name=pDCR,proto3" json:"pDCR,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Assets) Reset()         { *m = Assets{} }
-func (m *Assets) String() string { return proto.CompactTextString(m) }
-func (*Assets) ProtoMessage()    {}
-func (*Assets) Descriptor() ([]byte, []int) {
-	return fileDescriptor_9c939583bc8284b5, []int{1}
-}
-
-func (m *Assets) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Assets.Unmarshal(m, b)
-}
-func (m *Assets) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Assets.Marshal(b, m, deterministic)
-}
-func (m *Assets) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Assets.Merge(m, src)
-}
-func (m *Assets) XXX_Size() int {
-	return xxx_messageInfo_Assets.Size(m)
-}
-func (m *Assets) XXX_DiscardUnknown() {
-	xxx_messageInfo_Assets.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Assets proto.InternalMessageInfo
-
-func (m *Assets) GetPEG() uint64 {
-	if m != nil {
-		return m.PEG
-	}
-	return 0
-}
-
-func (m *Assets) GetPUSD() uint64 {
-	if m != nil {
-		return m.PUSD
-	}
-	return 0
-}
-
-func (m *Assets) GetPEUR() uint64 {
-	if m != nil {
-		return m.PEUR
-	}
-	return 0
-}
-
-func (m *Assets) GetPJPY() uint64 {
-	if m != nil {
-		return m.PJPY
-	}
-	return 0
-}
-
-func (m *Assets) GetPGBP() uint64 {
-	if m != nil {
-		return m.PGBP
-	}
-	return 0
-}
-
-func (m *Assets) GetPCAD() uint64 {
-	if m != nil {
-		return m.PCAD
-	}
-	return 0
-}
-
-func (m *Assets) GetPCHF() uint64 {
-	if m != nil {
-		return m.PCHF
-	}
-	return 0
-}
-
-func (m *Assets) GetPINR() uint64 {
-	if m != nil {
-		return m.PINR
-	}
-	return 0
-}
-
-func (m *Assets) GetPSGD() uint64 {
-	if m != nil {
-		return m.PSGD
-	}
-	return 0
-}
-
-func (m *Assets) GetPCNY() uint64 {
-	if m != nil {
-		return m.PCNY
-	}
-	return 0
-}
-
-func (m *Assets) GetPHKD() uint64 {
-	if m != nil {
-		return m.PHKD
-	}
-	return 0
-}
-
-func (m *Assets) GetPKRW() uint64 {
-	if m != nil {
-		return m.PKRW
-	}
-	return 0
-}
-
-func (m *Assets) GetPBRL() uint64 {
-	if m != nil {
-		return m.PBRL
-	}
-	return 0
-}
-
-func (m *Assets) GetPPHP() uint64 {
-	if m != nil {
-		return m.PPHP
-	}
-	return 0
-}
-
-func (m *Assets) GetPMXN() uint64 {
-	if m != nil {
-		return m.PMXN
-	}
-	return 0
-}
-
-func (m *Assets) GetPXAU() uint64 {
-	if m != nil {
-		return m.PXAU
-	}
-	return 0
-}
-
-func (m *Assets) GetPXAG() uint64 {
-	if m != nil {
-		return m.PXAG
-	}
-	return 0
-}
-
-func (m *Assets) GetPXBT() uint64 {
-	if m != nil {
-		return m.PXBT
-	}
-	return 0
-}
-
-func (m *Assets) GetPETH() uint64 {
-	if m != nil {
-		return m.PETH
-	}
-	return 0
-}
-
-func (m *Assets) GetPLTC() uint64 {
-	if m != nil {
-		return m.PLTC
-	}
-	return 0
-}
-
-func (m *Assets) GetPRVN() uint64 {
-	if m != nil {
-		return m.PRVN
-	}
-	return 0
-}
-
-func (m *Assets) GetPXBC() uint64 {
-	if m != nil {
-		return m.PXBC
-	}
-	return 0
-}
-
-func (m *Assets) GetPFCT() uint64 {
-	if m != nil {
-		return m.PFCT
-	}
-	return 0
-}
-
-func (m *Assets) GetPBNB() uint64 {
-	if m != nil {
-		return m.PBNB
-	}
-	return 0
-}
-
-func (m *Assets) GetPXLM() uint64 {
-	if m != nil {
-		return m.PXLM
-	}
-	return 0
-}
-
-func (m *Assets) GetPADA() uint64 {
-	if m != nil {
-		return m.PADA
-	}
-	return 0
-}
-
-func (m *Assets) GetPXMR() uint64 {
-	if m != nil {
-		return m.PXMR
-	}
-	return 0
-}
-
-func (m *Assets) GetPDASH() uint64 {
-	if m != nil {
-		return m.PDASH
-	}
-	return 0
-}
-
-func (m *Assets) GetPZEC() uint64 {
-	if m != nil {
-		return m.PZEC
-	}
-	return 0
-}
-
-func (m *Assets) GetPDCR() uint64 {
-	if m != nil {
-		return m.PDCR
-	}
-	return 0
-}
-
 func init() {
 	proto.RegisterType((*ProtoOPR)(nil), "oprencoding.ProtoOPR")
-	proto.RegisterType((*Assets)(nil), "oprencoding.Assets")
 }
 
 func init() { proto.RegisterFile("opr.proto", fileDescriptor_9c939583bc8284b5) }
 
 var fileDescriptor_9c939583bc8284b5 = []byte{
-	// 442 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd3, 0xcd, 0x6e, 0x9b, 0x40,
-	0x10, 0x07, 0x70, 0x11, 0xdb, 0x24, 0x5e, 0xa7, 0x69, 0xba, 0x49, 0xd3, 0xe9, 0x37, 0xf5, 0xc9,
-	0x52, 0x25, 0x1f, 0xda, 0x27, 0xd8, 0x5d, 0x30, 0x24, 0x06, 0xba, 0x5a, 0x43, 0x82, 0x73, 0x4b,
-	0x0b, 0x4a, 0xb8, 0x18, 0x04, 0x96, 0xfa, 0x20, 0x7d, 0xc1, 0x3e, 0x4a, 0xe5, 0xd9, 0x21, 0xea,
-	0x6d, 0xe7, 0xe7, 0xff, 0xec, 0xac, 0x47, 0x82, 0x4d, 0x9b, 0xb6, 0x5b, 0xb6, 0x5d, 0xb3, 0x6f,
-	0xf8, 0xac, 0x69, 0xbb, 0x6a, 0xf7, 0xab, 0x29, 0xeb, 0xdd, 0xe3, 0xfc, 0x8f, 0xc3, 0x4e, 0xf4,
-	0x81, 0x7f, 0x68, 0xc3, 0x81, 0x1d, 0x3f, 0x94, 0x65, 0x57, 0xf5, 0x3d, 0x38, 0x9e, 0xb3, 0x98,
-	0x9a, 0xa1, 0xe4, 0x67, 0xec, 0xa8, 0x2e, 0xe1, 0x08, 0xf1, 0xa8, 0x2e, 0xf9, 0x15, 0x73, 0x9f,
-	0xaa, 0xfa, 0xf1, 0x69, 0x0f, 0x23, 0xcf, 0x59, 0x4c, 0x0c, 0x55, 0x87, 0x1b, 0x7e, 0xd7, 0xbb,
-	0x5d, 0xd5, 0xf5, 0x30, 0xf6, 0x46, 0x8b, 0x53, 0x33, 0x94, 0xfc, 0x2b, 0x73, 0x1f, 0xfa, 0xbe,
-	0xda, 0xf7, 0x30, 0xf1, 0x9c, 0xc5, 0xec, 0xdb, 0xc5, 0xf2, 0xbf, 0x67, 0x2c, 0x05, 0xfe, 0x64,
-	0x28, 0x32, 0xff, 0x3b, 0x66, 0xae, 0x25, 0x7e, 0xce, 0x46, 0x3a, 0x08, 0xb1, 0x69, 0x6c, 0x0e,
-	0x47, 0xce, 0xd9, 0xb8, 0xcd, 0x37, 0x3e, 0xb8, 0x48, 0x78, 0x46, 0x0b, 0x72, 0x03, 0xc7, 0x64,
-	0x41, 0x6e, 0xd0, 0x6e, 0xf4, 0x16, 0x4e, 0xc8, 0x6e, 0xf4, 0x16, 0x2d, 0x94, 0x1a, 0xa6, 0x64,
-	0xa1, 0xd4, 0x68, 0x4a, 0xf8, 0xc0, 0xc8, 0x94, 0xb0, 0xf7, 0xa9, 0x68, 0x05, 0xb3, 0xc1, 0xa2,
-	0x15, 0xda, 0x75, 0x6a, 0xe0, 0x94, 0xec, 0x3a, 0xb5, 0x33, 0x36, 0xa1, 0x0f, 0x2f, 0xc8, 0x36,
-	0x21, 0xf5, 0xa6, 0x5b, 0x38, 0x1b, 0x7a, 0x53, 0x3b, 0x37, 0x5a, 0xfb, 0xf0, 0x92, 0x2c, 0x5a,
-	0xdb, 0xdc, 0xda, 0xdc, 0xc1, 0x39, 0xd9, 0xda, 0xdc, 0xa1, 0x49, 0x13, 0xc3, 0x2b, 0x32, 0x69,
-	0x62, 0x34, 0x1d, 0x69, 0xe0, 0x64, 0x3a, 0xb2, 0x6f, 0x4e, 0x8a, 0x14, 0x2e, 0xc8, 0x92, 0x22,
-	0x45, 0x2b, 0x44, 0x0e, 0x97, 0x64, 0x85, 0xc8, 0xc9, 0x42, 0x78, 0xfd, 0x6c, 0x76, 0x7f, 0x85,
-	0xcc, 0xe0, 0x6a, 0x30, 0x99, 0xd9, 0xfd, 0x65, 0x11, 0xbc, 0x19, 0xf6, 0x97, 0x45, 0x68, 0x71,
-	0xa6, 0x00, 0xc8, 0xe2, 0x4c, 0xa1, 0x99, 0xdb, 0x14, 0xde, 0x92, 0x99, 0x5b, 0x9a, 0x2b, 0x15,
-	0xbc, 0x7b, 0xbe, 0xcf, 0xe6, 0x56, 0x2a, 0x83, 0xf7, 0x64, 0x2b, 0x65, 0x67, 0xc8, 0x54, 0xc2,
-	0x87, 0xe1, 0xbf, 0xa5, 0xd2, 0xf6, 0xc6, 0x09, 0x7c, 0x1c, 0x7a, 0xe3, 0x04, 0x4d, 0xf8, 0x02,
-	0x3e, 0x91, 0x09, 0x5f, 0xd8, 0x5c, 0x62, 0xe0, 0xf3, 0x90, 0x4b, 0x0c, 0xbf, 0x64, 0x93, 0xd6,
-	0x17, 0x9b, 0x08, 0x3c, 0x44, 0x5b, 0x60, 0xf2, 0x3e, 0x50, 0xf0, 0x85, 0x92, 0xf7, 0x81, 0x7d,
-	0x8d, 0xaf, 0x0c, 0xcc, 0xc9, 0x7c, 0x65, 0x7e, 0xba, 0xf8, 0x31, 0x7c, 0xff, 0x17, 0x00, 0x00,
-	0xff, 0xff, 0xa2, 0xdc, 0x27, 0x5c, 0x19, 0x03, 0x00, 0x00,
+	// 149 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0xcc, 0x2f, 0x28, 0xd2,
+	0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0xe2, 0xce, 0x2f, 0x28, 0x4a, 0xcd, 0x4b, 0xce, 0x4f, 0xc9,
+	0xcc, 0x4b, 0x57, 0xaa, 0xe3, 0xe2, 0x08, 0x00, 0x89, 0xfa, 0x07, 0x04, 0x09, 0x49, 0x70, 0xb1,
+	0x3b, 0xa6, 0xa4, 0x14, 0xa5, 0x16, 0x17, 0x4b, 0x30, 0x2a, 0x30, 0x6a, 0x70, 0x06, 0xc1, 0xb8,
+	0x42, 0x7c, 0x5c, 0x4c, 0x9e, 0x2e, 0x12, 0x4c, 0x60, 0x41, 0x26, 0x4f, 0x17, 0x21, 0x31, 0x2e,
+	0x36, 0x8f, 0xd4, 0xcc, 0xf4, 0x8c, 0x12, 0x09, 0x66, 0x05, 0x46, 0x0d, 0xd6, 0x20, 0x28, 0x0f,
+	0x64, 0x42, 0x78, 0x66, 0x5e, 0x5e, 0x6a, 0x51, 0xb1, 0x04, 0x8b, 0x02, 0xb3, 0x06, 0x4f, 0x10,
+	0x8c, 0x0b, 0xd2, 0xe1, 0x58, 0x5c, 0x9c, 0x5a, 0x52, 0x2c, 0xc1, 0xaa, 0xc0, 0xac, 0xc1, 0x12,
+	0x04, 0xe5, 0x25, 0xb1, 0x81, 0xdd, 0x64, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x3c, 0x4f, 0xf5,
+	0xef, 0xa0, 0x00, 0x00, 0x00,
 }

@@ -2,42 +2,9 @@ syntax = "proto3";
 package oprencoding;
 
 message ProtoOPR {
-    string address = 1;
-    string id = 2;
-    int32 height = 3;
-    repeated bytes winners = 4;
-    Assets assets = 5;
-}
-
-message Assets {
-    uint64 PEG = 5;
-    uint64 pUSD = 6;
-    uint64 pEUR = 7;
-    uint64 pJPY = 8;
-    uint64 pGBP = 9;
-    uint64 pCAD = 10;
-    uint64 pCHF = 11;
-    uint64 pINR = 12;
-    uint64 pSGD = 13;
-    uint64 pCNY = 14;
-    uint64 pHKD = 15;
-    uint64 pKRW = 16;
-    uint64 pBRL = 17;
-    uint64 pPHP = 18;
-    uint64 pMXN = 19;
-    uint64 pXAU = 20;
-    uint64 pXAG = 21;
-    uint64 pXBT = 22;
-    uint64 pETH = 23;
-    uint64 pLTC = 24;
-    uint64 pRVN = 25;
-    uint64 pXBC = 26;
-    uint64 pFCT = 27;
-    uint64 pBNB = 28;
-    uint64 pXLM = 29;
-    uint64 pADA = 30;
-    uint64 pXMR = 31;
-    uint64 pDASH = 32;
-    uint64 pZEC = 33;
-    uint64 pDCR = 34;
+    string Address = 1;
+    string ID = 2;
+    int32 Height = 3;
+    repeated bytes Winners = 4;
+    repeated uint64 Assets = 5;
 }
