@@ -200,7 +200,7 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 		p.MiningState.stats.Stop = time.Now()
 		p.MiningState.writeChannel <- p.MiningState.rankings
 		if p.MiningState.statsChannel != nil {
-			p.MiningState.stats.TotalSubmitted = len(p.MiningState.rankings.List)
+			p.MiningState.stats.TotalSubmitted = len(p.MiningState.rankings.GetNonces())
 			p.MiningState.statsChannel <- p.MiningState.stats
 		}
 	case PauseMining:
