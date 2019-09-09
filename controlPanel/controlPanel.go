@@ -84,8 +84,6 @@ type CommonResponse struct {
 }
 
 func (c *ControlPanel) ServeControlPanel() {
-	log.Info("Starting control panel on localhost:8080")
-
 	alert := c.Monitor.NewListener()
 	statsUpStream := c.Statistics.GetUpstream("control-panel")
 
@@ -132,6 +130,9 @@ func (c *ControlPanel) ServeControlPanel() {
 	if err != nil {
 		panic(fmt.Sprintf("Do not have a control panel port in the config file: %v", err))
 	}
+	log.WithFields(log.Fields{
+		"port": port,
+	}).Info("Starting control panel")
 	c.Listen(port)
 
 }
