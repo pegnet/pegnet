@@ -540,30 +540,30 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		}
 		return nil
 	} else if opr.Version == 2 {
-		oprMin := oprencoding.ProtoOPR{}
-		err := proto.Unmarshal(data, &oprMin)
+		protoOPR := oprencoding.ProtoOPR{}
+		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {
 			return err
 		}
 
 		opr.Assets = make(OraclePriceRecordAssetList)
 		// Populate the original opr
-		opr.CoinbaseAddress = oprMin.Address
-		opr.FactomDigitalID = oprMin.ID
-		opr.Dbht = oprMin.Height
+		opr.CoinbaseAddress = protoOPR.Address
+		opr.FactomDigitalID = protoOPR.ID
+		opr.Dbht = protoOPR.Height
 
-		if len(oprMin.Assets) != len(common.AssetsV2) {
-			return fmt.Errorf("found %d assets, expected %d", len(oprMin.Assets), len(common.AssetsV2))
+		if len(protoOPR.Assets) != len(common.AssetsV2) {
+			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(common.AssetsV2))
 		}
 
 		// Hard coded list of assets
 		for i, asset := range common.AssetsV2 {
-			opr.Assets[asset] = oprMin.Assets[i]
+			opr.Assets[asset] = protoOPR.Assets[i]
 		}
 
 		// Decode winners
-		opr.WinPreviousOPR = make([]string, len(oprMin.Winners), len(oprMin.Winners))
-		for i, winner := range oprMin.Winners {
+		opr.WinPreviousOPR = make([]string, len(protoOPR.Winners), len(protoOPR.Winners))
+		for i, winner := range protoOPR.Winners {
 			opr.WinPreviousOPR[i] = hex.EncodeToString(winner)
 		}
 
