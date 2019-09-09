@@ -42,5 +42,10 @@ type IGradedBlock interface {
 	// Graded returns the
 	Graded() []*GradingOPR
 
+	// AmountToGrade returns the number of OPRs the grading algorithm attempted to use in the process.
+	// By default only 50 oprs are graded, as that is the minimum number of OPRs required in the
+	// the first step of the grading process.
+	AmountToGrade() int
+
 	Version() uint8
 }
