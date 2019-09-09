@@ -65,6 +65,15 @@ func (v1 *V1Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 		return fmt.Errorf("must have exactly 10 previous winning shorthashes")
 	}
 
+	if len(dec.WinPreviousOPR) != len(v1.prevWinners) {
+		return fmt.Errorf("incorrect amount of previous winners")
+	}
+	for i := range dec.WinPreviousOPR {
+		if dec.WinPreviousOPR[i] != v1.prevWinners[i] {
+			return fmt.Errorf("incorrect set of previous winners")
+		}
+	}
+
 	v1.graded = false
 
 	gopr := new(GradingOPR)
