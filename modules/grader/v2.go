@@ -11,20 +11,27 @@ import (
 
 var _ Block = (*V1Block)(nil)
 
-const V2Band = float64(0.01)
+// V2Band is the size of the band employed in the grading algorithm, specified as percentage
+const V2Band = float64(0.01) // 1%
 
+// V2Block implements the V2 grading algorithm.
+// Entries are encoded in Protobuf with 25 winners each block.
+// Valid assets can be found in ´opr.V2Assets´
 type V2Block struct {
 	baseGrader
 }
 
+// Version 2
 func (v2 *V2Block) Version() uint8 {
 	return 2
 }
 
+// WinnerAmount is the number of OPRs that receive a payout
 func (v2 *V2Block) WinnerAmount() int {
 	return 25
 }
 
+// AddOPR verifies and adds a V2 OPR.
 func (v2 *V2Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
 	if len(entryhash) != 32 {
 		return fmt.Errorf("invalid entry hash length")
@@ -70,8 +77,8 @@ func (v2 *V2Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 	if len(dec.Winners) != len(v2.prevWinners) {
 		return fmt.Errorf("incorrect amount of previous winners")
 	}
-	for i := range dec.Winners {
-		if dec.Winners[i] != v2.prevWinners[i] {
+	for i, w := range dec.GetPreviousWinners() {
+		if w != v2.prevWinners[i] {
 			return fmt.Errorf("incorrect set of previous winners")
 		}
 	}
@@ -92,14 +99,16 @@ func (v2 *V2Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 	return nil
 }
 
-func (v2 *V2Block) SetPreviousWinners(previousWinners []string) error {
-	if len(previousWinners) != 10 && len(previousWinners) != 25 {
-		return fmt.Errorf("v2 must have exactly 10 or 25 winners")
-	}
-	v2.prevWinners = previousWinners
-	return nil
-}
-
+// Grade the OPRs. The V2 algorithm works the following way:
+// 	1. Take the top 50 entries with the best proof of work
+// 	2. Calculate the average of each of the 32 assets
+// 	3. Calculate the grade for each OPR, where the grade is the sum of the quadratic distances
+// 	to the average of each asset. If an asset is within `band`% of the average, that asset's
+//	grade is 0.
+// 	4. Throw out the OPR with the highest grade
+// 	5. Repeat 3-4 until there are only 25 OPRs left
+//	6. Repeat 3 but this time don't apply the band and don't throw out OPRs, just reorder them
+//	until you are left with one
 func (v2 *V2Block) Grade() []*GradingOPR {
 	if v2.graded {
 		return v2.winners
@@ -133,6 +142,9 @@ func (v2 *V2Block) grade() {
 	}
 }
 
+// Graded returns the 50 records that contain a grade.
+// Can be used to determine the minimum difficulty to get into the top 50.
+// If the set is not already graded, it will be graded.
 func (v2 *V2Block) Graded() []*GradingOPR {
 	if !v2.graded {
 		v2.Grade()
@@ -141,9 +153,12 @@ func (v2 *V2Block) Graded() []*GradingOPR {
 	if len(v2.oprs) >= 50 {
 		return v2.oprs[:50]
 	}
-	return v2.oprs[:len(v2.oprs)]
+	return v2.oprs
 }
 
+// WinnersShortHashes always returns a slice with 25 elements that are either
+// all empty (no winners) or contain the first 8 bytes of each winning opr's
+// entryhash encoded as a hexadecimal string of length 16
 func (v2 *V2Block) WinnersShortHashes() []string {
 	winners := v2.Grade()
 
