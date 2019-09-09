@@ -121,6 +121,7 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	first := false
 	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
+	var balAlertedHeight int32 = 0
 MiningLoop:
 	for {
 		var fds common.MonitorEvent
@@ -149,8 +150,10 @@ MiningLoop:
 				hLog.WithError(err).WithField("action", "balance-query").Error("failed to mine this block")
 				continue MiningLoop // OPR cancelled
 			}
-			if bal == 0 {
+			// Only alert this once per block.
+			if bal == 0 && balAlertedHeight != fds.Dbht {
 				hLog.WithError(fmt.Errorf("entry credit balance is 0")).WithField("action", "balance-query").Error("will not mine, out of entry credits")
+				balAlertedHeight = fds.Dbht
 				continue MiningLoop // OPR cancelled
 			}
 
@@ -214,6 +217,8 @@ MiningLoop:
 				c.FactomEntryWriter.CollectAndWrite(false)
 
 				groupStats := NewGroupMinerStats("main", int(fds.Dbht))
+				// Set the per block for the control panel
+				groupStats.Keep, _ = c.config.Int("Miner.RecordsPerBlock")
 				// Collect stats
 				cm := 0
 				for s := range statsAggregate {

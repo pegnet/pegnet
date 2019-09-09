@@ -141,8 +141,19 @@
               if(m.bestdifficulty > best) {
                 best = m.bestdifficulty;
               }
-              return best.toString(16);
             }
+            return best.toString(16);
+          }
+        },
+        {title: "Above Threshold / Max Submissions", data: "miners", render:function(data, type, row) {
+            let best = 0;
+            let k = Object.keys(data);
+            let total = 0
+            for(let i = 0; i < k.length; i ++) {
+              let m = data[k[i]];
+              total += m.totalsubmit
+            }
+            return `${total} / ${row.keep}`
           }
         }
       ],

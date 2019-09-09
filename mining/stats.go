@@ -156,6 +156,7 @@ type GroupMinerStats struct {
 	Miners      map[int]*SingleMinerStats `json:"miners"`
 	BlockHeight int                       `json:"blockheight"`
 	ID          string                    `json:"id"`
+	Keep        int                       `json:"keep"`
 
 	Tags map[string]string `json:"tags"`
 }
@@ -166,6 +167,7 @@ func NewGroupMinerStats(id string, height int) *GroupMinerStats {
 	g.ID = id
 	g.BlockHeight = height
 	g.Tags = make(map[string]string)
+	g.Keep = -1 // Optional field
 
 	return g
 }
@@ -229,6 +231,7 @@ type SingleMinerStats struct {
 	ID             int       `json:"id"`
 	TotalHashes    int64     `json:"totalhashes"`
 	BestDifficulty uint64    `json:"bestdifficulty"`
+	TotalSubmitted int       `json:"totalsubmit"`
 	Start          time.Time `json:"start"`
 	Stop           time.Time `json:"stop"`
 }

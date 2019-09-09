@@ -163,6 +163,9 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 			//	"Nonce":   fmt.Sprintf("%x", p.MiningState.Nonce),
 			//	"diff":    diff,
 			//}).Debugf("new Nonce")
+		} else if diff > p.MiningState.stats.BestDifficulty {
+			// If we cannot get over the minimum, it would be nice to still report how close we got.
+			p.MiningState.stats.NewDifficulty(diff)
 		}
 	}
 
@@ -197,6 +200,7 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 		p.MiningState.stats.Stop = time.Now()
 		p.MiningState.writeChannel <- p.MiningState.rankings
 		if p.MiningState.statsChannel != nil {
+			p.MiningState.stats.TotalSubmitted = len(p.MiningState.rankings.List)
 			p.MiningState.statsChannel <- p.MiningState.stats
 		}
 	case PauseMining:
