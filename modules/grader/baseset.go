@@ -29,6 +29,11 @@ func NewBaseGradedBlock(graded []*GradingOPR, gradedTo int, height int32, winner
 	return b
 }
 
+// AmountToGrade returns the number of OPRs the grading algorithm attempted to use in the process.
+func (s *BaseGradedBlock) AmountToGrade() int {
+	return s.GradedUpTo
+}
+
 // WinnersShortHashes returns the shorthashes of the winning OPRs.
 // This result can be used to set the next block's previous winners.
 // The amount varies between versions.
