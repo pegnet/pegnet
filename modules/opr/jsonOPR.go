@@ -21,15 +21,15 @@ func (j *JSONOPR) GetOrderedAssets() []Asset {
 	return list
 }
 
-func (j *JSONOPR) GetHeight() int32     { return j.Dbht }
-func (j *JSONOPR) GetAddress() string   { return j.CoinbaseAddress }
-func (j *JSONOPR) GetWinners() []string { return j.WinPreviousOPR }
-func (j *JSONOPR) GetID() string        { return j.FactomDigitalID }
+func (j *JSONOPR) GetHeight() int32             { return j.Dbht }
+func (j *JSONOPR) GetAddress() string           { return j.CoinbaseAddress }
+func (j *JSONOPR) GetPreviousWinners() []string { return j.WinPreviousOPR }
+func (j *JSONOPR) GetID() string                { return j.FactomDigitalID }
 
 func (j *JSONOPR) Marshal() ([]byte, error) {
 	return json.Marshal(j)
 }
 
-func (j *JSONOPR) GetType() OPRType {
+func (j *JSONOPR) GetType() Type {
 	return JSON
 }

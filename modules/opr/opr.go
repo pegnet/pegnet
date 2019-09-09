@@ -1,18 +1,23 @@
 package opr
 
-type OPRType int
+// Type is the format of the underlying data
+type Type int
 
 const (
-	JSON OPRType = iota
+	// JSON is used in v1
+	JSON Type = iota
+	// Protobuf is used in v2
 	Protobuf
 )
 
+// OPR is a common interface for Oracle Price Records of various underlying types.
+// The interface has getters for all data inside content
 type OPR interface {
 	GetHeight() int32
 	GetAddress() string
-	GetWinners() []string
+	GetPreviousWinners() []string
 	GetID() string
 	GetOrderedAssets() []Asset
 	Marshal() ([]byte, error)
-	GetType() OPRType
+	GetType() Type
 }

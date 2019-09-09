@@ -26,7 +26,7 @@ type ProtoOPR struct {
 	Address              string    `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
 	ID                   string    `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
 	Height               int32     `protobuf:"varint,3,opt,name=Height,proto3" json:"Height,omitempty"`
-	Winners              []string  `protobuf:"bytes,4,rep,name=Winners,proto3" json:"Winners,omitempty"`
+	Winners              [][]byte  `protobuf:"bytes,4,rep,name=Winners,proto3" json:"Winners,omitempty"`
 	Assets               []float64 `protobuf:"fixed64,5,rep,packed,name=Assets,proto3" json:"Assets,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
 	XXX_unrecognized     []byte    `json:"-"`
@@ -87,7 +87,7 @@ func (m *ProtoOPR) GetHeight() int32 {
 	return 0
 }
 
-func (m *ProtoOPR) GetWinners() []string {
+func (m *ProtoOPR) GetWinners() [][]byte {
 	if m != nil {
 		return m.Winners
 	}
@@ -108,17 +108,17 @@ func init() {
 func init() { proto.RegisterFile("protoOPR.proto", fileDescriptor_0b41b73635d0f3ba) }
 
 var fileDescriptor_0b41b73635d0f3ba = []byte{
-	// 158 bytes of a gzipped FileDescriptorProto
+	// 159 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0xe2, 0x2b, 0x28, 0xca, 0x2f,
 	0xc9, 0xf7, 0x0f, 0x08, 0xd2, 0x03, 0x33, 0x84, 0x98, 0xf3, 0x0b, 0x8a, 0x94, 0xea, 0xb8, 0x38,
 	0x02, 0xa0, 0xc2, 0x42, 0x12, 0x5c, 0xec, 0x8e, 0x29, 0x29, 0x45, 0xa9, 0xc5, 0xc5, 0x12, 0x8c,
 	0x0a, 0x8c, 0x1a, 0x9c, 0x41, 0x30, 0xae, 0x10, 0x1f, 0x17, 0x93, 0xa7, 0x8b, 0x04, 0x13, 0x58,
 	0x90, 0xc9, 0xd3, 0x45, 0x48, 0x8c, 0x8b, 0xcd, 0x23, 0x35, 0x33, 0x3d, 0xa3, 0x44, 0x82, 0x59,
 	0x81, 0x51, 0x83, 0x35, 0x08, 0xca, 0x03, 0x99, 0x10, 0x9e, 0x99, 0x97, 0x97, 0x5a, 0x54, 0x2c,
-	0xc1, 0xa2, 0xc0, 0x0c, 0x32, 0x01, 0xca, 0x05, 0xe9, 0x70, 0x2c, 0x2e, 0x4e, 0x2d, 0x29, 0x96,
-	0x60, 0x55, 0x60, 0xd6, 0x60, 0x0c, 0x82, 0xf2, 0x9c, 0x04, 0x4e, 0x3c, 0x92, 0x63, 0xbc, 0xf0,
-	0x48, 0x8e, 0xf1, 0xc1, 0x23, 0x39, 0xc6, 0x19, 0x8f, 0xe5, 0x18, 0x92, 0xd8, 0xc0, 0xae, 0x33,
-	0x06, 0x04, 0x00, 0x00, 0xff, 0xff, 0xfb, 0x78, 0x82, 0x1d, 0xaf, 0x00, 0x00, 0x00,
+	0xc1, 0xa2, 0xc0, 0xac, 0xc1, 0x13, 0x04, 0xe3, 0x82, 0x74, 0x38, 0x16, 0x17, 0xa7, 0x96, 0x14,
+	0x4b, 0xb0, 0x2a, 0x30, 0x6b, 0x30, 0x06, 0x41, 0x79, 0x4e, 0x02, 0x27, 0x1e, 0xc9, 0x31, 0x5e,
+	0x78, 0x24, 0xc7, 0xf8, 0xe0, 0x91, 0x1c, 0xe3, 0x8c, 0xc7, 0x72, 0x0c, 0x49, 0x6c, 0x60, 0xd7,
+	0x19, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xca, 0xc0, 0xfd, 0x4a, 0xaf, 0x00, 0x00, 0x00,
 }
 
 func (m *ProtoOPR) Marshal() (dAtA []byte, err error) {
@@ -154,18 +154,11 @@ func (m *ProtoOPR) MarshalTo(dAtA []byte) (int, error) {
 		i = encodeVarintProtoOPR(dAtA, i, uint64(m.Height))
 	}
 	if len(m.Winners) > 0 {
-		for _, s := range m.Winners {
+		for _, b := range m.Winners {
 			dAtA[i] = 0x22
 			i++
-			l = len(s)
-			for l >= 1<<7 {
-				dAtA[i] = uint8(uint64(l)&0x7f | 0x80)
-				l >>= 7
-				i++
-			}
-			dAtA[i] = uint8(l)
-			i++
-			i += copy(dAtA[i:], s)
+			i = encodeVarintProtoOPR(dAtA, i, uint64(len(b)))
+			i += copy(dAtA[i:], b)
 		}
 	}
 	if len(m.Assets) > 0 {
@@ -211,8 +204,8 @@ func (m *ProtoOPR) Size() (n int) {
 		n += 1 + sovProtoOPR(uint64(m.Height))
 	}
 	if len(m.Winners) > 0 {
-		for _, s := range m.Winners {
-			l = len(s)
+		for _, b := range m.Winners {
+			l = len(b)
 			n += 1 + l + sovProtoOPR(uint64(l))
 		}
 	}
@@ -354,7 +347,7 @@ func (m *ProtoOPR) Unmarshal(dAtA []byte) error {
 			if wireType != 2 {
 				return fmt.Errorf("proto: wrong wireType = %d for field Winners", wireType)
 			}
-			var stringLen uint64
+			var byteLen int
 			for shift := uint(0); ; shift += 7 {
 				if shift >= 64 {
 					return ErrIntOverflowProtoOPR
@@ -364,23 +357,23 @@ func (m *ProtoOPR) Unmarshal(dAtA []byte) error {
 				}
 				b := dAtA[iNdEx]
 				iNdEx++
-				stringLen |= uint64(b&0x7F) << shift
+				byteLen |= int(b&0x7F) << shift
 				if b < 0x80 {
 					break
 				}
 			}
-			intStringLen := int(stringLen)
-			if intStringLen < 0 {
+			if byteLen < 0 {
 				return ErrInvalidLengthProtoOPR
 			}
-			postIndex := iNdEx + intStringLen
+			postIndex := iNdEx + byteLen
 			if postIndex < 0 {
 				return ErrInvalidLengthProtoOPR
 			}
 			if postIndex > l {
 				return io.ErrUnexpectedEOF
 			}
-			m.Winners = append(m.Winners, string(dAtA[iNdEx:postIndex]))
+			m.Winners = append(m.Winners, make([]byte, postIndex-iNdEx))
+			copy(m.Winners[len(m.Winners)-1], dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
 			if wireType == 1 {

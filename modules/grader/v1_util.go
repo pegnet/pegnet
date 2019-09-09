@@ -1,5 +1,6 @@
 package grader
 
+// calculate the vector of average prices
 func averageV1(oprs []*GradingOPR) []float64 {
 	avg := make([]float64, len(oprs[0].OPR.GetOrderedAssets()))
 
@@ -26,6 +27,7 @@ func averageV1(oprs []*GradingOPR) []float64 {
 	return avg
 }
 
+// v1 grading algorithm, sum of the quadratic differences to the mean
 func gradeV1(avg []float64, opr *GradingOPR) float64 {
 	assets := opr.OPR.GetOrderedAssets()
 	opr.Grade = 0

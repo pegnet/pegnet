@@ -12,18 +12,24 @@ import (
 
 var _ Block = (*V1Block)(nil)
 
+// V1Block implements the first OPR that PegNet launched with.
+// Entries are encoded in JSON with 10 winners each block.
+// The list of assets can be found in `opr.V1Assets`
 type V1Block struct {
 	baseGrader
 }
 
+// Version 1
 func (v1 *V1Block) Version() uint8 {
 	return 1
 }
 
+// WinnerAmount is the number of OPRs that receive a payout
 func (v1 *V1Block) WinnerAmount() int {
 	return 10
 }
 
+// AddOPR verifies and adds a V1 OPR.
 func (v1 *V1Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
 	if len(entryhash) != 32 {
 		return fmt.Errorf("invalid entry hash length")
@@ -44,7 +50,6 @@ func (v1 *V1Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 	var dec *opr.JSONOPR
 	err := json.Unmarshal(content, dec)
 	if err != nil {
-		// All errors are parse errors. We silence them here
 		return err
 	}
 
@@ -90,14 +95,13 @@ func (v1 *V1Block) AddOPR(entryhash []byte, extids [][]byte, content []byte) err
 	return nil
 }
 
-func (v1 *V1Block) SetPreviousWinners(previousWinners []string) error {
-	if len(previousWinners) != 10 {
-		return fmt.Errorf("v1 must have exactly 10 winners")
-	}
-	v1.prevWinners = previousWinners
-	return nil
-}
-
+// Grade the OPRs. The V1 algorithm works the following way:
+// 	1. Take the top 50 entries with the best proof of work
+// 	2. Calculate the average of each of the 32 assets
+// 	3. Calculate the grade for each OPR, where the grade is the sum of the quadratic distances
+// 	to the average of each asset
+// 	4. Throw out the OPR with the highest grade
+// 	5. Repeat 3-4 until there are only 10 OPRs left
 func (v1 *V1Block) Grade() []*GradingOPR {
 	if v1.graded {
 		return v1.winners
@@ -113,6 +117,7 @@ func (v1 *V1Block) Grade() []*GradingOPR {
 func (v1 *V1Block) grade() {
 	v1.graded = true
 	if len(v1.oprs) < 10 {
+		v1.winners = nil
 		return
 	}
 
@@ -125,8 +130,13 @@ func (v1 *V1Block) grade() {
 		sort.SliceStable(v1.oprs[:i], func(i, j int) bool { return v1.oprs[i].SelfReportedDifficulty > v1.oprs[j].SelfReportedDifficulty })
 		sort.SliceStable(v1.oprs[:i], func(i, j int) bool { return v1.oprs[i].Grade < v1.oprs[j].Grade })
 	}
+
+	v1.winners = v1.oprs[:10]
 }
 
+// Graded returns the 50 records that contain a grade.
+// Can be used to determine the minimum difficulty to get into the top 50.
+// If the set is not already graded, it will be graded.
 func (v1 *V1Block) Graded() []*GradingOPR {
 	if !v1.graded {
 		v1.Grade()
@@ -135,9 +145,12 @@ func (v1 *V1Block) Graded() []*GradingOPR {
 	if len(v1.oprs) >= 50 {
 		return v1.oprs[:50]
 	}
-	return v1.oprs[:len(v1.oprs)]
+	return v1.oprs
 }
 
+// WinnersShortHashes always returns a slice with 10 elements that are either
+// all empty (no winners) or contain the first 8 bytes of each winning opr's
+// entryhash encoded as a hexadecimal string of length 16
 func (v1 *V1Block) WinnersShortHashes() []string {
 	winners := v1.Grade()
 
