@@ -20,4 +20,5 @@ type OPR interface {
 	GetOrderedAssets() []Asset
 	Marshal() ([]byte, error)
 	GetType() Type
+	Clone() OPR
 }
