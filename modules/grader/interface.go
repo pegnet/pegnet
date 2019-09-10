@@ -26,6 +26,9 @@ type BlockGrader interface {
 
 	// Count returns the number of OPRs that have been added
 	Count() int
+
+	// Payout returns the amount of Pegtoshi awarded to the OPR at the specified index
+	Payout(index int) int64
 }
 
 // GradedBlock is an immutable set of graded oprs
@@ -44,6 +47,8 @@ type GradedBlock interface {
 
 	Version() uint8
 	Cutoff() int
+
+	Count() int
 
 	// WinnerAmount returns the version specific amount of winners.
 	WinnerAmount() int
