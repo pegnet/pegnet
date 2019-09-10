@@ -12,6 +12,7 @@ type baseGradedBlock struct {
 	oprs   []*GradingOPR
 	cutoff int
 	height int32
+	count  int
 }
 
 func (b *baseGradedBlock) cloneOPRS(oprs []*GradingOPR) {
@@ -19,6 +20,11 @@ func (b *baseGradedBlock) cloneOPRS(oprs []*GradingOPR) {
 	for _, o := range oprs {
 		b.oprs = append(b.oprs, o.Clone())
 	}
+	b.count = len(oprs)
+}
+
+func (b *baseGradedBlock) Count() int {
+	return b.count
 }
 
 // AmountToGrade returns the number of OPRs the grading algorithm attempted to use in the process.
@@ -46,7 +52,7 @@ func (s *baseGradedBlock) Graded() []*GradingOPR {
 // sortByDifficulty uses an efficient algorithm based on self-reported difficulty
 // to avoid having to LXRhash the entire set.
 // calculates at most `limit + misreported difficulties` hashes
-func (s *baseGradedBlock) sortByDifficulty(limit int) []*GradingOPR {
+func (s *baseGradedBlock) sortByDifficulty(limit int) {
 	sort.SliceStable(s.oprs, func(i, j int) bool {
 		return s.oprs[i].SelfReportedDifficulty > s.oprs[i].SelfReportedDifficulty
 	})
@@ -69,7 +75,7 @@ func (s *baseGradedBlock) sortByDifficulty(limit int) []*GradingOPR {
 		}
 	}
 
-	return topX
+	s.oprs = topX
 }
 
 // filter out duplicate gradingOPRs. an OPR is a duplicate when both

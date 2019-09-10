@@ -49,6 +49,11 @@ func (g *V2GradedBlock) grade() {
 		sort.SliceStable(g.oprs[:i], func(i, j int) bool { return g.oprs[i].SelfReportedDifficulty > g.oprs[j].SelfReportedDifficulty })
 		sort.SliceStable(g.oprs[:i], func(i, j int) bool { return g.oprs[i].Grade < g.oprs[j].Grade })
 	}
+
+	for i := range g.oprs {
+		g.oprs[i].position = i
+		g.oprs[i].payout = V2Payout(i)
+	}
 }
 
 func (g *V2GradedBlock) WinnersShortHashes() []string {
