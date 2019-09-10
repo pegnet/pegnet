@@ -25,36 +25,34 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 		return nil, NewValidateError("invalid version")
 	}
 
-	var dec *opr.V2Content
-	err := dec.Unmarshal(content)
+	o, err := opr.ParseV2Content(content)
 	if err != nil {
-		// All errors are parse errors. We silence them here
 		return nil, NewDecodeError(err.Error())
 	}
 
-	if dec.Height != height {
+	if o.Height != height {
 		return nil, NewValidateError("invalid height")
 	}
 
 	// verify assets
-	if len(dec.Assets) != len(opr.V2Assets) {
+	if len(o.Assets) != len(opr.V2Assets) {
 		return nil, NewValidateError("invalid assets")
 	}
-	for i, val := range dec.Assets {
+	for i, val := range o.Assets {
 		if i > 0 && val == 0 {
 			return nil, NewValidateError("assets must be greater than 0")
 		}
 	}
 
-	if len(dec.Winners) != 10 && len(dec.Winners) != 25 {
+	if len(o.Winners) != 10 && len(o.Winners) != 25 {
 		return nil, NewValidateError("must have exactly 10 or 25 previous winning shorthashes")
 	}
 
-	if !verifyWinnerFormat(dec.GetPreviousWinners(), 10) && !verifyWinnerFormat(dec.GetPreviousWinners(), 25) {
+	if !verifyWinnerFormat(o.GetPreviousWinners(), 10) && !verifyWinnerFormat(o.GetPreviousWinners(), 25) {
 		return nil, NewValidateError("incorrect amount of previous winners")
 	}
 
-	if !verifyWinners(dec.GetPreviousWinners(), winners) {
+	if !verifyWinners(o.GetPreviousWinners(), winners) {
 		return nil, NewValidateError("incorrect set of previous winners")
 	}
 
@@ -66,7 +64,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 	sha := sha256.Sum256(content)
 	gopr.OPRHash = sha[:]
 
-	gopr.OPR = dec
+	gopr.OPR = o
 
 	return gopr, nil
 }

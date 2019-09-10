@@ -3,7 +3,6 @@ package grader
 import (
 	"crypto/sha256"
 	"encoding/binary"
-	"encoding/json"
 
 	"github.com/pegnet/pegnet/modules/opr"
 )
@@ -25,30 +24,29 @@ func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []strin
 		return nil, NewValidateError("self reported difficulty must be 8 bytes")
 	}
 
-	var dec *opr.V1Content
-	err := json.Unmarshal(content, dec)
+	o, err := opr.ParseV1Content(content)
 	if err != nil {
 		return nil, NewDecodeError(err.Error())
 	}
 
-	if dec.Dbht != height {
+	if o.Dbht != height {
 		return nil, NewValidateError("invalid height")
 	}
 
 	// verify assets
 	for _, code := range opr.V1Assets {
-		if v, ok := dec.Assets[code]; !ok {
+		if v, ok := o.Assets[code]; !ok {
 			return nil, NewValidateError("asset list is not correct")
 		} else if code != "PNT" && v == 0 {
 			return nil, NewValidateError("all values other than PNT must be nonzero")
 		}
 	}
 
-	if !verifyWinnerFormat(dec.WinPreviousOPR, 10) {
+	if !verifyWinnerFormat(o.WinPreviousOPR, 10) {
 		return nil, NewValidateError("invalid list of previous winners")
 	}
 
-	if !verifyWinners(dec.WinPreviousOPR, winners) {
+	if !verifyWinners(o.WinPreviousOPR, winners) {
 		return nil, NewValidateError("incorrect set of previous winners")
 	}
 
@@ -60,7 +58,7 @@ func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []strin
 	sha := sha256.Sum256(content)
 	gopr.OPRHash = sha[:]
 
-	gopr.OPR = dec
+	gopr.OPR = o
 
 	return gopr, nil
 }
