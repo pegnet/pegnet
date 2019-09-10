@@ -2,9 +2,9 @@ package opr
 
 import "fmt"
 
-var _ OPR = (*ProtoOPR)(nil)
+var _ OPR = (*V2Content)(nil)
 
-func (m *ProtoOPR) GetOrderedAssets() []Asset {
+func (m *V2Content) GetOrderedAssets() []Asset {
 	list := make([]Asset, len(m.Assets))
 	for i, name := range V2Assets {
 		list[i] = Asset{Name: name, Value: m.Assets[i]}
@@ -12,11 +12,11 @@ func (m *ProtoOPR) GetOrderedAssets() []Asset {
 	return list
 }
 
-func (m *ProtoOPR) GetType() Type {
-	return Protobuf
+func (m *V2Content) GetType() Type {
+	return V2
 }
 
-func (m *ProtoOPR) GetPreviousWinners() []string {
+func (m *V2Content) GetPreviousWinners() []string {
 	winners := make([]string, 0)
 	for _, s := range m.Winners {
 		winners = append(winners, fmt.Sprintf("%x", s))
@@ -24,8 +24,8 @@ func (m *ProtoOPR) GetPreviousWinners() []string {
 	return winners
 }
 
-func (m *ProtoOPR) Clone() OPR {
-	clone := new(ProtoOPR)
+func (m *V2Content) Clone() OPR {
+	clone := new(V2Content)
 	clone.Address = m.Address
 	clone.Height = m.Height
 	clone.ID = m.ID
