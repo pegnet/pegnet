@@ -2,9 +2,9 @@ package grader
 
 import "fmt"
 
-// BaseGradedBlock is an opr set that has been graded. The set should be read only through it's interface
+// baseGradedBlock is an opr set that has been graded. The set should be read only through it's interface
 // implementation.
-type BaseGradedBlock struct {
+type baseGradedBlock struct {
 	// GradedOprs should be sorted in their graded order
 	GradedOprs []*GradingOPR
 
@@ -19,8 +19,8 @@ type BaseGradedBlock struct {
 	Height int32
 }
 
-func NewBaseGradedBlock(graded []*GradingOPR, gradedTo int, height int32, winnerCount int) *BaseGradedBlock {
-	b := new(BaseGradedBlock)
+func newBaseGradedBlock(graded []*GradingOPR, gradedTo int, height int32, winnerCount int) *baseGradedBlock {
+	b := new(baseGradedBlock)
 	b.GradedOprs = graded
 	b.GradedUpTo = gradedTo
 	b.Height = height
@@ -30,7 +30,7 @@ func NewBaseGradedBlock(graded []*GradingOPR, gradedTo int, height int32, winner
 }
 
 // AmountToGrade returns the number of OPRs the grading algorithm attempted to use in the process.
-func (s *BaseGradedBlock) AmountToGrade() int {
+func (s *baseGradedBlock) AmountToGrade() int {
 	return s.GradedUpTo
 }
 
@@ -38,7 +38,7 @@ func (s *BaseGradedBlock) AmountToGrade() int {
 // This result can be used to set the next block's previous winners.
 // The amount varies between versions.
 // If there are no winners, all strings will be empty.
-func (s *BaseGradedBlock) WinnersShortHashes() []string {
+func (s *baseGradedBlock) WinnersShortHashes() []string {
 	wins := s.Winners()
 	shortHashes := make([]string, s.WinnerAmount, s.WinnerAmount)
 	for i := range wins {
@@ -50,7 +50,7 @@ func (s *BaseGradedBlock) WinnersShortHashes() []string {
 }
 
 // Winners returns the set of oprs rewarded with PEG
-func (s *BaseGradedBlock) Winners() []*GradingOPR {
+func (s *baseGradedBlock) Winners() []*GradingOPR {
 	if len(s.GradedOprs) < s.WinnerAmount {
 		return []*GradingOPR{}
 	}
@@ -58,6 +58,6 @@ func (s *BaseGradedBlock) Winners() []*GradingOPR {
 }
 
 // Graded returns the
-func (s *BaseGradedBlock) Graded() []*GradingOPR {
+func (s *baseGradedBlock) Graded() []*GradingOPR {
 	return s.GradedOprs
 }
