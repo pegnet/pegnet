@@ -6,12 +6,12 @@ import (
 )
 
 func DynamicUnmarshal(data []byte) (OPR, error) {
-	p, err := ParseProtobuf(data)
+	p, err := ParseV2Content(data)
 	if err == nil {
 		return p, nil
 	}
 
-	js, err := ParseJSON(data)
+	js, err := ParseV1Content(data)
 	if err == nil {
 		return js, nil
 	}
@@ -19,8 +19,8 @@ func DynamicUnmarshal(data []byte) (OPR, error) {
 	return nil, fmt.Errorf("unable to detect format")
 }
 
-func ParseJSON(data []byte) (*JSONOPR, error) {
-	js := new(JSONOPR)
+func ParseV1Content(data []byte) (*V1Content, error) {
+	js := new(V1Content)
 	err := json.Unmarshal(data, js)
 	if err == nil {
 		return js, nil
@@ -28,8 +28,8 @@ func ParseJSON(data []byte) (*JSONOPR, error) {
 	return js, nil
 }
 
-func ParseProtobuf(data []byte) (*ProtoOPR, error) {
-	proto := new(ProtoOPR)
+func ParseV2Content(data []byte) (*V2Content, error) {
+	proto := new(V2Content)
 	err := proto.Unmarshal(data)
 	if err != nil {
 		return nil, err

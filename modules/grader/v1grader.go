@@ -1,14 +1,5 @@
 package grader
 
-import (
-	"crypto/sha256"
-	"encoding/binary"
-	"encoding/json"
-	"fmt"
-
-	"github.com/pegnet/pegnet/modules/opr"
-)
-
 var _ BlockGrader = (*V1BlockGrader)(nil)
 
 // V1BlockGrader implements the first OPR that PegNet launched with.
@@ -28,63 +19,11 @@ func (v1 *V1BlockGrader) WinnerAmount() int {
 
 // AddOPR verifies and adds a V1 OPR.
 func (v1 *V1BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
-	if len(entryhash) != 32 {
-		return fmt.Errorf("invalid entry hash length")
-	}
 
-	if len(extids) != 3 {
-		return fmt.Errorf("invalid extid length. expected 3 got %d", len(extids))
-	}
-
-	if len(extids[1]) != 8 {
-		return fmt.Errorf("self reported difficulty must be 8 bytes")
-	}
-
-	if len(extids[2]) != 1 || extids[2][0] != 1 {
-		return fmt.Errorf("invalid version")
-	}
-
-	var dec *opr.JSONOPR
-	err := json.Unmarshal(content, dec)
+	gopr, err := ValidateV1(entryhash, extids, v1.height, v1.prevWinners, content)
 	if err != nil {
 		return err
 	}
-
-	if dec.Dbht != v1.height {
-		return fmt.Errorf("invalid height")
-	}
-
-	// verify assets
-	for _, code := range opr.V1Assets {
-		if v, ok := dec.Assets[code]; !ok {
-			return fmt.Errorf("asset list is not correct")
-		} else if code != "PNT" && v == 0 {
-			return fmt.Errorf("all values other than PNT must be nonzero")
-		}
-	}
-
-	if len(dec.WinPreviousOPR) != 10 {
-		return fmt.Errorf("must have exactly 10 previous winning shorthashes")
-	}
-
-	if len(dec.WinPreviousOPR) != len(v1.prevWinners) {
-		return fmt.Errorf("incorrect amount of previous winners")
-	}
-	for i := range dec.WinPreviousOPR {
-		if dec.WinPreviousOPR[i] != v1.prevWinners[i] {
-			return fmt.Errorf("incorrect set of previous winners")
-		}
-	}
-
-	gopr := new(GradingOPR)
-	gopr.EntryHash = entryhash
-	gopr.Nonce = extids[0]
-	gopr.SelfReportedDifficulty = binary.BigEndian.Uint64(extids[1])
-
-	sha := sha256.Sum256(content)
-	gopr.OPRHash = sha[:]
-
-	gopr.OPR = dec
 
 	v1.oprs = append(v1.oprs, gopr)
 	return nil
