@@ -2,6 +2,7 @@ package grader
 
 import (
 	"encoding/binary"
+	"fmt"
 	"sort"
 
 	"github.com/pegnet/pegnet/modules/lxr30"
@@ -19,21 +20,27 @@ type baseGrader struct {
 
 // NewGrader instantiates a IBlockGrader Grader for a specific version.
 // Once set, the height and list of previous winners can't be changed.
-func NewGrader(version int, height int32, previousWinners []string) IBlockGrader {
+func NewGrader(version int, height int32, previousWinners []string) (IBlockGrader, error) {
 	switch version {
 	case 1:
+		if !verifyWinners(previousWinners, 10) {
+			return nil, fmt.Errorf("invalid previous winners")
+		}
 		v1 := new(V1BlockGrader)
 		v1.height = height
 		v1.prevWinners = previousWinners
-		return v1
+		return v1, nil
 	case 2:
+		if !verifyWinners(previousWinners, 10) && !verifyWinners(previousWinners, 25) {
+			return nil, fmt.Errorf("invalid previous winners")
+		}
 		v2 := new(V2BlockGrader)
 		v2.height = height
 		v2.prevWinners = previousWinners
-		return v2
+		return v2, nil
 	default:
 		// most likely developer error or outdated package
-		panic("invalid grader version")
+		return nil, fmt.Errorf("unsupported version")
 	}
 }
 
