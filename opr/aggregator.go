@@ -2,7 +2,9 @@
 // Licensed under the MIT License. See LICENSE file in the project root for full license information.
 package opr
 
-import "sort"
+import (
+	"sort"
+)
 
 // UniqueOPRData is the minimum set of information we need
 // to change for our OPR submissions

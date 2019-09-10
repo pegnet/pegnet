@@ -323,7 +323,7 @@ h.each(n,function(a,b){h.fn.DataTable[a]=b});return h.fn.dataTable});
             return best.toString(16);
           }
         },
-        {title: "Above Threshold / Max Submissions", data: "miners", render:function(data, type, row) {
+        {title: "Eligible / Max Submissions", data: "miners", render:function(data, type, row) {
             let best = 0;
             let k = Object.keys(data);
             let total = 0
