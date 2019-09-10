@@ -5,9 +5,9 @@ type Type int
 
 const (
 	// JSON is used in v1
-	JSON Type = iota
+	V1 Type = iota
 	// Protobuf is used in v2
-	Protobuf
+	V2
 )
 
 // OPR is a common interface for Oracle Price Records of various underlying types.

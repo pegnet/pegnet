@@ -19,7 +19,7 @@ type baseGrader struct {
 func NewGrader(version int, height int32, previousWinners []string) (BlockGrader, error) {
 	switch version {
 	case 1:
-		if !verifyWinners(previousWinners, 10) {
+		if !verifyWinnerFormat(previousWinners, 10) {
 			return nil, fmt.Errorf("invalid previous winners")
 		}
 		v1 := new(V1BlockGrader)
@@ -27,7 +27,7 @@ func NewGrader(version int, height int32, previousWinners []string) (BlockGrader
 		v1.prevWinners = previousWinners
 		return v1, nil
 	case 2:
-		if !verifyWinners(previousWinners, 10) && !verifyWinners(previousWinners, 25) {
+		if !verifyWinnerFormat(previousWinners, 10) && !verifyWinnerFormat(previousWinners, 25) {
 			return nil, fmt.Errorf("invalid previous winners")
 		}
 		v2 := new(V2BlockGrader)

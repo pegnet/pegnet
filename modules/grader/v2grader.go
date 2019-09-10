@@ -1,13 +1,5 @@
 package grader
 
-import (
-	"crypto/sha256"
-	"encoding/binary"
-	"fmt"
-
-	"github.com/pegnet/pegnet/modules/opr"
-)
-
 var _ BlockGrader = (*V2BlockGrader)(nil)
 
 // V2BlockGrader implements the V2 grading algorithm.
@@ -29,66 +21,10 @@ func (v2 *V2BlockGrader) WinnerAmount() int {
 
 // AddOPR verifies and adds a V2 OPR.
 func (v2 *V2BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
-	if len(entryhash) != 32 {
-		return fmt.Errorf("invalid entry hash length")
-	}
-
-	if len(extids) != 3 {
-		return fmt.Errorf("invalid extid length. expected 3 got %d", len(extids))
-	}
-
-	if len(extids[1]) != 8 {
-		return fmt.Errorf("self reported difficulty must be 8 bytes")
-	}
-
-	if len(extids[2]) != 1 || extids[2][0] != 2 {
-		return fmt.Errorf("invalid version")
-	}
-
-	var dec *opr.ProtoOPR
-	err := dec.Unmarshal(content)
+	gopr, err := ValidateV2(entryhash, extids, v2.height, v2.prevWinners, content)
 	if err != nil {
-		// All errors are parse errors. We silence them here
 		return err
 	}
-
-	if dec.Height != v2.height {
-		return fmt.Errorf("invalid height")
-	}
-
-	// verify assets
-	if len(dec.Assets) != len(opr.V2Assets) {
-		return fmt.Errorf("invalid assets")
-	}
-	for i, val := range dec.Assets {
-		if i > 0 && val == 0 {
-			return fmt.Errorf("assets must be greater than 0")
-		}
-	}
-
-	if len(dec.Winners) != 10 && len(dec.Winners) != 25 {
-		return fmt.Errorf("must have exactly 10 or 25 previous winning shorthashes")
-	}
-
-	if len(dec.Winners) != len(v2.prevWinners) {
-		return fmt.Errorf("incorrect amount of previous winners")
-	}
-	for i, w := range dec.GetPreviousWinners() {
-		if w != v2.prevWinners[i] {
-			return fmt.Errorf("incorrect set of previous winners")
-		}
-	}
-
-	gopr := new(GradingOPR)
-	gopr.EntryHash = entryhash
-	gopr.Nonce = extids[0]
-	gopr.SelfReportedDifficulty = binary.BigEndian.Uint64(extids[1])
-
-	sha := sha256.Sum256(content)
-	gopr.OPRHash = sha[:]
-
-	gopr.OPR = dec
-
 	v2.oprs = append(v2.oprs, gopr)
 	return nil
 }
