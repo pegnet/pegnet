@@ -1,11 +1,7 @@
 package grader
 
 import (
-	"encoding/binary"
 	"fmt"
-	"sort"
-
-	"github.com/pegnet/pegnet/modules/lxr30"
 )
 
 // baseGrader provides common functionality that is deemed useful in all versions
@@ -20,7 +16,7 @@ type baseGrader struct {
 
 // NewGrader instantiates a IBlockGrader Grader for a specific version.
 // Once set, the height and list of previous winners can't be changed.
-func NewGrader(version int, height int32, previousWinners []string) (IBlockGrader, error) {
+func NewGrader(version int, height int32, previousWinners []string) (BlockGrader, error) {
 	switch version {
 	case 1:
 		if !verifyWinners(previousWinners, 10) {
@@ -59,50 +55,4 @@ func (bg *baseGrader) GetPreviousWinners() []string {
 // Height returns the height the block grader is set to
 func (bg *baseGrader) Height() int32 {
 	return bg.height
-}
-
-// filter out duplicate gradingOPRs. an OPR is a duplicate when both
-// nonce and oprhash are the same
-func (bg *baseGrader) filterDuplicates() {
-	filtered := make([]*GradingOPR, 0)
-
-	added := make(map[string]bool)
-	for _, v := range bg.oprs {
-		id := string(append(v.Nonce, v.OPRHash...))
-		if !added[id] {
-			filtered = append(filtered, v)
-			added[id] = true
-		}
-	}
-
-	bg.oprs = filtered
-}
-
-// sortByDifficulty uses an efficient algorithm based on self-reported difficulty
-// to avoid having to LXRhash the entire set.
-// calculates at most `limit + misreported difficulties` hashes
-func (bg *baseGrader) sortByDifficulty(limit int) []*GradingOPR {
-	sort.SliceStable(bg.oprs, func(i, j int) bool {
-		return bg.oprs[i].SelfReportedDifficulty > bg.oprs[i].SelfReportedDifficulty
-	})
-
-	lx := lxr30.Init()
-
-	topX := make([]*GradingOPR, 0)
-	for _, o := range bg.oprs {
-		hash := lx.Hash(append(o.OPRHash, o.Nonce...))
-		diff := binary.BigEndian.Uint64(hash)
-
-		if diff != o.SelfReportedDifficulty {
-			continue
-		}
-
-		topX = append(topX, o)
-
-		if len(topX) >= limit {
-			break
-		}
-	}
-
-	return topX
 }

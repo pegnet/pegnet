@@ -33,3 +33,13 @@ func (j *JSONOPR) Marshal() ([]byte, error) {
 func (j *JSONOPR) GetType() Type {
 	return JSON
 }
+
+func (j *JSONOPR) Clone() OPR {
+	return &JSONOPR{
+		CoinbaseAddress: j.CoinbaseAddress,
+		Dbht:            j.Dbht,
+		WinPreviousOPR:  append(j.WinPreviousOPR[:0:0], j.WinPreviousOPR...),
+		FactomDigitalID: j.FactomDigitalID,
+		Assets:          j.Assets.Clone(),
+	}
+}

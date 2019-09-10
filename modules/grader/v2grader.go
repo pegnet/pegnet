@@ -4,15 +4,11 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
-	"sort"
 
 	"github.com/pegnet/pegnet/modules/opr"
 )
 
-var _ IBlockGrader = (*V1BlockGrader)(nil)
-
-// V2Band is the size of the band employed in the grading algorithm, specified as percentage
-const V2Band = float64(0.01) // 1%
+var _ BlockGrader = (*V2BlockGrader)(nil)
 
 // V2BlockGrader implements the V2 grading algorithm.
 // Entries are encoded in Protobuf with 25 winners each block.
@@ -100,49 +96,27 @@ func (v2 *V2BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byt
 // Grade the OPRs. The V2 algorithm works the following way:
 // 	1. Take the top 50 entries with the best proof of work
 // 	2. Calculate the average of each of the 32 assets
-// 	3. Calculate the grade for each OPR, where the grade is the sum of the quadratic distances
+// 	3. Calculate the distance of each OPR to the average, where distance is the sum of quadratic differences
 // 	to the average of each asset. If an asset is within `band`% of the average, that asset's
-//	grade is 0.
-// 	4. Throw out the OPR with the highest grade
+//	distance is 0.
+// 	4. Throw out the OPR with the highest distance
 // 	5. Repeat 3-4 until there are only 25 OPRs left
 //	6. Repeat 3 but this time don't apply the band and don't throw out OPRs, just reorder them
 //	until you are left with one
-func (v2 *V2BlockGrader) Grade() IGradedBlock {
-	v2.filterDuplicates()
-	v2.sortByDifficulty(50)
-	v2.grade()
-
-	return nil
+func (v2 *V2BlockGrader) Grade() GradedBlock {
+	return v2.GradeCustom(50)
 }
 
-func (v2 *V2BlockGrader) grade() IGradedBlock {
-	// TODO: Currently 50 is the default and only option for the number of graded oprs,
-	// 		but we should allow a caller to specify a higher number to grade
-	set := v2.sortByDifficulty(50)
+// GradeCustom grades the block using a custom cutoff for the top X
+func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 
-	if len(set) < 25 {
-		return NewV2GradedBlock([]*GradingOPR{}, 50, v2.Height())
-	}
+	block := new(V2GradedBlock)
+	block.cutoff = cutoff
+	block.height = v2.height
+	block.cloneOPRS(v2.oprs)
+	block.filterDuplicates()
+	block.sortByDifficulty(cutoff)
+	block.grade()
 
-	// If the set contains more than 50 sorted by POW, we only calculate the distance for the top 50
-	max := 50
-	if len(set) < 50 {
-		max = len(set)
-	}
-
-	for i := max; i >= 1; i-- {
-		avg := averageV1(set[:i]) // same average as v1
-		band := 0.0
-		if i >= 25 {
-			band = V2Band
-		}
-		for j := 0; j < i; j++ {
-			gradeV2(avg, set[j], band)
-		}
-		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(set[:i], func(i, j int) bool { return set[i].SelfReportedDifficulty > set[j].SelfReportedDifficulty })
-		sort.SliceStable(set[:i], func(i, j int) bool { return set[i].Grade < set[j].Grade })
-	}
-
-	return NewV2GradedBlock(set, 50, v2.Height())
+	return block
 }

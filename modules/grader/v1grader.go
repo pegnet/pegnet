@@ -5,12 +5,11 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
-	"sort"
 
 	"github.com/pegnet/pegnet/modules/opr"
 )
 
-var _ IBlockGrader = (*V1BlockGrader)(nil)
+var _ BlockGrader = (*V1BlockGrader)(nil)
 
 // V1BlockGrader implements the first OPR that PegNet launched with.
 // Entries are encoded in JSON with 10 winners each block.
@@ -23,8 +22,6 @@ type V1BlockGrader struct {
 func (v1 *V1BlockGrader) Version() uint8 {
 	return 1
 }
-
-// WinnerAmount is the number of OPRs that receive a payout
 func (v1 *V1BlockGrader) WinnerAmount() int {
 	return 10
 }
@@ -96,39 +93,22 @@ func (v1 *V1BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byt
 // Grade the OPRs. The V1 algorithm works the following way:
 // 	1. Take the top 50 entries with the best proof of work
 // 	2. Calculate the average of each of the 32 assets
-// 	3. Calculate the grade for each OPR, where the grade is the sum of the quadratic distances
+// 	3. Calculate the distance for each OPR, where the distance is the sum of the quadratic distances
 // 	to the average of each asset
-// 	4. Throw out the OPR with the highest grade
+// 	4. Throw out the OPR with the highest distance
 // 	5. Repeat 3-4 until there are only 10 OPRs left
-func (v1 *V1BlockGrader) Grade() IGradedBlock {
-	v1.filterDuplicates()
-	return v1.grade()
+func (v1 *V1BlockGrader) Grade() GradedBlock {
+	return v1.GradeCustom(50)
 }
 
-func (v1 *V1BlockGrader) grade() IGradedBlock {
-	// TODO: Currently 50 is the default and only option for the number of graded oprs,
-	// 		but we should allow a caller to specify a higher number to grade
-	set := v1.sortByDifficulty(50)
-
-	if len(set) < 10 {
-		return NewV1GradedBlock([]*GradingOPR{}, 50, v1.Height())
-	}
-
-	// If the set contains more than 50 sorted by POW, we only calculate the distance for the top 50
-	max := 50
-	if len(set) < 50 {
-		max = len(set)
-	}
-
-	for i := max; i >= 10; i-- {
-		avg := averageV1(set[:i])
-		for j := 0; j < i; j++ {
-			gradeV1(avg, set[j])
-		}
-		// Because this process can scramble the sorted fields, we have to resort with each pass.
-		sort.SliceStable(set[:i], func(i, j int) bool { return set[i].SelfReportedDifficulty > v1.oprs[j].SelfReportedDifficulty })
-		sort.SliceStable(set[:i], func(i, j int) bool { return set[i].Grade < set[j].Grade })
-	}
-
-	return NewV1GradedBlock(set, 50, v1.Height())
+// GradeCustom grades the block using a custom cutoff for the top X
+func (v1 *V1BlockGrader) GradeCustom(cutoff int) GradedBlock {
+	block := new(V1GradedBlock)
+	block.cutoff = cutoff
+	block.height = v1.height
+	block.cloneOPRS(v1.oprs)
+	block.filterDuplicates()
+	block.sortByDifficulty(cutoff)
+	block.grade()
+	return block
 }

@@ -34,3 +34,11 @@ func (al AssetList) MarshalJSON() ([]byte, error) {
 	s = s + "}"
 	return []byte(s), nil
 }
+
+func (al AssetList) Clone() AssetList {
+	clone := make(AssetList)
+	for k, v := range al {
+		clone[k] = v
+	}
+	return clone
+}
