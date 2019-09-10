@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	sse "github.com/alexandrevicenzi/go-sse"
+	"github.com/gobuffalo/packr"
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
@@ -54,7 +55,10 @@ func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker
 
 	// Register with /events endpoint.
 	mux.Handle("/events/", c.SSEServer)
-	mux.Handle("/", http.FileServer(http.Dir("./controlPanel/static")))
+
+	box := packr.NewBox("./static")
+	mux.Handle("/", http.FileServer(box))
+
 	// GET requests for the CP
 	mux.HandleFunc("/cp/miningstats", c.HandleControlPanelRequest)
 	c.Server.Handler = corsHeader(mux)
