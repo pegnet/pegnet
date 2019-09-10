@@ -7,6 +7,21 @@ import (
 	"github.com/pegnet/pegnet/modules/opr"
 )
 
+// V1Payout is the amount of Pegtoshi given to the OPR with the specified index
+func V1Payout(index int) int64 {
+	if index >= 10 {
+		return 0
+	}
+	switch index {
+	case 0:
+		return 800 * 1e8
+	case 1:
+		return 600 * 1e8
+	default:
+		return 450 * 1e8
+	}
+}
+
 func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []string, content []byte) (*GradingOPR, error) {
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")

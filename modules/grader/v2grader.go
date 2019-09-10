@@ -56,3 +56,7 @@ func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 
 	return block
 }
+
+func (v2 *V2BlockGrader) Payout(index int) int64 {
+	return V2Payout(index)
+}
