@@ -23,3 +23,19 @@ func (m *ProtoOPR) GetPreviousWinners() []string {
 	}
 	return winners
 }
+
+func (m *ProtoOPR) Clone() OPR {
+	clone := new(ProtoOPR)
+	clone.Address = m.Address
+	clone.Height = m.Height
+	clone.ID = m.ID
+	clone.Assets = append(m.Assets[:0:0], m.Assets...)
+
+	cloneWinners := make([][]byte, 0)
+	for _, w := range m.Winners {
+		cloneWinners = append(cloneWinners, append(w[:0:0], w...))
+	}
+	clone.Winners = cloneWinners
+
+	return clone
+}
