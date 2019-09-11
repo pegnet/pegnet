@@ -5,7 +5,8 @@ import (
 	"fmt"
 )
 
-func DynamicUnmarshal(data []byte) (OPR, error) {
+// Parse takes any input and attempts to automatically determine the version
+func Parse(data []byte) (OPR, error) {
 	p, err := ParseV2Content(data)
 	if err == nil {
 		return p, nil
@@ -19,6 +20,7 @@ func DynamicUnmarshal(data []byte) (OPR, error) {
 	return nil, fmt.Errorf("unable to detect format")
 }
 
+// ParseV1Content parses JSON
 func ParseV1Content(data []byte) (*V1Content, error) {
 	js := new(V1Content)
 	err := json.Unmarshal(data, js)
@@ -28,6 +30,7 @@ func ParseV1Content(data []byte) (*V1Content, error) {
 	return js, nil
 }
 
+// ParseV2Content parses Protobuf
 func ParseV2Content(data []byte) (*V2Content, error) {
 	proto := new(V2Content)
 	err := proto.Unmarshal(data)
