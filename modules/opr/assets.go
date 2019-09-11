@@ -72,3 +72,12 @@ var V2Assets = []string{
 	"ZEC",
 	"DCR",
 }
+
+type AssetFloat struct {
+	Name  string
+	Value float64
+}
+type AssetUint struct {
+	Name  string
+	Value uint64
+}

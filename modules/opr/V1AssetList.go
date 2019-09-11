@@ -5,15 +5,11 @@ import (
 	"strings"
 )
 
-type Asset struct {
-	Name  string
-	Value float64
-}
-type AssetList map[string]float64
+type V1AssetList map[string]float64
 
 // MarshalJSON marshals a golang map in a consistent order
 // implemented from https://github.com/iancoleman/orderedmap/blob/master/orderedmap.go#L310
-func (al AssetList) MarshalJSON() ([]byte, error) {
+func (al V1AssetList) MarshalJSON() ([]byte, error) {
 	s := "{"
 
 	for _, k := range V1Assets {
@@ -35,8 +31,8 @@ func (al AssetList) MarshalJSON() ([]byte, error) {
 	return []byte(s), nil
 }
 
-func (al AssetList) Clone() AssetList {
-	clone := make(AssetList)
+func (al V1AssetList) Clone() V1AssetList {
+	clone := make(V1AssetList)
 	for k, v := range al {
 		clone[k] = v
 	}
