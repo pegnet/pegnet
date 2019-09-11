@@ -7,7 +7,7 @@ var _ OPR = (*V2Content)(nil)
 func (m *V2Content) GetOrderedAssetsFloat() []AssetFloat {
 	list := make([]AssetFloat, len(m.Assets))
 	for i, name := range V2Assets {
-		list[i] = AssetFloat{Name: name, Value: m.Assets[i]}
+		list[i] = AssetFloat{Name: name, Value: Uint64ToFloat(m.Assets[i])}
 	}
 	return list
 }
@@ -15,7 +15,7 @@ func (m *V2Content) GetOrderedAssetsFloat() []AssetFloat {
 func (m *V2Content) GetOrderedAssetsUint() []AssetUint {
 	list := make([]AssetUint, len(m.Assets))
 	for i, name := range V2Assets {
-		list[i] = AssetUint{Name: name, Value: FloatToUint64(m.Assets[i])}
+		list[i] = AssetUint{Name: name, Value: m.Assets[i]}
 	}
 	return list
 }

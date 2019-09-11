@@ -4,7 +4,6 @@
 package opr
 
 import (
-	encoding_binary "encoding/binary"
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	io "io"
@@ -23,14 +22,14 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type V2Content struct {
-	Address              string    `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
-	ID                   string    `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
-	Height               int32     `protobuf:"varint,3,opt,name=Height,proto3" json:"Height,omitempty"`
-	Winners              [][]byte  `protobuf:"bytes,4,rep,name=Winners,proto3" json:"Winners,omitempty"`
-	Assets               []float64 `protobuf:"fixed64,5,rep,packed,name=Assets,proto3" json:"Assets,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}  `json:"-"`
-	XXX_unrecognized     []byte    `json:"-"`
-	XXX_sizecache        int32     `json:"-"`
+	Address              string   `protobuf:"bytes,1,opt,name=Address,proto3" json:"Address,omitempty"`
+	ID                   string   `protobuf:"bytes,2,opt,name=ID,proto3" json:"ID,omitempty"`
+	Height               int32    `protobuf:"varint,3,opt,name=Height,proto3" json:"Height,omitempty"`
+	Winners              [][]byte `protobuf:"bytes,4,rep,name=Winners,proto3" json:"Winners,omitempty"`
+	Assets               []uint64 `protobuf:"varint,5,rep,packed,name=Assets,proto3" json:"Assets,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *V2Content) Reset()         { *m = V2Content{} }
@@ -94,7 +93,7 @@ func (m *V2Content) GetWinners() [][]byte {
 	return nil
 }
 
-func (m *V2Content) GetAssets() []float64 {
+func (m *V2Content) GetAssets() []uint64 {
 	if m != nil {
 		return m.Assets
 	}
@@ -116,9 +115,9 @@ var fileDescriptor_de020d79ea60aafb = []byte{
 	0x12, 0x4c, 0x60, 0x41, 0x26, 0x4f, 0x17, 0x21, 0x31, 0x2e, 0x36, 0x8f, 0xd4, 0xcc, 0xf4, 0x8c,
 	0x12, 0x09, 0x66, 0x05, 0x46, 0x0d, 0xd6, 0x20, 0x28, 0x0f, 0x64, 0x42, 0x78, 0x66, 0x5e, 0x5e,
 	0x6a, 0x51, 0xb1, 0x04, 0x8b, 0x02, 0xb3, 0x06, 0x4f, 0x10, 0x8c, 0x0b, 0xd2, 0xe1, 0x58, 0x5c,
-	0x9c, 0x5a, 0x52, 0x2c, 0xc1, 0xaa, 0xc0, 0xac, 0xc1, 0x18, 0x04, 0xe5, 0x39, 0x09, 0x9c, 0x78,
+	0x9c, 0x5a, 0x52, 0x2c, 0xc1, 0xaa, 0xc0, 0xac, 0xc1, 0x12, 0x04, 0xe5, 0x39, 0x09, 0x9c, 0x78,
 	0x24, 0xc7, 0x78, 0xe1, 0x91, 0x1c, 0xe3, 0x83, 0x47, 0x72, 0x8c, 0x33, 0x1e, 0xcb, 0x31, 0x24,
-	0xb1, 0x81, 0x9d, 0x67, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0x94, 0xe1, 0x8e, 0x4e, 0xb1, 0x00,
+	0xb1, 0x81, 0x9d, 0x67, 0x0c, 0x08, 0x00, 0x00, 0xff, 0xff, 0xfe, 0xa5, 0x8a, 0x09, 0xb1, 0x00,
 	0x00, 0x00,
 }
 
@@ -163,14 +162,21 @@ func (m *V2Content) MarshalTo(dAtA []byte) (int, error) {
 		}
 	}
 	if len(m.Assets) > 0 {
+		dAtA2 := make([]byte, len(m.Assets)*10)
+		var j1 int
+		for _, num := range m.Assets {
+			for num >= 1<<7 {
+				dAtA2[j1] = uint8(uint64(num)&0x7f | 0x80)
+				num >>= 7
+				j1++
+			}
+			dAtA2[j1] = uint8(num)
+			j1++
+		}
 		dAtA[i] = 0x2a
 		i++
-		i = encodeVarintV2Content(dAtA, i, uint64(len(m.Assets)*8))
-		for _, num := range m.Assets {
-			f1 := math.Float64bits(float64(num))
-			encoding_binary.LittleEndian.PutUint64(dAtA[i:], uint64(f1))
-			i += 8
-		}
+		i = encodeVarintV2Content(dAtA, i, uint64(j1))
+		i += copy(dAtA[i:], dAtA2[:j1])
 	}
 	if m.XXX_unrecognized != nil {
 		i += copy(dAtA[i:], m.XXX_unrecognized)
@@ -211,7 +217,11 @@ func (m *V2Content) Size() (n int) {
 		}
 	}
 	if len(m.Assets) > 0 {
-		n += 1 + sovV2Content(uint64(len(m.Assets)*8)) + len(m.Assets)*8
+		l = 0
+		for _, e := range m.Assets {
+			l += sovV2Content(uint64(e))
+		}
+		n += 1 + sovV2Content(uint64(l)) + l
 	}
 	if m.XXX_unrecognized != nil {
 		n += len(m.XXX_unrecognized)
@@ -377,15 +387,23 @@ func (m *V2Content) Unmarshal(dAtA []byte) error {
 			copy(m.Winners[len(m.Winners)-1], dAtA[iNdEx:postIndex])
 			iNdEx = postIndex
 		case 5:
-			if wireType == 1 {
+			if wireType == 0 {
 				var v uint64
-				if (iNdEx + 8) > l {
-					return io.ErrUnexpectedEOF
+				for shift := uint(0); ; shift += 7 {
+					if shift >= 64 {
+						return ErrIntOverflowV2Content
+					}
+					if iNdEx >= l {
+						return io.ErrUnexpectedEOF
+					}
+					b := dAtA[iNdEx]
+					iNdEx++
+					v |= uint64(b&0x7F) << shift
+					if b < 0x80 {
+						break
+					}
 				}
-				v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-				iNdEx += 8
-				v2 := float64(math.Float64frombits(v))
-				m.Assets = append(m.Assets, v2)
+				m.Assets = append(m.Assets, v)
 			} else if wireType == 2 {
 				var packedLen int
 				for shift := uint(0); ; shift += 7 {
@@ -413,19 +431,33 @@ func (m *V2Content) Unmarshal(dAtA []byte) error {
 					return io.ErrUnexpectedEOF
 				}
 				var elementCount int
-				elementCount = packedLen / 8
+				var count int
+				for _, integer := range dAtA[iNdEx:postIndex] {
+					if integer < 128 {
+						count++
+					}
+				}
+				elementCount = count
 				if elementCount != 0 && len(m.Assets) == 0 {
-					m.Assets = make([]float64, 0, elementCount)
+					m.Assets = make([]uint64, 0, elementCount)
 				}
 				for iNdEx < postIndex {
 					var v uint64
-					if (iNdEx + 8) > l {
-						return io.ErrUnexpectedEOF
+					for shift := uint(0); ; shift += 7 {
+						if shift >= 64 {
+							return ErrIntOverflowV2Content
+						}
+						if iNdEx >= l {
+							return io.ErrUnexpectedEOF
+						}
+						b := dAtA[iNdEx]
+						iNdEx++
+						v |= uint64(b&0x7F) << shift
+						if b < 0x80 {
+							break
+						}
 					}
-					v = uint64(encoding_binary.LittleEndian.Uint64(dAtA[iNdEx:]))
-					iNdEx += 8
-					v2 := float64(math.Float64frombits(v))
-					m.Assets = append(m.Assets, v2)
+					m.Assets = append(m.Assets, v)
 				}
 			} else {
 				return fmt.Errorf("proto: wrong wireType = %d for field Assets", wireType)
