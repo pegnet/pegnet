@@ -57,6 +57,7 @@ func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 	return block
 }
 
+// Payout returns the amount of Pegtoshi awarded to the OPR at the specified index
 func (v2 *V2BlockGrader) Payout(index int) int64 {
 	return V2Payout(index)
 }

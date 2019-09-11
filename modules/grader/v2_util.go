@@ -16,6 +16,7 @@ func V2Payout(index int) int64 {
 	return 200 * 1e8
 }
 
+// ValidateV2 validates the provided data using the specified parameters
 func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []string, content []byte) (*GradingOPR, error) {
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")
@@ -78,8 +79,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 }
 
 // V2 grading works similar to V1 but the grade is banded
-// meaning a record within `band` percentage is considered to be
-// equal
+// meaning a record within `band` percentage is considered to be equal
 func gradeV2(avg []float64, opr *GradingOPR, band float64) float64 {
 	assets := opr.OPR.GetOrderedAssetsFloat()
 	opr.Grade = 0

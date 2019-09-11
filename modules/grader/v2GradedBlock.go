@@ -11,14 +11,17 @@ type V2GradedBlock struct {
 // V2Band is the size of the band employed in the grading algorithm, specified as percentage
 const V2Band = float64(0.01) // 1%
 
+// Version returns the underlying grader's version
 func (g *V2GradedBlock) Version() uint8 {
 	return 2
 }
 
+// WinnerAmount returns the version specific amount of winners.
 func (g *V2GradedBlock) WinnerAmount() int {
 	return 25
 }
 
+// Winners returns the winning OPRs
 func (g *V2GradedBlock) Winners() []*GradingOPR {
 	if len(g.oprs) < 25 {
 		return nil
@@ -56,6 +59,7 @@ func (g *V2GradedBlock) grade() {
 	}
 }
 
+// WinnersShortHashes returns the shorthashes of the winning OPRs.
 func (g *V2GradedBlock) WinnersShortHashes() []string {
 	return g.winnersShortHashes(25)
 }

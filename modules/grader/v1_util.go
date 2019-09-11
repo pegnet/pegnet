@@ -22,6 +22,7 @@ func V1Payout(index int) int64 {
 	}
 }
 
+// ValidateV1 validates the provided data using the specified parameters
 func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []string, content []byte) (*GradingOPR, error) {
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")

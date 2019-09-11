@@ -13,6 +13,8 @@ type V1BlockGrader struct {
 func (v1 *V1BlockGrader) Version() uint8 {
 	return 1
 }
+
+// WinnerAmount is the number of OPRs that receive a payout
 func (v1 *V1BlockGrader) WinnerAmount() int {
 	return 10
 }
@@ -52,6 +54,7 @@ func (v1 *V1BlockGrader) GradeCustom(cutoff int) GradedBlock {
 	return block
 }
 
+// Payout returns the amount of Pegtoshi awarded to the OPR at the specified index
 func (v1 *V1BlockGrader) Payout(index int) int64 {
 	return V1Payout(index)
 }
