@@ -45,9 +45,13 @@ type GradedBlock interface {
 	// Graded returns the top X OPRs that made it to the next stage of grading
 	Graded() []*GradingOPR
 
+	// Version returns the underlying grader's version
 	Version() uint8
+
+	// Cutoff returns the amount OPRs that made it to the second stage of grading
 	Cutoff() int
 
+	// Count returns the total count of OPRs that were used in this GradedBlock
 	Count() int
 
 	// WinnerAmount returns the version specific amount of winners.

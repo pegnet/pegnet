@@ -23,6 +23,7 @@ type GradingOPR struct {
 	OPR opr.OPR
 }
 
+// Clone the GradingOPR
 func (o *GradingOPR) Clone() *GradingOPR {
 	clone := new(GradingOPR)
 	clone.EntryHash = append(o.EntryHash[:0:0], o.EntryHash...)
@@ -31,18 +32,24 @@ func (o *GradingOPR) Clone() *GradingOPR {
 	clone.Grade = o.Grade
 	clone.OPRHash = append(o.OPRHash[:0:0], o.OPRHash...)
 	clone.OPR = o.OPR.Clone()
+	clone.payout = o.payout
+	clone.position = o.position
 	return clone
 }
 
+// Shorthash is the hex-encoded first 8 bytes of the entry hash
 func (o *GradingOPR) Shorthash() string {
 	return hex.EncodeToString(o.EntryHash[:8])
 }
 
-// Payout is the amount of Pegtoshi this OPR would be rewarded with
+// Payout is the amount of Pegtoshi this OPR would be rewarded with.
+// Only valid for GradingOPRs coming from a GradedBlock
 func (o *GradingOPR) Payout() int64 {
 	return o.payout
 }
 
+// Position is the index of the OPR in the Graded set. Position 0 is the winner.
+// Only valid for GradingOPRs coming from a GradedBlock
 func (o *GradingOPR) Position() int {
 	return o.position
 }

@@ -4,22 +4,26 @@ import (
 	"encoding/hex"
 )
 
+// DecodeError indicates that there was a problem Unmarshalling the content
 type DecodeError struct{ Msg string }
 
 func (d *DecodeError) Error() string {
 	return d.Msg
 }
 
+// NewDecodeError creates a new DecodeError with the specified message
 func NewDecodeError(m string) *DecodeError {
 	return &DecodeError{Msg: m}
 }
 
+// ValidateError indicates that there is an incompatibility with the data
 type ValidateError struct{ Msg string }
 
 func (v *ValidateError) Error() string {
 	return v.Msg
 }
 
+// NewValidateError creates a new ValidateError with the specified message
 func NewValidateError(m string) *ValidateError {
 	return &ValidateError{Msg: m}
 }
@@ -53,6 +57,7 @@ func verifyWinnerFormat(winners []string, length int) bool {
 	return true
 }
 
+// returns true if both slices are identical
 func verifyWinners(have []string, wanted []string) bool {
 	if len(have) != len(wanted) {
 		return false
