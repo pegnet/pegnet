@@ -176,7 +176,7 @@ func genOPR(entry gradeEntry) *OraclePriceRecord {
 	opr := NewOraclePriceRecord()
 	opr.FactomDigitalID = entry.id
 	for _, k := range common.AllAssets {
-		opr.Assets[k] = entry.data
+		opr.Assets.SetValue(k, entry.data)
 	}
 
 	return opr
@@ -603,7 +603,7 @@ func makeBenchmarkOPR() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
 	for _, a := range common.AllAssets {
-		o.Assets[a] = rand.Float64() * 50
+		o.Assets.SetValue(a, rand.Float64()*50)
 	}
 	o.Nonce = make([]byte, 8) // random nonce
 	rand.Read(o.Nonce)

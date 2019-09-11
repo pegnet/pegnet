@@ -312,7 +312,7 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 	var oprs []*OraclePriceRecord
 	var err error
 	// Multithread when there is a lot (like a 6x speedup in my tests against mainnet)
-	oprs, err = g.ParallelFetchOPRsFromEBlock(block, 4)
+	oprs, err = g.ParallelFetchOPRsFromEBlock(block, 4, true)
 
 	if err != nil {
 		return nil, err
@@ -357,7 +357,11 @@ type OPRWorkResponse struct {
 }
 
 // ParallelFetchOPRsFromEBlock is so we can parallelize our factomd requests.
-func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, workerCount int) ([]*OraclePriceRecord, error) {
+// 	Params:
+//		block
+//		workerCount		Number of parallel outbound requests
+//		enforceWinners	Verify the previous winners
+func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, workerCount int, enforceWinners bool) ([]*OraclePriceRecord, error) {
 	// Previous winners so we know if the opr is valid
 	// The Winners() wrapper just handles the base case for us, where there is no winners
 	prevWinners := g.GetPreviousWinners(int32(block.EntryBlock.Header.DBHeight))
@@ -368,7 +372,7 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, worke
 
 	// 10 threads
 	for i := 0; i < workerCount; i++ {
-		go g.fetchOPRWorker(work, collect, prevWinners, block.EntryBlock.Header.DBHeight)
+		go g.fetchOPRWorker(work, collect, prevWinners, block.EntryBlock.Header.DBHeight, enforceWinners)
 	}
 	count := len(block.EntryBlock.EntryList)
 
@@ -404,7 +408,7 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, worke
 	return oprs, collectErr
 }
 
-func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OPRWorkResponse, prevWinners []*OraclePriceRecord, dbht int64) {
+func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OPRWorkResponse, prevWinners []*OraclePriceRecord, dbht int64, enforceWinners bool) {
 	for {
 		select {
 		case job, ok := <-work:
@@ -428,7 +432,7 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 				results <- &OPRWorkResponse{opr: nil} // This entry is not correctly formatted
 				continue
 			}
-			if !VerifyWinners(opr, prevWinners) {
+			if enforceWinners && !VerifyWinners(opr, prevWinners) {
 				log.WithFields(log.Fields{
 					"entryhash": fmt.Sprintf("%x", opr.EntryHash),
 					"id":        opr.FactomDigitalID,
@@ -512,7 +516,7 @@ func (g *QuickGrader) ParseOPREntry(entry *factom.Entry, height int64) (*OracleP
 	}
 	opr.Version = entry.ExtIDs[2][0]
 
-	if err := opr.SafeUnmarshalJSON(entry.Content); err != nil {
+	if err := opr.SafeUnmarshal(entry.Content); err != nil {
 		return nil, nil // Doesn't unmarshal, then it isn't valid for sure.  Continue on.
 	}
 	if opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(g.Network, "PEG", opr.CoinbaseAddress); err != nil {

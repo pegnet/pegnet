@@ -17,8 +17,10 @@ import (
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
+	"github.com/golang/protobuf/proto"
 	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/opr/oprencoding"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -140,7 +142,13 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		}
 	}
 
-	if err := common.ValidIdentity(opr.FactomDigitalID); err != nil {
+	// Only enforce on version 2 and forward
+	if err := common.ValidIdentity(opr.FactomDigitalID); opr.Version == 2 && err != nil {
+		return false
+	}
+
+	// Only enforce on version 2 and forward, checking valid FCT address
+	if opr.Version == 2 && !ValidFCTAddress(opr.CoinbaseAddress) {
 		return false
 	}
 
@@ -167,6 +175,12 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 	}
 }
 
+// ValidFCTAddress will be removed in the grading module refactor. This is just temporary to get this
+// functionality, and be easily unit testable.
+func ValidFCTAddress(addr string) bool {
+	return len(addr) > 2 && addr[:2] == "FA" && factom.IsValidAddress(addr)
+}
+
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
 	return opr.Assets.List(opr.Version)
@@ -179,7 +193,7 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	}
 
 	// SafeMarshal handles the PNT/PEG issue
-	data, err := opr.SafeMarshalJson()
+	data, err := opr.SafeMarshal()
 	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
@@ -276,7 +290,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
 	case 1:
 		for asset, v := range assets {
-			opr.Assets[asset] = v.Value
+			opr.Assets.SetValue(asset, v.Value)
 		}
 	case 2:
 		for asset, v := range assets {
@@ -284,7 +298,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 			if asset == "XPT" || asset == "XPD" {
 				continue
 			}
-			opr.Assets[asset] = v.Value
+			opr.Assets.SetValue(asset, v.Value)
 		}
 	}
 }
@@ -408,7 +422,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	}
 	opr.SetPegValues(Peg)
 
-	data, err := opr.SafeMarshalJson()
+	data, err := opr.SafeMarshal()
 	if err != nil {
 		panic(err)
 	}
@@ -428,15 +442,15 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
 	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
-	e.Content, err = opr.SafeMarshalJson()
+	e.Content, err = opr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
 	return e, nil
 }
 
-// SafeMarshalJson will marshal the json depending on the opr version
-func (opr *OraclePriceRecord) SafeMarshalJson() ([]byte, error) {
+// SafeMarshal will marshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return nil, fmt.Errorf("opr version is 0")
@@ -454,52 +468,106 @@ func (opr *OraclePriceRecord) SafeMarshalJson() ([]byte, error) {
 		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
 	}
 
-	// Do the swap if on version 1
+	// Version 1 we json marshal and
+	// do the swap of PEG -> PNT
 	if opr.Version == 1 {
 		opr.Assets["PNT"] = opr.Assets["PEG"]
 		delete(opr.Assets, "PEG")
-	}
 
-	// Version 2 we do nothing
+		// This is a known key that will be removed by the marshal json function. It indicates
+		// to the marshaler that it was called from a safe path. This is not the cleanest method,
+		// but to override the json function, and still use the default, it would require an odd
+		// structure nesting and a lot of code changes
+		opr.Assets["version"] = uint64(opr.Version)
+		data, err := json.Marshal(opr)
+		delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
 
-	// This is a known key that will be removed by the marshal json function. It indicates
-	// to the marshaler that it was called from a safe path. This is not the cleanest method,
-	// but to override the json function, and still use the default, it would require an odd
-	// structure nesting and a lot of code changes
-	opr.Assets["version"] = float64(opr.Version)
-	data, err := json.Marshal(opr)
-	delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
-
-	// Revert version 1 changes
-	if opr.Version == 1 {
+		// Revert the swap
 		opr.Assets["PEG"] = opr.Assets["PNT"]
 		delete(opr.Assets, "PNT")
+		return data, err
+	} else if opr.Version == 2 {
+		prices := make([]uint64, len(opr.Assets))
+		for i, asset := range common.AssetsV2 {
+			prices[i] = opr.Assets[asset]
+		}
+
+		// Decode winners into byte slice
+		var err error
+		winners := make([][]byte, len(opr.WinPreviousOPR))
+		for i, winner := range opr.WinPreviousOPR {
+			winners[i], err = hex.DecodeString(winner)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Version 2 uses Protobufs for encoding
+		pOpr := &oprencoding.ProtoOPR{
+			Address: opr.CoinbaseAddress,
+			ID:      opr.FactomDigitalID,
+			Height:  opr.Dbht,
+			Assets:  prices,
+			Winners: winners,
+		}
+
+		return proto.Marshal(pOpr)
 	}
 
-	return data, err
+	return nil, fmt.Errorf("opr version %d not supported", opr.Version)
 }
 
-// SafeMarshalJson will unmarshal the json depending on the opr version
-func (opr *OraclePriceRecord) SafeUnmarshalJSON(data []byte) error {
+// SafeMarshal will unmarshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	err := json.Unmarshal(data, opr)
-	if err != nil {
-		return err
-	}
-
-	// If version 1, we need to swap PNT and PEG
+	// If version 1, we need to json unmarshal and swap PNT and PEG
 	if opr.Version == 1 {
+		err := json.Unmarshal(data, opr)
+		if err != nil {
+			return err
+		}
+
 		if v, ok := opr.Assets["PNT"]; ok {
 			opr.Assets["PEG"] = v
 			delete(opr.Assets, "PNT")
 		} else {
 			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
 		}
+		return nil
+	} else if opr.Version == 2 {
+		protoOPR := oprencoding.ProtoOPR{}
+		err := proto.Unmarshal(data, &protoOPR)
+		if err != nil {
+			return err
+		}
+
+		opr.Assets = make(OraclePriceRecordAssetList)
+		// Populate the original opr
+		opr.CoinbaseAddress = protoOPR.Address
+		opr.FactomDigitalID = protoOPR.ID
+		opr.Dbht = protoOPR.Height
+
+		if len(protoOPR.Assets) != len(common.AssetsV2) {
+			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(common.AssetsV2))
+		}
+
+		// Hard coded list of assets
+		for i, asset := range common.AssetsV2 {
+			opr.Assets[asset] = protoOPR.Assets[i]
+		}
+
+		// Decode winners
+		opr.WinPreviousOPR = make([]string, len(protoOPR.Winners), len(protoOPR.Winners))
+		for i, winner := range protoOPR.Winners {
+			opr.WinPreviousOPR[i] = hex.EncodeToString(winner)
+		}
+
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("opr version %d not supported", opr.Version)
 }
