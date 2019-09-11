@@ -16,7 +16,7 @@ var lxInitializer sync.Once
 // to use it. Make the init call idempotent
 func InitLX() {
 	lxInitializer.Do(func() {
-		lx30 := new(lxr.LXRHash)
+		lx30 = new(lxr.LXRHash)
 		// This code will only be executed ONCE, no matter how often you call it
 		lx30.Verbose(true)
 		if size, err := strconv.Atoi(os.Getenv("LXRBITSIZE")); err == nil && size >= 8 && size <= 30 {
