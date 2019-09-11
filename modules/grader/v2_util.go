@@ -81,7 +81,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 // meaning a record within `band` percentage is considered to be
 // equal
 func gradeV2(avg []float64, opr *GradingOPR, band float64) float64 {
-	assets := opr.OPR.GetOrderedAssets()
+	assets := opr.OPR.GetOrderedAssetsFloat()
 	opr.Grade = 0
 	for i, asset := range assets {
 		if avg[i] > 0 {
