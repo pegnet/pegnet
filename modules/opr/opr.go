@@ -4,9 +4,10 @@ package opr
 type Type int
 
 const (
-	// JSON is used in v1
-	V1 Type = iota
-	// Protobuf is used in v2
+	_ Type = iota
+	// V1 is JSON
+	V1
+	// V2 is Protobuf
 	V2
 )
 
