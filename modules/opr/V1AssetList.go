@@ -5,6 +5,7 @@ import (
 	"strings"
 )
 
+// V1AssetList holds the V1 OPR's asset => value association
 type V1AssetList map[string]float64
 
 // MarshalJSON marshals a golang map in a consistent order
@@ -31,6 +32,7 @@ func (al V1AssetList) MarshalJSON() ([]byte, error) {
 	return []byte(s), nil
 }
 
+// Clone the AssetList
 func (al V1AssetList) Clone() V1AssetList {
 	clone := make(V1AssetList)
 	for k, v := range al {

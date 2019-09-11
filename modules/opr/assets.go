@@ -73,10 +73,13 @@ var V2Assets = []string{
 	"DCR",
 }
 
+// AssetFloat is an asset holding a float64 value
 type AssetFloat struct {
 	Name  string
 	Value float64
 }
+
+// AssetUint is an asset holding a uint64 value
 type AssetUint struct {
 	Name  string
 	Value uint64
