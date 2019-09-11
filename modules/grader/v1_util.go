@@ -80,11 +80,11 @@ func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []strin
 
 // calculate the vector of average prices
 func averageV1(oprs []*GradingOPR) []float64 {
-	avg := make([]float64, len(oprs[0].OPR.GetOrderedAssets()))
+	avg := make([]float64, len(oprs[0].OPR.GetOrderedAssetsFloat()))
 
 	// Sum up all the prices
 	for _, o := range oprs {
-		for i, asset := range o.OPR.GetOrderedAssets() {
+		for i, asset := range o.OPR.GetOrderedAssetsFloat() {
 			if asset.Value >= 0 { // Make sure no OPR has negative values for
 				avg[i] += asset.Value // assets.  Simply treat all values as positive.
 			} else {
@@ -107,7 +107,7 @@ func averageV1(oprs []*GradingOPR) []float64 {
 
 // v1 grading algorithm, sum of the quadratic differences to the mean
 func gradeV1(avg []float64, opr *GradingOPR) float64 {
-	assets := opr.OPR.GetOrderedAssets()
+	assets := opr.OPR.GetOrderedAssetsFloat()
 	opr.Grade = 0
 	for i, asset := range assets {
 		if avg[i] > 0 {

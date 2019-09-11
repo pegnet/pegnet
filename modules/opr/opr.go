@@ -18,7 +18,8 @@ type OPR interface {
 	GetAddress() string
 	GetPreviousWinners() []string
 	GetID() string
-	GetOrderedAssets() []Asset
+	GetOrderedAssetsFloat() []AssetFloat
+	GetOrderedAssetsUint() []AssetUint
 	Marshal() ([]byte, error)
 	GetType() Type
 	Clone() OPR

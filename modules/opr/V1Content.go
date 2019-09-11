@@ -8,15 +8,22 @@ type V1Content struct {
 	WinPreviousOPR  []string `json:"winners"`
 	FactomDigitalID string   `json:"minerid"`
 
-	Assets AssetList `json:"assets"`
+	Assets V1AssetList `json:"assets"`
 }
 
 var _ OPR = (*V1Content)(nil)
 
-func (c *V1Content) GetOrderedAssets() []Asset {
-	list := make([]Asset, len(V1Assets))
+func (c *V1Content) GetOrderedAssetsFloat() []AssetFloat {
+	list := make([]AssetFloat, len(V1Assets))
 	for i, name := range V1Assets {
-		list[i] = Asset{Name: name, Value: c.Assets[name]}
+		list[i] = AssetFloat{Name: name, Value: c.Assets[name]}
+	}
+	return list
+}
+func (c *V1Content) GetOrderedAssetsUint() []AssetUint {
+	list := make([]AssetUint, len(V1Assets))
+	for i, name := range V1Assets {
+		list[i] = AssetUint{Name: name, Value: FloatToUint64(c.Assets[name])}
 	}
 	return list
 }
