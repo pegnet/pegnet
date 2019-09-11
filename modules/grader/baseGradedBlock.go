@@ -54,7 +54,7 @@ func (b *baseGradedBlock) Graded() []*GradingOPR {
 // calculates at most `limit + misreported difficulties` hashes
 func (b *baseGradedBlock) sortByDifficulty(limit int) {
 	sort.SliceStable(b.oprs, func(i, j int) bool {
-		return b.oprs[i].SelfReportedDifficulty > b.oprs[i].SelfReportedDifficulty
+		return b.oprs[i].SelfReportedDifficulty > b.oprs[j].SelfReportedDifficulty
 	})
 
 	lx := lxr30.Init()
