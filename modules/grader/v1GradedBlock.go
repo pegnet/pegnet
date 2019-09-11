@@ -10,10 +10,12 @@ type V1GradedBlock struct {
 
 var _ GradedBlock = (*V1GradedBlock)(nil)
 
+// Version returns the underlying grader's version
 func (g *V1GradedBlock) Version() uint8 {
 	return 1
 }
 
+// Winners returns the winning OPRs
 func (g *V1GradedBlock) Winners() []*GradingOPR {
 	if len(g.oprs) < 10 {
 		return nil
@@ -22,6 +24,7 @@ func (g *V1GradedBlock) Winners() []*GradingOPR {
 	return g.oprs[:10]
 }
 
+// WinnersShortHashes returns the shorthashes of the winning OPRs.
 func (g *V1GradedBlock) WinnersShortHashes() []string {
 	return g.winnersShortHashes(10)
 }

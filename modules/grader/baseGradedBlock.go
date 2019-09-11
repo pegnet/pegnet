@@ -45,22 +45,22 @@ func (b *baseGradedBlock) winnersShortHashes(count int) []string {
 }
 
 // Graded returns the OPRs that made it into the cutoff
-func (s *baseGradedBlock) Graded() []*GradingOPR {
-	return s.oprs
+func (b *baseGradedBlock) Graded() []*GradingOPR {
+	return b.oprs
 }
 
 // sortByDifficulty uses an efficient algorithm based on self-reported difficulty
 // to avoid having to LXRhash the entire set.
 // calculates at most `limit + misreported difficulties` hashes
-func (s *baseGradedBlock) sortByDifficulty(limit int) {
-	sort.SliceStable(s.oprs, func(i, j int) bool {
-		return s.oprs[i].SelfReportedDifficulty > s.oprs[i].SelfReportedDifficulty
+func (b *baseGradedBlock) sortByDifficulty(limit int) {
+	sort.SliceStable(b.oprs, func(i, j int) bool {
+		return b.oprs[i].SelfReportedDifficulty > b.oprs[i].SelfReportedDifficulty
 	})
 
 	lx := lxr30.Init()
 
 	topX := make([]*GradingOPR, 0)
-	for _, o := range s.oprs {
+	for _, o := range b.oprs {
 		hash := lx.Hash(append(o.OPRHash, o.Nonce...))
 		diff := binary.BigEndian.Uint64(hash)
 
@@ -75,7 +75,7 @@ func (s *baseGradedBlock) sortByDifficulty(limit int) {
 		}
 	}
 
-	s.oprs = topX
+	b.oprs = topX
 }
 
 // filter out duplicate gradingOPRs. an OPR is a duplicate when both
