@@ -98,7 +98,7 @@ func averageV1(oprs []*GradingOPR) []float64 {
 	// for every asset * number of OraclePriceRecords)  There is also a little bit of a precision advantage
 	// with the two loops (fewer divisions usually does help with precision) but that isn't likely to be
 	// interesting here.
-	total := float64(len(avg))
+	total := float64(len(oprs))
 	for i := range avg {
 		avg[i] = avg[i] / total
 	}

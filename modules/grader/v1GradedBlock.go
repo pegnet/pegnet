@@ -1,6 +1,8 @@
 package grader
 
-import "sort"
+import (
+	"sort"
+)
 
 // V1GradedBlock is an opr set that has been graded. The set should be read only through it's interface
 // implementation.
