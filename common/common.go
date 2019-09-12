@@ -40,7 +40,7 @@ const (
 
 const (
 	MainNetwork     = "MainNet"
-	TestNetwork     = "TestNet-pM1"
+	TestNetwork     = "TestNet-pM2"
 	UnitTestNetwork = "unit-test" // Only used for unit tests
 
 	MainNetworkRCD = MainNetwork + "RCD"
