@@ -23,7 +23,7 @@ var (
 			return 2 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			if height < 96030 { // V1 ends at 96030 on community testnet
+			if height < 96145 { // V1 ends at 96145 on community testnet
 				return 1
 			}
 			return 2
