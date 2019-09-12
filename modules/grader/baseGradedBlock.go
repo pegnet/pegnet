@@ -37,9 +37,11 @@ func (b *baseGradedBlock) AmountGraded() int {
 // The amount varies between versions.
 // If there are no winners, all strings will be empty.
 func (b *baseGradedBlock) winnersShortHashes(count int) []string {
-	shortHashes := make([]string, 0)
-	for _, o := range b.oprs[:count] {
-		shortHashes = append(shortHashes, o.Shorthash())
+	shortHashes := make([]string, count)
+	if len(b.oprs) >= count {
+		for i := 0; i < count; i++ {
+			shortHashes[i] = b.oprs[i].Shorthash()
+		}
 	}
 	return shortHashes
 }
