@@ -13,6 +13,8 @@ type baseGradedBlock struct {
 	cutoff int
 	height int32
 	count  int
+
+	shorthashes []string
 }
 
 func (b *baseGradedBlock) cloneOPRS(oprs []*GradingOPR) {
@@ -32,18 +34,14 @@ func (b *baseGradedBlock) AmountGraded() int {
 	return len(b.oprs)
 }
 
-// WinnersShortHashes returns the shorthashes of the winning OPRs.
-// This result can be used to set the next block's previous winners.
-// The amount varies between versions.
-// If there are no winners, all strings will be empty.
-func (b *baseGradedBlock) winnersShortHashes(count int) []string {
+func (b *baseGradedBlock) createShortHashes(count int) {
 	shortHashes := make([]string, count)
 	if len(b.oprs) >= count {
 		for i := 0; i < count; i++ {
 			shortHashes[i] = b.oprs[i].Shorthash()
 		}
 	}
-	return shortHashes
+	b.shorthashes = shortHashes
 }
 
 // Graded returns the OPRs that made it into the cutoff
