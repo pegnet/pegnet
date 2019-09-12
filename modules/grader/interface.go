@@ -36,7 +36,7 @@ type GradedBlock interface {
 	// WinnersShortHashes returns the shorthashes of the winning OPRs.
 	// This result can be used to set the next block's previous winners.
 	// The amount varies between versions.
-	// If there are no winners, all strings will be empty.
+	// If there are no winners in this block, the previous block's winners are used.
 	WinnersShortHashes() []string
 
 	// Winners returns the winning OPRs
