@@ -28,7 +28,7 @@ func (g *V1GradedBlock) Winners() []*GradingOPR {
 
 // WinnersShortHashes returns the shorthashes of the winning OPRs.
 func (g *V1GradedBlock) WinnersShortHashes() []string {
-	return g.winnersShortHashes(10)
+	return g.shorthashes
 }
 
 // WinnerAmount is the number of OPRs that receive a payout
