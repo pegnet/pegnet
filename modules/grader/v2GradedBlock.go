@@ -61,5 +61,5 @@ func (g *V2GradedBlock) grade() {
 
 // WinnersShortHashes returns the shorthashes of the winning OPRs.
 func (g *V2GradedBlock) WinnersShortHashes() []string {
-	return g.winnersShortHashes(25)
+	return g.shorthashes
 }

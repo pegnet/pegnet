@@ -53,7 +53,11 @@ func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 	block.filterDuplicates()
 	block.sortByDifficulty(cutoff)
 	block.grade()
-
+	if len(block.oprs) < 25 {
+		block.shorthashes = v2.prevWinners
+	} else {
+		block.createShortHashes(25)
+	}
 	return block
 }
 
