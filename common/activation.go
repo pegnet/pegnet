@@ -17,7 +17,7 @@ var (
 		MainNetwork: func(height int64) uint8 {
 			// Version 1 deprecates on block XXXXXX
 			// TODO: Set a real block height activate height
-			if height < 500000 {
+			if height < 210330 { // V1 ends at 210330 on MainNet
 				return 1
 			}
 			return 2 // Latest code version
