@@ -1,10 +1,17 @@
 package opr
 
 import (
+	"encoding/binary"
 	"encoding/csv"
 	"fmt"
 	"os"
-	"time"
+	"sort"
+
+	"github.com/pegnet/pegnet/testutils"
+
+	"github.com/pegnet/pegnet/balances"
+
+	"github.com/pegnet/pegnet/database"
 
 	"github.com/pegnet/pegnet/common"
 
@@ -28,11 +35,7 @@ func NewChainRecorder(con *config.Config, filpath string) (*ChainRecorder, error
 	return c, nil
 }
 
-// WriteMinerCSV will write all the miner related stats for a given chain to a csv. This includes
-// number of records, difficulties hit, and more.
-func (c *ChainRecorder) WriteMinerCSV() error {
-	InitLX() // We intend to use the LX hash
-
+func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error {
 	f, err := os.OpenFile(c.filepath, os.O_CREATE|os.O_RDWR, 0666)
 	if err != nil {
 		return err
@@ -40,23 +43,72 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	file := f
 	writer := csv.NewWriter(file)
 
-	recLog.Infof("fetching entry blocks")
-	for tries := 0; tries < 3; tries++ {
-		err = GetEntryBlocks(c.config)
-		if err == nil {
-			break
-		} else {
-			// If this fails, we probably can't recover this block.
-			// Can't hurt to try though
-			time.Sleep(200 * time.Millisecond)
-		}
-	}
+	b := balances.NewBalanceTracker()
+	g := NewQuickGrader(c.config, db, b)
+	var _ = g.Sync()
 
+	block := g.OprBlockByHeight(height)
+	if block == nil {
+		return fmt.Errorf("%d block is nil", height)
+	}
+	recLog.WithField("height", height).Infof("writing to csv")
+
+	err = writer.Write(append([]string{"ID"}, common.AllAssets[1:]...)) // Write headers
 	if err != nil {
 		return err
 	}
 
-	recLog.WithField("blockcount", len(OPRBlocks)).Infof("writing to csv")
+	all := block.OPRs
+	sort.SliceStable(all, func(i, j int) bool {
+		return binary.BigEndian.Uint64(all[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(all[j].SelfReportedDifficulty)
+	})
+
+	// Build the csv
+OPRLoop:
+	for i, opr := range all {
+		for asset, _ := range opr.Assets {
+			// Skip bogus
+			if err := testutils.PriceCheck(asset, opr.Assets.Value(asset)); err != nil {
+				continue OPRLoop
+			}
+		}
+
+		// fmt.Println(opr.FactomDigitalID)
+		line := []string{fmt.Sprintf("%d", i)}
+		for _, asset := range common.AllAssets[1:] {
+			v := opr.Assets.Value(asset)
+			line = append(line, fmt.Sprintf("%.4f", v))
+		}
+
+		err = writer.Write(line)
+		if err != nil {
+			return err
+		}
+	}
+
+	writer.Flush()
+	var _ = file.Close()
+	return nil
+}
+
+// WriteMinerCSV will write all the miner related stats for a given chain to a csv. This includes
+// number of records, difficulties hit, and more.
+func (c *ChainRecorder) WriteMinerCSV() error {
+	f, err := os.OpenFile(c.filepath, os.O_CREATE|os.O_RDWR, 0666)
+	if err != nil {
+		return err
+	}
+	file := f
+	writer := csv.NewWriter(file)
+
+	b := balances.NewBalanceTracker()
+	g := NewQuickGrader(c.config, database.NewMapDb(), b)
+	err = g.Sync()
+	if err != nil {
+		return err
+	}
+
+	recLog.WithField("blockcount", len(g.GetBlocks())).Infof("writing to csv")
 	cutoff, _ := c.config.Int(common.ConfigSubmissionCutOff)
 	err = writer.Write([]string{
 		"blockheight", "records",
@@ -70,7 +122,7 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	}
 
 	// Build the csv
-	for i, block := range OPRBlocks {
+	for i, block := range g.GetBlocks() {
 		var _ = i
 		last := 50
 		if len(block.OPRs) < 50 {

@@ -4,20 +4,24 @@
 package api
 
 import (
-	"bytes"
-	"encoding/hex"
 	"strconv"
 
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
 )
 
 // -------------------------------------------------------------
 // Required for M1
 
-func getPerformance(params interface{}) (*PerformanceResult, *Error) {
+func (a *APIServer) getPerformance(params interface{}) (*PerformanceResult, *Error) {
+	net, err := common.LoadConfigNetwork(a.config)
+	if err != nil {
+		return nil, NewInternalError()
+	}
+
 	performanceParams := new(PerformanceParameters)
-	err := MapToObject(params, performanceParams)
+	err = MapToObject(params, performanceParams)
 	if err != nil {
 		return nil, NewJSONDecodingError()
 	}
@@ -72,15 +76,16 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 		gradingPlacements[i] = 0
 	}
 	for i := start; i <= end; i++ {
-		block := oprBlockByHeight(i)
+		block := a.Grader.OprBlockByHeight(i)
 		if block == nil {
 			continue
 		}
 		// Difficulty stats for this block
 		for i, record := range block.OPRs {
-			if record.FactomDigitalID == performanceParams.DigitalID {
+			// TODO: Rename param to fit coinbase option
+			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
 				submissions += 1
-				if i <= 50 {
+				if i < 50 {
 					difficultyPlacementsCount += 1
 					difficultyPlacementsSum += int64(i + 1)
 					for k := range difficultyPlacements {
@@ -93,8 +98,9 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 		}
 		// Grading and reward stats for this block
 		for i, record := range block.GradedOPRs {
-			if record.FactomDigitalID == performanceParams.DigitalID {
-				rewards += int64(opr.GetRewardFromPlace(i))
+			// TODO: Rename param to fit coinbase option
+			if record.FactomDigitalID == performanceParams.DigitalID || record.CoinbaseAddress == performanceParams.DigitalID {
+				rewards += int64(opr.GetRewardFromPlace(i, net, int64(record.Dbht)))
 				gradingPlacementsCount += 1
 				gradingPlacementsSum += int64(i + 1)
 				for k := range gradingPlacements {
@@ -134,14 +140,14 @@ func getPerformance(params interface{}) (*PerformanceResult, *Error) {
 // -------------------------------------------------------------
 // Somewhat temporary, might not remain
 
-func getCurrentOPRs() (*GenericResult, *Error) {
+func (a *APIServer) getCurrentOPRs() (*GenericResult, *Error) {
 	height := getLeaderHeight()
-	records := oprBlockByHeight(height)
+	records := a.Grader.OprBlockByHeight(height)
 	return &GenericResult{OPRBlock: records}, nil
 }
 
 // getOprByHash handler to return the opr by full hash
-func getOprByHash(params interface{}) (*GenericResult, *Error) {
+func (a *APIServer) getOprByHash(params interface{}) (*GenericResult, *Error) {
 	genericParams := new(GenericParameters)
 	err := MapToObject(params, genericParams)
 	if err != nil {
@@ -149,12 +155,12 @@ func getOprByHash(params interface{}) (*GenericResult, *Error) {
 	} else if genericParams.Hash == "" {
 		return nil, NewInvalidParametersError()
 	}
-	record := oprByHash(genericParams.Hash)
+	record := a.Grader.OprByHash(genericParams.Hash)
 	return &GenericResult{OPR: &record}, nil
 }
 
 // getOprByShortHash handler to return the opr by the short 8 byte hash
-func getOprByShortHash(params interface{}) (*GenericResult, *Error) {
+func (a *APIServer) getOprByShortHash(params interface{}) (*GenericResult, *Error) {
 	genericParams := new(GenericParameters)
 	err := MapToObject(params, genericParams)
 	if err != nil {
@@ -162,12 +168,12 @@ func getOprByShortHash(params interface{}) (*GenericResult, *Error) {
 	} else if genericParams.Hash == "" {
 		return nil, NewInvalidParametersError()
 	}
-	record := oprByShortHash(genericParams.Hash)
+	record := a.Grader.OprByShortHash(genericParams.Hash)
 	return &GenericResult{OPR: &record}, nil
 }
 
 // getOprsByDigitalID handler to return all oprs based on Digital ID
-func getOprsByDigitalID(params interface{}) (*GenericResult, *Error) {
+func (a *APIServer) getOprsByDigitalID(params interface{}) (*GenericResult, *Error) {
 	genericParams := new(GenericParameters)
 	err := MapToObject(params, genericParams)
 	if err != nil {
@@ -175,13 +181,13 @@ func getOprsByDigitalID(params interface{}) (*GenericResult, *Error) {
 	} else if genericParams.DigitalID == "" {
 		return nil, NewInvalidParametersError()
 	}
-	records := oprsByDigitalID(genericParams.DigitalID)
+	records := a.Grader.OprsByDigitalID(genericParams.DigitalID)
 	return &GenericResult{OPRs: records}, nil
 }
 
 // getOPRsByHeight handler will return all OPR's at any height except the current block.
 // Will only return local OPR's for the current chainhead.
-func getOPRsByHeight(params interface{}) (*GenericResult, *Error) {
+func (a *APIServer) getOPRsByHeight(params interface{}) (*GenericResult, *Error) {
 	genericParams := new(GenericParameters)
 	err := MapToObject(params, genericParams)
 	if err != nil {
@@ -189,12 +195,12 @@ func getOPRsByHeight(params interface{}) (*GenericResult, *Error) {
 	} else if genericParams.Height == nil {
 		return nil, NewInvalidParametersError()
 	}
-	oprBlock := oprBlockByHeight(*genericParams.Height)
+	oprBlock := a.Grader.OprBlockByHeight(*genericParams.Height)
 	return &GenericResult{OPRBlock: oprBlock}, nil
 }
 
 // getBalance handler will get the balance of a pegnet address
-func getBalance(params interface{}) (*GenericResult, *Error) {
+func (a *APIServer) getBalance(params interface{}) (*GenericResult, *Error) {
 	genericParams := new(GenericParameters)
 	err := MapToObject(params, genericParams)
 	if err != nil {
@@ -202,7 +208,7 @@ func getBalance(params interface{}) (*GenericResult, *Error) {
 	} else if genericParams.Address == nil {
 		return nil, NewInvalidParametersError()
 	}
-	balance := opr.GetBalance(*genericParams.Address)
+	balance := a.Balances.GetBalance(*genericParams.Address)
 	return &GenericResult{Balance: balance}, nil
 }
 
@@ -210,16 +216,16 @@ func getBalance(params interface{}) (*GenericResult, *Error) {
 // Helpers
 
 // getWinners returns the current 10 winners entry shorthashes from the last recorded block
-func getWinners() [10]string {
+func (a *APIServer) getWinners() []string {
 	height := getLeaderHeight()
-	currentOPRS := oprBlockByHeight(height)
+	currentOPRS := a.Grader.OprBlockByHeight(height)
 	record := currentOPRS.OPRs[0]
 	return record.WinPreviousOPR
 }
 
 // getWinner returns the highest graded entry shorthash from the last recorded block
-func getWinner() string {
-	return getWinners()[0]
+func (a *APIServer) getWinner() string {
+	return a.getWinners()[0]
 }
 
 // getLeaderHeight helper function, cleaner than using the factom monitor
@@ -229,55 +235,4 @@ func getLeaderHeight() int64 {
 		return 0
 	}
 	return heights.LeaderHeight
-}
-
-// oprBlockByHeight returns a single OPRBlock
-func oprBlockByHeight(dbht int64) *opr.OprBlock {
-	for _, block := range opr.OPRBlocks {
-		if block.Dbht == dbht {
-			return block
-		}
-	}
-	return nil
-}
-
-// oprsByDigitalID returns every OPR created by a given ID
-// Multiple ID's per miner or single daemon are possible.
-// This function searches through every possible ID and returns all.
-func oprsByDigitalID(did string) []opr.OraclePriceRecord {
-	var subset []opr.OraclePriceRecord
-	for _, block := range opr.OPRBlocks {
-		for _, record := range block.OPRs {
-			if record.FactomDigitalID == did {
-				subset = append(subset, *record)
-			}
-		}
-	}
-	return subset
-}
-
-// oprByHash returns the entire OPR based on it's hash
-func oprByHash(hash string) opr.OraclePriceRecord {
-	for _, block := range opr.OPRBlocks {
-		for _, record := range block.OPRs {
-			if hash == hex.EncodeToString(record.OPRHash) {
-				return *record
-			}
-		}
-	}
-	return opr.OraclePriceRecord{}
-}
-
-// Failing tests. Need to grok how the short 8 byte winning oprhashes are done.
-func oprByShortHash(shorthash string) opr.OraclePriceRecord {
-	hashBytes, _ := hex.DecodeString(shorthash)
-	// hashbytes = reverseBytes(hashbytes)
-	for _, block := range opr.OPRBlocks {
-		for _, record := range block.OPRs {
-			if bytes.Compare(hashBytes, record.OPRHash[:8]) == 0 {
-				return *record
-			}
-		}
-	}
-	return opr.OraclePriceRecord{}
 }

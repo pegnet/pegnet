@@ -6,7 +6,7 @@ import "strings"
 
 /*          All the assets on pegnet
  *
- *          PegNet,                 PNT,        PNT
+ *          PegNet,                 PEG,        PEG
  *
  *          US Dollar,              USD,        pUSD
  *          Euro,                   EUR,        pEUR
@@ -46,8 +46,8 @@ import "strings"
  */
 
 var (
-	PNTAsset = []string{
-		"PNT",
+	PEGAsset = []string{
+		"PEG",
 	}
 
 	CurrencyAssets = []string{
@@ -92,7 +92,14 @@ var (
 		"DCR",
 	}
 
-	AllAssets = MergeLists(PNTAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AllAssets = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
+	AssetsV1  = AllAssets
+	// This is with the PNT instead of PEG. Should never be used unless absolutely necessary.
+	//
+	// Deprecated: Was used for version 1 before PNT -> PEG
+	AssetsV1WithPNT = MergeLists([]string{"PNT"}, SubtractFromSet(AssetsV1, "PEG"))
+	// Version One, subtract 2 assets
+	AssetsV2 = SubtractFromSet(AssetsV1, "XPD", "XPT")
 )
 
 // AssetListContainsCaseInsensitive is for when using user input. It's helpful for the
@@ -113,6 +120,16 @@ func AssetListContains(assetList []string, asset string) bool {
 		}
 	}
 	return false
+}
+
+func SubtractFromSet(set []string, sub ...string) []string {
+	var result []string
+	for _, r := range set {
+		if !AssetListContains(sub, r) {
+			result = append(result, r)
+		}
+	}
+	return result
 }
 
 func MergeLists(assets ...[]string) []string {

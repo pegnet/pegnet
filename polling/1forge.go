@@ -48,7 +48,7 @@ func (d *OneForgeDataSource) ApiUrl() string {
 
 func (d *OneForgeDataSource) SupportedPegs() []string {
 	// Does not have all the currencies, commodities, or crypto
-	return common.MergeLists([]string{"EUR", "JPY", "GBP", "CAD", "CHF", "SGD", "HKD", "MXN"}, []string{"XAU", "XAG"}, []string{"XBT", "XBC", "LTC", "ETH", "DASH"})
+	return common.MergeLists([]string{"EUR", "JPY", "GBP", "CAD", "CHF", "SGD", "HKD", "MXN"}, []string{"XAU", "XAG"})
 }
 
 // AssetMapping changes some asset symbols to others to match 1forge

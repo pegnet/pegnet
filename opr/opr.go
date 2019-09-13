@@ -17,9 +17,10 @@ import (
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
-	"github.com/dustin/go-humanize"
+	"github.com/golang/protobuf/proto"
 	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/opr/oprencoding"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -34,7 +35,9 @@ var pollingDataSourceInitializer sync.Once
 
 func InitDataSource(config *config.Config) {
 	pollingDataSourceInitializer.Do(func() {
-		PollingDataSource = polling.NewDataSources(config)
+		if PollingDataSource == nil { // This can be inited from unit tests
+			PollingDataSource = polling.NewDataSources(config)
+		}
 	})
 }
 
@@ -47,7 +50,7 @@ type OraclePriceRecord struct {
 	Grade              float64 `json:"-"` // The grade when OPR records are compared
 	OPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
 	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
-	CoinbasePNTAddress string  `json:"-"` // [base58]  PNT Address to pay PNT
+	CoinbasePEGAddress string  `json:"-"` // [base58]  PEG Address to pay PEG
 
 	// This can be attached to an OPR, which indicates how low we should expect a mined
 	// opr to be. Any OPRs mined below this are not worth submitting to the network.
@@ -60,10 +63,10 @@ type OraclePriceRecord struct {
 	Version                uint8  `json:"-"`
 
 	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	CoinbaseAddress string     `json:"coinbase"` // [base58]  PNT Address to pay PNT
-	Dbht            int32      `json:"dbht"`     //           The Directory Block Height of the OPR.
-	WinPreviousOPR  [10]string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
-	FactomDigitalID string     `json:"minerid"`  // [unicode] Digital Identity of the miner
+	CoinbaseAddress string   `json:"coinbase"` // [base58]  PEG Address to pay PEG
+	Dbht            int32    `json:"dbht"`     //           The Directory Block Height of the OPR.
+	WinPreviousOPR  []string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
+	FactomDigitalID string   `json:"minerid"`  // [unicode] Digital Identity of the miner
 
 	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
 	Assets OraclePriceRecordAssetList `json:"assets"`
@@ -72,7 +75,6 @@ type OraclePriceRecord struct {
 func NewOraclePriceRecord() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
-	o.Version = OPRVersion
 
 	return o
 }
@@ -80,13 +82,14 @@ func NewOraclePriceRecord() *OraclePriceRecord {
 // CloneEntryData will clone the OPR data needed to make a factom entry.
 //	This needs to be done because I need to marshal this into my factom entry.
 func (c *OraclePriceRecord) CloneEntryData() *OraclePriceRecord {
-	n := new(OraclePriceRecord)
+	n := NewOraclePriceRecord()
 	n.OPRChainID = c.OPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
+	n.WinPreviousOPR = make([]string, len(c.WinPreviousOPR), len(c.WinPreviousOPR))
 	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
 	n.CoinbaseAddress = c.CoinbaseAddress
-	n.CoinbasePNTAddress = c.CoinbasePNTAddress
+	n.CoinbasePEGAddress = c.CoinbasePEGAddress
 
 	n.FactomDigitalID = c.FactomDigitalID
 	n.Assets = make(OraclePriceRecordAssetList)
@@ -118,10 +121,10 @@ func InitLX() {
 // OPRChainID is the calculated chain id of the records chain
 var OPRChainID string
 
-// Token is a combination of currency code and value
+// Token is a combination of currency Code and Value
 type Token struct {
-	code  string
-	value float64
+	Code  string
+	Value float64
 }
 
 // Validate performs sanity checks of the structure and values of the OPR.
@@ -134,26 +137,53 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
-		if v == 0 && k != "PNT" { // PNT is exception until we get a value for it
+		if v == 0 && k != "PEG" { // PEG is exception until we get a value for it
 			return false
 		}
+	}
+
+	// Only enforce on version 2 and forward
+	if err := common.ValidIdentity(opr.FactomDigitalID); opr.Version == 2 && err != nil {
+		return false
+	}
+
+	// Only enforce on version 2 and forward, checking valid FCT address
+	if opr.Version == 2 && !ValidFCTAddress(opr.CoinbaseAddress) {
+		return false
 	}
 
 	if int64(opr.Dbht) != dbht {
 		return false // DBHeight is not reported correctly
 	}
 
-	if opr.Version != OPRVersion {
+	if opr.Version != common.OPRVersion(net, int64(dbht)) {
 		return false // We only support this version
 	}
 
 	// Validate all the Assets exists
-	return opr.Assets.ContainsExactly(common.AllAssets)
+	switch opr.Version {
+	case 1:
+		if len(opr.WinPreviousOPR) != 10 {
+			return false
+		}
+		return opr.Assets.ContainsExactly(common.AssetsV1)
+	case 2:
+		// It can contain 10 winners when it is a transition record
+		return opr.Assets.ContainsExactly(common.AssetsV2)
+	default:
+		return false
+	}
+}
+
+// ValidFCTAddress will be removed in the grading module refactor. This is just temporary to get this
+// functionality, and be easily unit testable.
+func ValidFCTAddress(addr string) bool {
+	return len(addr) > 2 && addr[:2] == "FA" && factom.IsValidAddress(addr)
 }
 
 // GetTokens creates an iterateable slice of Tokens containing all the currency values
 func (opr *OraclePriceRecord) GetTokens() (tokens []Token) {
-	return opr.Assets.List()
+	return opr.Assets.List(opr.Version)
 }
 
 // GetHash returns the LXHash over the OPR's json representation
@@ -161,7 +191,9 @@ func (opr *OraclePriceRecord) GetHash() []byte {
 	if len(opr.OPRHash) > 0 {
 		return opr.OPRHash
 	}
-	data, err := json.Marshal(opr)
+
+	// SafeMarshal handles the PNT/PEG issue
+	data, err := opr.SafeMarshal()
 	common.CheckAndPanic(err)
 	sha := sha256.Sum256(data)
 	opr.OPRHash = sha[:]
@@ -219,33 +251,24 @@ func (opr *OraclePriceRecord) String() (str string) {
 	for i, v := range opr.WinPreviousOPR {
 		str = str + fmt.Sprintf("%32s %2d, %s\n", "", i+1, v)
 	}
-	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PNT", opr.CoinbasePNTAddress)
+	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PEG", opr.CoinbasePEGAddress)
 
 	// Make a display string out of the Digital Identity.
 
 	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", opr.FactomDigitalID)
-	for _, asset := range opr.Assets.List() {
-		str = str + fmt.Sprintf("%32s %v\n", "PNT", asset)
+	for _, asset := range opr.Assets.List(opr.Version) {
+		str = str + fmt.Sprintf("%32s %v\n", "PEG", asset)
 	}
 
 	str = str + fmt.Sprintf("\nWinners\n\n")
 
-	pwin := GetPreviousOPRs(opr.Dbht - 1)
-
 	// If there were previous winners, we need to make sure this miner is running
 	// the software to detect them, and that we agree with their conclusions.
-	if pwin != nil {
-		for i, v := range opr.WinPreviousOPR {
-			balance := GetBalance(pwin[i].CoinbasePNTAddress)
-			hbal := humanize.Comma(balance)
-			str = str + fmt.Sprintf("   %16s %16x %30s %-56s = %10s\n",
-				v,
-				pwin[i].EntryHash[:8],
-				pwin[i].FactomDigitalID,
-				pwin[i].CoinbasePNTAddress,
-				hbal,
-			)
-		}
+	for i, v := range opr.WinPreviousOPR {
+		str = str + fmt.Sprintf("   %2d\t%16s\n",
+			i,
+			v,
+		)
 	}
 	return str
 }
@@ -263,8 +286,20 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 
 // SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-	for asset, v := range assets {
-		opr.Assets[asset] = v.Value
+	// TODO: Remove when version 2 is activated
+	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
+	case 1:
+		for asset, v := range assets {
+			opr.Assets.SetValue(asset, v.Value)
+		}
+	case 2:
+		for asset, v := range assets {
+			// Skip XPT and XPD
+			if asset == "XPT" || asset == "XPD" {
+				continue
+			}
+			opr.Assets.SetValue(asset, v.Value)
+		}
 	}
 }
 
@@ -299,10 +334,11 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 	opr.OPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.OPRChainTag}))
 
 	opr.Dbht = dbht
+	opr.Version = common.OPRVersion(opr.Network, int64(opr.Dbht))
 
-	// If this is a test network, then give multiple miners their own tPNT address
+	// If this is a test network, then give multiple miners their own tPEG address
 	// because that is way more useful debugging than giving all miners the same
-	// PNT address.  Otherwise, give all miners the same PNT address because most
+	// PEG address.  Otherwise, give all miners the same PEG address because most
 	// users really doing mining will mostly be happen sending rewards to a single
 	// address.
 	if network == common.TestNetwork && minerNumber != 0 {
@@ -310,13 +346,13 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		opr.CoinbaseAddress = fct
 	} else {
 		if str, err := c.String("Miner.CoinbaseAddress"); err != nil {
-			return nil, errors.New("config file has no Coinbase PNT Address")
+			return nil, errors.New("config file has no Coinbase PEG Address")
 		} else {
 			opr.CoinbaseAddress = str
 		}
 	}
 
-	opr.CoinbasePNTAddress, err = common.ConvertFCTtoPegNetAsset(network, "PNT", opr.CoinbaseAddress)
+	opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", opr.CoinbaseAddress)
 	if err != nil {
 		log.Errorf("invalid fct address in config file: %v", err)
 	}
@@ -332,8 +368,23 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		return nil, winners.Error
 	}
 
-	for i, w := range winners.ToBePaid {
-		opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+	// For the transition, we need to support a 10 winner opr.
+	// The winner's should be correct from our grader, so we will accept it
+	if len(winners.ToBePaid) > 0 {
+		opr.WinPreviousOPR = make([]string, len(winners.ToBePaid), len(winners.ToBePaid))
+		for i, w := range winners.ToBePaid {
+			opr.WinPreviousOPR[i] = hex.EncodeToString(w.EntryHash[:8])
+		}
+	} else {
+		// If there are no previous winners, this is a bootstrap record
+		min := 0
+		switch common.OPRVersion(network, int64(dbht)) {
+		case 1:
+			min = 10
+		case 2:
+			min = 25
+		}
+		opr.WinPreviousOPR = make([]string, min, min)
 	}
 
 	if len(winners.AllOPRs) > 0 {
@@ -365,13 +416,13 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets()
+	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version)
 	if err != nil {
 		return err
 	}
 	opr.SetPegValues(Peg)
 
-	data, err := json.Marshal(opr)
+	data, err := opr.SafeMarshal()
 	if err != nil {
 		panic(err)
 	}
@@ -390,10 +441,133 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 	binary.BigEndian.PutUint64(buf, difficulty)
 
 	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	e.ExtIDs = [][]byte{nonce, buf, []byte{opr.Version}}
-	e.Content, err = json.Marshal(opr)
+	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
+	e.Content, err = opr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
 	return e, nil
+}
+
+// SafeMarshal will marshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
+	// our opr version must be set before entering this
+	if opr.Version == 0 {
+		return nil, fmt.Errorf("opr version is 0")
+	}
+
+	// This function relies on the assets, so check up front
+	if opr.Assets == nil {
+		return nil, fmt.Errorf("assets is nil, cannot marshal")
+	}
+
+	// When we marshal a version 1 opr, we need to change PEG -> PNT
+	// No opr in the code should ever have 'PNT'. We only use PNT in the marshal
+	// function, no where else.
+	if _, ok := opr.Assets["PNT"]; ok {
+		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
+	}
+
+	// Version 1 we json marshal and
+	// do the swap of PEG -> PNT
+	if opr.Version == 1 {
+		opr.Assets["PNT"] = opr.Assets["PEG"]
+		delete(opr.Assets, "PEG")
+
+		// This is a known key that will be removed by the marshal json function. It indicates
+		// to the marshaler that it was called from a safe path. This is not the cleanest method,
+		// but to override the json function, and still use the default, it would require an odd
+		// structure nesting and a lot of code changes
+		opr.Assets["version"] = uint64(opr.Version)
+		data, err := json.Marshal(opr)
+		delete(opr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
+
+		// Revert the swap
+		opr.Assets["PEG"] = opr.Assets["PNT"]
+		delete(opr.Assets, "PNT")
+		return data, err
+	} else if opr.Version == 2 {
+		prices := make([]uint64, len(opr.Assets))
+		for i, asset := range common.AssetsV2 {
+			prices[i] = opr.Assets[asset]
+		}
+
+		// Decode winners into byte slice
+		var err error
+		winners := make([][]byte, len(opr.WinPreviousOPR))
+		for i, winner := range opr.WinPreviousOPR {
+			winners[i], err = hex.DecodeString(winner)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Version 2 uses Protobufs for encoding
+		pOpr := &oprencoding.ProtoOPR{
+			Address: opr.CoinbaseAddress,
+			ID:      opr.FactomDigitalID,
+			Height:  opr.Dbht,
+			Assets:  prices,
+			Winners: winners,
+		}
+
+		return proto.Marshal(pOpr)
+	}
+
+	return nil, fmt.Errorf("opr version %d not supported", opr.Version)
+}
+
+// SafeMarshal will unmarshal the json depending on the opr version
+func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
+	// our opr version must be set before entering this
+	if opr.Version == 0 {
+		return fmt.Errorf("opr version is 0")
+	}
+
+	// If version 1, we need to json unmarshal and swap PNT and PEG
+	if opr.Version == 1 {
+		err := json.Unmarshal(data, opr)
+		if err != nil {
+			return err
+		}
+
+		if v, ok := opr.Assets["PNT"]; ok {
+			opr.Assets["PEG"] = v
+			delete(opr.Assets, "PNT")
+		} else {
+			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
+		}
+		return nil
+	} else if opr.Version == 2 {
+		protoOPR := oprencoding.ProtoOPR{}
+		err := proto.Unmarshal(data, &protoOPR)
+		if err != nil {
+			return err
+		}
+
+		opr.Assets = make(OraclePriceRecordAssetList)
+		// Populate the original opr
+		opr.CoinbaseAddress = protoOPR.Address
+		opr.FactomDigitalID = protoOPR.ID
+		opr.Dbht = protoOPR.Height
+
+		if len(protoOPR.Assets) != len(common.AssetsV2) {
+			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(common.AssetsV2))
+		}
+
+		// Hard coded list of assets
+		for i, asset := range common.AssetsV2 {
+			opr.Assets[asset] = protoOPR.Assets[i]
+		}
+
+		// Decode winners
+		opr.WinPreviousOPR = make([]string, len(protoOPR.Winners), len(protoOPR.Winners))
+		for i, winner := range protoOPR.Winners {
+			opr.WinPreviousOPR[i] = hex.EncodeToString(winner)
+		}
+
+		return nil
+	}
+
+	return fmt.Errorf("opr version %d not supported", opr.Version)
 }

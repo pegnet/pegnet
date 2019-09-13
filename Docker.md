@@ -1,9 +1,9 @@
 # PegNet Docker
 
-The pegnet docker will help you get up an running for development in no time.
+The pegnet docker will help you get up and running for development in no time.
 
 ## Prerequisites
-To be able to run PegNet you must have Docker and docker-compose, docker versions change depending of your setup.
+To be able to run PegNet you must have Docker and docker-compose, docker versions change depending on your setup.
 - Docker and docker-compose installed.
 - Follow instructions at https://docs.docker.com/compose/install/
 - factom-cli installed in your host.
@@ -11,10 +11,16 @@ To be able to run PegNet you must have Docker and docker-compose, docker version
 ## Initial Steps
 From wherever you have cloned this repo
 
-- Create your config file from `defaultconfig.ini` using
+- Create your config file from `config/defaultconfig.ini` using
 
 ```bash
-cp defaultconfig.ini myconfig.ini
+cp config/defaultconfig.ini config/pegnetconfig.ini
+```
+
+- Edit the following values on `pegnetconfig.ini`
+```ini
+FactomdLocation="factomd:8088"
+WalletdLocation="walletd:8089"
 ```
 
 - After you have copied and setup your config file, run
@@ -28,10 +34,10 @@ docker-compose will create and run 3 services:
 - walletd (walletd_container)
 - pegnet (pegnet_container)
 
-You should have factomd and walletd running at this point.
+You should have factomd and walletd running at this point. You will have to start the miner separately (see below).
 
 ## Initial Funding
-Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run
+Now that we have factomd and walletd running, we need to buy some Entry Credits and fund the default EC address, run (not in docker)
 
 ```bash
 ./initialization/fundEC.sh
@@ -41,29 +47,29 @@ This will fund the EC address *(requires factom-cli)*
 
 ---
 
-Make sure the chains are created, run
+After making sure the chains are created, run
 
 ```bash
 docker-compose run --rm pegnet go run initialization/main.go
 ```
 
 # Running a PegNet node
-Now that we have everything setup, we can run a basic validator node:
+Now that we have everything set up, we can run a basic validator node:
 
 ```bash
-docker-compose run --rm pegnet go run main.go --log=debug
+docker-compose run --rm pegnet go run pegnet.go --log=debug
 ```
 
 # Running a PegNet node with miners
 Or a node with a set number of miners:
 
 ```bash
-docker-compose run --rm pegnet go run main.go --log=debug --miners=4
+docker-compose run --rm pegnet go run pegnet.go --log=debug --miners=4
 ```
 
-# Other usefull commands
-- run `docker-compose up -d` (running in deamon mode)
-- run `docker-compose build --no-cache pegnet` (builds the penget image) 
+# Other useful commands
+- run `docker-compose up -d` (running in daemon mode)
+- run `docker-compose build --no-cache pegnet` (builds the pegnet image) 
 - run `docker-compose run --rm pegnet bash` (run a temp pegnet container with bash)
 
 # Destroy (reset all data)

@@ -9,8 +9,13 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/pegnet/pegnet/database"
+
+	"github.com/pegnet/pegnet/balances"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/api"
@@ -29,28 +34,33 @@ var (
 
 func init() {
 	// Add commands to the root cmd
-	rootCmd.AddCommand(getEncoding)
-	rootCmd.AddCommand(newAddress)
-	rootCmd.AddCommand(grader)
-	rootCmd.AddCommand(networkCoordinator)
-	rootCmd.AddCommand(networkMinerCmd)
-	rootCmd.AddCommand(datasources)
+	RootCmd.AddCommand(getEncoding)
+	RootCmd.AddCommand(newAddress)
+	RootCmd.AddCommand(grader)
+	RootCmd.AddCommand(networkCoordinator)
+	RootCmd.AddCommand(networkMinerCmd)
+	RootCmd.AddCommand(datasources)
+
+	decode.AddCommand(decodeEntry)
+	decode.AddCommand(decodeEblock)
+	RootCmd.AddCommand(decode)
 
 	dataWriter.AddCommand(minerStats)
-	rootCmd.AddCommand(dataWriter)
+	dataWriter.AddCommand(priceStats)
+	RootCmd.AddCommand(dataWriter)
 
 	burn.Flags().Bool("dryrun", false, "Dryrun creates the TX without actually submitting it to the network.")
-	rootCmd.AddCommand(burn)
+	RootCmd.AddCommand(burn)
 
-	minerStats.Flags().StringP("output", "o", "minerstats.csv", "output file for the csv")
+	dataWriter.PersistentFlags().StringP("output", "o", "stats.csv", "output file for the csv")
 
 	// RPC Wrappers
 	getPerformance.Flags().Int64Var(&blockRangeStart, "start", -1, "First block in the block range requested "+
 		"(negative numbers are interpreted relative to current block head)")
 	getPerformance.Flags().Int64Var(&blockRangeEnd, "end", -1, "Last block in the block range requested "+
 		"(negative numbers are ignored)")
-	rootCmd.AddCommand(getPerformance)
-	rootCmd.AddCommand(getBalance)
+	RootCmd.AddCommand(getPerformance)
+	RootCmd.AddCommand(getBalance)
 }
 
 var getEncoding = &cobra.Command{
@@ -71,7 +81,7 @@ var getEncoding = &cobra.Command{
 		if len(args) == 2 {
 			asset = strings.ToLower(args[1])
 		}
-		assets, err := common.ConvertFCTtoAllPegNetAssets(os.Args[2])
+		assets, err := common.ConvertFCTtoAllPegNetAssets(args[0])
 		if err != nil {
 			// TODO: Verify this error message?
 			fmt.Println("Must provide a valid FCT public key")
@@ -79,9 +89,10 @@ var getEncoding = &cobra.Command{
 		}
 		sort.Strings(assets)
 		for _, s := range assets {
-			if asset == "all" || asset == strings.ToLower(s[1:4]) {
-				if strings.Contains(s, "PNT_") {
-					fmt.Println("  *", s[1:4], " ", s)
+			if asset == "all" || asset == strings.ToLower(s[1:4]) || // If the asset is what 'all' or what we are looking for
+				(asset == strings.ToLower("PEG") && s[0:3] == "PEG") { // Or if we choose PEG, then the indexing is off
+				if strings.Contains(s, "PEG_") {
+					fmt.Println("  *", "PEG", " ", s)
 				} else {
 					fmt.Println("   ", s[1:4], " ", s)
 				}
@@ -118,7 +129,7 @@ var newAddress = &cobra.Command{
 		}
 		sort.Strings(assets)
 		for _, s := range assets {
-			if strings.Contains(s, "PNT_") {
+			if strings.Contains(s, "PEG_") {
 				fmt.Println("  *", s[1:4], " ", s)
 			} else {
 				fmt.Println("   ", s[1:4], " ", s)
@@ -129,8 +140,8 @@ var newAddress = &cobra.Command{
 
 var burn = &cobra.Command{
 	Use:   "burn <fct address> <fct amount>",
-	Short: "Burns the specied amount of FCT into PNT",
-	Long: "Burning FCT will turn it into PNT. The PNT burn address is an EC address, and the transaction has " +
+	Short: "Burns the specied amount of FCT into pFCT",
+	Long: "Burning FCT will turn it into pFCT. The pFCT burn address is an EC address, and the transaction has " +
 		"an input with # of FCT, and an output of 0 EC. This means the entire tx input becomes the fee. " +
 		"This command costs FCT, so be careful when using it.",
 	Example: "pegnet burn FA3EPZYqodgyEGXNMbiZKE5TS2x2J9wF8J9MvPZb52iGR78xMgCb 1",
@@ -270,7 +281,7 @@ var datasources = &cobra.Command{
 		fmt.Println()
 		fmt.Println("Assets and their data source order. The order left to right is the fallback order.")
 		for _, asset := range common.AllAssets {
-			if asset == "PNT" {
+			if asset == "PEG" {
 				continue
 			}
 			str := d.AssetPriorityString(asset)
@@ -283,6 +294,7 @@ var datasources = &cobra.Command{
 var grader = &cobra.Command{
 	Use: "grader ",
 	Run: func(cmd *cobra.Command, args []string) {
+		opr.InitLX()
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		monitor := common.GetMonitor()
@@ -294,10 +306,10 @@ var grader = &cobra.Command{
 			panic("Monitor threw error: " + err.Error())
 		}()
 
-		grader := opr.NewGrader()
-		go grader.Run(Config, monitor)
+		b := balances.NewBalanceTracker()
+		q := LaunchGrader(Config, monitor, b, context.Background(), true)
 
-		alert := grader.GetAlert("cmd")
+		alert := q.GetAlert("cmd")
 
 		for {
 			select {
@@ -350,7 +362,7 @@ var getPerformance = &cobra.Command{
 var getBalance = &cobra.Command{
 	Use:     "balance <type> <factoid address>",
 	Short:   "Returns the balance for the given asset type and Factoid address",
-	Example: "pegnet balance PNT FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
+	Example: "pegnet balance PEG FA2jK2HcLnRdS94dEcU27rF3meoJfpUcZPSinpb7AwQvPRY6RL1Q",
 	Args:    CombineCobraArgs(CustomArgOrderValidationBuilder(true, ArgValidatorAsset, ArgValidatorFCTAddress)),
 	Run: func(cmd *cobra.Command, args []string) {
 		ticker := args[0]
@@ -360,14 +372,14 @@ var getBalance = &cobra.Command{
 		if err != nil {
 			fmt.Println("Error: invalid network string")
 		}
-		pntAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
+		pegAddress, err := common.ConvertFCTtoPegNetAsset(networkString, ticker, address)
 		if err != nil {
 			fmt.Println("Error: invalid Factoid address")
 		}
 		req := api.PostRequest{
 			Method: "balance",
 			Params: api.GenericParameters{
-				Address: &pntAddress,
+				Address: &pegAddress,
 			},
 		}
 		sendRequestAndPrintResults(&req)
@@ -381,14 +393,16 @@ var networkCoordinator = &cobra.Command{
 		"Remote miners therefore can directly and ONLY communicate with the coordinator.",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
+		b := balances.NewBalanceTracker()
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor)
+		grader := LaunchGrader(Config, monitor, b, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker)
-		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		apiserver := LaunchAPI(Config, statTracker, grader, b, true)
+		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
 		srv := networkMiner.NewMiningServer(Config, monitor, grader, statTracker)
@@ -403,6 +417,7 @@ var networkMinerCmd = &cobra.Command{
 	Use: "netminer",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		cl := networkMiner.NewMiningClient(Config)
@@ -454,6 +469,41 @@ var dataWriter = &cobra.Command{
 	Example: "csv minerstats",
 }
 
+// priceStats is used to analyse data sources chosen
+var priceStats = &cobra.Command{
+	Use:   "pricestats <height>",
+	Short: "Creates a csv showing the price related stats from the blocks on chain.",
+	Long: "Will output each opr and a column per asset. Each column is the % difference from the average of the " +
+		"entire set. They are ordered in self reported difficulty order.",
+	Args:    cobra.ExactArgs(1),
+	Example: "csv pricestats",
+	Run: func(cmd *cobra.Command, args []string) {
+		height, err := strconv.Atoi(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		path, err := cmd.Flags().GetString("output")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		c, err := opr.NewChainRecorder(Config, path)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// Use a mapdb over a ldb so we can get the full oprs
+		// vs just graded
+		ldb := database.NewMapDb()
+
+		err = c.WritePriceCSV(ldb, int64(height))
+		if err != nil {
+			CmdError(cmd, err)
+		}
+	},
+}
+
 var minerStats = &cobra.Command{
 	Use:   "minerstats",
 	Short: "Creates a csv showing the miner related stats from the blocks on chain.",
@@ -476,5 +526,100 @@ var minerStats = &cobra.Command{
 		if err != nil {
 			CmdError(cmd, err)
 		}
+	},
+}
+
+var decode = &cobra.Command{
+	Use:     "decode",
+	Short:   "Attempt to decode an opr from an entry/eblock",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read.",
+	Example: "pegnet decode entry <entryhash>",
+}
+
+var decodeEblock = &cobra.Command{
+	Use:     "eblock",
+	Short:   "Attempt to decode all oprs from an eblock",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read all entries in an eblock.",
+	Example: "pegnet decode eblock <keymr>",
+	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
+	Run: func(cmd *cobra.Command, args []string) {
+		ValidateConfig(Config)
+		var err error
+
+		g := new(opr.QuickGrader)
+		g.Network, err = common.LoadConfigNetwork(Config)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		g.Protocol, err = Config.String("Miner.Protocol")
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		g.Config = Config
+
+		eblock, err := factom.GetEBlock(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		if eblock == nil {
+			CmdError(cmd, fmt.Errorf("block %s not found", args[0]))
+		}
+
+		oprs, err := g.ParallelFetchOPRsFromEBlock(&opr.EntryBlockMarker{KeyMr: args[0], EntryBlock: eblock}, 4, false)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// We have to manually set this, as version 2
+		// is never json marshalled
+		for _, opr := range oprs {
+			opr.Assets["version"] = uint64(opr.Version)
+		}
+
+		data, err := json.Marshal(oprs)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		fmt.Println(string(data))
+	},
+}
+
+var decodeEntry = &cobra.Command{
+	Use:     "entry",
+	Short:   "Attempt to decode an opr from an entry",
+	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read a single entry.",
+	Example: "pegnet decode entry <entryhash>",
+	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
+	Run: func(cmd *cobra.Command, args []string) {
+		entry, err := factom.GetEntry(args[0])
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		if len(entry.ExtIDs) != 3 {
+			CmdError(cmd, fmt.Errorf("not an opr entry"))
+		}
+
+		if len(entry.ExtIDs[0]) != 1 {
+			CmdError(cmd, fmt.Errorf("opr version must be 1 byte in length, found %d", len(entry.ExtIDs[0])))
+		}
+
+		v := uint8(entry.ExtIDs[2][0])
+		opr := opr.NewOraclePriceRecord()
+		opr.Version = v
+
+		err = opr.SafeUnmarshal(entry.Content)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+
+		// We have to manually set this, as version 2
+		// is never json marshalled
+		opr.Assets["version"] = 2
+		data, err := json.Marshal(opr)
+		if err != nil {
+			CmdError(cmd, err)
+		}
+		fmt.Println(string(data))
 	},
 }

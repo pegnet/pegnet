@@ -7,12 +7,15 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"strings"
 
+	"github.com/pegnet/pegnet/api"
+
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -20,58 +23,69 @@ import (
 )
 
 var (
-	Config *config.Config
+	Config      *config.Config
+	ExitHandler *common.ExitHandler
 	// Global Flags
 	LogLevel        string
 	FactomdLocation string
 	WalletdLocation string
+	WalletdUser     string
+	WalletdPass     string
 	Timeout         uint
 )
 
 func init() {
 	// TODO: Review how this completion works
 	//		The autotab stuff doesn't update automatically
-	rootCmd.AddCommand(completionCmd)
+	RootCmd.AddCommand(completionCmd)
 
-	rootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
-	rootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
-	rootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
-	rootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
+	RootCmd.PersistentFlags().StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'trace', 'debug', 'info', 'warn', 'error', or 'fatal'")
+	RootCmd.PersistentFlags().StringVarP(&FactomdLocation, "factomdlocation", "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain")
+	RootCmd.PersistentFlags().StringVarP(&WalletdLocation, "walletdlocation", "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions")
+	RootCmd.PersistentFlags().StringVarP(&WalletdUser, "walletduser", "u", "", "The RPC Username of Walletd, if enabled")
+	RootCmd.PersistentFlags().StringVarP(&WalletdPass, "walletdpass", "p", "", "The RPC Password of Walletd, if enabled")
+	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnethost", "g", "localhost:8099", "IPAddr:port# of the api host to send requests too.")
+	RootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
 
 	// Flags that affect the config file. Should not be loaded into globals
-	rootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
-	rootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
-	rootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
-	rootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
-	rootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
+	RootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
+	RootCmd.PersistentFlags().Int("top", -1, "Change the number opr records written per block (default to config file)")
+	RootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
+	RootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
+	RootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
+	RootCmd.PersistentFlags().String("minerdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
+	RootCmd.PersistentFlags().String("minerdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
 
 	// Persist flags that run in PreRun, and not in the config
-	rootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
-	rootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
-	rootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+	RootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
+	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
+	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+
+	RootCmd.PersistentFlags().StringArrayP("override", "o", []string{}, "Custom config overrides. Can override any setting")
 
 	// Initialize the config file with the config, then with cmd flags
-	rootCmd.PersistentPreRunE = rootPreRunSetup
+	RootCmd.PersistentPreRunE = rootPreRunSetup
 
 	// Run a few functions (in the order specified) to initialize some globals
 	cobra.OnInitialize(initLogger)
 }
 
 // The cli enter point
-var rootCmd = &cobra.Command{
+var RootCmd = &cobra.Command{
 	Use:   "pegnet",
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		b := balances.NewBalanceTracker()
 
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)
-		grader := LaunchGrader(Config, monitor)
+		grader := LaunchGrader(Config, monitor, b, ctx, true)
 		statTracker := LaunchStatistics(Config, ctx)
-		apiserver := LaunchAPI(Config, statTracker)
-		LaunchControlPanel(Config, ctx, monitor, statTracker)
+		apiserver := LaunchAPI(Config, statTracker, grader, b, true)
+		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
 		// This is a blocking call
@@ -83,7 +97,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	if err := rootCmd.Execute(); err != nil {
+	if err := RootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
@@ -106,10 +120,10 @@ func ValidateConfig(config *config.Config) {
 		log.WithError(err).Fatal("failed to read the identity chain or miner id")
 	}
 
-	valid, _ := regexp.MatchString("^[a-zA-Z0-9,]+$", identity)
-	if !valid {
-		log.WithError(err).Fatal("only alphanumeric characters and commas are allowed in the identity")
+	if err := common.ValidIdentity(identity); err != nil {
+		log.WithError(err).Fatal("invalid identity")
 	}
+
 }
 
 func initLogger() {
@@ -140,7 +154,15 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		log.WithError(err).Fatal("Failed to read current user's name")
 	}
 
-	configFile := fmt.Sprintf("%s/.pegnet/defaultconfig.ini", u.HomeDir)
+	// Set the PegnetHome for pegnet files.
+	// This is so we know where to place all the pegnet files. We can then use
+	// the $PEGNETHOME in place of ~/.pegnet and be able to change it in only 1 spot.
+	pegnethome := os.Getenv("PEGNETHOME")
+	if pegnethome == "" {
+		var _ = os.Setenv("PEGNETHOME", filepath.Join(u.HomeDir, ".pegnet"))
+	}
+
+	configFile := os.ExpandEnv(filepath.Join("$PEGNETHOME", "defaultconfig.ini"))
 	customPath, _ := cmd.Flags().GetString("config")
 	if customPath != "" {
 		absPath, err := filepath.Abs(customPath)
@@ -154,16 +176,50 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	flags := NewCmdFlagProvider(cmd)
 	Config = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), iniFile, flags})
 
+	pegnetnetwork := os.Getenv("PEGNETNETWORK")
+	if pegnetnetwork == "" {
+		net, err := common.LoadConfigNetwork(Config)
+		if err != nil {
+			return err
+		}
+		var _ = os.Setenv("PEGNETNETWORK", net)
+	}
+
 	factomd, _ := Config.String("Miner.FactomdLocation")
 	walletd, _ := Config.String("Miner.WalletdLocation")
 	factom.SetFactomdServer(factomd)
 	factom.SetWalletServer(walletd)
+
+	walletUser, _ := Config.String("Miner.WalletdUser")
+	if len(WalletdUser) > 0 {
+		walletUser = WalletdUser
+	}
+	walletPass, _ := Config.String("Miner.WalletdPass")
+	if len(WalletdPass) > 0 {
+		walletPass = WalletdPass
+	}
+	if len(walletUser) > 0 {
+		factom.SetWalletRpcConfig(walletUser, walletPass)
+	}
 
 	// Profiling setup
 	if on, _ := cmd.Flags().GetBool("profile"); on {
 		p, _ := cmd.Flags().GetInt("profileport")
 		go StartProfiler(p)
 	}
+
+	// Catch ctl+c
+	signalChan := make(chan os.Signal, 1)
+	signal.Notify(signalChan, os.Interrupt)
+	go func() {
+		<-signalChan
+		log.Info("Gracefully closing")
+		common.GlobalExitHandler.Close()
+
+		log.Info("closing application")
+		// If something is hanging, we have to kill it
+		os.Exit(0)
+	}()
 
 	return nil
 }
@@ -177,7 +233,7 @@ var completionCmd = &cobra.Command{
 pegnet completion > /tmp/ntc && source /tmp/ntc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addGetEncodingCommands()
-		rootCmd.GenBashCompletion(os.Stdout)
+		RootCmd.GenBashCompletion(os.Stdout)
 	},
 }
 

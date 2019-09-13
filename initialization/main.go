@@ -21,15 +21,15 @@ import (
 var (
 	// Global Flags
 	LogLevel        string // Logrus global log level
-	FactomdLocation string
-	WalletdLocation string
+	FactomdFlag     string
+	WalletdFlag     string
 	ECAddressString string
 )
 
 func init() {
 	flag.StringVar(&LogLevel, "log", "info", "Change the logging level. Can choose from 'debug', 'info', 'warn', 'error', or 'fatal'")
-	flag.StringVar(&FactomdLocation, "s", "localhost:8088", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
-	flag.StringVar(&WalletdLocation, "w", "localhost:8089", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
+	flag.StringVar(&FactomdFlag, "s", "", "IPAddr:port# of factomd API to use to access blockchain (default localhost:8088)")
+	flag.StringVar(&WalletdFlag, "w", "", "IPAddr:port# of factom-walletd API to use to create transactions (default localhost:8089)")
 	flag.StringVar(&ECAddressString, "ec", "", "EC Address to use in place of the one specified in PegNet config file")
 }
 
@@ -58,6 +58,23 @@ func main() {
 
 	// CLI overrides
 	flag.Parse()
+
+	FactomdLocation, _ := Config.String("Miner.FactomdLocation")
+	WalletdLocation, _ := Config.String("Miner.WalletdLocation")
+
+	if len(FactomdFlag) > 0 {
+		FactomdLocation = FactomdFlag // flag override
+	}
+	if FactomdLocation == "" {
+		FactomdLocation = "localhost:8088"
+	}
+
+	if len(WalletdFlag) > 0 {
+		WalletdLocation = WalletdFlag // flag override
+	}
+	if WalletdLocation == "" {
+		WalletdLocation = "localhost:8089"
+	}
 
 	factom.SetFactomdServer(FactomdLocation)
 	factom.SetWalletServer(WalletdLocation)

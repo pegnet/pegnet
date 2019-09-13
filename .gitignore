@@ -1,5 +1,5 @@
 vendor
-myconfig.ini
+config/pegnetconfig.ini
 
 # Binaries for programs and plugins
 *.exe
@@ -23,3 +23,6 @@ myconfig.ini
 
 # VSCode
 .vscode/*
+
+# Pycharm
+venv

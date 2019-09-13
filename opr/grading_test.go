@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/rand"
 	"sort"
 	"strconv"
@@ -44,6 +45,30 @@ func dupeCheck(got []*OraclePriceRecord, want []string) error {
 	}
 
 	return nil
+}
+
+func TestApplyBand(t *testing.T) {
+	for i := 0; i < 200; i++ {
+		f := rand.Float64()
+		if i&1 == 0 {
+			f = f * -1
+		}
+		if d := ApplyBand(f, 0); d != math.Abs(f) {
+			t.Errorf("exp %.4f, got %.4f", f, d)
+		}
+
+		if d := ApplyBand(f, 0.1); d != math.Abs(f) {
+			if math.Abs(f) <= 0.1 {
+				if d != 0 {
+					t.Errorf("1] from %.4f, exp %.4f, got %.4f", f, float64(0), d)
+				}
+			} else {
+				if d != math.Abs(f)-0.1 {
+					t.Errorf("2] from %.4f, exp %.4f, got %.4f, %t, %t", f, f-0.1, d, f <= 0.1, d == 0)
+				}
+			}
+		}
+	}
 }
 
 func TestRemoveDuplicateSubmissions(t *testing.T) {
@@ -135,11 +160,11 @@ func init() {
 	for i := 0; i < 100; i++ {
 		opr := NewOraclePriceRecord()
 		buf := make([]byte, 8)
-		binary.BigEndian.PutUint64(buf, opr.Difficulty)
 		opr.Nonce = []byte{byte(i)}
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		binary.BigEndian.PutUint64(buf, opr.Difficulty)
 		opr.SelfReportedDifficulty = buf
 		//opr.Entry.Content = []byte(fmt.Sprintf("Entry %05d Content for this entry", i))
-		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
 		difficulty = append(difficulty, opr)
 	}
 	sort.Slice(difficulty, func(i, j int) bool {
@@ -151,7 +176,7 @@ func genOPR(entry gradeEntry) *OraclePriceRecord {
 	opr := NewOraclePriceRecord()
 	opr.FactomDigitalID = entry.id
 	for _, k := range common.AllAssets {
-		opr.Assets[k] = entry.data
+		opr.Assets.SetValue(k, entry.data)
 	}
 
 	return opr
@@ -578,7 +603,7 @@ func makeBenchmarkOPR() *OraclePriceRecord {
 	o := new(OraclePriceRecord)
 	o.Assets = make(OraclePriceRecordAssetList)
 	for _, a := range common.AllAssets {
-		o.Assets[a] = rand.Float64() * 50
+		o.Assets.SetValue(a, rand.Float64()*50)
 	}
 	o.Nonce = make([]byte, 8) // random nonce
 	rand.Read(o.Nonce)
@@ -700,7 +725,7 @@ type winner struct {
 
 func genWinnerOPR(prev [10]string, winners []string) winner {
 	opr := new(OraclePriceRecord)
-	opr.WinPreviousOPR = prev
+	opr.WinPreviousOPR = prev[:]
 
 	if winners == nil {
 		return winner{opr, nil}
@@ -768,4 +793,21 @@ func TestVerifyWinners(t *testing.T) {
 			}
 		})
 	}
+}
+
+// GradeBlock is put here to maintain the old method signature
+// It is only used for v1 grading
+//
+// Old Description:
+// 	GradeBlock takes all OPRs in a block, sorts them according to Difficulty, and grades the top 50.
+// 	The top ten graded entries are considered the winners. Returns the top 50 sorted by grade, then the original list
+// 	sorted by difficulty.
+func GradeBlock(list []*OraclePriceRecord) (graded []*OraclePriceRecord, sorted []*OraclePriceRecord) {
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
+
+	common.SetTestingVersion(1)
+	graded = GradeMinimum(list, common.UnitTestNetwork, 0)
+	return graded, list
 }

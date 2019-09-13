@@ -5,7 +5,6 @@ package opr_test
 
 import (
 	"crypto/sha256"
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"testing"
@@ -14,6 +13,30 @@ import (
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/opr"
 )
+
+func TestOPRTokens(t *testing.T) {
+	opr := NewOraclePriceRecord()
+	opr.Version = 1
+
+	if len(opr.GetTokens()) != len(common.AssetsV1) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV1), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.AssetsV1[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV1[i])
+		}
+	}
+
+	opr.Version = 2
+	if len(opr.GetTokens()) != len(common.AssetsV2) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV2), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.AssetsV2[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV2[i])
+		}
+	}
+}
 
 func TestOPR_JSON_Marshal(t *testing.T) {
 	LX.Init(0x123412341234, 25, 256, 5)
@@ -24,7 +47,7 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	//opr.Nonce = base58.Encode(LX.Hash([]byte("a Nonce")))
 	//opr.ChainID = base58.Encode(LX.Hash([]byte("a chainID")))
 	opr.Dbht = 1901232
-	opr.WinPreviousOPR = [10]string{
+	opr.WinPreviousOPR = []string{
 		base58.Encode(LX.Hash([]byte("winner number 1"))),
 		base58.Encode(LX.Hash([]byte("winner number 2"))),
 		base58.Encode(LX.Hash([]byte("winner number 3"))),
@@ -36,9 +59,9 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 		base58.Encode(LX.Hash([]byte("winner number 9"))),
 		base58.Encode(LX.Hash([]byte("winner number 10"))),
 	}
-	opr.CoinbasePNTAddress = "PNT4wBqpZM9xaShSYTABzAf1i1eSHVbbNk2xd1x6AkfZiy366c620f"
+	opr.CoinbasePEGAddress = "PEG_2Gec4tfkeQ64xVPM1Rz2esDcy6XAW3kHEM1jvZLbTTWCDciiqN"
 	opr.FactomDigitalID = "minerone"
-	opr.Assets["PNT"] = 2
+	opr.Assets["PEG"] = 2
 	opr.Assets["USD"] = 20
 	opr.Assets["EUR"] = 200
 	opr.Assets["JPY"] = 11
@@ -59,18 +82,72 @@ func TestOPR_JSON_Marshal(t *testing.T) {
 	opr.Assets["XBC"] = 10127
 	opr.Assets["FCT"] = 10128
 
-	v, _ := json.Marshal(opr)
+	opr.Version = 1
+	v, _ := opr.SafeMarshal()
 	fmt.Println("len of entry", len(string(v)), "\n\n", string(v))
 	opr2 := NewOraclePriceRecord()
-	err := json.Unmarshal(v, &opr2)
+	opr2.Version = 1
+	err := opr2.SafeUnmarshal(v)
 	if err != nil {
+		t.Error(err)
 		t.Fail()
 	}
-	v2, _ := json.Marshal(opr2)
+	v2, _ := opr2.SafeMarshal()
 	fmt.Println("\n\n", string(v2))
 	if string(v2) != string(v) {
 		t.Error("JSON is different")
 	}
+}
+
+func TestValidFCTAddress(t *testing.T) {
+	tfa := func(addr string, valid bool, reason string) {
+		if v := ValidFCTAddress(addr); v != valid {
+			t.Errorf("Valid: %t, exp %t: %s", v, valid, reason)
+		}
+	}
+
+	tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpanu", true, "valid addr")
+	tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5sU9hesrRZc", true, "valid addr")
+	tfa("FA2AvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", true, "valid addr")
+
+	tfa("FA2vP7vAyDBmBBhdWqRPyM9W2WGqPYeAoMcG7QtNQb2TY6MKpana", false, "bad checksum")
+	tfa("FA2DSjsRoKEyHnmLg6BzCUg9tRpS1Hod62aEV8Gdf5aU9hesrRZc", false, "bad checksum")
+
+	tfa("Fs2Uk1vnk2JrHHQXTDvSW6LsRTFqfim4khBk2yKHU4MWSYSnQCcg", false, "not a FA key")
+	tfa("Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq", false, "not a FA key")
+	tfa("EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg", false, "not a FA key")
+
+	tfa("", false, "empty")
+	tfa("FA", false, "not long enough")
+	tfa("FAs", false, "not long enough")
+	tfa("FAAvQRG58jPtGAkRiXsajWFQvWo5VWA31ds7neG95cLJtACiiw7", false, "missing a character")
+}
+
+func TestProtobufSize(t *testing.T) {
+	opr := NewOraclePriceRecord()
+	opr.Version = 2
+	opr.CoinbaseAddress = "FA3bGeJUkzu6BnjqkcfxAqAcKXhu5dwygGnT6qfGLRy1otkEZqpd"
+	opr.FactomDigitalID = "v2protobufmarshaltesting"
+	opr.Dbht = 200000
+	for _, asset := range common.AssetsV2 {
+		opr.Assets.SetValueFromUint64(asset, rand.Uint64())
+	}
+
+	opr.WinPreviousOPR = make([]string, 25, 25)
+	for i := range opr.WinPreviousOPR {
+		opr.WinPreviousOPR[i] = "0001000200030004"
+	}
+
+	entry, err := opr.CreateOPREntry(make([]byte, 5, 5), rand.Uint64())
+	if err != nil {
+		t.Error(err)
+	}
+
+	data, err := entry.MarshalBinary()
+	if len(data) > 1024 {
+		t.Errorf("opr entry is over 1kb, found %d bytes", len(data))
+	}
+	fmt.Println(len(data))
 }
 
 func rstring(len int) string {
@@ -89,7 +166,7 @@ func genJSONOPR() *OraclePriceRecord {
 	opr.FactomDigitalID = rstring(25)
 	opr.Assets = make(OraclePriceRecordAssetList)
 	for _, a := range common.AllAssets {
-		opr.Assets[a] = rand.Float64() * 5000
+		opr.Assets.SetValue(a, rand.Float64()*5000)
 	}
 	return opr
 }
@@ -103,7 +180,7 @@ func BenchmarkJSONMarshal(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		json.Marshal(data[i])
+		data[i].SafeMarshal()
 	}
 }
 
@@ -112,7 +189,7 @@ func BenchmarkSingleOPRHash(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := json.Marshal(genJSONOPR())
+		json, _ := genJSONOPR().SafeMarshal()
 		data = append(data, json)
 	}
 	b.StartTimer()
@@ -126,7 +203,7 @@ func BenchmarkSingleSha256(b *testing.B) {
 	InitLX()
 	data := make([][]byte, 0)
 	for i := 0; i < b.N; i++ {
-		json, _ := json.Marshal(genJSONOPR())
+		json, _ := genJSONOPR().SafeMarshal()
 		data = append(data, json)
 	}
 	b.StartTimer()

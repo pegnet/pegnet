@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
-	"time"
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
+	"github.com/pegnet/pegnet/testutils"
 	"github.com/zpatrick/go-config"
 )
 
@@ -19,18 +19,18 @@ func TestBasicPollingSources(t *testing.T) {
 	end := 6
 	// Create the unit test creator
 	NewTestingDataSource = func(config *config.Config, source string) (IDataSource, error) {
-		s := new(UnitTestDataSource)
+		s := new(testutils.UnitTestDataSource)
 		v, err := strconv.Atoi(string(source[8]))
 		if err != nil {
 			panic(err)
 		}
-		s.value = float64(v)
-		s.assets = []string{common.AllAssets[v]}
-		s.name = fmt.Sprintf("UnitTest%d", v)
+		s.Value = float64(v)
+		s.Assets = []string{common.AllAssets[v]}
+		s.SourceName = fmt.Sprintf("UnitTest%d", v)
 
 		// Catch all
 		if v >= end {
-			s.assets = common.AllAssets[1:]
+			s.Assets = common.AllAssets[1:]
 		}
 		return s, nil
 	}
@@ -53,7 +53,7 @@ func TestBasicPollingSources(t *testing.T) {
 
 	s := NewDataSources(c)
 
-	pa, err := s.PullAllPEGAssets()
+	pa, err := s.PullAllPEGAssets(1)
 	if err != nil {
 		t.Error(err)
 	}
@@ -69,7 +69,7 @@ func TestBasicPollingSources(t *testing.T) {
 			}
 
 			// Let's also check there is 4 sources
-			if len(s.AssetSources[asset]) != 4 && asset != "PNT" {
+			if len(s.AssetSources[asset]) != 4 && asset != "PEG" {
 				t.Errorf("exp %d sources for %s, found %d", 4, asset, len(s.AssetSources[asset]))
 			}
 		} else {
@@ -103,7 +103,7 @@ func TestBasicPollingSources(t *testing.T) {
 		c = config.NewConfig([]config.Provider{p})
 
 		s = NewDataSources(c)
-		pa, err := s.PullAllPEGAssets()
+		pa, err := s.PullAllPEGAssets(1)
 		if err != nil {
 			t.Error(err)
 		}
@@ -126,41 +126,25 @@ func TestBasicPollingSources(t *testing.T) {
 	})
 }
 
-// UnitTestDataSource just reports the value for the supported assets
-type UnitTestDataSource struct {
-	value  float64
-	assets []string
-	name   string
-}
-
-func NewUnitTestDataSource(config *config.Config) (*UnitTestDataSource, error) {
-	s := new(UnitTestDataSource)
-	return s, nil
-}
-
-func (d *UnitTestDataSource) Name() string {
-	return d.name
-}
-
-func (d *UnitTestDataSource) Url() string {
-	return "https://unit.test/"
-}
-
-func (d *UnitTestDataSource) SupportedPegs() []string {
-	return d.assets
-}
-
-func (d *UnitTestDataSource) FetchPegPrices() (peg PegAssets, err error) {
-	peg = make(map[string]PegItem)
-
-	timestamp := time.Now()
-	for _, asset := range d.SupportedPegs() {
-		peg[asset] = PegItem{Value: d.value, When: timestamp, WhenUnix: timestamp.Unix()}
+func TestTruncate(t *testing.T) {
+	type Vector struct {
+		Vector float64
+		Exp4   float64
+		Exp8   float64
+	}
+	vects := []Vector{
+		{1, 1, 1},
+		{1.123456789, 1.1234, 1.12345678},
+		{1.12, 1.12, 1.12},
+		{1.1267, 1.1267, 1.1267},
 	}
 
-	return peg, nil
-}
-
-func (d *UnitTestDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
-	return FetchPegPrice(peg, d.FetchPegPrices)
+	for _, v := range vects {
+		if r := TruncateTo4(v.Vector); r != v.Exp4 {
+			t.Errorf("t4 exp %f, got %f", v.Exp4, r)
+		}
+		if r := TruncateTo8(v.Vector); r != v.Exp8 {
+			t.Errorf("t8 exp %f, got %f", v.Exp8, r)
+		}
+	}
 }
