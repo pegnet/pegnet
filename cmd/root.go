@@ -53,8 +53,8 @@ func init() {
 	RootCmd.PersistentFlags().String("identity", "", "Change the identity being used (default to config file)")
 	RootCmd.PersistentFlags().String("caddr", "", "Change the location of the coordinator. (default to config file)")
 	RootCmd.PersistentFlags().String("config", "", "Set a custom filepath for the config file. (default is ~/.pegnet/defaultconfig.ini)")
-	RootCmd.PersistentFlags().String("mienrdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
-	RootCmd.PersistentFlags().String("mienrdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
+	RootCmd.PersistentFlags().String("minerdb", "", "Set a custom filepath for the miner database. (default is ~/.pegnet/miner.ldb)")
+	RootCmd.PersistentFlags().String("minerdbtype", "", "Set the db type for the miner. (default is ~/.pegnet/miner.ldb)")
 
 	// Persist flags that run in PreRun, and not in the config
 	RootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
