@@ -15,7 +15,7 @@ import (
 // AlwaysOnePolling returns 1 for all prices
 func AlwaysOnePolling() *polling.DataSources {
 	polling.NewTestingDataSource = func(config *config.Config, source string) (polling.IDataSource, error) {
-		s := new(UnitTestDataSource)
+		s, _ := NewUnitTestDataSource(config)
 		v, err := strconv.Atoi(string(source[8]))
 		if err != nil {
 			panic(err)
@@ -32,7 +32,7 @@ func AlwaysOnePolling() *polling.DataSources {
 [OracleDataSources]
   UnitTest1=1
 `
-	c := config.NewConfig([]config.Provider{p})
+	c := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), p})
 	s := polling.NewDataSources(c)
 	return s
 }
