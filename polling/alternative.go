@@ -14,6 +14,8 @@ import (
 )
 
 // AlternativeMeDataSource is the datasource at https://alternative.me/crypto/api/
+//	Notes:
+//		- Price quotes are every 5 minutes
 type AlternativeMeDataSource struct {
 	config *config.Config
 }

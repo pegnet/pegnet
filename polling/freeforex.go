@@ -16,6 +16,8 @@ import (
 )
 
 // FreeForexAPIDataSource is the datasource at https://www.freeforexapi.com
+//	Notes:
+//		- Price quotes are every minute
 type FreeForexAPIDataSource struct {
 	config *config.Config
 }

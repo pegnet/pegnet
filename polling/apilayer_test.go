@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+// Need an api key to run this
+//func TestActualApiLayerPeggedAssets(t *testing.T) {
+//	ActualDataSourceTest(t, "APILayer")
+//}
+
 // TestFixedApiLayerPeggedAssets tests all the crypto assets are found on ApiLayer
 func TestFixedApiLayerPeggedAssets(t *testing.T) {
 	FixedDataSourceTest(t, "APILayer", []byte(apiLayerReponse))
