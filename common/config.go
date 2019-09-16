@@ -108,6 +108,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   OpenExchangeRatesKey=CHANGEME
   CoinMarketCapKey=CHANGEME
   1ForgeKey=CHANGEME
+  StaleQuoteDuration=10m
 
 
 [OracleDataSources]

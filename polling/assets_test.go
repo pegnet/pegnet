@@ -20,7 +20,7 @@ func TestBasicPollingSources(t *testing.T) {
 	end := 6
 	// Create the unit test creator
 	NewTestingDataSource = func(config *config.Config, source string) (IDataSource, error) {
-		s := new(testutils.UnitTestDataSource)
+		s, _ := testutils.NewUnitTestDataSource(config)
 		v, err := strconv.Atoi(string(source[8]))
 		if err != nil {
 			panic(err)
@@ -50,7 +50,7 @@ func TestBasicPollingSources(t *testing.T) {
   UnitTest8=8
 `
 
-	c := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), p})
+	c := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), common.NewDefaultConfigOptionsProvider(), p})
 
 	s := NewDataSources(c)
 
@@ -101,7 +101,7 @@ func TestBasicPollingSources(t *testing.T) {
   # Specific coin overrides
   USD=UnitTest8
 `
-		c = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), p})
+		c = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), common.NewDefaultConfigOptionsProvider(), p})
 
 		s = NewDataSources(c)
 		pa, err := s.PullAllPEGAssets(1)
