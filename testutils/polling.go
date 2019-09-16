@@ -42,10 +42,14 @@ type UnitTestDataSource struct {
 	Value      float64
 	Assets     []string
 	SourceName string
+
+	// How to timestamp price quotes
+	Timestamp func() time.Time
 }
 
 func NewUnitTestDataSource(config *config.Config) (*UnitTestDataSource, error) {
 	s := new(UnitTestDataSource)
+	s.Timestamp = time.Now
 	return s, nil
 }
 
@@ -64,7 +68,7 @@ func (d *UnitTestDataSource) SupportedPegs() []string {
 func (d *UnitTestDataSource) FetchPegPrices() (peg polling.PegAssets, err error) {
 	peg = make(map[string]polling.PegItem)
 
-	timestamp := time.Now()
+	timestamp := d.Timestamp()
 	for _, asset := range d.SupportedPegs() {
 		peg[asset] = polling.PegItem{Value: d.Value, When: timestamp, WhenUnix: timestamp.Unix()}
 	}

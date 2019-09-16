@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
@@ -49,7 +50,7 @@ func TestBasicPollingSources(t *testing.T) {
   UnitTest8=8
 `
 
-	c := config.NewConfig([]config.Provider{p})
+	c := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), p})
 
 	s := NewDataSources(c)
 
@@ -100,7 +101,7 @@ func TestBasicPollingSources(t *testing.T) {
   # Specific coin overrides
   USD=UnitTest8
 `
-		c = config.NewConfig([]config.Provider{p})
+		c = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), p})
 
 		s = NewDataSources(c)
 		pa, err := s.PullAllPEGAssets(1)
@@ -124,6 +125,88 @@ func TestBasicPollingSources(t *testing.T) {
 			t.Errorf("Exp UnitTest8, got %s", s.AssetSources["USD"][0])
 		}
 	})
+}
+
+func TestDataSourceStaleness(t *testing.T) {
+	ds := make([]IDataSource, 20)
+	mapped := make(map[string]IDataSource)
+	var names []string
+
+	reference := time.Now()
+	for i := 0; i < len(ds); i++ {
+		s := new(testutils.UnitTestDataSource)
+		s.Value = float64(i + 1)
+		s.Assets = common.AllAssets
+		s.SourceName = fmt.Sprintf("UnitTest%d", i)
+		s.Timestamp = func() time.Time {
+			return time.Now().Add(time.Duration(int(s.Value)*-1) * time.Minute)
+		}
+
+		ds[i] = s
+		mapped[s.SourceName] = ds[i]
+		names = append(names, s.SourceName)
+	}
+
+	// Set to 10m staleness
+	d := NewDataSources(configWithStaleness("10m"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err := d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 10.0 {
+		t.Error("Expected a value of 10, as the prior were stale")
+	}
+
+	// Make everything stale
+	d = NewDataSources(configWithStaleness("0s"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err = d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 1.0 {
+		t.Error("Expected a value of 1.0, as all are stale, but that is the most recent")
+	}
+
+	// Make nothing stale
+	d = NewDataSources(configWithStaleness("1h"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err = d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 20.0 {
+		t.Error("Expected a value of 20.0, as nothing is stale")
+	}
+
+}
+
+func configWithStaleness(d string) *config.Config {
+	custom := common.NewUnitTestConfigProvider()
+	custom.Data = fmt.Sprintf(`
+[Oracle]
+  StaleQuoteDuration = %s
+`, d)
+	config := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(),
+		common.NewUnitTestConfigProvider(),
+		custom})
+
+	return config
+}
+
+func reverse(list []string) []string {
+	rev := make([]string, len(list))
+	for i, v := range list {
+		rev[len(list)-i-1] = v
+	}
+	return rev
 }
 
 func TestTruncate(t *testing.T) {
