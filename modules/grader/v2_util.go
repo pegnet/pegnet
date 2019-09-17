@@ -10,7 +10,7 @@ import (
 
 // V2Payout is the amount of Pegtoshi given to the OPR with the specified index
 func V2Payout(index int) int64 {
-	if index >= 25 {
+	if index >= 25 || index < 0 {
 		return 0
 	}
 	return 200 * 1e8
