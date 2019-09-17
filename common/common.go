@@ -29,6 +29,8 @@ func GetNetwork(network string) (string, error) {
 		return MainNetwork, nil
 	case strings.ToLower(TestNetwork), strings.ToLower("TestNet"):
 		return TestNetwork, nil
+	case strings.ToLower(TestNetwork), strings.ToLower("unit-test"):
+		return UnitTestNetwork, nil
 	default:
 		return "", fmt.Errorf("'%s' is not a valid network", network)
 	}
