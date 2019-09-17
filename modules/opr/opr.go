@@ -65,8 +65,8 @@ func RandomOPRWithFields(version uint8, dbht int32) (entryhash []byte, extids []
 
 		o.Assets = make(V1AssetList)
 		for _, asset := range V1Assets {
-			// TODO: Truncate to 4?
-			o.Assets[asset] = rand.Float64()
+			// Truncate to 4
+			o.Assets[asset] = float64(int64(rand.Float64()*1e4)) / 1e4
 			if o.Assets[asset] == 0 {
 				o.Assets[asset] = 1
 			}

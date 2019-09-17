@@ -29,9 +29,6 @@ func TestGrading(t *testing.T) {
 	}
 }
 
-type NewOPR struct {
-}
-
 func testGradingIsConsistent(t *testing.T, version uint8) {
 	dbht := int32(100)
 
@@ -104,10 +101,10 @@ func testGradingIsConsistent(t *testing.T, version uint8) {
 		}
 
 		// Some grades are a lil different
-		//if oldGraded[i].Grade != newGraded[i].Grade {
-		//	t.Errorf("Diff grade: %.8f, %.8f", oldGraded[i].Grade, newGraded[i].Grade)
-		//	t.FailNow()
-		//}
+		if oldGraded[i].Grade != newGraded[i].Grade {
+			t.Errorf("Diff grade: %.8f, %.8f", oldGraded[i].Grade, newGraded[i].Grade)
+			t.FailNow()
+		}
 	}
 
 }
