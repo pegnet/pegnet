@@ -16,10 +16,15 @@ type baseGrader struct {
 
 // NewGrader instantiates a IBlockGrader Grader for a specific version.
 // Once set, the height and list of previous winners can't be changed.
-func NewGrader(version int, height int32, previousWinners []string) (BlockGrader, error) {
+func NewGrader(version uint8, height int32, previousWinners []string) (BlockGrader, error) {
+	if height < 0 {
+		return nil, fmt.Errorf("height must be > 0")
+	}
 	switch version {
 	case 1:
-		if !verifyWinnerFormat(previousWinners, 10) {
+		if len(previousWinners) == 0 {
+			previousWinners = make([]string, 10)
+		} else if !verifyWinnerFormat(previousWinners, 10) {
 			return nil, fmt.Errorf("invalid previous winners")
 		}
 		v1 := new(V1BlockGrader)
@@ -27,7 +32,9 @@ func NewGrader(version int, height int32, previousWinners []string) (BlockGrader
 		v1.prevWinners = previousWinners
 		return v1, nil
 	case 2:
-		if !verifyWinnerFormat(previousWinners, 10) && !verifyWinnerFormat(previousWinners, 25) {
+		if len(previousWinners) == 0 {
+			previousWinners = make([]string, 25)
+		} else if !verifyWinnerFormat(previousWinners, 10) && !verifyWinnerFormat(previousWinners, 25) {
 			return nil, fmt.Errorf("invalid previous winners")
 		}
 		v2 := new(V2BlockGrader)
