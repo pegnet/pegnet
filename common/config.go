@@ -57,7 +57,7 @@ func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings[ConfigMinerDBType] = "ldb"
 	settings[ConfigPegnetNodeDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/node.sqlite"
 	settings[ConfigControlPanelPort] = "8080"
-	settings[ConfigStaleDuration] = "10m"
+	settings[ConfigStaleDuration] = "30m"
 
 	return settings, nil
 }

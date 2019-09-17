@@ -332,10 +332,12 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 			prices = append(prices, price)
 
 			// We can break out if this is a 'good' price
-			//	Is it stale?
-			if reference.Sub(price.When) > d.staleDuration {
+			//	Is it stale AND the market is open? We can expect stale quotes in a closed market
+			if reference.Sub(price.When) > d.staleDuration && IsMarketOpen(asset, reference) {
 				// This price quote is stale, keep fetching prices
-				continue
+				if IsMarketOpen(asset, reference) {
+					continue
+				}
 			}
 
 			// This price is acceptable
