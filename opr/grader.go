@@ -188,10 +188,11 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 			if oprs != nil && len(oprs.GradedOPRs) > 0 {
 				// top 10 get paid for v1, top 25 for v2
 				amt := g.MinRecords(int64(oprs.GradedOPRs[0].Dbht))
+				// TODO: We should really only send the Graded, rather than graded and ToBePaid
 				if len(oprs.GradedOPRs) >= amt {
 					winners.ToBePaid = oprs.GradedOPRs[:amt]
 				}
-				winners.AllOPRs = oprs.OPRs
+				winners.GradedOPRs = oprs.GradedOPRs
 			}
 
 			// Alert followers that we have graded the previous block
@@ -634,8 +635,8 @@ func (g *QuickGrader) OprByShortHash(shorthash string) OraclePriceRecord {
 
 // OPRs is the message sent by the Grader
 type OPRs struct {
-	ToBePaid []*OraclePriceRecord
-	AllOPRs  []*OraclePriceRecord
+	ToBePaid   []*OraclePriceRecord
+	GradedOPRs []*OraclePriceRecord
 
 	// Since this is used as a message, we need a way to send an error
 	Error error
