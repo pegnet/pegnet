@@ -600,7 +600,7 @@ var decodeEntry = &cobra.Command{
 			CmdError(cmd, fmt.Errorf("not an opr entry"))
 		}
 
-		if len(entry.ExtIDs[0]) != 1 {
+		if len(entry.ExtIDs[2]) != 1 {
 			CmdError(cmd, fmt.Errorf("opr version must be 1 byte in length, found %d", len(entry.ExtIDs[0])))
 		}
 

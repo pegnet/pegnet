@@ -51,6 +51,18 @@ func NewTCPClient(conn net.Conn, s *TCPServer) *TCPClient {
 	return m
 }
 
+func (c *TCPClient) LogFields() log.Fields {
+	ip := "unknown"
+	if c.conn != nil { // Protect against an nil dereference
+		ip = c.conn.RemoteAddr().String()
+	}
+
+	return log.Fields{
+		"ip": ip,
+		"id": c.id,
+	}
+}
+
 func (c *TCPClient) init() {
 	c.decoder = gob.NewDecoder(c.conn)
 	c.encoder = gob.NewEncoder(c.conn)

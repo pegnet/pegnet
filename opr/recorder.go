@@ -125,25 +125,27 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	for i, block := range g.GetBlocks() {
 		var _ = i
 		last := 50
-		if len(block.OPRs) < 50 {
-			last = len(block.OPRs) - 1
+		if len(block.GradedOPRs) < 50 {
+			last = len(block.GradedOPRs) - 1
 		}
 		if last < 0 {
 			continue
 		}
 
-		cutoffD := CalculateMinimumDifficultyFromOPRs(block.OPRs, cutoff)
+		// Sort the graded by difficulty
+		sort.SliceStable(block.GradedOPRs, func(i, j int) bool { return block.GradedOPRs[i].Difficulty > block.GradedOPRs[j].Difficulty })
+		cutoffD := CalculateMinimumDifficultyFromOPRs(block.GradedOPRs, cutoff)
 
 		err = writer.Write([]string{
 			fmt.Sprintf("%d", block.Dbht),
 			fmt.Sprintf("%d", len(block.OPRs)),
 
-			fmt.Sprintf("%d", block.OPRs[0].Difficulty),
-			fmt.Sprintf("%x", block.OPRs[0].Difficulty),
+			fmt.Sprintf("%d", block.GradedOPRs[0].Difficulty),
+			fmt.Sprintf("%x", block.GradedOPRs[0].Difficulty),
 
 			fmt.Sprintf("%d", last),
-			fmt.Sprintf("%d", block.OPRs[last].Difficulty),
-			fmt.Sprintf("%x", block.OPRs[last].Difficulty),
+			fmt.Sprintf("%d", block.GradedOPRs[last].Difficulty),
+			fmt.Sprintf("%x", block.GradedOPRs[last].Difficulty),
 
 			fmt.Sprintf("%d", cutoff),
 			fmt.Sprintf("%d", cutoffD),

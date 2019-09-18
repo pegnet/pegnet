@@ -55,7 +55,7 @@ notifications:
 before_deploy:
   - go get github.com/mitchellh/gox
   - gox -os="linux darwin windows freebsd" -arch="amd64"
-  - gox -osarch="linux/arm"
+  - gox -os="linux" -arch="arm arm64"
 
 # Build and deploy for any tagged commit.
 deploy:
@@ -67,6 +67,7 @@ deploy:
     - pegnet_darwin_amd64
     - pegnet_linux_amd64
     - pegnet_linux_arm
+    - pegnet_linux_arm64
     - pegnet_freebsd_amd64
   skip_cleanup: true
   on:

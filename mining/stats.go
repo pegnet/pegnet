@@ -197,12 +197,25 @@ func (g *GroupMinerStats) AvgHashRatePerMiner() float64 {
 	return acc / totalDur.Seconds()
 }
 
+// AvgDurationPerMiner is the average duration of mining across all miners.
+func (g *GroupMinerStats) AvgDurationPerMiner() time.Duration {
+	var totalDur time.Duration
+	// Weight by duration
+	for _, m := range g.Miners {
+		elapsed := m.Stop.Sub(m.Start)
+		totalDur += elapsed
+	}
+
+	return totalDur / time.Duration(len(g.Miners))
+}
+
 func (g *GroupMinerStats) LogFields() log.Fields {
 	f := log.Fields{
 		"dbht":           g.BlockHeight,
 		"miners":         len(g.Miners),
 		"miner_hashrate": fmt.Sprintf("%s/s", humanize.FormatFloat("", g.AvgHashRatePerMiner())),
 		"total_hashrate": fmt.Sprintf("%s/s", humanize.FormatFloat("", g.TotalHashPower())),
+		"avg_duration":   fmt.Sprintf("%s", g.AvgDurationPerMiner()),
 	}
 
 	for k, v := range g.Tags {

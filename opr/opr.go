@@ -12,6 +12,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"sync"
 
@@ -387,11 +388,18 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		opr.WinPreviousOPR = make([]string, min, min)
 	}
 
-	if len(winners.AllOPRs) > 0 {
+	if len(winners.GradedOPRs) > 0 {
 		cutoff, _ := c.Int(common.ConfigSubmissionCutOff)
 		if cutoff > 0 { // <= 0 disables it
 			// This will calculate a minimum difficulty floor for our target cutoff.
-			opr.MinimumDifficulty = CalculateMinimumDifficultyFromOPRs(winners.AllOPRs, cutoff)
+			// We need to sort the graded oprs by difficulty before we do this cutoff
+			// TODO: This is extra cost that could be reduced, but with the modularization
+			// 		coming soon, a lot of this has to be redesigned anyway. Let's eat the cost
+			// 		once per 10min for now.
+			sorted := make([]*OraclePriceRecord, len(winners.GradedOPRs))
+			copy(sorted, winners.GradedOPRs)
+			sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Difficulty > sorted[j].Difficulty })
+			opr.MinimumDifficulty = CalculateMinimumDifficultyFromOPRs(sorted, cutoff)
 		}
 	}
 

@@ -351,7 +351,7 @@ func (s *MiningServer) onClientConnectionClosed(c *TCPClient, err error) {
 
 	delete(s.clients, c.id)
 	s.numClients = len(s.clients)
-	log.WithFields(s.Fields()).Info("Client disconnected")
+	log.WithFields(s.Fields()).WithFields(c.LogFields()).Info("Client disconnected")
 }
 
 func (s *MiningServer) onNewClient(c *TCPClient) {
@@ -362,7 +362,7 @@ func (s *MiningServer) onNewClient(c *TCPClient) {
 			log.WithFields(s.Fields()).WithError(err).WithField("func", "onNewClient").Error("failed to send challenge")
 			return
 		}
-		log.WithFields(s.Fields()).WithField("id", c.id).Info("Client pending challenge")
+		log.WithFields(s.Fields()).WithFields(c.LogFields()).Info("Client pending challenge")
 	} else {
 		err := c.SendNetworkCommand(NewNetworkMessage(Ping, nil))
 		if err != nil {
@@ -381,7 +381,7 @@ func (s *MiningServer) Accept(c *TCPClient) {
 
 	s.clients[c.id] = c
 	s.numClients = len(s.clients)
-	log.WithFields(s.Fields()).WithField("id", c.id).Info("Client connected")
+	log.WithFields(s.Fields()).WithFields(c.LogFields()).Info("Client connected")
 }
 
 func (s *MiningServer) WriteEntry(entry *factom.Entry) error {
