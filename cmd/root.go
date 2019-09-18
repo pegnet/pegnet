@@ -61,7 +61,7 @@ func init() {
 	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
 	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
 
-	RootCmd.PersistentFlags().StringArrayP("override", "o", []string{}, "Custom config overrides. Can override any setting")
+	RootCmd.PersistentFlags().StringArrayP("override", "r", []string{}, "Custom config overrides. Can override any setting")
 
 	// Initialize the config file with the config, then with cmd flags
 	RootCmd.PersistentPreRunE = rootPreRunSetup
