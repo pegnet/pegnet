@@ -76,6 +76,7 @@ var RootCmd = &cobra.Command{
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		b := balances.NewBalanceTracker()
 
 		ValidateConfig(Config) // Will fatal log if it fails
