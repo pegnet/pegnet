@@ -127,7 +127,7 @@ type DataSources struct {
 
 	config *config.Config
 
-	// Some configuration variables read in
+	// Some configuration variables read in from the config
 	staleDuration time.Duration
 }
 
@@ -320,7 +320,7 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 
 	var prices []PegItem
 
-	// Eval all datasources on the same time. This time is on a per asset basis, but it is
+	// Eval all datasources from the reference time
 	for _, source := range sourceList {
 		var price PegItem
 		price, err = sources[source].FetchPegPrice(asset)
@@ -335,9 +335,7 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 			//	Is it stale AND the market is open? We can expect stale quotes in a closed market
 			if reference.Sub(price.When) > d.staleDuration && IsMarketOpen(asset, reference) {
 				// This price quote is stale, keep fetching prices
-				if IsMarketOpen(asset, reference) {
-					continue
-				}
+				continue
 			}
 
 			// This price is acceptable
@@ -350,6 +348,7 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		return
 	}
 
+	// pa.When is uninitialized, so the reference.Sub(pa.When) == a very large value
 	mostRecent := reference.Sub(pa.When)
 	// Now we iterate over the prices we found, and return the most recent quote
 	for _, price := range prices {
