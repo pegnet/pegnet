@@ -29,7 +29,6 @@ require (
 	github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/boltdb/bolt v1.3.1 // indirect
-	github.com/btcsuite/btcd v0.0.0-20190824003749-130ea5bddde3 // indirect
 	github.com/btcsuitereleases/btcutil v0.0.0-20150612230727-f2b1058a8255 // indirect
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
@@ -55,7 +54,6 @@ require (
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
 	golang.org/x/sys v0.0.0-20190813064441-fde4db37ae7a // indirect
 	golang.org/x/text v0.3.2 // indirect
-	google.golang.org/appengine v1.4.0 // indirect
 	google.golang.org/genproto v0.0.0-20190801165951-fa694d86fc64 // indirect
 	google.golang.org/grpc v1.23.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
