@@ -2,7 +2,6 @@ package opr_test
 
 import (
 	"bytes"
-	"fmt"
 	"math/rand"
 	"reflect"
 	"testing"
@@ -99,7 +98,7 @@ func TestClone(t *testing.T) {
 		testClone(t, 1)
 	})
 	t.Run("V2 Test Clone", func(t *testing.T) {
-		//testClone(t, 2)
+		testClone(t, 2)
 	})
 }
 
@@ -107,7 +106,6 @@ func testClone(t *testing.T, version uint8) {
 	for i := 0; i < 100; i++ {
 		_, _, content := testutils.RandomOPR(version)
 		o1, _ := opr.Parse(content)
-		fmt.Println(string(content))
 		o2 := o1.Clone()
 		if !reflect.DeepEqual(o1, o2) {
 			t.Errorf("clone is not a deep equal")
