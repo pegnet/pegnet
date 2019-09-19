@@ -25,7 +25,7 @@ func TestNewGrader(t *testing.T) {
 		wantErr bool
 	}{
 		{"unsupported version", args{version: 0, height: 0, previousWinners: nil}, true},
-		{"unsupported height", args{version: 0, height: -500, previousWinners: nil}, true},
+		{"unsupported Height", args{version: 0, height: -500, previousWinners: nil}, true},
 		{"v1 correct", args{version: 1, height: 1, previousWinners: winners[:10]}, false},
 		{"v1 empty winners", args{version: 1, height: 1, previousWinners: nil}, false},
 		{"v1 too few winners", args{version: 1, height: 1, previousWinners: winners[:5]}, true},
@@ -64,7 +64,7 @@ func TestNewGrader(t *testing.T) {
 				t.Errorf("NewGrader() version mismatch got = %d, want = %d", got.Version(), tt.args.version)
 			}
 			if got.Height() != tt.args.height {
-				t.Errorf("NewGrader() height mismatch got = %d, want = %d", got.Height(), tt.args.height)
+				t.Errorf("NewGrader() Height mismatch got = %d, want = %d", got.Height(), tt.args.height)
 			}
 
 			prev := tt.args.previousWinners

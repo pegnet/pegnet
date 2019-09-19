@@ -29,7 +29,7 @@ func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []strin
 	}
 
 	if len(extids) != 3 {
-		return nil, NewValidateError("invalid extid count")
+		return nil, NewValidateError("invalid extid OPRCount")
 	}
 
 	if len(extids[2]) != 1 || extids[2][0] != 1 {
@@ -46,7 +46,7 @@ func ValidateV1(entryhash []byte, extids [][]byte, height int32, winners []strin
 	}
 
 	if o.Dbht != height {
-		return nil, NewValidateError("invalid height")
+		return nil, NewValidateError("invalid Height")
 	}
 
 	// verify assets

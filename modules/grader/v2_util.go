@@ -23,7 +23,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 	}
 
 	if len(extids) != 3 {
-		return nil, NewValidateError("invalid extid count")
+		return nil, NewValidateError("invalid extid OPRCount")
 	}
 
 	if len(extids[1]) != 8 {
@@ -40,7 +40,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 	}
 
 	if o.Height != height {
-		return nil, NewValidateError("invalid height")
+		return nil, NewValidateError("invalid Height")
 	}
 
 	// verify assets
@@ -54,7 +54,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 	}
 
 	if len(o.Winners) != 10 && len(o.Winners) != 25 {
-		return nil, NewValidateError("must have exactly 10 or 25 previous winning shorthashes")
+		return nil, NewValidateError("must have exactly 10 or 25 previous winning ShortHashes")
 	}
 
 	if !verifyWinnerFormat(o.GetPreviousWinners(), 10) && !verifyWinnerFormat(o.GetPreviousWinners(), 25) {

@@ -14,10 +14,10 @@ type GradingOPR struct {
 	SelfReportedDifficulty uint64
 
 	// Grading Variables
-	Grade    float64
-	OPRHash  []byte
-	position int
-	payout   int64
+	Grade         float64
+	OPRHash       []byte
+	GradePosition int
+	RewardPayout  int64
 
 	// Decoded OPR
 	OPR opr.OPR
@@ -32,8 +32,8 @@ func (o *GradingOPR) Clone() *GradingOPR {
 	clone.Grade = o.Grade
 	clone.OPRHash = append(o.OPRHash[:0:0], o.OPRHash...)
 	clone.OPR = o.OPR.Clone()
-	clone.payout = o.payout
-	clone.position = o.position
+	clone.RewardPayout = o.RewardPayout
+	clone.GradePosition = o.GradePosition
 	return clone
 }
 
@@ -45,11 +45,11 @@ func (o *GradingOPR) Shorthash() string {
 // Payout is the amount of Pegtoshi this OPR would be rewarded with.
 // Only valid for GradingOPRs coming from a GradedBlock
 func (o *GradingOPR) Payout() int64 {
-	return o.payout
+	return o.RewardPayout
 }
 
 // Position is the index of the OPR in the Graded set. Position 0 is the winner.
 // Only valid for GradingOPRs coming from a GradedBlock
 func (o *GradingOPR) Position() int {
-	return o.position
+	return o.GradePosition
 }

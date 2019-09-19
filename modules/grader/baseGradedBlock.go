@@ -7,60 +7,60 @@ import (
 	"github.com/pegnet/pegnet/modules/lxr30"
 )
 
-// baseGradedBlock is an opr set that has been graded
-type baseGradedBlock struct {
-	oprs   []*GradingOPR
-	cutoff int
-	height int32
-	count  int
+// BaseGradedBlock is an opr set that has been graded
+type BaseGradedBlock struct {
+	OPRs     []*GradingOPR
+	CutOff   int
+	Height   int32
+	OPRCount int
 
-	shorthashes []string
+	ShortHashes []string
 }
 
-func (b *baseGradedBlock) cloneOPRS(oprs []*GradingOPR) {
-	b.oprs = nil
+func (b *BaseGradedBlock) cloneOPRS(oprs []*GradingOPR) {
+	b.OPRs = nil
 	for _, o := range oprs {
-		b.oprs = append(b.oprs, o.Clone())
+		b.OPRs = append(b.OPRs, o.Clone())
 	}
-	b.count = len(oprs)
+	b.OPRCount = len(oprs)
 }
 
-func (b *baseGradedBlock) Count() int {
-	return b.count
+func (b *BaseGradedBlock) Count() int {
+	return b.OPRCount
 }
 
 // AmountToGrade returns the number of OPRs the grading algorithm attempted to use in the process.
-func (b *baseGradedBlock) AmountGraded() int {
-	return len(b.oprs)
+func (b *BaseGradedBlock) AmountGraded() int {
+	return len(b.OPRs)
 }
 
-func (b *baseGradedBlock) createShortHashes(count int) {
+func (b *BaseGradedBlock) createShortHashes(count int) {
 	shortHashes := make([]string, count)
-	if len(b.oprs) >= count {
+	if len(b.OPRs) >= count {
 		for i := 0; i < count; i++ {
-			shortHashes[i] = b.oprs[i].Shorthash()
+			shortHashes[i] = b.OPRs[i].Shorthash()
 		}
 	}
-	b.shorthashes = shortHashes
+	b.ShortHashes = shortHashes
 }
 
-// Graded returns the OPRs that made it into the cutoff
-func (b *baseGradedBlock) Graded() []*GradingOPR {
-	return b.oprs
+// Graded returns the OPRs that made it into the CutOff
+func (b *BaseGradedBlock) Graded() []*GradingOPR {
+	return b.OPRs
 }
 
 // sortByDifficulty uses an efficient algorithm based on self-reported difficulty
 // to avoid having to LXRhash the entire set.
 // calculates at most `limit + misreported difficulties` hashes
-func (b *baseGradedBlock) sortByDifficulty(limit int) {
-	sort.SliceStable(b.oprs, func(i, j int) bool {
-		return b.oprs[i].SelfReportedDifficulty > b.oprs[j].SelfReportedDifficulty
+func (b *BaseGradedBlock) sortByDifficulty(limit int) {
+	sort.SliceStable(b.OPRs, func(i, j int) bool {
+		return b.OPRs[i].SelfReportedDifficulty > b.OPRs[j].SelfReportedDifficulty
 	})
 
 	lx := lxr30.Init()
 
 	topX := make([]*GradingOPR, 0)
-	for _, o := range b.oprs {
+	for _, o := range b.OPRs {
 		hash := lx.Hash(append(o.OPRHash, o.Nonce...))
 		diff := binary.BigEndian.Uint64(hash)
 
@@ -75,16 +75,16 @@ func (b *baseGradedBlock) sortByDifficulty(limit int) {
 		}
 	}
 
-	b.oprs = topX
+	b.OPRs = topX
 }
 
 // filter out duplicate gradingOPRs. an OPR is a duplicate when both
 // nonce and oprhash are the same
-func (b *baseGradedBlock) filterDuplicates() {
+func (b *BaseGradedBlock) filterDuplicates() {
 	filtered := make([]*GradingOPR, 0)
 
 	added := make(map[string]bool)
-	for _, v := range b.oprs {
+	for _, v := range b.OPRs {
 		id := string(append(v.Nonce, v.OPRHash...))
 		if !added[id] {
 			filtered = append(filtered, v)
@@ -92,7 +92,7 @@ func (b *baseGradedBlock) filterDuplicates() {
 		}
 	}
 
-	b.oprs = filtered
+	b.OPRs = filtered
 }
 
-func (b *baseGradedBlock) Cutoff() int { return b.cutoff }
+func (b *BaseGradedBlock) Cutoff() int { return b.CutOff }

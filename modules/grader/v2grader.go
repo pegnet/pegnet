@@ -14,7 +14,7 @@ func (v2 *V2BlockGrader) Version() uint8 {
 	return 2
 }
 
-// WinnerAmount is the number of OPRs that receive a payout
+// WinnerAmount is the number of OPRs that receive a RewardPayout
 func (v2 *V2BlockGrader) WinnerAmount() int {
 	return 25
 }
@@ -43,18 +43,18 @@ func (v2 *V2BlockGrader) Grade() GradedBlock {
 	return v2.GradeCustom(50)
 }
 
-// GradeCustom grades the block using a custom cutoff for the top X
+// GradeCustom grades the block using a custom CutOff for the top X
 func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 
 	block := new(V2GradedBlock)
-	block.cutoff = cutoff
-	block.height = v2.height
+	block.CutOff = cutoff
+	block.Height = v2.height
 	block.cloneOPRS(v2.oprs)
 	block.filterDuplicates()
 	block.sortByDifficulty(cutoff)
 	block.grade()
-	if len(block.oprs) < 25 {
-		block.shorthashes = v2.prevWinners
+	if len(block.OPRs) < 25 {
+		block.ShortHashes = v2.prevWinners
 	} else {
 		block.createShortHashes(25)
 	}

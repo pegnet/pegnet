@@ -15,10 +15,10 @@ type baseGrader struct {
 }
 
 // NewGrader instantiates a IBlockGrader Grader for a specific version.
-// Once set, the height and list of previous winners can't be changed.
+// Once set, the Height and list of previous winners can't be changed.
 func NewGrader(version uint8, height int32, previousWinners []string) (BlockGrader, error) {
 	if height < 0 {
-		return nil, fmt.Errorf("height must be > 0")
+		return nil, fmt.Errorf("Height must be > 0")
 	}
 	switch version {
 	case 1:
@@ -59,7 +59,7 @@ func (bg *baseGrader) GetPreviousWinners() []string {
 	return bg.prevWinners
 }
 
-// Height returns the height the block grader is set to
+// Height returns the Height the block grader is set to
 func (bg *baseGrader) Height() int32 {
 	return bg.height
 }
