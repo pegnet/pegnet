@@ -45,7 +45,8 @@ func TestOPRAccessors(t *testing.T) {
 	// The order should be fixed
 	if o.GetOrderedAssetsFloat()[0].Value != float64(0.0) &&
 		o.GetOrderedAssetsFloat()[1].Value != 1.0 &&
-		o.GetOrderedAssetsFloat()[2].Value != 1.101 {
+		o.GetOrderedAssetsFloat()[2].Value != 1.101 &&
+		o.GetOrderedAssetsUint()[2].Value != uint64(1.101*1e8) {
 		t.Error("price quotes incorrect")
 	}
 
@@ -85,7 +86,8 @@ func TestOPRAccessors(t *testing.T) {
 	// The order should be fixed
 	if o.GetOrderedAssetsUint()[0].Value != 0 &&
 		o.GetOrderedAssetsUint()[1].Value != 1e8 &&
-		o.GetOrderedAssetsUint()[2].Value != uint64(110643335) {
+		o.GetOrderedAssetsUint()[2].Value != uint64(110643335) &&
+		o.GetOrderedAssetsFloat()[2].Value != opr.Uint64ToFloat(110643335) {
 		t.Error("price quotes incorrect")
 	}
 }
