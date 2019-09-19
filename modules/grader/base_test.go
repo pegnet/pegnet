@@ -1,9 +1,11 @@
-package grader
+package grader_test
 
 import (
 	"crypto/rand"
 	"fmt"
 	"testing"
+
+	. "github.com/pegnet/pegnet/modules/grader"
 )
 
 func TestNewGrader(t *testing.T) {
