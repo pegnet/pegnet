@@ -15,12 +15,6 @@ var conversionTests = []struct {
 	ToRate         uint64
 	ExpectedResult int64
 }{{
-	Name:           "valid",
-	FromAmount:     1e8,
-	FromRate:       10250 * 1e8,
-	ToRate:         1e8,
-	ExpectedResult: 10250 * 1e8,
-}, {
 	Name:           "invalid (zero fromRate)",
 	Error:          "invalid rate: 0",
 	FromAmount:     1,
@@ -34,6 +28,36 @@ var conversionTests = []struct {
 	FromRate:       1,
 	ToRate:         0,
 	ExpectedResult: 0,
+}, {
+	Name:           "zero input",
+	FromAmount:     0,           // 0 input unit
+	FromRate:       10000 * 1e8, // $10000 / input unit
+	ToRate:         1e8,         // $1 / output unit
+	ExpectedResult: 0,           // 0 output units
+}, {
+	Name:           "whole unit input",
+	FromAmount:     1e8,         // 1 input unit
+	FromRate:       10000 * 1e8, // $10000 / input unit
+	ToRate:         1e8,         // $1 / output unit
+	ExpectedResult: 10000 * 1e8, // 10000 output units
+}, {
+	Name:           "half unit input",
+	FromAmount:     0.5e8,       // 1/2 input unit
+	FromRate:       10000 * 1e8, // $10000 / input unit
+	ToRate:         1e8,         // $1 / output unit
+	ExpectedResult: 5000 * 1e8,  // 5000 output units
+}, {
+	Name:           "smallest unit input",
+	FromAmount:     1,           // 1e-8 input unit
+	FromRate:       10000 * 1e8, // $10000 / input unit
+	ToRate:         1e8,         // $1 / output unit
+	ExpectedResult: 10000,       // 10000e-8 output units
+}, {
+	Name:           "smallest unit input (truncated result)",
+	FromAmount:     1,           // 1e-8 input unit
+	FromRate:       1e8,         // $1 / input unit
+	ToRate:         10000 * 1e8, // $10000 / output unit
+	ExpectedResult: 0,           // 0 output units
 }}
 
 func TestConversions_Convert(t *testing.T) {
