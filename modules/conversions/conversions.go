@@ -14,6 +14,9 @@ import (
 //  ----------  *  ------------  *  ----------  =  ?? toType
 //     1            1 fromType      toRate USD
 func Convert(amount int64, fromRate, toRate uint64) (int64, error) {
+	if amount < 0 {
+		return 0, fmt.Errorf("invalid amount: must be greater than or equal to zero")
+	}
 	if fromRate == 0 || toRate == 0 {
 		return 0, fmt.Errorf("invalid rate: 0")
 	}

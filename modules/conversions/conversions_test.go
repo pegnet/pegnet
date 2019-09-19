@@ -29,6 +29,13 @@ var conversionTests = []struct {
 	ToRate:         0,
 	ExpectedResult: 0,
 }, {
+	Name:           "invalid (zero toRate)",
+	Error:          "invalid amount: must be greater than or equal to zero",
+	FromAmount:     -1,
+	FromRate:       1,
+	ToRate:         1,
+	ExpectedResult: 0,
+}, {
 	Name:           "zero input",
 	FromAmount:     0,           // 0 input unit
 	FromRate:       10000 * 1e8, // $10000 / input unit
