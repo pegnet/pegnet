@@ -44,3 +44,11 @@ func TestValid(t *testing.T) {
 	}
 
 }
+
+func TestRandom(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		if err := Valid(Random()); err != nil {
+			t.Error(err)
+		}
+	}
+}
