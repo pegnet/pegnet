@@ -4,6 +4,7 @@
 package database_test
 
 import (
+	"fmt"
 	"testing"
 
 	. "github.com/pegnet/pegnet/database"
@@ -20,6 +21,17 @@ func Chk(t *testing.T, err error) {
 func TestDatabaseOpen(t *testing.T) {
 	DB := Ldb{Pathname: "/tmp/testdb"}
 	Chk(t, DB.Open(DB.Pathname))
+}
+
+func TestBuildKey(t *testing.T) {
+	used := make(map[string]int)
+	for i := 0; i < 5000; i++ {
+		key := fmt.Sprintf("%x\n", BuildKey(Bucket(i), []byte{}))
+		if _, ok := used[key]; ok {
+			t.Errorf("key at index %d hits the same key as another bucket", i)
+		}
+		used[key] += 1
+	}
 }
 
 type junk struct {

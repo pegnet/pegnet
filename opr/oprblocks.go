@@ -60,7 +60,7 @@ func (d *OPRBlockStore) WriteOPRBlock(opr *OprBlock) error {
 
 	// The multiple indexes. First we write the OPR block to the first index by height. This is where
 	// the raw data will live
-	err = d.DB.Put(database.BUCKET_OPR_HEIGHT, database.HeightToBytes(obj.DblockHeight), data)
+	err = d.DB.Put(database.BUCKET_OPR_HEIGHT, database.HeightToBytes(int32(obj.DblockHeight)), data)
 	if err != nil {
 		return err
 	}
@@ -73,7 +73,7 @@ func (d *OPRBlockStore) WriteOPRBlock(opr *OprBlock) error {
 func (d *OPRBlockStore) FetchOPRBlock(height int64) (*OprBlock, error) {
 	obj := new(OPRBlockDatabaseObject)
 
-	data, err := d.DB.Get(database.BUCKET_OPR_HEIGHT, database.HeightToBytes(height))
+	data, err := d.DB.Get(database.BUCKET_OPR_HEIGHT, database.HeightToBytes(int32(height)))
 	if err != nil {
 		return nil, err
 	}

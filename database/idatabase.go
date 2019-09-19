@@ -11,13 +11,22 @@ import (
 
 type Bucket int
 
+// Bucket list
 const (
 	INVALID Bucket = iota // Don't use zero, that's a good invalid value
 
-	// The bucket indexed by height that has the raw oprblock data
+	// BUCKET_OPR_HEIGHT bucket indexed by height that has the raw oprblock data
 	//	Key -> Height
 	//	Value -> Graded opr list
 	BUCKET_OPR_HEIGHT
+
+	// BUCKET_PREVIOUS_OPR_HEIGHT bucket indexed by height that has the height of the previous opr block
+	//	Key -> Height
+	//	Value -> height of the prior oprblock
+	BUCKET_PREVIOUS_OPR_HEIGHT
+
+	// BUCKET_CURRENT_HEAD bucket stores the current head of the graded opr blocks
+	BUCKET_CURRENT_HEAD
 
 	// These are unused
 	BUCKET_OPR        // Mostly Valid (has the prior winners, has proper structure
@@ -25,6 +34,12 @@ const (
 	BUCKET_VALID_EB   // OPR chain Entry Blocks that actually qualify to pay out mining fees and set asset prices
 	BUCKET_VALID_OPRS // OPR Lists of valid OPRS, indexed by Directory Block Height, ordered as graded
 	BUCKET_BALANCES   // PEG payout balances
+)
+
+// Records are fixed records in a certain bucket
+var (
+	// BUCKET_CURRENT_HEAD Records
+	RECORD_OPR_CHAIN_HEAD = []byte("OPRChainHead")
 )
 
 type Iterator interface {
@@ -69,8 +84,15 @@ func Encode(o interface{}) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func HeightToBytes(v int64) []byte {
+func HeightToBytes(v int32) []byte {
 	buf := make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, uint64(v))
 	return buf
+}
+
+func BytesToHeight(d []byte) int32 {
+	if len(d) != 8 {
+		return -1
+	}
+	return int32(binary.BigEndian.Uint64(d))
 }
