@@ -84,5 +84,60 @@ func TestInvalidParse(t *testing.T) {
 			t.Errorf("expected a parse error, got none")
 		}
 	}
+}
 
+// TestClone ensures the clone command works gets us a good copy
+func TestClone(t *testing.T) {
+	t.Run("V1 Test Parse", func(t *testing.T) {
+		testClone(t, 1)
+	})
+	t.Run("V2 Test Parse", func(t *testing.T) {
+		testClone(t, 2)
+	})
+}
+
+func testClone(t *testing.T, version uint8) {
+	for i := 0; i < 100; i++ {
+		_, _, content := testutils.RandomOPR(version)
+		o1, _ := opr.Parse(content)
+		o2 := o1.Clone()
+		if !reflect.DeepEqual(o1, o2) {
+			t.Errorf("clone is not a deep equal")
+		}
+	}
+}
+
+// Ensure we keep under 1EC
+// This test is a bit rough since things like the nonce and id are variable length.
+// But it is a good indicator if things go far over 1EC
+func TestUnder1EC(t *testing.T) {
+	t.Run("version 1", func(t *testing.T) {
+		test1EC(t, 1)
+	})
+
+	t.Run("version 2", func(t *testing.T) {
+		test1EC(t, 2)
+	})
+}
+
+func test1EC(t *testing.T, version uint8) {
+	_, extids, content := testutils.RandomOPR(version)
+	o, _ := opr.Parse(content)
+	testutils.PopulateRandomWinners(o)
+
+	tl := 0
+	for _, ext := range extids {
+		tl += len(ext) + 2
+	}
+
+	data, err := o.Marshal()
+	if err != nil {
+		t.Error(err)
+	}
+
+	tl += len(data)
+
+	if tl > 1024 {
+		t.Errorf("opr entry is over 1kb, found %d bytes", tl)
+	}
 }

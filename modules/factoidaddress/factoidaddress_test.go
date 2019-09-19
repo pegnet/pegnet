@@ -33,6 +33,8 @@ func TestValid(t *testing.T) {
 		"xyz", // Not even close
 		"Fs2aStyP44soHQrwRyjEnRsH37tJc9fAPUWwCbAyyooEaS9NNorN--", // Invalid characters
 		"", // Not anything
+		"EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg",
+		"Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq",
 	}
 
 	for _, addr := range invalids {

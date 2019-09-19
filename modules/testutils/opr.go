@@ -2,6 +2,7 @@ package testutils
 
 import (
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"math/rand"
 
@@ -89,4 +90,23 @@ func RandomOPRWithFields(version uint8, dbht int32) (entryhash []byte, extids []
 	extids[1] = h[:8]
 
 	return entryhash, extids, content
+}
+
+// PopulateRandomWinners adds random winners to the opr content
+func PopulateRandomWinners(oI OPR) {
+	if oI.GetType() == V1 {
+		o := oI.(*V1Content)
+		for i := range o.WinPreviousOPR {
+			b := make([]byte, 8, 8)
+			rand.Read(b)
+			o.WinPreviousOPR[i] = hex.EncodeToString(b)
+		}
+	} else if oI.GetType() == V2 {
+		o := oI.(*V2Content)
+		for i := range o.Winners {
+			b := make([]byte, 8, 8)
+			rand.Read(b)
+			o.Winners[i] = b
+		}
+	}
 }
