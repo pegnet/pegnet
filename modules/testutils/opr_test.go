@@ -4,12 +4,15 @@ import (
 	"math/rand"
 	"testing"
 
+	"github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/modules/opr"
 	. "github.com/pegnet/pegnet/modules/testutils"
 )
 
 // Test the random oprs actually parse correctly
 func TestRandomOPR(t *testing.T) {
+	SetTestLXR(lxr.Init(lxr.Seed, 8, lxr.HashSize, lxr.Passes))
+
 	t.Run("V1", func(t *testing.T) {
 		testRandomOPR(t, 1)
 	})

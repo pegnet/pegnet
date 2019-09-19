@@ -6,10 +6,16 @@ import (
 	"fmt"
 	"math/rand"
 
+	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/modules/factoidaddress"
-	"github.com/pegnet/pegnet/modules/lxr30"
 	. "github.com/pegnet/pegnet/modules/opr"
 )
+
+var LXR *lxr.LXRHash
+
+func SetTestLXR(l *lxr.LXRHash) {
+	LXR = l
+}
 
 // RandomOPR is useful for unit testing
 func RandomOPR(version uint8) (entryhash []byte, extids [][]byte, content []byte) {
@@ -54,7 +60,6 @@ func RandomOPRWithFields(version uint8, dbht int32) (entryhash []byte, extids []
 			}
 		}
 		extids[2] = []byte{1}
-
 		io = o
 	case 2:
 		o := new(V2Content)
@@ -85,8 +90,7 @@ func RandomOPRWithFields(version uint8, dbht int32) (entryhash []byte, extids []
 	}
 
 	oprhash := sha256.Sum256(content)
-	lxr := lxr30.Init() // TODO: Fix what lxr to use
-	h := lxr.Hash(append(oprhash[:], extids[0]...))
+	h := LXR.Hash(append(oprhash[:], extids[0]...))
 	extids[1] = h[:8]
 
 	return entryhash, extids, content
