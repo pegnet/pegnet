@@ -25,9 +25,9 @@ func Convert(amount int64, fromRate, toRate uint64) (int64, error) {
 	// 1e-8 fixed point. The `want` should already be in this format. This should be the most amount of
 	// accuracy a miner reports. Anything beyond the 8th decimal point, we cannot account for.
 	//
-	// Uses big ints to avoid overflows. TODO: Will we ever overflow a int64?
-	fr := big.NewInt(int64(fromRate))
-	tr := big.NewInt(int64(toRate))
+	// Uses big ints to avoid overflows.
+	fr := big.NewInt(0).SetUint64(fromRate)
+	tr := big.NewInt(0).SetUint64(toRate)
 	amt := big.NewInt(amount)
 
 	// Now we can run the conversion
