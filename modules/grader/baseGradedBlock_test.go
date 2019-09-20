@@ -3,27 +3,18 @@ package grader_test
 import (
 	"testing"
 
-	lxr "github.com/pegnet/LXRHash"
-
 	. "github.com/pegnet/pegnet/modules/grader"
 	"github.com/pegnet/pegnet/modules/testutils"
 )
 
-type OprData struct {
-	EntryHash []byte
-	ExtIDs    [][]byte
-	Content   []byte
-	Valid     bool
+func init() {
+	InitLX()
+	testutils.SetTestLXR(LX)
 }
-
-var x BlockGrader = nil
 
 // TestBaseGradedBlock_Invalid tests various invalid sets and checks the resulting block
 // has nil winners and is obviously a no win block
 func TestBaseGradedBlock_Invalid(t *testing.T) {
-	// TODO: Change the bitsize to something smaller. The grader needs to use the same one
-	testutils.SetTestLXR(lxr.Init(lxr.Seed, 30, lxr.HashSize, lxr.Passes))
-
 	t.Run("V1", func(t *testing.T) {
 		testBaseGradedBlock_Invalid(t, 1)
 	})
@@ -92,9 +83,6 @@ func testBaseGradedBlock_Invalid(t *testing.T, version uint8) {
 // has some winners and a good block. It will also check the cutoff and number of graded
 // for sets of varying amounts.
 func TestBaseGradedBlock_Valid(t *testing.T) {
-	// TODO: Change the bitsize to something smaller. The grader needs to use the same one
-	testutils.SetTestLXR(lxr.Init(lxr.Seed, 30, lxr.HashSize, lxr.Passes))
-
 	t.Run("V1", func(t *testing.T) {
 		testBaseGradedBlock_valid(t, 1)
 	})
