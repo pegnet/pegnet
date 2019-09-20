@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"testing"
 
+	lxr "github.com/pegnet/LXRHash"
+	"github.com/pegnet/pegnet/modules/testutils"
+
 	. "github.com/pegnet/pegnet/modules/grader"
 )
 
@@ -94,4 +97,122 @@ func compare(a, b []string) bool {
 		}
 	}
 	return true
+}
+
+// TestBlockGrader_AddOPR will check the various fail conditions around a failed
+// AddOPR and ensure the oprs are properly validated
+func TestBlockGrader_AddOPR(t *testing.T) {
+	// TODO: We probably want to handle the lxr hashing a bit different? So the grader
+	// 		can use a smaller bitsize too.
+	testutils.SetTestLXR(lxr.Init(lxr.Seed, 30, lxr.HashSize, lxr.Passes))
+
+	t.Run("V1 AddOPR", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 1)
+	})
+	t.Run("V2 AddOPR", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 1)
+	})
+}
+
+func testBlockGrader_AddOPR(t *testing.T, version uint8) {
+	winners := testutils.RandomWinners(version)
+	dbht := int32(100)
+	g, err := NewGrader(1, dbht, winners)
+	if err != nil {
+		t.Error(err)
+	}
+
+	// Test various adds
+	addOpr := func(f func() (entryhash []byte, extids [][]byte, content []byte), valid bool, reason string) {
+		err := g.AddOPR(f())
+		if valid && err != nil {
+			t.Error(reason)
+		} else if !valid && err == nil {
+			t.Error(reason)
+		}
+	}
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPR(version)
+	}, false, "totally random oprs are not valid")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPR(testutils.FlipVersion(version))
+	}, false, "wrong version")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPRWithFields(testutils.FlipVersion(version), dbht, winners)
+	}, false, "wrong version with right params")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPRWithHeight(version, dbht)
+	}, false, "winners are not correct, blank")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPRWithRandomWinners(version, dbht)
+	}, false, "winners are not correct, random")
+
+	// Edge case testing
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return nil, nil, nil
+	}, false, "all nil data")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return []byte{}, [][]byte{}, []byte{}
+	}, false, "all empty data")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		_, b, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		return []byte{}, b, c
+	}, false, "no entryhash")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, _, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		return a, [][]byte{}, c
+	}, false, "no extids")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, _ := testutils.RandomOPRWithFields(version, dbht, winners)
+		return a, b, []byte{}
+	}, false, "no content")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		b[1] = []byte{} // Self report difficulty
+		return a, b, c
+	}, false, "Self report difficulty is not 8 bytes")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		b[2] = []byte{} // Version is blank
+		return a, b, c
+	}, false, "bad version, too short")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		b[2] = []byte{version, 0x00} // Version is too long
+		return a, b, c
+	}, false, "bad version, too long")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, winners[1:])
+		return a, b, c
+	}, false, "winners not enough")
+
+	//
+	// Things that can be added
+	//
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, winners)
+		b[0] = []byte{} // Nonce
+		return a, b, c
+	}, true, "blank nonce is ok")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return testutils.RandomOPRWithFields(version, dbht, winners)
+	}, true, "should be added")
+
+	if g.Count() != 2 {
+		t.Error("Exp only 1 added")
+	}
 }

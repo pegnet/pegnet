@@ -127,9 +127,8 @@ func TestUnder1EC(t *testing.T) {
 }
 
 func test1EC(t *testing.T, version uint8) {
-	_, extids, content := testutils.RandomOPR(version)
+	_, extids, content := testutils.RandomOPRWithRandomWinners(version, rand.Int31())
 	o, _ := opr.Parse(content)
-	testutils.PopulateRandomWinners(o)
 
 	tl := 0
 	for _, ext := range extids {
