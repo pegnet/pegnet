@@ -47,8 +47,24 @@ type Eblock struct {
 	Sequence      int32
 }
 
+func (s *EblockStore) FetchEblockByHeight(dbht int32) (*Eblock, error) {
+	return s.eblock(BucketEBlockHeightIndexed, s.key(database.HeightToBytes(dbht)))
+}
+
+func (s *EblockStore) FetchEblockBySequence(seq int32) (*Eblock, error) {
+	return s.eblock(BucketEBlockSequenceIndexed, s.key(database.HeightToBytes(seq)))
+}
+
+func (s *EblockStore) FetchEblockByKeyMr(keyMr []byte) (*Eblock, error) {
+	return s.eblock(BucketEBlockKeyMrIndexed, s.key(keyMr))
+}
+
 func (s *EblockStore) FetchEblockHead() (*Eblock, error) {
-	data, err := s.DB.Get(BucketEblockHead, s.key((KeyEblockHead)))
+	return s.eblock(BucketEblockHead, s.key(KeyEblockHead))
+}
+
+func (s *EblockStore) eblock(bucket database.Bucket, key []byte) (*Eblock, error) {
+	data, err := s.DB.Get(bucket, key)
 	if err != nil {
 		return nil, err
 	}
