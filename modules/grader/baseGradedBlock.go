@@ -3,8 +3,6 @@ package grader
 import (
 	"encoding/binary"
 	"sort"
-
-	"github.com/pegnet/pegnet/modules/lxr30"
 )
 
 // baseGradedBlock is an opr set that has been graded
@@ -57,11 +55,9 @@ func (b *baseGradedBlock) sortByDifficulty(limit int) {
 		return b.oprs[i].SelfReportedDifficulty > b.oprs[j].SelfReportedDifficulty
 	})
 
-	lx := lxr30.Init()
-
 	topX := make([]*GradingOPR, 0)
 	for _, o := range b.oprs {
-		hash := lx.Hash(append(o.OPRHash, o.Nonce...))
+		hash := LX.Hash(append(o.OPRHash, o.Nonce...))
 		diff := binary.BigEndian.Uint64(hash)
 
 		if diff != o.SelfReportedDifficulty {

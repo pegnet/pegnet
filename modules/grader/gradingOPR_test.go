@@ -4,16 +4,16 @@ import (
 	"reflect"
 	"testing"
 
-	lxr "github.com/pegnet/LXRHash"
-
 	. "github.com/pegnet/pegnet/modules/grader"
 	"github.com/pegnet/pegnet/modules/testutils"
 )
 
-func TestGradingOPR_Clone(t *testing.T) {
-	// TODO: Change the bitsize to something smaller. The grader needs to use the same one
-	testutils.SetTestLXR(lxr.Init(lxr.Seed, 30, lxr.HashSize, lxr.Passes))
+func init() {
+	InitLX()
+	testutils.SetTestLXR(LX)
+}
 
+func TestGradingOPR_Clone(t *testing.T) {
 	t.Run("V1", func(t *testing.T) {
 		testGradingOPR_Clone(t, 1)
 	})

@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"testing"
 
-	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/modules/testutils"
 
 	. "github.com/pegnet/pegnet/modules/grader"
 )
+
+func init() {
+	InitLX()
+	testutils.SetTestLXR(LX)
+}
 
 func TestNewGrader(t *testing.T) {
 	var winners []string
@@ -102,10 +106,6 @@ func compare(a, b []string) bool {
 // TestBlockGrader_AddOPR will check the various fail conditions around a failed
 // AddOPR and ensure the oprs are properly validated
 func TestBlockGrader_AddOPR(t *testing.T) {
-	// TODO: We probably want to handle the lxr hashing a bit different? So the grader
-	// 		can use a smaller bitsize too.
-	testutils.SetTestLXR(lxr.Init(lxr.Seed, 30, lxr.HashSize, lxr.Passes))
-
 	t.Run("V1 AddOPR", func(t *testing.T) {
 		testBlockGrader_AddOPR(t, 1)
 	})
