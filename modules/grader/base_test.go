@@ -117,7 +117,7 @@ func TestBlockGrader_AddOPR(t *testing.T) {
 func testBlockGrader_AddOPR(t *testing.T, version uint8) {
 	winners := testutils.RandomWinners(version)
 	dbht := int32(100)
-	g, err := NewGrader(1, dbht, winners)
+	g, err := NewGrader(version, dbht, winners)
 	if err != nil {
 		t.Error(err)
 	}
