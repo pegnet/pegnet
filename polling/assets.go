@@ -338,8 +338,9 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 				continue
 			}
 
-			// This price is acceptable
-			break
+			// This price is acceptable, we can exit
+			pa = price
+			return pa, nil
 		}
 	}
 
@@ -348,13 +349,10 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		return
 	}
 
-	// pa.When is uninitialized, so the reference.Sub(pa.When) == a very large value
-	mostRecent := reference.Sub(pa.When)
 	// Now we iterate over the prices we found, and return the most recent quote
 	for _, price := range prices {
-		since := reference.Sub(price.When)
-		if since < mostRecent {
-			mostRecent = since
+		// if the existing value is before the new price, the new price is more recent.
+		if pa.When.Before(price.When) {
 			pa = price
 		}
 	}
