@@ -77,3 +77,12 @@ func TestFlipVersion(t *testing.T) {
 		t.Error("version 2 not flipped")
 	}
 }
+
+func TestWinnerAmt(t *testing.T) {
+	if WinnerAmt(1) != 10 {
+		t.Error("version 1 not flipped")
+	}
+	if WinnerAmt(2) != 25 {
+		t.Error("version 2 not flipped")
+	}
+}
