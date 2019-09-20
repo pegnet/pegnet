@@ -27,7 +27,7 @@ func RandomOPRWithRandomWinners(version uint8, dbht int32) (entryhash []byte, ex
 }
 
 func RandomOPRWithHeight(version uint8, dbht int32) (entryhash []byte, extids [][]byte, content []byte) {
-	return RandomOPRWithFields(version, dbht, make([]string, amt(version)))
+	return RandomOPRWithFields(version, dbht, make([]string, WinnerAmt(version)))
 }
 
 func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entryhash []byte, extids [][]byte, content []byte) {
@@ -101,7 +101,7 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 	return entryhash, extids, content
 }
 
-func amt(version uint8) int {
+func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
 		return 10
@@ -112,7 +112,7 @@ func amt(version uint8) int {
 }
 
 func RandomWinners(version uint8) []string {
-	winners := make([]string, amt(version))
+	winners := make([]string, WinnerAmt(version))
 
 	for i := range winners {
 		b := make([]byte, 8, 8)
@@ -137,21 +137,6 @@ func PopulateRandomWinners(oI OPR) {
 			b := make([]byte, 8, 8)
 			rand.Read(b)
 			o.Winners[i] = b
-		}
-	}
-}
-
-// PopulateWithWinners is a testutil call. It does not error check,
-// so do not throw non hex strings in here
-func PopulateWithWinners(oI OPR, winners []string) {
-	if oI.GetType() == V1 {
-		o := oI.(*V1Content)
-		o.WinPreviousOPR = winners
-	} else if oI.GetType() == V2 {
-		o := oI.(*V2Content)
-		o.Winners = make([][]byte, len(winners))
-		for i, winner := range winners {
-			o.Winners[i], _ = hex.DecodeString(winner)
 		}
 	}
 }
