@@ -8,7 +8,8 @@ import (
 // Parse takes any input and attempts to automatically determine the version
 func Parse(data []byte) (OPR, error) {
 	// The order v1, then v2 MATTERS.
-	// When doing v2 then v1, there is valid json that decodes successfully.
+	// When doing v2 then v1, there is valid json that decodes successfully into
+	// the protobug opr.
 	// See TestStrangeVector for the example. Since json is only valid for ascii
 	// space, it's more likely to fail given protobuf data.
 

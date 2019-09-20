@@ -101,6 +101,7 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 	return entryhash, extids, content
 }
 
+// WinnerAmt returns the amount of expected winners for a version
 func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
@@ -122,26 +123,8 @@ func RandomWinners(version uint8) []string {
 	return winners
 }
 
-// PopulateRandomWinners adds random winners to the opr content
-func PopulateRandomWinners(oI OPR) {
-	if oI.GetType() == V1 {
-		o := oI.(*V1Content)
-		for i := range o.WinPreviousOPR {
-			b := make([]byte, 8, 8)
-			rand.Read(b)
-			o.WinPreviousOPR[i] = hex.EncodeToString(b)
-		}
-	} else if oI.GetType() == V2 {
-		o := oI.(*V2Content)
-		for i := range o.Winners {
-			b := make([]byte, 8, 8)
-			rand.Read(b)
-			o.Winners[i] = b
-		}
-	}
-}
-
 // FlipVersion is helpful if you want the other version than you are using
+//	1 -> 2, or 2 -> 1
 func FlipVersion(version uint8) uint8 {
 	// Invert and take the bottom 2 bits
 	return ^version & 3

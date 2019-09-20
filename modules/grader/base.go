@@ -23,7 +23,6 @@ func InitLX() {
 		} else {
 			LX = lxr.Init(lxr.Seed, lxr.MapSizeBits, lxr.HashSize, lxr.Passes)
 		}
-
 	})
 }
 
