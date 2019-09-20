@@ -349,14 +349,19 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		return
 	}
 
-	// Now we iterate over the prices we found, and return the most recent quote
-	for _, price := range prices {
-		// if the existing value is before the new price, the new price is more recent.
-		if pa.When.Before(price.When) {
-			pa = price
-		}
+	// If we got here, that means that there might exist some price quotes from
+	// our data sources, but they are all stale. Instead of taking the most recent price
+	// quote, we will take the highest priority quote given our data-source order.
+	if len(prices) > 0 {
+		pa = prices[0]
+		return pa, nil
 	}
 
+	// If no prices exist, this could mean we had no data-sources configured for this
+	// asset. We will just return a blank quote, vs throwing an error.
+	// The best price for an asset with no data-source is 0. The OPR creation should
+	// check if the 0 value is valid, not this polling function.
+	// E.g: PEG will return 0 as there is no configured data-sources for it.
 	return pa, nil
 }
 
