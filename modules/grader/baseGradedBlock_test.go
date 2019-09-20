@@ -140,6 +140,20 @@ func testBaseGradedBlock_valid(t *testing.T, version uint8) {
 			t.Error("wrong version")
 		}
 
+		for i, winner := range block.Winners() {
+			if winner.Payout() == 0 {
+				t.Error("winners should have payouts")
+			}
+
+			if winner.Position() != i {
+				t.Error("winner position is incorrect")
+			}
+
+			if len(winner.Shorthash()) != 16 {
+				t.Error("shorthash is of wrong length")
+			}
+		}
+
 		cutoff := 50
 		if amt < 50 {
 			cutoff = amt
@@ -182,5 +196,4 @@ func testBaseGradedBlock_valid(t *testing.T, version uint8) {
 	t.Run("test 100 oprs", func(t *testing.T) {
 		testAmt(100)
 	})
-
 }
