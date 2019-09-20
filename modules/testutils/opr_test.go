@@ -4,7 +4,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/pegnet/LXRHash"
+	lxr "github.com/pegnet/LXRHash"
+
 	"github.com/pegnet/pegnet/modules/opr"
 	. "github.com/pegnet/pegnet/modules/testutils"
 )
@@ -29,19 +30,50 @@ func TestRandomOPR(t *testing.T) {
 }
 
 func testRandomOPR(t *testing.T, version uint8) {
-	for i := 0; i < 10; i++ {
-		dbht := rand.Int31()
-		_, _, content := RandomOPRWithFields(version, dbht)
-		o, err := opr.Parse(content)
-		if err != nil {
-			t.Error(err)
-		}
+	// Just test the random field setting has the right winners and parses
+	testRandom := func(f func() (entryhash []byte, extids [][]byte, content []byte), expWinners bool) {
+		for i := 0; i < 10; i++ {
+			_, _, content := f()
 
-		PopulateRandomWinners(o)
-		for _, win := range o.GetPreviousWinners() {
-			if len(win) != 16 {
-				t.Error("expected a winner")
+			o, err := opr.Parse(content)
+			if err != nil {
+				t.Error(err)
+			}
+
+			for _, win := range o.GetPreviousWinners() {
+				if len(win) != 16 && expWinners {
+					t.Error("expected a winner")
+				}
+
+				if len(win) != 0 && !expWinners {
+					t.Error("expected a winner")
+				}
 			}
 		}
+	}
+
+	// Test winners are set
+	testRandom(func() (entryhash []byte, extids [][]byte, content []byte) {
+		dbht := rand.Int31()
+		return RandomOPRWithRandomWinners(version, dbht)
+	}, true)
+
+	// Test winners are []string{"", "", ..., ""}
+	testRandom(func() (entryhash []byte, extids [][]byte, content []byte) {
+		dbht := rand.Int31()
+		return RandomOPRWithHeight(version, dbht)
+	}, false)
+
+	testRandom(func() (entryhash []byte, extids [][]byte, content []byte) {
+		return RandomOPR(version)
+	}, false)
+}
+
+func TestFlipVersion(t *testing.T) {
+	if FlipVersion(1) != 2 {
+		t.Error("version 1 not flipped")
+	}
+	if FlipVersion(2) != 1 {
+		t.Error("version 2 not flipped")
 	}
 }
