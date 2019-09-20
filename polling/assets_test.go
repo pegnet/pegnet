@@ -169,8 +169,8 @@ func TestDataSourceStaleness(t *testing.T) {
 		t.Error(err)
 	}
 
-	if price.Value != 1.0 {
-		t.Error("Expected a value of 1.0, as all are stale, but that is the most recent")
+	if price.Value != 20.0 {
+		t.Error("Expected a value of 20.0, as all are stale, but that is the highest priority")
 	}
 
 	// Make nothing stale
