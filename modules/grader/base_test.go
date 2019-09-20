@@ -110,7 +110,7 @@ func TestBlockGrader_AddOPR(t *testing.T) {
 		testBlockGrader_AddOPR(t, 1)
 	})
 	t.Run("V2 AddOPR", func(t *testing.T) {
-		testBlockGrader_AddOPR(t, 1)
+		testBlockGrader_AddOPR(t, 2)
 	})
 }
 
