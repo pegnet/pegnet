@@ -199,6 +199,14 @@ func testBlockGrader_AddOPR(t *testing.T, version uint8) {
 		return a, b, c
 	}, false, "winners not enough")
 
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		tmp := make([]string, len(winners))
+		copy(tmp, winners)
+		tmp[0] = winners[0][2:] // 1 byte short
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, tmp)
+		return a, b, c
+	}, false, "winners not correct length")
+
 	//
 	// Things that can be added
 	//
