@@ -36,6 +36,13 @@ const (
 	BUCKET_BALANCES   // PEG payout balances
 )
 
+// Bucket Sets
+//	Some buckets are described in their respective packages.
+//	We keep them spaced so they have enough space to do what they need to do
+const (
+	EBlockBucketStart = 100
+)
+
 // Records are fixed records in a certain bucket
 var (
 	// BUCKET_CURRENT_HEAD Records

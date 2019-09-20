@@ -8,7 +8,7 @@ type OPRBlockStore interface {
 	CurrentSyncedEblock() (keymr []byte, height int32, sequence int)
 
 	// PreviousWinners returns the previous winners found for a given height
-	PreviousWinners() []string
+	PreviousWinners(height int32) ([]string, error)
 
 	// MarkInvalidEblock indicates the eblock does not have any winners, and therefore not a valid
 	// opr block
