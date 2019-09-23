@@ -64,6 +64,19 @@ func TestEncode(t *testing.T) {
 			t.Errorf("exp %s, found %s", v, addr)
 		}
 	}
+
+	// Might as well check the byte length check
+	for i := 0; i < 40; i++ {
+		if i == 32 { // RCD length
+			continue
+		}
+
+		rcd := make([]byte, i)
+		_, err := Encode(rcd)
+		if err == nil {
+			t.Errorf("exp data with length %d to fail, but it did not", i)
+		}
+	}
 }
 
 // TestChecksum checks the checksum against a set of valid factoid addresses
@@ -74,6 +87,19 @@ func TestChecksum(t *testing.T) {
 			t.Error(err)
 		} else if bytes.Compare(data[34:], checksum) != 0 {
 			t.Errorf("exp %s, found %s", Base58Encode(data[34:]), Base58Encode(checksum))
+		}
+	}
+
+	// Might as well check the byte length check
+	for i := 0; i < 40; i++ {
+		if i == 34 { // Addr length without checksum
+			continue
+		}
+
+		data := make([]byte, i)
+		_, err := Checksum(data)
+		if err == nil {
+			t.Errorf("exp data with length %d to fail, but it did not", i)
 		}
 	}
 }
