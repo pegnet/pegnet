@@ -231,3 +231,12 @@ func TestTruncate(t *testing.T) {
 		}
 	}
 }
+
+// Names should be consistent in the config and returned by the datasource
+func TestDataSourceNames(t *testing.T) {
+	for name, d := range AllDataSources {
+		if d.Name() != name {
+			t.Error("Name user types does not match name returned")
+		}
+	}
+}
