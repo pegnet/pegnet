@@ -24,7 +24,7 @@ func (d *FixedUSDDataSource) Name() string {
 }
 
 func (d *FixedUSDDataSource) Url() string {
-	return "na"
+	return "no-url"
 }
 
 func (d *FixedUSDDataSource) SupportedPegs() []string {

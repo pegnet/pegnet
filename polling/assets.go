@@ -22,6 +22,7 @@ var AllDataSources = map[string]IDataSource{
 	"APILayer": new(APILayerDataSource),
 	"CoinCap":  new(CoinCapDataSource),
 	"FixedUSD": new(FixedUSDDataSource),
+	"FixedPEG": new(FixedPEGDataSource),
 	// ExchangeRates is daily,  don't show people this
 	//"ExchangeRates":     new(ExchangeRatesDataSource),
 	"Kitco": new(KitcoDataSource),
@@ -90,6 +91,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOneForgeDataSourceDataSource(config)
 	case "FixedUSD":
 		ds, err = NewFixedUSDDataSource(config)
+	case "FixedPEG":
+		ds, err = NewFixedPEGDataSource(config)
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
