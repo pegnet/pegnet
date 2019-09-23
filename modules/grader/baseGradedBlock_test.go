@@ -114,6 +114,12 @@ func testBaseGradedBlock_valid(t *testing.T, version uint8) {
 			t.Error("no winners found")
 		}
 
+		// This should never fail, but if it does, then the next checks will also fail.
+		// Our test util and WinnerAmount on the interface should always match.
+		if block.WinnerAmount() != testutils.WinnerAmt(version) {
+			t.Errorf("exp winner amt %d, found %d", testutils.WinnerAmt(version), block.WinnerAmount())
+		}
+
 		if len(block.Winners()) != testutils.WinnerAmt(version) {
 			t.Error("not the right number of winners")
 		} else {

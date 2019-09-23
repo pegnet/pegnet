@@ -15,6 +15,12 @@ func TestV2Payout(t *testing.T) {
 			if (i < 0 || i >= 25) && got != 0 {
 				t.Errorf("V2Payout() = %v, want %v", got, 0)
 			}
+
+			// Also test the function on the grader
+			g, _ := NewGrader(2, 0, nil)
+			if graderGot := g.Payout(i); got != graderGot {
+				t.Errorf("Grdader.V1Payout() = %v, V1Payout() = %v", graderGot, got)
+			}
 		})
 	}
 }
