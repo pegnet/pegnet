@@ -7,7 +7,7 @@ import (
 	"fmt"
 )
 
-var FactoidAddressPrefix = [2]byte{0x5f, 0xb1}
+var FactoidAddressPrefix = []byte{0x5f, 0xb1}
 
 // Valid returns if the address is a valid factoid address
 func Valid(addr string) error {
@@ -22,30 +22,54 @@ func Valid(addr string) error {
 	}
 
 	prefix := data[:2]
-	if bytes.Compare(prefix, FactoidAddressPrefix[:]) != 0 {
+	if bytes.Compare(prefix, FactoidAddressPrefix) != 0 {
 		return fmt.Errorf("address has wrong prefix")
 	}
 
+	// Checksum on the address
 	checksum := data[len(data)-4:]
-	sha := sha256.Sum256(data[:34])
-	shad := sha256.Sum256(sha[:])
+	// The expected checksum (we know the length is ok from the above check
+	expected, err := Checksum(data[:34])
+	if err != nil {
+		return err // This error will never actually happen
+	}
 
-	if bytes.Compare(shad[:4], checksum) != 0 {
+	if bytes.Compare(expected, checksum) != 0 {
 		return fmt.Errorf("checksum is not correct")
 	}
 
 	return nil
 }
 
-func Random() string {
-	addr := make([]byte, 32)
-	_, _ = rand.Read(addr)
-	// Prepend prefix
-	addr = append(FactoidAddressPrefix[:], addr...)
-
-	// Shad
-	sha := sha256.Sum256(append(addr))
+// Checksum returns the 4 byte checksum trailing a factoid address. The input should be
+// the 2 byte prefix + the rcd (34 bytes in total).
+func Checksum(data []byte) ([]byte, error) {
+	if len(data) != 34 {
+		return nil, fmt.Errorf("expected 34 bytes, only found %d", len(data))
+	}
+	sha := sha256.Sum256(data)
 	shad := sha256.Sum256(sha[:])
 
-	return Base58Encode(append(addr, shad[:4]...))
+	return shad[:4], nil
+}
+
+// Encode takes a given rcd, and returns the factoid address human readable string
+func Encode(rcd []byte) (string, error) {
+	// Prepend prefix
+	addr := append(FactoidAddressPrefix, rcd...)
+
+	// Checksum
+	checksum, err := Checksum(addr)
+	if err != nil {
+		return "", err
+	}
+
+	return Base58Encode(append(addr, checksum...)), nil
+}
+
+func Random() string {
+	rcd := make([]byte, 32)
+	_, _ = rand.Read(rcd)
+	addr, _ := Encode(rcd)
+	return addr
 }
