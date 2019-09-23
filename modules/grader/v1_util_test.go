@@ -27,6 +27,12 @@ func TestV1Payout(t *testing.T) {
 			if got := V1Payout(tt.args); got != tt.want {
 				t.Errorf("V1Payout() = %v, want %v", got, tt.want)
 			}
+
+			// Also test the function on the grader
+			g, _ := NewGrader(1, 0, nil)
+			if got := g.Payout(tt.args); got != tt.want {
+				t.Errorf("V1Payout() = %v, want %v", got, tt.want)
+			}
 		})
 	}
 }

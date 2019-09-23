@@ -126,7 +126,7 @@ func testBlockGrader_AddOPR(t *testing.T, version uint8) {
 	addOpr := func(f func() (entryhash []byte, extids [][]byte, content []byte), valid bool, reason string) {
 		err := g.AddOPR(f())
 		if valid && err != nil {
-			t.Error(reason)
+			t.Errorf("%s: %s", reason, err.Error())
 		} else if !valid && err == nil {
 			t.Error(reason)
 		}
@@ -205,7 +205,15 @@ func testBlockGrader_AddOPR(t *testing.T, version uint8) {
 		tmp[0] = winners[0][2:] // 1 byte short
 		a, b, c := testutils.RandomOPRWithFields(version, dbht, tmp)
 		return a, b, c
-	}, false, "winners not correct length")
+	}, false, "first winner not correct length")
+
+	addOpr(func() (entryhash []byte, extids [][]byte, content []byte) {
+		tmp := make([]string, len(winners))
+		copy(tmp, winners)
+		tmp[len(winners)-1] = winners[len(winners)-1][2:] // 1 byte short
+		a, b, c := testutils.RandomOPRWithFields(version, dbht, tmp)
+		return a, b, c
+	}, false, "last winner not correct length")
 
 	//
 	// Things that can be added
