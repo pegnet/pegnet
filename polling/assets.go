@@ -347,11 +347,6 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		}
 	}
 
-	// No prices found, and the last data source had an error
-	if err != nil && len(prices) == 0 {
-		return
-	}
-
 	// If we got here, that means that there might exist some price quotes from
 	// our data sources, but they are all stale. Instead of taking the most recent price
 	// quote, we will take the highest priority quote given our data-source order.
@@ -360,12 +355,25 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		return pa, nil
 	}
 
+	// If we have a detailed error on the last polling, we can just
+	// return that
+	if err != nil {
+		return
+	}
+
+	// PEG is not configured on most miners.
+	// TODO: When all miners start using FixedPEG as a datasource, we can
+	// 		drop this conditional.
+	if asset == "PEG" {
+		return pa, nil
+	}
+
 	// If no prices exist, this could mean we had no data-sources configured for this
-	// asset. We will just return a blank quote, vs throwing an error.
-	// The best price for an asset with no data-source is 0. The OPR creation should
-	// check if the 0 value is valid, not this polling function.
-	// E.g: PEG will return 0 as there is no configured data-sources for it.
-	return pa, nil
+	// asset. We will return an error informing the user that this asset is not
+	// configured. They should use a command like `pegnet datasources` to verify'
+	// they have a proper config file.
+	return pa, fmt.Errorf("'%s' doesn't seem to have any datasources configured. "+
+		"please check your config file to ensure a datasource exists for this asset", asset)
 }
 
 // OneTimeUseCache will cache the data source response so we can query for
