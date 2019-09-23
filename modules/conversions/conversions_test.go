@@ -66,7 +66,7 @@ func TestConversions_Convert_Vectors(t *testing.T) {
 			observedX2, err := Convert(test.Y1, test.YRate, test.XRate)
 			require.NoError(t, err)
 			observedError := abs(test.X1 - observedX2)
-			maxExpectedError := maxConversionError(test.X1, test.Y1)
+			maxExpectedError := maxConversionError(test.XRate, test.YRate)
 			require.True(t, observedError <= maxExpectedError, "Margin of error exceeded for conversion Y1 --> X2")
 
 			observedY2, err := Convert(test.X2, test.XRate, test.YRate)
@@ -80,12 +80,12 @@ func TestConversions_Convert_Vectors(t *testing.T) {
 func TestConversions_Convert_Random(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		expectedErrorString := ""
-		xRate := rand.Uint64()
-		yRate := rand.Uint64()
+		xRate := rand.Uint64() % (1e5 * 1e8) // Arbitrary maximum rate of $100k USD per unit
+		yRate := rand.Uint64() % (1e5 * 1e8)
 		if xRate == 0 || yRate == 0 {
 			expectedErrorString = "invalid rate: 0"
 		}
-		x1 := rand.Int63n(1e17) // Arbitrary maximum of 1 billion units (1e9 * 1e8)
+		x1 := rand.Int63n(1e9 * 1e8) // Arbitrary maximum of 1 billion units
 		t.Run(fmt.Sprintf("Iteration %d", i), func(t *testing.T) {
 			assert := assert.New(t)
 
@@ -102,7 +102,7 @@ func TestConversions_Convert_Random(t *testing.T) {
 			x2, err := Convert(y1, yRate, xRate)
 			require.NoError(t, err)
 			observedError := abs(x1 - x2)
-			maxExpectedError := maxConversionError(x1, y1)
+			maxExpectedError := maxConversionError(xRate, yRate)
 			assert.True(observedError <= maxExpectedError, "Margin of error exceeded for conversion Y1 --> X2")
 
 			y2, err := Convert(x2, xRate, yRate)
@@ -113,12 +113,12 @@ func TestConversions_Convert_Random(t *testing.T) {
 	}
 }
 
-func maxConversionError(x, y int64) int64 {
+func maxConversionError(x, y uint64) int64 {
 	if x == 0 || y == 0 {
 		return 1
 	}
-	xBig := big.NewInt(x)
-	yBig := big.NewInt(y)
+	xBig := big.NewInt(0).SetUint64(x)
+	yBig := big.NewInt(0).SetUint64(y)
 
 	ratioXY := big.NewInt(0).Div(xBig, yBig)
 	ratioYX := big.NewInt(0).Div(yBig, xBig)
