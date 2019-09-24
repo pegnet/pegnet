@@ -103,30 +103,31 @@ func TestConversions_Convert_Random(t *testing.T) {
 			x2, err := Convert(y1, yRate, xRate)
 			require.NoError(t, err)
 			observedError := abs(x1 - x2)
-			maxExpectedError := maxConversionError(xRate, yRate)
-			assert.True(observedError <= maxExpectedError, "Margin of error exceeded for conversion Y1 --> X2")
+			maxExpectedError := maxConversionError(yRate, xRate)
+			assert.True(observedError <= maxExpectedError, "Margin of error exceeded for Y1 --> X2: observedError=%d, maxError=%d", observedError, maxExpectedError)
 
 			y2, err := Convert(x2, xRate, yRate)
 			require.NoError(t, err)
 			observedError = abs(y1 - y2)
-			assert.True(observedError <= maxExpectedError, "Margin of error exceeded for conversion X2 --> Y2")
+			maxExpectedError = maxConversionError(xRate, yRate)
+			assert.True(observedError <= maxExpectedError, "Margin of error exceeded for X2 --> Y2: observedError=%d, maxError=%d", observedError, maxExpectedError)
 		})
 	}
 }
 
-func maxConversionError(x, y uint64) int64 {
-	if x == 0 || y == 0 {
+func maxConversionError(fromRate, toRate uint64) int64 {
+	if fromRate == 0 || toRate == 0 {
 		return 1
 	}
-	xBig := big.NewInt(0).SetUint64(x)
-	yBig := big.NewInt(0).SetUint64(y)
+	fromRateBig := big.NewInt(0).SetUint64(fromRate)
+	toRateBig := big.NewInt(0).SetUint64(toRate)
 
-	ratioXY := big.NewInt(0).Div(xBig, yBig)
-	ratioYX := big.NewInt(0).Div(yBig, xBig)
-	if ratioXY.Cmp(ratioYX) == -1 {
-		return ratioYX.Int64() + 1
+	ratioFromTo := big.NewInt(0).Div(fromRateBig, toRateBig)
+	ratioToFrom := big.NewInt(0).Div(toRateBig, fromRateBig)
+	if ratioFromTo.Cmp(ratioToFrom) == -1 {
+		return ratioToFrom.Int64() + 1
 	}
-	return ratioXY.Int64() + 1
+	return ratioFromTo.Int64() + 1
 }
 
 func abs(x int64) int64 {
