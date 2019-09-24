@@ -2,11 +2,8 @@ package conversions
 
 import (
 	"fmt"
-	"math"
 	"math/big"
 )
-
-var max *big.Int = big.NewInt(math.MaxInt64)
 
 // Convert takes an input amount and returns an output amount that can be created
 // from it, given the two rates `fromRate` and `toRate` denominated in 1e-8 USD.
@@ -40,7 +37,7 @@ func Convert(amount int64, fromRate, toRate uint64) (int64, error) {
 	//  (amt * fromrate) / torate
 	num := big.NewInt(0).Mul(amt, fr)
 	num = num.Div(num, tr)
-	if max.Cmp(num) < 0 { // max < num
+	if !num.IsInt64() {
 		return 0, fmt.Errorf("integer overflow")
 	}
 	return num.Int64(), nil
