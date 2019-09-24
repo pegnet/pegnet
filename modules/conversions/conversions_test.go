@@ -116,7 +116,7 @@ func TestConversions_Convert_Random(t *testing.T) {
 }
 
 func maxConversionError(fromRate, toRate uint64) int64 {
-	if fromRate == 0 || toRate == 0 {
+	if fromRate == 0 || toRate == 0 || fromRate < toRate {
 		return 1
 	}
 	fromRateBig := big.NewInt(0).SetUint64(fromRate)
