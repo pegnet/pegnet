@@ -26,8 +26,8 @@ func Convert(amount int64, fromRate, toRate uint64) (int64, error) {
 	// accuracy a miner reports. Anything beyond the 8th decimal point, we cannot account for.
 	//
 	// Uses big ints to avoid overflows.
-	fr := big.NewInt(0).SetUint64(fromRate)
-	tr := big.NewInt(0).SetUint64(toRate)
+	fr := new(big.Int).SetUint64(fromRate)
+	tr := new(big.Int).SetUint64(toRate)
 	amt := big.NewInt(amount)
 
 	// Now we can run the conversion
@@ -36,7 +36,7 @@ func Convert(amount int64, fromRate, toRate uint64) (int64, error) {
 	// always multiply before you divide.
 	//  (amt * fromrate) / torate
 	num := big.NewInt(0).Mul(amt, fr)
-	num = num.Div(num, tr)
+	num.Div(num, tr)
 	if !num.IsInt64() {
 		return 0, fmt.Errorf("integer overflow")
 	}
