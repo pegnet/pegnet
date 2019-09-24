@@ -42,6 +42,7 @@ var conversionTestVectors = []string{
 	`{"name": "whole unit input", "x_rate": 1000000000000, "y_rate": 100000000, "x1": 100000000, "y1": 1000000000000, "x2": 100000000, "y2": 1000000000000}`,
 	`{"name": "smallest unit input", "x_rate": 1000000000000, "y_rate": 100000000, "x1": 1, "y1": 10000, "x2": 1, "y2": 10000}`,
 	`{"name": "smallest unit input (truncated result)", "x_rate": 100000000, "y_rate": 1000000000000, "x1": 1, "y1": 0, "x2": 0, "y2": 0}`,
+	`{"name": "int64 overflow", "error_string": "integer overflow", "x_rate": 9223372036854775807, "y_rate": 1, "x1": 2, "y1": 0}`,
 }
 
 func TestConversions_Convert_Vectors(t *testing.T) {
