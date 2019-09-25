@@ -40,7 +40,8 @@ const (
 //	Some buckets are described in their respective packages.
 //	We keep them spaced so they have enough space to do what they need to do
 const (
-	EBlockBucketStart = 100
+	EBlockBucketStart      = 100
+	LightsStoreBucketStart = 200
 )
 
 // Records are fixed records in a certain bucket

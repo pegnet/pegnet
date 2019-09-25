@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pegnet/pegnet/database"
-	"github.com/pegnet/pegnet/modules/grader"
 	"github.com/syndtr/goleveldb/leveldb"
 )
 
@@ -40,51 +39,72 @@ func New(db database.IDatabase, chain []byte) *EblockStore {
 	return es
 }
 
-type Eblock struct {
+type EBlock struct {
 	KeyMr         []byte
 	PreviousKeyMr []byte
 	Height        int32
 	Sequence      int32
+
+	// Used for some helpful iterating
+	db *EblockStore
 }
 
-func (s *EblockStore) FetchEblockByHeight(dbht int32) (*Eblock, error) {
+func (e *EBlock) Next() (*EBlock, error) {
+	if e.db == nil {
+		return nil, fmt.Errorf("no database reference found")
+	}
+
+	return e.db.FetchEblockBySequence(e.Sequence + 1)
+}
+
+func (e *EBlock) Previous() (*EBlock, error) {
+	if e.db == nil {
+		return nil, fmt.Errorf("no database reference found")
+	}
+
+	return e.db.FetchEblockBySequence(e.Sequence - 1)
+}
+
+func (s *EblockStore) FetchEblockByHeight(dbht int32) (*EBlock, error) {
 	return s.eblock(BucketEBlockHeightIndexed, s.key(database.HeightToBytes(dbht)))
 }
 
-func (s *EblockStore) FetchEblockBySequence(seq int32) (*Eblock, error) {
+func (s *EblockStore) FetchEblockBySequence(seq int32) (*EBlock, error) {
 	return s.eblock(BucketEBlockSequenceIndexed, s.key(database.HeightToBytes(seq)))
 }
 
-func (s *EblockStore) FetchEblockByKeyMr(keyMr []byte) (*Eblock, error) {
+func (s *EblockStore) FetchEblockByKeyMr(keyMr []byte) (*EBlock, error) {
 	return s.eblock(BucketEBlockKeyMrIndexed, s.key(keyMr))
 }
 
-func (s *EblockStore) FetchEblockHead() (*Eblock, error) {
+func (s *EblockStore) FetchEblockHead() (*EBlock, error) {
 	return s.eblock(BucketEblockHead, s.key(KeyEblockHead))
 }
 
-func (s *EblockStore) eblock(bucket database.Bucket, key []byte) (*Eblock, error) {
+func (s *EblockStore) eblock(bucket database.Bucket, key []byte) (*EBlock, error) {
 	data, err := s.DB.Get(bucket, key)
 	if err != nil {
 		return nil, err
 	}
 
-	var block Eblock
+	var block EBlock
 	err = database.Decode(&block, data)
 	if err != nil {
 		return nil, err
 	}
+
+	block.db = s
+
 	return &block, nil
 }
 
-// WriteOPRBlockHead indicates a new synced eblock
+// WriteEBlockHead indicates a new synced eblock
 //	Params:
 //		eblockKeyMr
 //		previousKeyMr
 //		seq
 //		dbht
-//		gradedBlock			Not used, but provided to match the interface
-func (s *EblockStore) WriteOPRBlockHead(eblockKeyMr, previousKeyMr []byte, seq int32, dbht int32, gradedBlock grader.GradedBlock) error {
+func (s *EblockStore) WriteEBlockHead(eblockKeyMr, previousKeyMr []byte, seq int32, dbht int32) error {
 	head, err := s.FetchEblockHead()
 	if seq == 0 && err == leveldb.ErrNotFound {
 		// This is an expected error
@@ -103,7 +123,7 @@ func (s *EblockStore) WriteOPRBlockHead(eblockKeyMr, previousKeyMr []byte, seq i
 	//	height -> eblock
 	// sequence -> eblock
 
-	block := Eblock{
+	block := EBlock{
 		KeyMr:         eblockKeyMr,
 		PreviousKeyMr: previousKeyMr,
 		Height:        dbht,
