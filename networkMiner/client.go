@@ -8,14 +8,13 @@ import (
 	"net"
 	"time"
 
-	"github.com/pegnet/pegnet/balances"
-
 	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 // MiningClient talks to a coordinator. It receives events and trys to maintain
@@ -185,7 +184,7 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 			evt.FactomDigitalID = id
 
 			addr, _ := c.config.String(common.ConfigCoinbaseAddress)
-			evt.CoinbasePEGAddress = addr
+			evt.CoinbaseAddress = addr
 			evt.OPRHash = nil // Reset the oprhash since we changed some fields
 
 			c.OPRMaker.RecOPR(evt)

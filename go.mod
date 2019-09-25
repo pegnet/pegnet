@@ -46,6 +46,7 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/stretchr/testify v1.3.0
 	github.com/syndtr/goleveldb v1.0.0
 	github.com/zpatrick/go-config v0.0.0-20190509173111-460869022dbd
 	go.uber.org/atomic v1.4.0 // indirect
