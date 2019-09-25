@@ -78,6 +78,12 @@ func (s *EblockStore) eblock(bucket database.Bucket, key []byte) (*Eblock, error
 }
 
 // WriteOPRBlockHead indicates a new synced eblock
+//	Params:
+//		eblockKeyMr
+//		previousKeyMr
+//		seq
+//		dbht
+//		gradedBlock			Not used, but provided to match the interface
 func (s *EblockStore) WriteOPRBlockHead(eblockKeyMr, previousKeyMr []byte, seq int32, dbht int32, gradedBlock grader.GradedBlock) error {
 	head, err := s.FetchEblockHead()
 	if seq == 0 && err == leveldb.ErrNotFound {
