@@ -60,6 +60,7 @@ func init() {
 	RootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
 	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
 	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+	RootCmd.PersistentFlags().Bool("testing", false, "Sets all activation heights to 0 so you can run on a local net")
 
 	RootCmd.PersistentFlags().StringArrayP("override", "r", []string{}, "Custom config overrides. Can override any setting")
 
@@ -149,6 +150,14 @@ func initLogger() {
 //		2: Parse the cmd flags that overwrite the config
 //		3. Launch profiling if we have it enabled
 func rootPreRunSetup(cmd *cobra.Command, args []string) error {
+	if testing, _ := cmd.Flags().GetBool("testing"); testing {
+		// Set all activation heights to 0 and grading to 2
+		common.ActivationHeights[common.MainNetwork] = 0
+		common.ActivationHeights[common.TestNetwork] = 0
+		common.GradingHeights[common.MainNetwork] = func(height int64) uint8 { return 2 }
+		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
+	}
+
 	// Config setup
 	u, err := user.Current()
 	if err != nil {
