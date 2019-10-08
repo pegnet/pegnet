@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/pegnet/pegnet/database"
+	"github.com/pegnet/pegnet/monitor"
 
 	"github.com/pegnet/pegnet/balances"
 
@@ -297,7 +298,7 @@ var grader = &cobra.Command{
 		opr.InitLX()
 		ValidateConfig(Config) // Will fatal log if it fails
 
-		monitor := common.GetMonitor()
+		monitor := monitor.GetMonitor()
 		monitor.SetTimeout(time.Duration(Timeout) * time.Second)
 
 		go func() {

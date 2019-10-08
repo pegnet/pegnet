@@ -14,6 +14,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
+	"github.com/pegnet/pegnet/monitor"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -58,7 +59,7 @@ type AuthenticationChallenge struct {
 }
 
 func init() {
-	gob.Register(common.MonitorEvent{})
+	gob.Register(monitor.MonitorEvent{})
 	gob.Register(opr.OPRs{})
 	gob.Register(GobbedEntry{})
 	gob.Register([][]byte{})
@@ -73,7 +74,7 @@ func init() {
 type MiningServer struct {
 	config *config.Config
 
-	FactomMonitor common.IMonitor
+	FactomMonitor monitor.IMonitor
 	OPRGrader     opr.IGrader
 	Host          string
 
@@ -90,7 +91,7 @@ type MiningServer struct {
 	useAuth     bool
 }
 
-func NewMiningServer(config *config.Config, monitor common.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *MiningServer {
+func NewMiningServer(config *config.Config, monitor monitor.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *MiningServer {
 	var err error
 	s := new(MiningServer)
 	s.config = config
@@ -147,7 +148,7 @@ func (c *MiningServer) ForwardMonitorEvents() {
 	fLog := log.WithFields(log.Fields{"func": "ForwardMonitorEvents"})
 	alert := c.FactomMonitor.NewListener()
 	gAlerts := c.OPRGrader.GetAlert("evt-forwarder")
-	var last common.MonitorEvent
+	var last monitor.MonitorEvent
 	mining := false
 	for {
 		select {

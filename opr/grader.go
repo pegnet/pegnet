@@ -14,13 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/pegnet/pegnet/balances"
-
-	"github.com/pegnet/pegnet/database"
-
 	"github.com/FactomProject/factom"
-
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/database"
+	"github.com/pegnet/pegnet/monitor"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -30,7 +28,7 @@ var gLog = log.WithField("id", "grader")
 type IGrader interface {
 	GetAlert(id string) (alert chan *OPRs)
 	StopAlert(id string)
-	Run(monitor *common.Monitor, ctx context.Context)
+	Run(monitor *monitor.Monitor, ctx context.Context)
 }
 
 // QuickGrader is responsible for evaluating the previous block of OPRs and
@@ -132,7 +130,7 @@ func (g *QuickGrader) StopAlert(id string) {
 	delete(g.alerts, id)
 }
 
-func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
+func (g *QuickGrader) Run(mon *monitor.Monitor, ctx context.Context) {
 	log.WithField("id", "grader").Info("Running initial sync")
 	InitLX() // We intend to use the LX hash
 	for {    // We need to first sync our grader before we start syncing new blocks
@@ -150,9 +148,9 @@ func (g *QuickGrader) Run(monitor *common.Monitor, ctx context.Context) {
 		break // Initial sync done
 	}
 
-	fdAlert := monitor.NewListener()
+	fdAlert := mon.NewListener()
 	for {
-		var fds common.MonitorEvent
+		var fds monitor.MonitorEvent
 		select {
 		case fds = <-fdAlert:
 		case <-ctx.Done():

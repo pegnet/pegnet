@@ -12,6 +12,7 @@ import (
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
+	"github.com/pegnet/pegnet/monitor"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	config "github.com/zpatrick/go-config"
@@ -25,7 +26,7 @@ type MiningClient struct {
 	Host            string // Coordinator Location
 	FactomDigitalID string
 
-	Monitor  *common.FakeMonitor
+	Monitor  *monitor.FakeMonitor
 	Grader   *opr.FakeGrader
 	OPRMaker *mining.BlockingOPRMaker
 
@@ -50,7 +51,7 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	s.entryChannel = make(chan *factom.Entry, 25)
 	b := balances.NewBalanceTracker()
 	// The "Fakes" allow us to emit events
-	s.Monitor = common.NewFakeMonitor()
+	s.Monitor = monitor.NewFakeMonitor()
 	s.Grader = opr.NewFakeGrader(config, b)
 	s.OPRMaker = mining.NewBlockingOPRMaker()
 
@@ -64,7 +65,7 @@ func NewMiningClient(config *config.Config) *MiningClient {
 	return s
 }
 
-func (c *MiningClient) Listeners() (common.IMonitor, opr.IGrader, mining.IOPRMaker) {
+func (c *MiningClient) Listeners() (monitor.IMonitor, opr.IGrader, mining.IOPRMaker) {
 	return c.Monitor, c.Grader, c.OPRMaker
 }
 
@@ -153,7 +154,7 @@ func (c *MiningClient) Listen(cancel context.CancelFunc) {
 				fLog.WithField("evt", "error").WithError(fmt.Errorf(evt.Error)).Error("error from coordinator")
 			}
 		case FactomEvent:
-			evt := m.Data.(common.MonitorEvent)
+			evt := m.Data.(monitor.MonitorEvent)
 
 			// Drain anything that was left over
 			if evt.Minute == 1 {

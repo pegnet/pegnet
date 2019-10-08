@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/monitor"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -21,7 +22,7 @@ type MiningCoordinator struct {
 	config *config.Config
 
 	// Factom blockchain related alerts
-	FactomMonitor common.IMonitor
+	FactomMonitor monitor.IMonitor
 	OPRGrader     opr.IGrader
 
 	// Miners mine the opr hashes
@@ -51,7 +52,7 @@ type MiningIdentity struct {
 	Best     *opr.NonceRanking
 }
 
-func NewNetworkedMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
+func NewNetworkedMiningCoordinatorFromConfig(config *config.Config, monitor monitor.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
 	c := new(MiningCoordinator)
 	c.config = config
 	c.FactomMonitor = monitor
@@ -63,7 +64,7 @@ func NewNetworkedMiningCoordinatorFromConfig(config *config.Config, monitor comm
 	return c
 }
 
-func NewMiningCoordinatorFromConfig(config *config.Config, monitor common.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
+func NewMiningCoordinatorFromConfig(config *config.Config, monitor monitor.IMonitor, grader opr.IGrader, s *GlobalStatTracker) *MiningCoordinator {
 	c := new(MiningCoordinator)
 	c.config = config
 	c.FactomMonitor = monitor
@@ -123,7 +124,7 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	mining := false
 MiningLoop:
 	for {
-		var fds common.MonitorEvent
+		var fds monitor.MonitorEvent
 		select {
 		case fds = <-alert:
 		case <-ctx.Done(): // If cancelled

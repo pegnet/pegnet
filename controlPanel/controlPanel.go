@@ -12,6 +12,7 @@ import (
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/mining"
+	"github.com/pegnet/pegnet/monitor"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -19,7 +20,7 @@ import (
 type ControlPanel struct {
 	Config     *config.Config
 	Statistics *mining.GlobalStatTracker
-	Monitor    common.IMonitor
+	Monitor    monitor.IMonitor
 	Balances   *balances.BalanceTracker
 
 	Server    *http.Server
@@ -34,7 +35,7 @@ func corsHeader(next http.Handler) http.Handler {
 	})
 }
 
-func NewControlPanel(config *config.Config, monitor common.IMonitor, statTracker *mining.GlobalStatTracker, balances *balances.BalanceTracker) *ControlPanel {
+func NewControlPanel(config *config.Config, monitor monitor.IMonitor, statTracker *mining.GlobalStatTracker, balances *balances.BalanceTracker) *ControlPanel {
 	c := new(ControlPanel)
 	c.Config = config
 	c.Monitor = monitor

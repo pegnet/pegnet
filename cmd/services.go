@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/pegnet/pegnet/balances"
+	"github.com/pegnet/pegnet/monitor"
 
 	"github.com/pegnet/pegnet/api"
 	"github.com/pegnet/pegnet/common"
@@ -18,20 +19,20 @@ import (
 	"github.com/zpatrick/go-config"
 )
 
-func LaunchFactomMonitor(config *config.Config) *common.Monitor {
-	monitor := common.GetMonitor()
-	monitor.SetTimeout(time.Duration(Timeout) * time.Second)
+func LaunchFactomMonitor(config *config.Config) *monitor.Monitor {
+	mon := monitor.GetMonitor()
+	mon.SetTimeout(time.Duration(Timeout) * time.Second)
 
 	go func() {
-		errListener := monitor.NewErrorListener()
+		errListener := mon.NewErrorListener()
 		err := <-errListener
 		panic("Monitor threw error: " + err.Error())
 	}()
 
-	return monitor
+	return mon
 }
 
-func LaunchGrader(config *config.Config, monitor *common.Monitor, balances *balances.BalanceTracker, ctx context.Context, run bool) *opr.QuickGrader {
+func LaunchGrader(config *config.Config, monitor *monitor.Monitor, balances *balances.BalanceTracker, ctx context.Context, run bool) *opr.QuickGrader {
 	db := OpenDB(Config)
 
 	grader := opr.NewQuickGrader(config, db, balances)
@@ -100,13 +101,13 @@ func LaunchAPI(config *config.Config, stats *mining.GlobalStatTracker, grader *o
 	return s
 }
 
-func LaunchControlPanel(config *config.Config, ctx context.Context, monitor common.IMonitor, stats *mining.GlobalStatTracker, bals *balances.BalanceTracker) *controlPanel.ControlPanel {
+func LaunchControlPanel(config *config.Config, ctx context.Context, monitor monitor.IMonitor, stats *mining.GlobalStatTracker, bals *balances.BalanceTracker) *controlPanel.ControlPanel {
 	cp := controlPanel.NewControlPanel(config, monitor, stats, bals)
 	go cp.ServeControlPanel()
 	return cp
 }
 
-func LaunchMiners(config *config.Config, ctx context.Context, monitor common.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *mining.MiningCoordinator {
+func LaunchMiners(config *config.Config, ctx context.Context, monitor monitor.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker) *mining.MiningCoordinator {
 	coord := mining.NewMiningCoordinatorFromConfig(config, monitor, grader, stats)
 	err := coord.InitMinters()
 	if err != nil {
