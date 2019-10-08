@@ -18,7 +18,7 @@ var valids = []string{
 
 func TestValid(t *testing.T) {
 	for _, addr := range valids {
-		if err := Valid(addr); err != nil {
+		if err := ValidFCT(addr); err != nil {
 			t.Errorf("%s is valid, but found %s", addr, err.Error())
 		}
 	}
@@ -39,7 +39,7 @@ func TestValid(t *testing.T) {
 	}
 
 	for _, addr := range invalids {
-		if err := Valid(addr); err == nil {
+		if err := ValidFCT(addr); err == nil {
 			t.Errorf("%s is invalid, but found to be valid", addr)
 		}
 	}
@@ -48,7 +48,7 @@ func TestValid(t *testing.T) {
 
 func TestRandom(t *testing.T) {
 	for i := 0; i < 100; i++ {
-		if err := Valid(Random()); err != nil {
+		if err := ValidFCT(Random()); err != nil {
 			t.Error(err)
 		}
 	}
@@ -101,5 +101,12 @@ func TestChecksum(t *testing.T) {
 		if err == nil {
 			t.Errorf("exp data with length %d to fail, but it did not", i)
 		}
+	}
+}
+
+// TODO: Improve this test
+func TestValidEC(t *testing.T) {
+	if ValidEC("EC3TsJHUs8bzbbVnratBafub6toRYdgzgbR7kWwCW4tqbmyySRmg") != nil {
+		t.Error("should have no err")
 	}
 }

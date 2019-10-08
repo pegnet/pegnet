@@ -8,9 +8,19 @@ import (
 )
 
 var FactoidAddressPrefix = []byte{0x5f, 0xb1}
+var EntryCreditPrefix = []byte{0x59, 0x2a}
 
-// Valid returns if the address is a valid factoid address
-func Valid(addr string) error {
+// ValidFCT returns if the address is a valid factoid address
+func ValidFCT(addr string) error {
+	return valid(addr, FactoidAddressPrefix)
+}
+
+// ValidEC returns if the address is a valid entry credit address
+func ValidEC(addr string) error {
+	return valid(addr, EntryCreditPrefix)
+}
+
+func valid(addr string, expPrefix []byte) error {
 	data := Base58Decode(addr)
 	if len(data) == 0 {
 		return fmt.Errorf("address must be in base58")
@@ -22,7 +32,7 @@ func Valid(addr string) error {
 	}
 
 	prefix := data[:2]
-	if bytes.Compare(prefix, FactoidAddressPrefix) != 0 {
+	if bytes.Compare(prefix, expPrefix) != 0 {
 		return fmt.Errorf("address has wrong prefix")
 	}
 
