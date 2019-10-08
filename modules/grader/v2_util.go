@@ -60,7 +60,7 @@ func ValidateV2(entryhash []byte, extids [][]byte, height int32, winners []strin
 		return nil, NewValidateError("must have exactly 10 or 25 previous winning shorthashes")
 	}
 
-	if err := factoidaddress.Valid(o.Address); err != nil {
+	if err := factoidaddress.ValidFCT(o.Address); err != nil {
 		return nil, NewValidateError(fmt.Sprintf("factoidaddress is invalid : %s", err.Error()))
 	}
 
