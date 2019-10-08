@@ -29,6 +29,7 @@ const (
 
 	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
 	Config1ForgeKey        = "Oracle.1ForgeKey"
+	ConfigPegnetdSourceUrl = "Oracle.PegnetdSource"
 )
 
 // DefaultConfigOptions gives us the ability to add configurable settings that really
@@ -103,6 +104,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   OpenExchangeRatesKey=CHANGEME
   CoinMarketCapKey=CHANGEME
   1ForgeKey=CHANGEME
+  PegnetdSource=http://localhost:8070/v1
 
 
 [OracleDataSources]
@@ -118,6 +120,8 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 
   # Commodities
   Kitco=-1
+
+  PegnetdSource=100
 
 `
 	return d

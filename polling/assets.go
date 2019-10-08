@@ -31,6 +31,7 @@ var AllDataSources = map[string]IDataSource{
 	"FreeForexAPI":      new(FreeForexAPIDataSource),
 	"1Forge":            new(OneForgeDataSource),
 	"AlternativeMe":     new(AlternativeMeDataSource),
+	"PegnetdSource":     new(PegNetIssuanceSource),
 }
 
 func AllDataSourcesList() []string {
@@ -92,6 +93,11 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewFixedUSDDataSource(config)
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
+	case "PegnetdSource":
+		ds, err = NewPegNetIssuanceSource(config)
+		if err == nil {
+			return ds, nil // No timed cache on pegnetd
+		}
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
@@ -246,7 +252,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
-	assets := common.AllAssets // All the assets we are tracking.
+	assets := common.AssetsV2 // All the assets we are tracking.
 
 	// Wrap all the data sources with a quick caching layer for
 	// this loop. We only want to make 1 api call per source per Pull.
@@ -293,6 +299,30 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 			price.Value = TruncateTo8(price.Value)
 		}
 		pa[asset] = price
+	}
+
+	// Once all the assets are pulled, we can now evaluate the price of PEG.
+	// PEG is not a normal data-source, as we need the current pricing data in order
+	// to price it, so it's dependent on the sources above.
+	// TODO: Enforce this? Or let it skip? Currently if there is no pegnetd, we ignore it
+	// TODO: We can generalize the PegSource interface and have different options
+	//		to query from, but for now the pegnetd source is hardcoded
+	if source, ok := d.DataSources["PegnetdSource"]; ok {
+		if pegSource, ok := source.(*PegNetIssuanceSource); ok {
+			quote, err := pegSource.PullPEGPrice(pa)
+			if err != nil {
+				return pa, err
+			}
+			now := time.Now()
+			pa["PEG"] = PegItem{
+				// TODO: Store as uint64, not float
+				Value:    TruncateTo8(float64(quote) / 1e8),
+				When:     now,
+				WhenUnix: now.Unix(),
+			}
+		} else {
+			log.Errorf("this should never happen, the pegnetd data-source is improperly initialized")
+		}
 	}
 
 	return pa, nil
