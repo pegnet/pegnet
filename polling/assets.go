@@ -251,7 +251,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 // TODO: Currently we lazy eval prices, so we make the API call when we
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
-func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
+func (d *DataSources) PullAllPEGAssets(oprversion uint8, dbht int32) (pa PegAssets, err error) {
 	assets := common.AssetsV2 // All the assets we are tracking.
 
 	// Wrap all the data sources with a quick caching layer for
@@ -309,7 +309,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	//		to query from, but for now the pegnetd source is hardcoded
 	if source, ok := d.DataSources["PegnetdSource"]; ok {
 		if pegSource, ok := source.(*PegNetIssuanceSource); ok {
-			quote, err := pegSource.PullPEGPrice(pa)
+			quote, err := pegSource.PullPEGPrice(pa, dbht)
 			if err != nil {
 				return pa, err
 			}

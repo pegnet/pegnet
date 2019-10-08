@@ -53,7 +53,7 @@ func TestBasicPollingSources(t *testing.T) {
 
 	s := NewDataSources(c)
 
-	pa, err := s.PullAllPEGAssets(1)
+	pa, err := s.PullAllPEGAssets(1, 0)
 	if err != nil {
 		t.Error(err)
 	}
@@ -103,7 +103,7 @@ func TestBasicPollingSources(t *testing.T) {
 		c = config.NewConfig([]config.Provider{p})
 
 		s = NewDataSources(c)
-		pa, err := s.PullAllPEGAssets(1)
+		pa, err := s.PullAllPEGAssets(1, 0)
 		if err != nil {
 			t.Error(err)
 		}

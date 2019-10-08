@@ -424,7 +424,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version)
+	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version, opr.Dbht)
 	if err != nil {
 		return err
 	}

@@ -58,15 +58,10 @@ func (d *PegNetIssuanceSource) SupportedPegs() []string {
 	return common.MergeLists(common.PEGAsset)
 }
 
-func (d *PegNetIssuanceSource) PullPEGPrice(assets PegAssets) (pegQuote uint64, err error) {
-	issuance, err := d.FetchIssuance()
+func (d *PegNetIssuanceSource) PullPEGPrice(assets PegAssets, dbht int32) (pegQuote uint64, err error) {
+	issuance, err := d.FetchIssuance(dbht)
 	if err != nil {
 		return
-	}
-
-	if issuance.SyncStatus.FactomHeight != issuance.SyncStatus.SyncHeight {
-		return 0, fmt.Errorf("PEG datasource is not synced, at %d/%d",
-			issuance.SyncStatus.SyncHeight, issuance.SyncStatus.FactomHeight)
 	}
 
 	// Market cap in pUSD
@@ -97,11 +92,14 @@ func (d *PegNetIssuanceSource) PullPEGPrice(assets PegAssets) (pegQuote uint64, 
 	}
 
 	// Now set peg Price
+	if pegSupply == 0 { // No divide by 0 error
+		return 0, nil
+	}
 	peg := new(big.Int).Div(cap, new(big.Int).SetUint64(pegSupply))
 	return peg.Uint64(), nil
 }
 
-func (d *PegNetIssuanceSource) FetchIssuance() (*PegNetSourceIssuance, error) {
+func (d *PegNetIssuanceSource) FetchIssuance(dbht int32) (*PegNetSourceIssuance, error) {
 	var resp *PegNetSourceIssuance
 
 	operation := func() error {
@@ -114,6 +112,12 @@ func (d *PegNetIssuanceSource) FetchIssuance() (*PegNetSourceIssuance, error) {
 		if err != nil {
 			return err
 		}
+
+		if resp.SyncStatus.SyncHeight != dbht-1 {
+			return fmt.Errorf("PEG datasource is not synced, at %d/%d",
+				resp.SyncStatus.SyncHeight, dbht)
+		}
+
 		return nil
 	}
 
@@ -166,6 +170,8 @@ func (d *PegNetIssuanceSource) ParseIssuance(data []byte) (*PegNetSourceIssuance
 
 func (d *PegNetIssuanceSource) FetchPegPrices() (peg PegAssets, err error) {
 	// Do not return anything. The PEG price will be 0 if used as a regular data-source.
+	peg = make(PegAssets)
+	peg["PEG"] = PegItem{}
 	return
 }
 
