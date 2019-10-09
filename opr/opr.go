@@ -291,7 +291,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
 	case 1:
 		for asset, v := range assets {
-			opr.Assets.SetValue(asset, v.Value)
+			opr.Assets.SetValueFromUint64(asset, v.Value)
 		}
 	case 2:
 		for asset, v := range assets {
@@ -299,7 +299,7 @@ func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 			if asset == "XPT" || asset == "XPD" {
 				continue
 			}
-			opr.Assets.SetValue(asset, v.Value)
+			opr.Assets.SetValueFromUint64(asset, v.Value)
 		}
 	}
 }

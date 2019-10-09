@@ -287,17 +287,11 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8, dbht int32) (pa PegAsse
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
 		}
 
-		// We round all prices to the same precision
 		// Keep in mind if we didn't get a price (like no data sources), this will be a 0.
 		// Validation of the price does not happen here. For example, PEG is an asset with no data source,
 		// so it will be 0 here.
 		// We WILL error out if all our data sources for a peg failed, and we listed data sources. That
 		// is important to note.
-		if oprversion == 1 {
-			price.Value = TruncateTo4(price.Value)
-		} else {
-			price.Value = TruncateTo8(price.Value)
-		}
 		pa[asset] = price
 	}
 
@@ -315,8 +309,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8, dbht int32) (pa PegAsse
 			}
 			now := time.Now()
 			pa["PEG"] = PegItem{
-				// TODO: Store as uint64, not float
-				Value:    TruncateTo8(float64(quote) / 1e8),
+				Value:    quote,
 				When:     now,
 				WhenUnix: now.Unix(),
 			}

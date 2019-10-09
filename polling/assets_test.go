@@ -24,7 +24,7 @@ func TestBasicPollingSources(t *testing.T) {
 		if err != nil {
 			panic(err)
 		}
-		s.Value = float64(v)
+		s.Value = uint64(v * 1e8)
 		s.Assets = []string{common.AllAssets[v]}
 		s.SourceName = fmt.Sprintf("UnitTest%d", v)
 
@@ -64,8 +64,8 @@ func TestBasicPollingSources(t *testing.T) {
 			continue
 		}
 		if i < end {
-			if int(v.Value) != i {
-				t.Errorf("Exp value %d, found %d for %s", i, int(v.Value), asset)
+			if v.Value != uint64(i*1e8) {
+				t.Errorf("Exp value %d, found %d for %s", uint64(i*1e8), v.Value, asset)
 			}
 
 			// Let's also check there is 4 sources
@@ -73,8 +73,8 @@ func TestBasicPollingSources(t *testing.T) {
 				t.Errorf("exp %d sources for %s, found %d", 4, asset, len(s.AssetSources[asset]))
 			}
 		} else {
-			if int(v.Value) != end {
-				t.Errorf("Exp value %d, found %d for %s", end, int(v.Value), asset)
+			if v.Value != uint64(end*1e8) {
+				t.Errorf("Exp value %d, found %d for %s", uint64(end*1e8), v.Value, asset)
 			}
 			// Let's also check there is 3 sources
 			if len(s.AssetSources[asset]) != 3 {
@@ -111,7 +111,7 @@ func TestBasicPollingSources(t *testing.T) {
 		if v, ok := pa["USD"]; !ok {
 			t.Error("No usd")
 		} else {
-			if int(v.Value) != 8 {
+			if v.Value != uint64(8*1e8) {
 				t.Error("Override failed")
 			}
 		}

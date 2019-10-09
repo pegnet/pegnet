@@ -40,7 +40,7 @@ func TestFixedPegnetdSourcePeggedAssets(t *testing.T) {
 	now := time.Now()
 	for _, asset := range opr.V2Assets {
 		assets[asset] = polling.PegItem{
-			Value:    1,
+			Value:    1e8, // 1$
 			When:     now,
 			WhenUnix: now.Unix(),
 		}
@@ -52,8 +52,9 @@ func TestFixedPegnetdSourcePeggedAssets(t *testing.T) {
 		t.Error(err)
 	}
 
-	exp := 0.00154915699 * 1e8
-	if pegPrice != uint64(exp) {
-		t.Errorf("PEG Quote is incorrect")
+	// float64(0.00154915699 * 1e8)
+	exp := uint64(154915)
+	if pegPrice != exp {
+		t.Errorf("PEG Quote is incorrect: found %d, exp %d", pegPrice, exp)
 	}
 }

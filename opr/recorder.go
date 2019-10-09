@@ -68,7 +68,7 @@ OPRLoop:
 	for i, opr := range all {
 		for asset, _ := range opr.Assets {
 			// Skip bogus
-			if err := testutils.PriceCheck(asset, opr.Assets.Value(asset)); err != nil {
+			if err := testutils.PriceCheck(asset, opr.Assets.Uint64Value(asset)); err != nil {
 				continue OPRLoop
 			}
 		}

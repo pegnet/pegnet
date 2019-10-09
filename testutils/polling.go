@@ -20,7 +20,7 @@ func AlwaysOnePolling() *polling.DataSources {
 		if err != nil {
 			panic(err)
 		}
-		s.Value = float64(1)
+		s.Value = 1e8
 		s.Assets = common.AllAssets
 		s.SourceName = fmt.Sprintf("UnitTest%d", v)
 
@@ -39,7 +39,7 @@ func AlwaysOnePolling() *polling.DataSources {
 
 // UnitTestDataSource just reports the Value for the supported Assets
 type UnitTestDataSource struct {
-	Value      float64
+	Value      uint64
 	Assets     []string
 	SourceName string
 }

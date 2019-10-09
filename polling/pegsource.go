@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"math/big"
 	"net/http"
 
@@ -78,7 +77,7 @@ func (d *PegNetIssuanceSource) PullPEGPrice(assets PegAssets, dbht int32) (pegQu
 		// The quotes are provided in USD, and the issuance is in the pAsset. To get the total market cap,
 		// you take the issuance * price quote, where the quote is in pUSD and the issuance is in the
 		// pAsset.
-		pUSDQuote := uint64(math.Round(quote.Value * 1e8))
+		pUSDQuote := quote.Value
 		// Supply * price
 		add := new(big.Int).Mul(new(big.Int).SetUint64(issuance.Issuance[asset]), new(big.Int).SetUint64(pUSDQuote))
 		cap.Add(cap, add)

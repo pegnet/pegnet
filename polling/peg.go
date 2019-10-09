@@ -4,6 +4,7 @@
 package polling
 
 import (
+	"math"
 	"math/rand"
 	"time"
 
@@ -24,15 +25,25 @@ func (p PegAssets) Clone(randomize float64) PegAssets {
 }
 
 type PegItem struct {
-	Value    float64
+	Value    uint64
 	WhenUnix int64 // unix timestamp
 	When     time.Time
 }
 
+func Uint64Value(value float64) uint64 {
+	return uint64(math.Round(value * 1e8))
+}
+
+// Value FloatValue the value to a float
+// Deprecated: Should not be using floats, stick to the uint64
+func (p PegItem) FloatValue() float64 {
+	return float64(p.Value) / 1e8
+}
+
 func (p PegItem) Clone(randomize float64) PegItem {
 	np := new(PegItem)
-	np.Value = p.Value + p.Value*(randomize/2*rand.Float64()) - p.Value*(randomize/2*rand.Float64())
-	np.Value = TruncateTo8(np.Value)
+	np.Value = Uint64Value(p.FloatValue() + p.FloatValue()*(randomize/2*rand.Float64()) - p.FloatValue()*(randomize/2*rand.Float64()))
 	np.WhenUnix = p.WhenUnix
+	np.When = p.When
 	return *np
 }

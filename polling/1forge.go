@@ -90,7 +90,7 @@ func (d *OneForgeDataSource) FetchPegPrices() (peg PegAssets, err error) {
 		}
 
 		timestamp := time.Unix(currency.Timestamp, 0)
-		peg[asset] = PegItem{Value: currency.Price, WhenUnix: timestamp.Unix(), When: timestamp}
+		peg[asset] = PegItem{Value: Uint64Value(currency.Price), WhenUnix: timestamp.Unix(), When: timestamp}
 	}
 
 	return

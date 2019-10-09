@@ -83,7 +83,7 @@ func (d *KitcoDataSource) parseData(data KitcoRecord) (PegItem, error) {
 		return i, err
 	}
 
-	return PegItem{Value: v, When: timestamp, WhenUnix: timestamp.Unix()}, nil
+	return PegItem{Value: Uint64Value(v), When: timestamp, WhenUnix: timestamp.Unix()}, nil
 }
 
 func (d *KitcoDataSource) dateFormat() string {

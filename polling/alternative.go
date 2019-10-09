@@ -86,7 +86,7 @@ func (d *AlternativeMeDataSource) FetchPegPrices() (peg PegAssets, err error) {
 		}
 
 		timestamp := time.Unix(currency.LastUpdated, 0)
-		peg[asset] = PegItem{Value: usdQuote.Price, WhenUnix: timestamp.Unix(), When: timestamp}
+		peg[asset] = PegItem{Value: Uint64Value(usdQuote.Price), WhenUnix: timestamp.Unix(), When: timestamp}
 	}
 
 	return

@@ -54,7 +54,7 @@ func (d *ExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error) {
 
 	for _, currencyISO := range d.SupportedPegs() {
 		if v, ok := resp.Rates[currencyISO]; ok {
-			peg[currencyISO] = PegItem{Value: 1 / v, When: timestamp, WhenUnix: timestamp.Unix()}
+			peg[currencyISO] = PegItem{Value: Uint64Value(1 / v), When: timestamp, WhenUnix: timestamp.Unix()}
 		}
 	}
 

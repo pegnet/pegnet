@@ -84,7 +84,7 @@ func (d *CoinMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
 			continue
 		}
 
-		peg[asset] = PegItem{Value: usdQuote.Price, WhenUnix: timestamp.Unix(), When: timestamp}
+		peg[asset] = PegItem{Value: Uint64Value(usdQuote.Price), WhenUnix: timestamp.Unix(), When: timestamp}
 	}
 
 	return
