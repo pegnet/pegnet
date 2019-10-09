@@ -252,7 +252,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8, dbht int32) (pa PegAssets, err error) {
-	assets := common.AssetsV2 // All the assets we are tracking.
+	assets := common.AllAssets // All the assets we are tracking.
 
 	// Wrap all the data sources with a quick caching layer for
 	// this loop. We only want to make 1 api call per source per Pull.
