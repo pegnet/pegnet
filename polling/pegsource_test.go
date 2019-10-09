@@ -47,7 +47,7 @@ func TestFixedPegnetdSourcePeggedAssets(t *testing.T) {
 	}
 
 	// All priced at 1 USD
-	pegPrice, err := ps.PullPEGPrice(assets)
+	pegPrice, err := ps.PullPEGPrice(assets, 213434)
 	if err != nil {
 		t.Error(err)
 	}
