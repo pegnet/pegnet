@@ -60,25 +60,25 @@ func PriceCheck(asset string, rate uint64) error {
 	case "XBT":
 		// BTC < $500? That sounds wrong
 		if rate < 500*1e8 {
-			return fmt.Errorf("bitcoin(%s) found to be %.2f, less than $500, this seems wrong", asset, rate)
+			return fmt.Errorf("bitcoin(%s) found to be %.2f, less than $500, this seems wrong", asset, float64(rate)/1e8)
 		}
 	case "XAU":
 		// Gold < $50? That sounds wrong
 		if rate < 50*1e8 {
-			return fmt.Errorf("gold(%s) found to be %.2f, less than $50, this seems wrong", asset, rate)
+			return fmt.Errorf("gold(%s) found to be %.2f, less than $50, this seems wrong", asset, float64(rate)/1e8)
 		}
 	case "XPD":
 		// Silver < $5? That sounds wrong
 		if rate < 5*1e8 {
-			return fmt.Errorf("%s found to be %.2f, less than $5, this seems wrong", asset, rate)
+			return fmt.Errorf("%s found to be %.2f, less than $5, this seems wrong", asset, float64(rate)/1e8)
 		}
 	case "MXN":
 		if rate > 1*1e8 {
-			return fmt.Errorf("the peso(%s) found to be %.2f, greater than $1, this seems wrong", asset, rate)
+			return fmt.Errorf("the peso(%s) found to be %.2f, greater than $1, this seems wrong", asset, float64(rate)/1e8)
 		}
 	case "ETH":
 		if rate < 20*1e8 {
-			return fmt.Errorf("%s found to be %.2f, less than $20, this seems wrong", asset, rate)
+			return fmt.Errorf("%s found to be %.2f, less than $20, this seems wrong", asset, float64(rate)/1e8)
 		}
 	}
 	return nil
