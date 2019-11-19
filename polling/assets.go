@@ -306,7 +306,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 			price.Value += bitcoinAdd
 			bitcoinAdd += 200
 		}
-		if asset == "pFCT" {
+		if asset == "FCT" {
 			if FCTtoggle {
 				FCTtoggle = !FCTtoggle
 				price.Value = 2.836
@@ -316,7 +316,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 			}
 		}
 
-		if asset == "pDCR" {
+		if asset == "DCR" {
 			if DCRtoggle {
 				DCRtoggle = !DCRtoggle
 				price.Value = 2
@@ -326,7 +326,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 			}
 		}
 
-		if asset == "pXAU" {
+		if asset == "XAU" {
 			price.Value -= goldAdd
 			goldAdd += 200
 			if price.Value < 0 {
@@ -335,7 +335,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 			}
 		}
 
-		if asset == "pBNB" {
+		if asset == "BNB" {
 			price.Value = rand.Float64() * 10
 		}
 
