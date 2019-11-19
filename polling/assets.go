@@ -2,6 +2,7 @@ package polling
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
 	"sort"
 	"strings"
@@ -235,6 +236,14 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 	return strings.Join(str, " -> ")
 }
 
+var (
+	bitcoinAdd float64 = 200
+	FCTtoggle          = false
+	DCRtoggle          = false
+
+	goldAdd float64 = 200
+)
+
 // PullAllPEGAssets will pull prices for every asset we are tracking.
 // We pull assets from the sources in their priority order when possible.
 // If an asset from priority 1 is missing, we resort to priority 2 ONLY for
@@ -292,6 +301,44 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 		} else {
 			price.Value = TruncateTo8(price.Value)
 		}
+
+		if asset == "XBT" {
+			price.Value += bitcoinAdd
+			bitcoinAdd += 200
+		}
+		if asset == "pFCT" {
+			if FCTtoggle {
+				FCTtoggle = !FCTtoggle
+				price.Value = 2.836
+			} else {
+				FCTtoggle = !FCTtoggle
+				price.Value = 2.67
+			}
+		}
+
+		if asset == "pDCR" {
+			if DCRtoggle {
+				DCRtoggle = !DCRtoggle
+				price.Value = 2
+			} else {
+				DCRtoggle = !DCRtoggle
+				price.Value = 3
+			}
+		}
+
+		if asset == "pXAU" {
+			price.Value -= goldAdd
+			goldAdd += 200
+			if price.Value < 0 {
+				price.Value = 12700
+				goldAdd = 0
+			}
+		}
+
+		if asset == "pBNB" {
+			price.Value = rand.Float64() * 10
+		}
+
 		pa[asset] = price
 	}
 
