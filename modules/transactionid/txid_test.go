@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	. "github.com/pegnet/pegnet/modules/txid"
+	. "github.com/pegnet/pegnet/modules/transactionid"
 )
 
 func TestFormatTxID(t *testing.T) {
