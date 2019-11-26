@@ -33,7 +33,7 @@ func NewConversionSupply(bank uint64) *ConversionSupplySet {
 
 func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	if _, ok := s.ConversionRequests[txid]; ok {
-		return fmt.Errorf("txid already exits in the this set")
+		return fmt.Errorf("txid already exists in the this set")
 	}
 	s.ConversionRequests[txid] = pegAmt
 	s.totalRequested.Add(s.totalRequested, new(big.Int).SetUint64(pegAmt))
