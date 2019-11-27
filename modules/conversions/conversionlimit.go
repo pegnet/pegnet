@@ -137,3 +137,21 @@ func Payout(requested, bank uint64, totalRequested uint64) uint64 {
 	t := new(big.Int).SetUint64(totalRequested)
 	return PayoutBig(requested, bank, t)
 }
+
+// Refund calculates the refund based on the input amount and pegYield.
+// The refund for a pXXX -> PEG conversion is in the original asset units.
+// It takes the yielded peg and the rates to determine how much of the
+// original asset to return.
+// Params:
+//	inputAmount 	Original pXXX asset amount
+//	pegYield		Amount of PEG allocated in the conversion
+//	inputRate		pUSD rate of the original asset
+//	pegRate			pUSD rate of PEG
+func Refund(inputAmount, pegYield int64, inputRate, pegRate uint64) int64 {
+	consumedInput, _ := Convert(pegYield, pegRate, inputRate)
+	refund := inputAmount - consumedInput
+	if refund < 0 {
+		fmt.Println("")
+	}
+	return refund
+}
