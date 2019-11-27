@@ -29,6 +29,10 @@ const (
 
 	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
 	Config1ForgeKey        = "Oracle.1ForgeKey"
+
+	// ConfigStaleDuration determines how old a quote is allowed to be and still be
+	// acceptable
+	ConfigStaleDuration = "Oracle.StaleQuoteDuration"
 )
 
 // DefaultConfigOptions gives us the ability to add configurable settings that really
@@ -53,12 +57,13 @@ func (c *DefaultConfigOptions) Load() (map[string]string, error) {
 	settings[ConfigMinerDBType] = "ldb"
 	settings[ConfigPegnetNodeDBPath] = "$PEGNETHOME/data_$PEGNETNETWORK/node.sqlite"
 	settings[ConfigControlPanelPort] = "8080"
+	settings[ConfigStaleDuration] = "30m"
 
 	return settings, nil
 }
 
 func NewUnitTestConfig() *config.Config {
-	return config.NewConfig([]config.Provider{NewUnitTestConfigProvider()})
+	return config.NewConfig([]config.Provider{NewDefaultConfigOptionsProvider(), NewUnitTestConfigProvider()})
 }
 
 // UnitTestConfigProvider is only used in unit tests.
@@ -103,6 +108,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
   OpenExchangeRatesKey=CHANGEME
   CoinMarketCapKey=CHANGEME
   1ForgeKey=CHANGEME
+  StaleQuoteDuration=10m
 
 
 [OracleDataSources]

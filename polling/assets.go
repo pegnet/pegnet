@@ -22,6 +22,7 @@ var AllDataSources = map[string]IDataSource{
 	"APILayer": new(APILayerDataSource),
 	"CoinCap":  new(CoinCapDataSource),
 	"FixedUSD": new(FixedUSDDataSource),
+	"FixedPEG": new(FixedPEGDataSource),
 	// ExchangeRates is daily,  don't show people this
 	//"ExchangeRates":     new(ExchangeRatesDataSource),
 	"Kitco": new(KitcoDataSource),
@@ -90,6 +91,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOneForgeDataSourceDataSource(config)
 	case "FixedUSD":
 		ds, err = NewFixedUSDDataSource(config)
+	case "FixedPEG":
+		ds, err = NewFixedPEGDataSource(config)
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
@@ -126,6 +129,9 @@ type DataSources struct {
 	PriorityList []DataSourceWithPriority
 
 	config *config.Config
+
+	// Some configuration variables read in from the config
+	staleDuration time.Duration
 }
 
 type DataSourceWithPriority struct {
@@ -138,8 +144,21 @@ func NewDataSources(config *config.Config) *DataSources {
 	d := new(DataSources)
 	d.AssetSources = make(map[string][]string)
 	d.DataSources = make(map[string]IDataSource)
+	d.config = config
 
-	// All the config settings
+	// Load some specific config settings
+	staleDuration, err := d.config.String(common.ConfigStaleDuration)
+	if err != nil {
+		common.CheckAndPanic(err)
+	}
+
+	duration, err := time.ParseDuration(staleDuration)
+	if err != nil {
+		common.CheckAndPanic(err)
+	}
+	d.staleDuration = duration
+
+	// Load all the data-source config settings
 	allSettings, err := config.Settings()
 	common.CheckAndPanic(err)
 
@@ -247,6 +266,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
 	assets := common.AllAssets // All the assets we are tracking.
+	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for
 	// this loop. We only want to make 1 api call per source per Pull.
@@ -262,20 +282,8 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	pa = make(PegAssets)
 	for _, asset := range assets {
 		var price PegItem
-		// For each asset we try the data source in the list.
-		// If we find a price, we can exit early, as we only need 1 asset price
-		// per peg.
-		for _, sourceName := range d.AssetSources[asset] {
-			price, err = cacheWrap[sourceName].FetchPegPrice(asset)
-			if err != nil {
-				continue // Try the next source
-			}
-			// We found a price, so break out.
-			if price.Value != 0 {
-				break
-			}
-		}
-
+		// For each asset we try and find the best price quote we can.
+		price, err := d.PullBestPrice(asset, start, cacheWrap)
 		if err != nil { // This will only be the last err in the data source list.
 			// No prices found for a peg, this pull failed
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
@@ -296,6 +304,76 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	}
 
 	return pa, nil
+}
+
+// PullBestPrice pulls the best asset price we can find for a given asset.
+// Params:
+//		asset		Asset to pull pricing data
+//		reference	Time reference to determine 'staleness' from
+//		sources		Map of datasources to pull the price quote from.
+func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource) (pa PegItem, err error) {
+	if sources == nil {
+		// If our data sources passed in are nil, then we don't need to do cache wrapping.
+		// We should always have sources passed in, aside from unit tests.
+		sources = d.DataSources
+	}
+
+	// All the given data sources for the asset
+	sourceList := d.AssetSources[asset]
+
+	var prices []PegItem
+
+	// Eval all datasources from the reference time
+	for _, source := range sourceList {
+		var price PegItem
+		price, err = sources[source].FetchPegPrice(asset)
+		if err != nil {
+			continue
+		}
+
+		if price.Value != 0 {
+			prices = append(prices, price)
+
+			// We can break out if this is a 'good' price
+			//	Is it stale AND the market is open? We can expect stale quotes in a closed market
+			if reference.Sub(price.When) > d.staleDuration && IsMarketOpen(asset, reference) {
+				// This price quote is stale, keep fetching prices
+				continue
+			}
+
+			// This price is acceptable, we can exit
+			pa = price
+			return pa, nil
+		}
+	}
+
+	// If we got here, that means that there might exist some price quotes from
+	// our data sources, but they are all stale. Instead of taking the most recent price
+	// quote, we will take the highest priority quote given our data-source order.
+	if len(prices) > 0 {
+		pa = prices[0]
+		return pa, nil
+	}
+
+	// If we have a detailed error on the last polling, we can just
+	// return that
+	if err != nil {
+		return
+	}
+
+	// PEG is not configured on most miners.
+	// TODO: When all miners start using FixedPEG as a datasource, we can
+	// 		drop this conditional.
+	if asset == "PEG" {
+		return pa, nil
+	}
+
+	// If no prices exist, this could mean we had no data-sources configured for this
+	// asset. We will return an error informing the user that this asset is not
+	// configured. They should use a command like `pegnet datasources` to verify'
+	// they have a proper config file.
+	return pa, fmt.Errorf("'%s' doesn't seem to have any datasources configured. "+
+		"please check your config file to ensure a datasource exists for this asset", asset)
 }
 
 // OneTimeUseCache will cache the data source response so we can query for

@@ -124,7 +124,7 @@ func (c *ChainRecorder) WriteMinerCSV() error {
 	// Build the csv
 	for i, block := range g.GetBlocks() {
 		var _ = i
-		last := 50
+		last := 49
 		if len(block.GradedOPRs) < 50 {
 			last = len(block.GradedOPRs) - 1
 		}
