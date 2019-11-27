@@ -81,8 +81,8 @@ func TestConversions_Convert_Vectors(t *testing.T) {
 func TestConversions_Convert_Random(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		expectedErrorString := ""
-		xRate := rand.Uint64() % (1e5 * 1e8) // Arbitrary maximum rate of $100k USD per unit
-		yRate := rand.Uint64() % (1e5 * 1e8)
+		xRate := rand.Uint64() % (1e5 * 1e8 / 2) // Arbitrary maximum rate of $50k USD per unit
+		yRate := rand.Uint64() % (1e5 * 1e8 / 2)
 		if xRate == 0 || yRate == 0 {
 			expectedErrorString = "invalid rate: 0"
 		}
