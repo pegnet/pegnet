@@ -36,6 +36,10 @@ func NewConversionSupply(bank uint64) *ConversionSupplySet {
 
 // AddConversion will add a PEG conversion request to the set.
 func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
+	if _, _, err := transactionid.VerifyTransactionHash(txid); err != nil {
+		return err
+	}
+
 	if _, ok := s.ConversionRequests[txid]; ok {
 		return fmt.Errorf("txid already exists in the this set")
 	}
@@ -80,6 +84,7 @@ func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 	for txid, amt := range s.ConversionRequests {
 		if amt > most {
 			top = []string{txid}
+			most = amt
 		} else if amt == most {
 			// Tied for the highest amount requested
 			top = append(top, txid)
