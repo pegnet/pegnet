@@ -14,7 +14,7 @@ const (
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
 // per block. This amount is currently set to 5,000 PEG, matching the miner
-// amount per block. (not inlcluding the bank)
+// amount per block. (not including the bank)
 // All amounts for interacting with this struct should be in PEG.
 type ConversionSupplySet struct {
 	Bank uint64 // Can be set to any positive number. Set to 0 if negative
