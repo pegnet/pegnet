@@ -32,6 +32,7 @@ var AllDataSources = map[string]IDataSource{
 	"FreeForexAPI":      new(FreeForexAPIDataSource),
 	"1Forge":            new(OneForgeDataSource),
 	"AlternativeMe":     new(AlternativeMeDataSource),
+	"PegnetMarketCap":   new(PegnetMarketCapDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -95,6 +96,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewFixedPEGDataSource(config)
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
+	case "PegnetMarketCap":
+		ds, err = NewPegnetMarketCapDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
