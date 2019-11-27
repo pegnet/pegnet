@@ -13,12 +13,16 @@ const (
 )
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
-// per block. This amount is currently set to 5,000 PEG, matching the miner
-// amount per block. (not including the bank)
+// into per block. This amount is currently set to 5,000 PEG, matching
+// matching the miner amount per block. (not including the bank)
 // All amounts for interacting with this struct should be in PEG.
+//
+// All conversion requests are conversions INTO PEG. So if PEG is $0.50,
+// then a conversion request of 10 pUSD -> PEG, would be
+// ConversionRequests[txid] = 20*1e8
 type ConversionSupplySet struct {
 	Bank uint64 // Can be set to any positive number. Set to 0 if negative
-	// Key = txid, Value = PegAmount
+	// Key = txid, Value = PegAmount requested in the conversion
 	ConversionRequests map[string]uint64
 	totalRequested     *big.Int
 }
@@ -35,6 +39,10 @@ func NewConversionSupply(bank uint64) *ConversionSupplySet {
 }
 
 // AddConversion will add a PEG conversion request to the set.
+// All conversion requests will be pXXX -> PEG
+// The `pegAmt` is the amount of PEG the total conversion would yield.
+// Because of the supply limit, this conversion request might not have
+// 100% yield.
 func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	if _, _, err := transactionid.VerifyTransactionHash(txid); err != nil {
 		return err
@@ -48,7 +56,8 @@ func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	return nil
 }
 
-// Payouts returns the amount of PEG to allow each Tx to convert.
+// Payouts returns the amount of PEG to allow each Tx to convert into.
+// This is the actual PEG yield of each conversion request (pXXX -> PEG)
 func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 	payouts := make(map[string]uint64)
 	if len(s.ConversionRequests) == 0 {
