@@ -209,7 +209,7 @@ func TestRefund(t *testing.T) {
 		}
 	})
 
-	t.Run("test 0 refund", func(t *testing.T) {
+	t.Run("test 0 refund case (normal conversions)", func(t *testing.T) {
 		for i := 0; i < 1000; i++ {
 			amtR := rand.Uint64() % (5 * 1e6 * 1e8) // 50K max
 			pegR := rand.Uint64() % (5 * 1e6 * 1e8) // 50K max
@@ -258,6 +258,13 @@ func RefundMethod2(input, pegYield int64, amtRate, pegRate uint64) int64 {
 // refund is in pXXX
 // pegYield is in PEG
 func CheckRefund(t *testing.T, input, refund, pegYield int64, amtRate, pegRate uint64) {
+	max := func(a, b int64) int64 {
+		if a > b {
+			return a
+		}
+		return b
+	}
+
 	maxPegYield, err := Convert(input, amtRate, pegRate)
 	if err != nil {
 		return // Overflow or 0 rates
@@ -272,10 +279,15 @@ func CheckRefund(t *testing.T, input, refund, pegYield int64, amtRate, pegRate u
 		}
 
 		diff := int64(input) - (refund + yieldInAsset)
-		if diff < 0 || diff > 0 {
+		// We never want the diff < 0, but we expect a diff > 0.
+		// TODO: Confirm this max error.
+		// The maximum diff is: maxError := max(X1/Y1, Y1/X1) + 2
+		maxError := maxConversionError(pegRate, amtRate)
+		maxError2 := maxConversionError(amtRate, pegRate)
+		if diff < 0 || diff > max(maxError, maxError2)+1 {
 			t.Errorf("input = refund + (yield PEG -> pXXX) does not hold true\n"+
 				"Amt: %d, Refund: %d, Add: %d\n"+
-				"Difference: %d", input, refund, yieldInAsset, int64(input)-(refund+yieldInAsset))
+				"Difference: %d, maxError: %d", input, refund, yieldInAsset, int64(input)-(refund+yieldInAsset), maxError)
 		}
 	}
 

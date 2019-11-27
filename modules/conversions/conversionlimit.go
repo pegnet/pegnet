@@ -147,8 +147,33 @@ func Payout(requested, bank uint64, totalRequested uint64) uint64 {
 //	pegYield		Amount of PEG allocated in the conversion
 //	inputRate		pUSD rate of the original asset
 //	pegRate			pUSD rate of PEG
+//
+// Method:
+// 	maxPEGYield := (input -> PEG)
+// 	refundPEG := maxPEGYield - PEGYield
+// 	refund := (refundPEG -> pXXX)
+//
+// Rationale
+// There is more than 1 way to calculate the refund. We could take the
+// yield, convert it to the original asset and find the difference. However
+// this has the possibility of returning the dust lost in the original conversion.
+// E.g, (assume we are in the fixed point, so 1 pUSD == 0.0000001 pUSD)
+// If it takes 100 pUSD -> 1 PEG, then 199 pUSD -> 1 PEG. 99 pUSD is lost.
+// If we use an alternative method we just described, we get:
+// 	199 pUSD -> 1 PEG, 1 peg yielded
+//	1 PEG -> 100 pUSD
+//	199 pUSD - 100 pUSD = 99 pUSD refund
+// This is a problem. PEG is the only conversion we allow refunds on, so
+// it makes the PEG conversion an exception in the normal operation case.
+// All other conversion pairs "burn" the 99 pUSD. PEG should be no different.
+// The method implemented below does not make PEG an exception.
+// The same example above:
+// 	199 pUSD -> 1 PEG, 1 peg yielded
+// 	1 PEG - 1 PEG yield = 0 PEG -> 0 pUSD.
+// No refund.
 func Refund(inputAmount, pegYield int64, inputRate, pegRate uint64) int64 {
-	consumedInput, _ := Convert(pegYield, pegRate, inputRate)
-	refund := inputAmount - consumedInput
+	maxPEGYield, _ := Convert(inputAmount, inputRate, pegRate)
+	refundPEG := maxPEGYield - pegYield
+	refund, _ := Convert(refundPEG, pegRate, inputRate)
 	return refund
 }
