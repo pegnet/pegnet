@@ -208,6 +208,49 @@ func TestRefund(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("test 0 refund", func(t *testing.T) {
+		for i := 0; i < 1000; i++ {
+			amtR := rand.Uint64() % (5 * 1e6 * 1e8) // 50K max
+			pegR := rand.Uint64() % (5 * 1e6 * 1e8) // 50K max
+			input := rand.Int63() % (1 * 1e6 * 1e8) // 1million max
+
+			maxPegYield, err := Convert(int64(input), amtR, pegR)
+			if err != nil {
+				continue // Likely an overflow or rate is 0
+			}
+
+			if r := Refund(input, maxPegYield, amtR, pegR); r != 0 {
+				t.Errorf("expected a 0 refund, found %d", r)
+			}
+		}
+	})
+}
+
+// RefundMethod1 is the following:
+// maxPEGYield := (input -> PEG)
+// refundPEG := maxPEGYield - PEGYield
+// refuind := (refundPEG -> pXXX)
+//
+// Does not hold for Asset Equivalency check
+// Does hold for the 0 refund case
+func RefundMethod1(input, pegYield int64, amtRate, pegRate uint64) int64 {
+	maxPEGYield, _ := Convert(input, amtRate, pegRate)
+	refundPEG := maxPEGYield - pegYield
+	refund, _ := Convert(refundPEG, pegRate, amtRate)
+	return refund
+}
+
+// RefundMethod2 is the following:
+// consumedInput := (pegYield -> pXXX)
+// refund := input - consumedInput
+//
+// Holds in all equivalency conditions
+// Does not hold for the 0 refund case
+func RefundMethod2(input, pegYield int64, amtRate, pegRate uint64) int64 {
+	consumedInput, _ := Convert(pegYield, pegRate, amtRate)
+	refund := input - consumedInput
+	return refund
 }
 
 // CheckRefund
@@ -228,7 +271,8 @@ func CheckRefund(t *testing.T, input, refund, pegYield int64, amtRate, pegRate u
 			t.Error(err) // This would be bad news
 		}
 
-		if refund+yieldInAsset != int64(input) {
+		diff := int64(input) - (refund + yieldInAsset)
+		if diff < 0 || diff > 0 {
 			t.Errorf("input = refund + (yield PEG -> pXXX) does not hold true\n"+
 				"Amt: %d, Refund: %d, Add: %d\n"+
 				"Difference: %d", input, refund, yieldInAsset, int64(input)-(refund+yieldInAsset))
@@ -253,7 +297,8 @@ func CheckRefund(t *testing.T, input, refund, pegYield int64, amtRate, pegRate u
 
 		// We allow a difference of +1. This means the consumed + refund is
 		// 1 less than the max. Which is ok, and expected
-		if maxPegYield-(consumedPEG+refundPEGCheck) > 1 {
+		diff := maxPegYield - (consumedPEG + refundPEGCheck)
+		if maxPegYield-(consumedPEG+refundPEGCheck) > 1 || diff < 0 {
 			t.Errorf("Failed PEG equivalency: %d", maxPegYield-(consumedPEG+refundPEGCheck))
 		}
 	}

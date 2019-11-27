@@ -150,8 +150,5 @@ func Payout(requested, bank uint64, totalRequested uint64) uint64 {
 func Refund(inputAmount, pegYield int64, inputRate, pegRate uint64) int64 {
 	consumedInput, _ := Convert(pegYield, pegRate, inputRate)
 	refund := inputAmount - consumedInput
-	if refund < 0 {
-		fmt.Println("")
-	}
 	return refund
 }
