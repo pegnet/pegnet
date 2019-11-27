@@ -8,20 +8,23 @@ import (
 )
 
 const (
+	// PEG allocated per block for conversions (not including the bank)
 	PerBlock uint64 = 5000 * 1e8
 )
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
 // per block. This amount is currently set to 5,000 PEG, matching the miner
-// amount per block.
+// amount per block. (not inlcluding the bank)
 // All amounts for interacting with this struct should be in PEG.
 type ConversionSupplySet struct {
-	Bank uint64
+	Bank uint64 // Can be set to any positive number. Set to 0 if negative
 	// Key = txid, Value = PegAmount
 	ConversionRequests map[string]uint64
 	totalRequested     *big.Int
 }
 
+// NewConversionSupply will allocate up to the bank amount of PEG based
+// on the proportions requested
 func NewConversionSupply(bank uint64) *ConversionSupplySet {
 	c := new(ConversionSupplySet)
 	c.Bank = bank
@@ -31,6 +34,7 @@ func NewConversionSupply(bank uint64) *ConversionSupplySet {
 	return c
 }
 
+// AddConversion will add a PEG conversion request to the set.
 func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	if _, ok := s.ConversionRequests[txid]; ok {
 		return fmt.Errorf("txid already exists in the this set")
@@ -44,9 +48,11 @@ func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 	payouts := make(map[string]uint64)
 	if len(s.ConversionRequests) == 0 {
-		return payouts
+		return payouts // No one to pay. That was easy
 	}
 
+	// If the total requested is less than the bank, we can fill the orders
+	// with exactly what they want.
 	if s.totalRequested.IsUint64() && s.totalRequested.Uint64() < s.Bank {
 		for txid, c := range s.ConversionRequests {
 			payouts[txid] = c
@@ -57,10 +63,14 @@ func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 
 	var totalPaid uint64
 	for txid, c := range s.ConversionRequests {
+		// PayoutBig pays out proportionally to their requested amount.
 		payouts[txid] = PayoutBig(c, s.Bank, s.totalRequested)
 		totalPaid += payouts[txid]
 	}
 
+	// The function should stop here, but we have some dust. In order
+	// to make the inflation "even" and not "4,999.99999997", we account
+	// for the dust. So we need to allocate the dust to a lucky winner.
 	dust := s.Bank - totalPaid
 	// Dust goes to the highest request, and ties go to highest entryhash
 	// Let's find the highest
@@ -71,15 +81,19 @@ func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 		if amt > most {
 			top = []string{txid}
 		} else if amt == most {
+			// Tied for the highest amount requested
 			top = append(top, txid)
 		}
 	}
 
 	if len(top) == 1 {
+		// Only 1 top requester.
 		payouts[top[0]] += dust
 	} else {
 		// More than 1 with the same top amount, highest entryhash wins
 		// Sort sorts them with the lowest entryhash first
+		// If two conversions are in the same entryhash, the lowest txindex
+		// wins.
 		top = transactionid.SortTxIDS(top)
 		payouts[top[0]] += dust
 	}
