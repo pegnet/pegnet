@@ -33,6 +33,7 @@ var AllDataSources = map[string]IDataSource{
 	"1Forge":            new(OneForgeDataSource),
 	"AlternativeMe":     new(AlternativeMeDataSource),
 	"PegnetMarketCap":   new(PegnetMarketCapDataSource),
+	"Factoshiio":        new(FactoshiioDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -98,6 +99,8 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewAlternativeMeDataSource(config)
 	case "PegnetMarketCap":
 		ds, err = NewPegnetMarketCapDataSource(config)
+	case "Factoshiio":
+		ds, err = NewFactoshiioDataSource(config)
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:

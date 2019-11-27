@@ -33,7 +33,7 @@ func (d *PegnetMarketCapDataSource) Url() string {
 }
 
 func (d *PegnetMarketCapDataSource) ApiUrl() string {
-	return "https://pegnetmarketcap.com/api/asset/PEG"
+	return "https://pegnetmarketcap.com/api/asset/PEG?columns=ticker_symbol,exchange_price,exchange_price_dateline"
 }
 
 func (d *PegnetMarketCapDataSource) SupportedPegs() []string {
@@ -50,7 +50,7 @@ func (d *PegnetMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) 
 
 	peg = make(map[string]PegItem)
 	// Only PEG Supported
-	timestamp := time.Unix(resp.ExchangePriceUpdatedDateline, 0)
+	timestamp := time.Unix(resp.ExchangePriceDateline, 0)
 	price, err := strconv.ParseFloat(resp.ExchangePrice, 64)
 	if err != nil {
 		return
@@ -111,45 +111,7 @@ func (d *PegnetMarketCapDataSource) FetchPeggedPrices() ([]byte, error) {
 }
 
 type PegnetMarketCapResponse struct {
-	TickerSymbol             string      `json:"ticker_symbol"`
-	Title                    string      `json:"title"`
-	IconFile                 string      `json:"icon_file"`
-	Price                    string      `json:"price"`
-	ExchangePrice            string      `json:"exchange_price"`
-	PriceChange              string      `json:"price_change"`
-	ExchangePriceChange      string      `json:"exchange_price_change"`
-	ExchangePriceUpdatedDateline int64       `json:"exchange_price_dateline"`
-	Volume                   string      `json:"volume"`
-	ExchangeVolume           string      `json:"exchange_volume"`
-	VolumePrice              string      `json:"volume_price"`
-	VolumeIn                 string      `json:"volume_in"`
-	VolumeInPrice            string      `json:"volume_in_price"`
-	VolumeTx                 string      `json:"volume_tx"`
-	VolumeTxPrice            string      `json:"volume_tx_price"`
-	VolumeOut                string      `json:"volume_out"`
-	VolumeOutPrice           string      `json:"volume_out_price"`
-	Supply                   string      `json:"supply"`
-	SupplyChange             string      `json:"supply_change"`
-	Height                   int         `json:"height"`
-	UpdatedAt                int64       `json:"updated_at"`
-	DeletedAt                interface{} `json:"deleted_at"`
-	History                  []struct {
-		TickerSymbol string `json:"ticker_symbol"`
-		Height       int    `json:"height"`
-		Price        string `json:"price"`
-		Volume       string `json:"volume"`
-		VolumeIn     string `json:"volume_in"`
-		VolumeTx     string `json:"volume_tx"`
-		VolumeOut    string `json:"volume_out"`
-		Supply       string `json:"supply"`
-		Dateline     int64  `json:"dateline"`
-		UpdatedAt    string `json:"updated_at"`
-	} `json:"history"`
-	ExchangePriceHistory []struct {
-		TickerSymbol string `json:"ticker_symbol"`
-		QuoteSymbol  string `json:"quote_symbol"`
-		Dateline     int64  `json:"dateline"`
-		Price        string `json:"price"`
-		UpdatedAt    string `json:"updated_at"`
-	} `json:"exchange_price_history"`
+	TickerSymbol          string `json:"ticker_symbol"`
+	ExchangePrice         string `json:"exchange_price"`
+	ExchangePriceDateline int64  `json:"exchange_price_dateline"`
 }

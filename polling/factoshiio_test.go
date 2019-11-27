@@ -7,15 +7,15 @@ import (
 )
 
 // Need an api key to run this
-func TestActualPegnetMarketCapRatesPeggedAssets(t *testing.T) {
-	ActualDataSourceTest(t, "PegnetMarketCap")
+func TestFactoshiIORatesPeggedAssets(t *testing.T) {
+	ActualDataSourceTest(t, "Factoshiio")
 }
 
 // TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
-func TestPegnetMarketCapPeggedAssets(t *testing.T) {
-	FixedDataSourceTest(t, "PegnetMarketCap", []byte(pegnetMarketCapData))
+func TestFactoshiIOPeggedAssets(t *testing.T) {
+	FixedDataSourceTest(t, "Factoshiio", []byte(factoshiioData))
 }
 
-var pegnetMarketCapData = []byte(`
-{"ticker_symbol":"PEG","exchange_price":"0.00511745","exchange_price_dateline":1574894112}
+var factoshiioData = []byte(`
+{"price":0.005108136,"volume":8338582.0,"quote":"USD","base":"PEG","updated_at":1574891112}
 `)
