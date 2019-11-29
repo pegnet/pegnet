@@ -6,12 +6,11 @@ import (
 	"testing"
 )
 
-// Need an api key to run this
 func TestFactoshiIORatesPeggedAssets(t *testing.T) {
 	ActualDataSourceTest(t, "Factoshiio")
 }
 
-// TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
+// TestFactoshiIOPeggedAssets tests all the crypto assets are found on factoshi.io from fixed
 func TestFactoshiIOPeggedAssets(t *testing.T) {
 	FixedDataSourceTest(t, "Factoshiio", []byte(factoshiioData))
 }

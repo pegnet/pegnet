@@ -6,13 +6,12 @@ import (
 	"testing"
 )
 
-// Need an api key to run this
 func TestActualPegnetMarketCapRatesPeggedAssets(t *testing.T) {
 	ActualDataSourceTest(t, "PegnetMarketCap")
 }
 
-// TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
-func TestPegnetMarketCapPeggedAssets(t *testing.T) {
+// TestFixedPegnetMarketCapPeggedAssets tests all the crypto assets are found on PegnetMarketCap from fixed
+func TestFixedPegnetMarketCapPeggedAssets(t *testing.T) {
 	FixedDataSourceTest(t, "PegnetMarketCap", []byte(pegnetMarketCapData))
 }
 

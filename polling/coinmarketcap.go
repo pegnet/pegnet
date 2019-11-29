@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-
 	"github.com/pegnet/pegnet/common"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 // CoinMarketCapDataSource is the datasource at https://coinmarketcap.com/
@@ -29,7 +28,7 @@ func NewCoinMarketCapDataSource(config *config.Config) (*CoinMarketCapDataSource
 	s := new(CoinMarketCapDataSource)
 	s.config = config
 
-	// Load api key
+	// Load api keyr
 	s.apikey, err = s.config.String(common.ConfigCoinMarketCapKey)
 	if err != nil {
 		return nil, err
