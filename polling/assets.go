@@ -274,7 +274,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
-	assets := common.AllAssets // All the assets we are tracking.
+	assets := common.AssetsV2 // All the assets we are tracking.
 	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for

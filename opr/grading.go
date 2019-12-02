@@ -84,7 +84,7 @@ func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (
 	switch common.OPRVersion(network, dbht) {
 	case 1:
 		return gradeMinimumVersionOne(sortedList)
-	case 2:
+	case 2, 3:
 		return gradeMinimumVersionTwo(sortedList)
 	}
 	panic("Grading version unspecified")
@@ -228,7 +228,7 @@ func GetRewardFromPlace(place int, network string, height int64) int64 {
 	switch common.OPRVersion(network, height) {
 	case 1:
 		return getRewardFromPlaceVersionOne(place)
-	case 2:
+	case 2, 3:
 		return getRewardFromPlaceVersionTwo(place)
 	}
 	panic("opr version not found")

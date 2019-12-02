@@ -55,7 +55,7 @@ func (o OraclePriceRecordAssetList) Value(asset string) float64 {
 // List returns the list of assets in the global order
 func (o OraclePriceRecordAssetList) List(version uint8) []Token {
 	assets := common.AssetsV1
-	if version == 2 {
+	if version == 2 || version == 3 {
 		assets = common.AssetsV2
 	}
 	tokens := make([]Token, len(assets))

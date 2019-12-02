@@ -112,7 +112,7 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	tmp.Version = version
 
 	min := 10
-	if version == 2 {
+	if version > 1 {
 		min = 25
 	}
 	tmp.WinPreviousOPR = make([]string, min, min)
@@ -124,7 +124,7 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	binary.BigEndian.PutUint64(tmp.SelfReportedDifficulty, tmp.Difficulty)
 
 	assets := common.AssetsV1
-	if version == 2 {
+	if version > 1 {
 		assets = common.AssetsV2
 	}
 	tmp.Assets = make(OraclePriceRecordAssetList)
@@ -219,6 +219,9 @@ func TestGradingOrder(t *testing.T) {
 	})
 	t.Run("version 2", func(t *testing.T) {
 		testGradingOrderVersion(t, 2, cycles)
+	})
+	t.Run("version 3", func(t *testing.T) {
+		testGradingOrderVersion(t, 3, cycles)
 	})
 }
 

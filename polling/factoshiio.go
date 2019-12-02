@@ -36,7 +36,6 @@ func (d *FactoshiioDataSource) ApiUrl() string {
 }
 
 func (d *FactoshiioDataSource) SupportedPegs() []string {
-	// Does not have all the currencies, commodities, or crypto
 	return common.PEGAsset
 }
 

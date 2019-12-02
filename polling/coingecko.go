@@ -28,7 +28,7 @@ func NewCoinGeckoDataSource(config *config.Config) (*CoinGeckoDataSource, error)
 }
 
 func (d *CoinGeckoDataSource) Name() string {
-	return "Factoshiio"
+	return "CoinGecko"
 }
 
 func (d *CoinGeckoDataSource) Url() string {
@@ -40,7 +40,6 @@ func (d *CoinGeckoDataSource) ApiUrl() string {
 }
 
 func (d *CoinGeckoDataSource) SupportedPegs() []string {
-	// Does not have all the currencies, commodities, or crypto
 	return common.MergeLists(common.PEGAsset, common.CryptoAssets)
 }
 
@@ -125,7 +124,7 @@ func (d *CoinGeckoDataSource) FetchPeggedPrices() ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-// CurrencyIDMapping finds the coingecko ids for each currency vs using the names.
+// CurrencyIDMapping finds the coingecko name for each currency vs using the syms.
 func (d *CoinGeckoDataSource) CurrencyIDMapping() map[string]string {
 	return map[string]string{
 		"PEG":  "pegnet",
