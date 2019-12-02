@@ -62,6 +62,8 @@ func init() {
 	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
 	RootCmd.PersistentFlags().Bool("testing", false, "Sets all activation heights to 0 so you can run on a local net")
 
+	RootCmd.PersistentFlags().Int64Var(&common.FloatingPegPriceActivation, "v3", 0, "Sets the v3 activation height")
+
 	RootCmd.PersistentFlags().StringArrayP("override", "r", []string{}, "Custom config overrides. Can override any setting")
 
 	// Initialize the config file with the config, then with cmd flags
