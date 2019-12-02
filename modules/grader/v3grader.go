@@ -21,7 +21,7 @@ func (V3BlockGrader) WinnerAmount() int {
 
 // AddOPR verifies and adds a V2 OPR.
 func (v3 *V3BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
-	gopr, err := ValidateV2(entryhash, extids, v3.height, v3.prevWinners, content)
+	gopr, err := ValidateV3(entryhash, extids, v3.height, v3.prevWinners, content)
 	if err != nil {
 		return err
 	}
@@ -46,7 +46,7 @@ func (v3 *V3BlockGrader) Grade() GradedBlock {
 // GradeCustom grades the block using a custom cutoff for the top X
 func (v3 *V3BlockGrader) GradeCustom(cutoff int) GradedBlock {
 
-	block := new(V2GradedBlock)
+	block := new(V3GradedBlock)
 	block.cutoff = cutoff
 	block.height = v3.height
 	block.cloneOPRS(v3.oprs)

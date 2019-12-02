@@ -7,7 +7,7 @@ const (
 	_ Type = iota
 	// V1 is JSON
 	V1
-	// V2 is Protobuf
+	// V2 + V3 is Protobuf
 	V2
 )
 

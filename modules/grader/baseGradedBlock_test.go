@@ -21,6 +21,9 @@ func TestBaseGradedBlock_Invalid(t *testing.T) {
 	t.Run("V2", func(t *testing.T) {
 		testBaseGradedBlock_Invalid(t, 2)
 	})
+	t.Run("V3", func(t *testing.T) {
+		testBaseGradedBlock_Invalid(t, 3)
+	})
 }
 
 func testBaseGradedBlock_Invalid(t *testing.T, version uint8) {
@@ -88,6 +91,9 @@ func TestBaseGradedBlock_Valid(t *testing.T) {
 	})
 	t.Run("V2", func(t *testing.T) {
 		testBaseGradedBlock_valid(t, 2)
+	})
+	t.Run("V3", func(t *testing.T) {
+		testBaseGradedBlock_valid(t, 3)
 	})
 }
 

@@ -20,6 +20,9 @@ func TestGradingOPR_Clone(t *testing.T) {
 	t.Run("V2", func(t *testing.T) {
 		testGradingOPR_Clone(t, 2)
 	})
+	t.Run("V3", func(t *testing.T) {
+		testGradingOPR_Clone(t, 3)
+	})
 }
 
 func testGradingOPR_Clone(t *testing.T, version uint8) {

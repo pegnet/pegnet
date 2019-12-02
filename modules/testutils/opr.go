@@ -66,7 +66,7 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 		}
 		extids[2] = []byte{1}
 		io = o
-	case 2:
+	case 2, 3:
 		o := new(V2Content)
 		o.Winners = make([][]byte, len(prevWinners))
 		for i := range o.Winners {
@@ -82,7 +82,7 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 				o.Assets[i] = 1e8
 			}
 		}
-		extids[2] = []byte{2}
+		extids[2] = []byte{version}
 
 		io = o
 	default:
@@ -106,7 +106,7 @@ func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
 		return 10
-	case 2:
+	case 2, 3:
 		return 25
 	}
 	return 0
