@@ -293,8 +293,8 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
 	for asset, v := range assets {
 		if asset == "PEG" {
-			if int64(opr.Dbht) < common.FloatingPegPriceActivation {
-				// PEG is 0 until this activation height
+			if opr.Version <= 2 {
+				// PEG is 0 until v3
 				opr.Assets.SetValueFromUint64(asset, 0)
 				continue
 			}

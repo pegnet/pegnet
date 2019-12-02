@@ -36,7 +36,7 @@ var (
 	// FloatingPegPriceActivation indicates when to place the PEG price into
 	// the opr record from the floating exchange price.
 	// TODO: Set a real activation height.
-	FloatingPegPriceActivation int64 = 0
+	FloatingPegPriceActivation int64 = 999999
 
 	V2GradingActivation int64 = 210330
 )

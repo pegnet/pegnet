@@ -27,6 +27,7 @@ func TestOPRParse(t *testing.T) {
 	dbht := int32(10)
 
 	test := func(t *testing.T) {
+		common.SetTestingVersion(3)
 		config := common.NewUnitTestConfig()
 		net, _ := common.LoadConfigNetwork(config)
 

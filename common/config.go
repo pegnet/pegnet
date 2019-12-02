@@ -92,7 +92,7 @@ func NewUnitTestConfigProvider() *UnitTestConfigProvider {
 # The number of records to submit per block. The top N records are chosen, where N is the config value
   RecordsPerBlock=10
   Protocol=PegNet 
-  Network=TestNet
+  Network=unit-test
 
   # For LOCAL network testing, EC private key is
   # Es2XT3jSxi1xqrDvS5JERM3W3jh1awRHuyoahn3hbQLyfEi1jvbq

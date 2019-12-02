@@ -54,11 +54,11 @@ func TestBasicPollingSources(t *testing.T) {
 
 	s := NewDataSources(c)
 
-	pa, err := s.PullAllPEGAssets(1)
+	pa, err := s.PullAllPEGAssets(2)
 	if err != nil {
 		t.Error(err)
 	}
-	for i, asset := range common.AllAssets {
+	for i, asset := range common.AssetsV2 {
 		v, ok := pa[asset]
 		if !ok {
 			t.Errorf("%s is missing", asset)

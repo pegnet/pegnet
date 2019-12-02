@@ -52,7 +52,7 @@ func TestBurnAddresses(t *testing.T) {
 // TestLoadConfigNetwork tests when we change the testnet title, that using "TestNet" still works
 func TestLoadConfigNetwork(t *testing.T) {
 	c := NewUnitTestConfig()
-	if n, err := LoadConfigNetwork(c); err != nil || n != TestNetwork {
+	if n, err := LoadConfigNetwork(c); err != nil || n != UnitTestNetwork {
 		t.Error("LoadConfigNetwork Failed")
 	}
 
