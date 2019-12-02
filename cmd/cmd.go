@@ -538,7 +538,7 @@ var decodeEblock = &cobra.Command{
 	Short:   "Attempt to decode all oprs from an eblock",
 	Long:    "Since entries V2 and forward use protobufs, this is a quick tool to decode the protobuf, and convert to json to read all entries in an eblock.",
 	Example: "pegnet decode eblock <keymr>",
-	Args:    CombineCobraArgs(cobra.ExactArgs(1), CustomArgOrderValidationBuilder(true, ArgValidatorHexHash)),
+	Args:    CombineCobraArgs(cobra.ExactArgs(1)),
 	Run: func(cmd *cobra.Command, args []string) {
 		ValidateConfig(Config)
 		var err error
@@ -553,6 +553,19 @@ var decodeEblock = &cobra.Command{
 			CmdError(cmd, err)
 		}
 		g.Config = Config
+
+		if height, err := strconv.Atoi(args[0]); err == nil {
+			// fetch the eblock at the height
+			dblock, _, err := factom.GetDBlockByHeight(int64(height))
+			if err != nil {
+				CmdError(cmd, err)
+			}
+			for _, ent := range dblock.DBEntries {
+				if ent.ChainID == "a642a8674f46696cc47fdb6b65f9c87b2a19c5ea8123b3d2f0c13b6f33a9d5ef" {
+					args[0] = ent.KeyMR
+				}
+			}
+		}
 
 		eblock, err := factom.GetEBlock(args[0])
 		if err != nil {

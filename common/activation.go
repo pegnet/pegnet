@@ -15,8 +15,8 @@ var (
 	// new grading format.
 	GradingHeights = map[string]func(height int64) uint8{
 		MainNetwork: func(height int64) uint8 {
-			// Version 1 deprecates on block XXXXXX
-			if height < 210330 { // V1 ends at 210330 on MainNet
+			// Version 1 deprecates on block 210330
+			if height < V2GradingActivation { // V1 ends at 210330 on MainNet
 				return 1
 			}
 			if height < FloatingPegPriceActivation {
@@ -36,7 +36,9 @@ var (
 	// FloatingPegPriceActivation indicates when to place the PEG price into
 	// the opr record from the floating exchange price.
 	// TODO: Set a real activation height.
-	FloatingPegPriceActivation int64 = 0
+	FloatingPegPriceActivation int64 = 270
+
+	V2GradingActivation int64 = 210330
 )
 
 // NetworkActive returns true if the network height is above the activation height.

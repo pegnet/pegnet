@@ -154,7 +154,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		// Set all activation heights to 0 and grading to 2
 		common.ActivationHeights[common.MainNetwork] = 0
 		common.ActivationHeights[common.TestNetwork] = 0
-		common.GradingHeights[common.MainNetwork] = func(height int64) uint8 { return 2 }
+		common.V2GradingActivation = 0
 		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
 	}
 
