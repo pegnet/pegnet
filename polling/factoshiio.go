@@ -8,17 +8,14 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
-	"github.com/zpatrick/go-config"
 )
 
 // FactoshiioDataSource is the datasource at https://pegapi.factoshi.io/
 type FactoshiioDataSource struct {
-	config *config.Config
 }
 
-func NewFactoshiioDataSource(config *config.Config) (*FactoshiioDataSource, error) {
+func NewFactoshiioDataSource() (*FactoshiioDataSource, error) {
 	s := new(FactoshiioDataSource)
-	s.config = config
 
 	return s, nil
 }

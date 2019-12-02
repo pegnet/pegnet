@@ -96,11 +96,11 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
 	case "PegnetMarketCap":
-		ds, err = NewPegnetMarketCapDataSource(config)
+		ds, err = NewPegnetMarketCapDataSource()
 	case "Factoshiio":
-		ds, err = NewFactoshiioDataSource(config)
+		ds, err = NewFactoshiioDataSource()
 	case "CoinGecko":
-		ds, err = NewCoinGeckoDataSource(config)
+		ds, err = NewCoinGeckoDataSource()
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:

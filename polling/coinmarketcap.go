@@ -28,7 +28,7 @@ func NewCoinMarketCapDataSource(config *config.Config) (*CoinMarketCapDataSource
 	s := new(CoinMarketCapDataSource)
 	s.config = config
 
-	// Load api keyr
+	// Load api key
 	s.apikey, err = s.config.String(common.ConfigCoinMarketCapKey)
 	if err != nil {
 		return nil, err

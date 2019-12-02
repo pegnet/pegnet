@@ -10,19 +10,16 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
-	config "github.com/zpatrick/go-config"
 )
 
 // https://api.coingecko.com/api/v3/simple/price?ids=pegnet&vs_currencies=usd
 
 // CoinGeckoDataSource is the datasource at https://www.coingecko.com
 type CoinGeckoDataSource struct {
-	config *config.Config
 }
 
-func NewCoinGeckoDataSource(config *config.Config) (*CoinGeckoDataSource, error) {
+func NewCoinGeckoDataSource() (*CoinGeckoDataSource, error) {
 	s := new(CoinGeckoDataSource)
-	s.config = config
 
 	return s, nil
 }

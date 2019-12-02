@@ -9,17 +9,14 @@ import (
 
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
-	"github.com/zpatrick/go-config"
 )
 
 // PegnetMarketCap is the datasource at https://pegnetmarketcap.com/
 type PegnetMarketCapDataSource struct {
-	config *config.Config
 }
 
-func NewPegnetMarketCapDataSource(config *config.Config) (*PegnetMarketCapDataSource, error) {
+func NewPegnetMarketCapDataSource() (*PegnetMarketCapDataSource, error) {
 	s := new(PegnetMarketCapDataSource)
-	s.config = config
 
 	return s, nil
 }
