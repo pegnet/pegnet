@@ -13,9 +13,8 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff"
-
 	"github.com/pegnet/pegnet/common"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 // CoinMarketCapDataSource is the datasource at https://coinmarketcap.com/

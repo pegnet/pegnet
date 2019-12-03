@@ -22,7 +22,6 @@ var AllDataSources = map[string]IDataSource{
 	"APILayer": new(APILayerDataSource),
 	"CoinCap":  new(CoinCapDataSource),
 	"FixedUSD": new(FixedUSDDataSource),
-	"FixedPEG": new(FixedPEGDataSource),
 	// ExchangeRates is daily,  don't show people this
 	//"ExchangeRates":     new(ExchangeRatesDataSource),
 	"Kitco": new(KitcoDataSource),
@@ -32,6 +31,9 @@ var AllDataSources = map[string]IDataSource{
 	"FreeForexAPI":      new(FreeForexAPIDataSource),
 	"1Forge":            new(OneForgeDataSource),
 	"AlternativeMe":     new(AlternativeMeDataSource),
+	"PegnetMarketCap":   new(PegnetMarketCapDataSource),
+	"Factoshiio":        new(FactoshiioDataSource),
+	"CoinGecko":         new(CoinGeckoDataSource),
 }
 
 func AllDataSourcesList() []string {
@@ -91,10 +93,14 @@ func NewDataSource(source string, config *config.Config) (IDataSource, error) {
 		ds, err = NewOneForgeDataSourceDataSource(config)
 	case "FixedUSD":
 		ds, err = NewFixedUSDDataSource(config)
-	case "FixedPEG":
-		ds, err = NewFixedPEGDataSource(config)
 	case "AlternativeMe":
 		ds, err = NewAlternativeMeDataSource(config)
+	case "PegnetMarketCap":
+		ds, err = NewPegnetMarketCapDataSource()
+	case "Factoshiio":
+		ds, err = NewFactoshiioDataSource()
+	case "CoinGecko":
+		ds, err = NewCoinGeckoDataSource()
 	case "UnitTest": // This will fail outside a unit test
 		ds, err = NewTestingDataSource(config, source)
 	default:
@@ -265,7 +271,7 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		first need a price from that source. These calls should be quick,
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
-	assets := common.AllAssets // All the assets we are tracking.
+	assets := common.AssetsV2 // All the assets we are tracking.
 	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for
@@ -287,6 +293,10 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 		if err != nil { // This will only be the last err in the data source list.
 			// No prices found for a peg, this pull failed
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
+		}
+
+		if asset == "PEG" && oprversion == 3 && price.Value == 0 {
+			return nil, fmt.Errorf("no price found for %s : %s", asset, fmt.Errorf("PEG has no value, check your datasources"))
 		}
 
 		// We round all prices to the same precision

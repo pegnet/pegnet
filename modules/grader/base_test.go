@@ -43,6 +43,7 @@ func TestNewGrader(t *testing.T) {
 		{"v1 hex too short winner", args{version: 1, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffff")}, true},        // 14
 		{"v1 badly formatted hex winner", args{version: 1, height: 1, previousWinners: append(winners[:9:9], "fffffffffffffff")}, true}, // 15
 		{"v1 hex too long winner", args{version: 1, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffffffff")}, true},     // 18
+
 		{"v2 correct", args{version: 2, height: 1, previousWinners: winners[:10]}, false},
 		{"v2 correct 25", args{version: 2, height: 1, previousWinners: winners[:25]}, false},
 		{"v2 empty winners", args{version: 2, height: 1, previousWinners: nil}, false},
@@ -58,6 +59,20 @@ func TestNewGrader(t *testing.T) {
 		{"v2 hex too long winner 10", args{version: 2, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffffffff")}, true},       // 18
 		{"v2 hex too long winner 25", args{version: 2, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffffffff")}, true},     // 18
 
+		{"v3 incorrect 10 (not allowed 10 prev winner)", args{version: 3, height: 1, previousWinners: winners[:10]}, true},
+		{"v3 correct 25", args{version: 3, height: 1, previousWinners: winners[:25]}, false},
+		{"v3 empty winners", args{version: 3, height: 1, previousWinners: nil}, false},
+		{"v3 too few winners", args{version: 3, height: 1, previousWinners: winners[:5]}, true},
+		{"v3 between 10 and 25 winners", args{version: 3, height: 1, previousWinners: winners[:15]}, true},
+		{"v3 too many winners", args{version: 3, height: 1, previousWinners: winners[:26]}, true},
+		{"v3 non hex winner 10", args{version: 3, height: 1, previousWinners: append(winners[:9:9], "not a hex string")}, true},
+		{"v3 non hex winner 25", args{version: 3, height: 1, previousWinners: append(winners[:24:24], "not a hex string")}, true},
+		{"v3 hex too short winner 10", args{version: 3, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffff")}, true},
+		{"v3 hex too short winner 25", args{version: 3, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffff")}, true},
+		{"v3 badly formatted hex winner 10", args{version: 3, height: 1, previousWinners: append(winners[:9:9], "fffffffffffffff")}, true},
+		{"v3 badly formatted hex winner 25", args{version: 3, height: 1, previousWinners: append(winners[:24:24], "fffffffffffffff")}, true},
+		{"v3 hex too long winner 10", args{version: 3, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffffffff")}, true},
+		{"v3 hex too long winner 25", args{version: 3, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffffffff")}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -80,7 +95,7 @@ func TestNewGrader(t *testing.T) {
 			if len(prev) == 0 {
 				if tt.args.version == 1 {
 					prev = make([]string, 10)
-				} else if tt.args.version == 2 {
+				} else if tt.args.version > 1 {
 					prev = make([]string, 25)
 				}
 			}
@@ -111,6 +126,9 @@ func TestBlockGrader_AddOPR(t *testing.T) {
 	})
 	t.Run("V2 AddOPR", func(t *testing.T) {
 		testBlockGrader_AddOPR(t, 2)
+	})
+	t.Run("V3 AddOPR", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 3)
 	})
 }
 

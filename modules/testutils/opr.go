@@ -31,6 +31,10 @@ func RandomOPRWithHeight(version uint8, dbht int32) (entryhash []byte, extids []
 }
 
 func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entryhash []byte, extids [][]byte, content []byte) {
+	return RandomOPRWithFieldsAndModify(version, dbht, prevWinners, nil)
+}
+
+func RandomOPRWithFieldsAndModify(version uint8, dbht int32, prevWinners []string, modify func(o interface{})) (entryhash []byte, extids [][]byte, content []byte) {
 	coinbase := factoidaddress.Random()
 	id := make([]byte, 8)
 	rand.Read(id)
@@ -66,7 +70,7 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 		}
 		extids[2] = []byte{1}
 		io = o
-	case 2:
+	case 2, 3:
 		o := new(V2Content)
 		o.Winners = make([][]byte, len(prevWinners))
 		for i := range o.Winners {
@@ -82,11 +86,15 @@ func RandomOPRWithFields(version uint8, dbht int32, prevWinners []string) (entry
 				o.Assets[i] = 1e8
 			}
 		}
-		extids[2] = []byte{2}
+		extids[2] = []byte{version}
 
 		io = o
 	default:
 		return nil, nil, nil
+	}
+
+	if modify != nil {
+		modify(io)
 	}
 
 	content, err := io.Marshal()
@@ -106,7 +114,7 @@ func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
 		return 10
-	case 2:
+	case 2, 3:
 		return 25
 	}
 	return 0

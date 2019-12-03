@@ -1,7 +1,10 @@
 package grader_test
 
 import (
+	"reflect"
 	"testing"
+
+	"github.com/pegnet/pegnet/modules/opr"
 
 	. "github.com/pegnet/pegnet/modules/grader"
 	"github.com/pegnet/pegnet/modules/testutils"
@@ -20,6 +23,9 @@ func TestBaseGradedBlock_Invalid(t *testing.T) {
 	})
 	t.Run("V2", func(t *testing.T) {
 		testBaseGradedBlock_Invalid(t, 2)
+	})
+	t.Run("V3", func(t *testing.T) {
+		testBaseGradedBlock_Invalid(t, 3)
 	})
 }
 
@@ -77,6 +83,69 @@ func testBaseGradedBlock_Invalid(t *testing.T, version uint8) {
 		}
 	})
 
+	t.Run("invalid oprs", func(t *testing.T) {
+		winners := testutils.RandomWinners(version)
+		g, _ := NewGrader(version, dbht, winners)
+		// First check the random is valid
+		if err := g.AddOPR(testutils.RandomOPRWithFieldsAndModify(version, dbht, winners, nil)); err != nil {
+			t.Errorf("error should be nil: %s", err.Error())
+		}
+
+		// Test bad FA address (bad checksum)
+		if err := g.AddOPR(testutils.RandomOPRWithFieldsAndModify(version, dbht, winners, func(o interface{}) {
+			switch o.(type) {
+			case *opr.V1Content:
+				// V1 allows bad FA addresses.
+			case *opr.V2Content:
+				obj := o.(*opr.V2Content)
+				obj.Address = "FA2FK18Hdr2SBzUXqtfEAbGaNJUdr7VQBNLgRK7JKnR8wLQzYwUa"
+			default:
+				panic(reflect.TypeOf(o))
+			}
+		})); err == nil && version != 1 {
+			t.Errorf("[%d] expected an error for bad fa address", version)
+		}
+
+		// Test bad Identity
+		if err := g.AddOPR(testutils.RandomOPRWithFieldsAndModify(version, dbht, winners, func(o interface{}) {
+			switch o.(type) {
+			case *opr.V1Content:
+				// V1 allows bad identities.
+			case *opr.V2Content:
+				obj := o.(*opr.V2Content)
+				obj.ID = "random-hyphen"
+			default:
+				panic(reflect.TypeOf(o))
+			}
+		})); err == nil && version != 1 {
+			t.Errorf("[%d] expected an error for bad identity", version)
+		}
+
+		// Test 0 PEG value
+		err := g.AddOPR(testutils.RandomOPRWithFieldsAndModify(version, dbht, winners, func(o interface{}) {
+			switch o.(type) {
+			case *opr.V1Content:
+				// V1 allows bad identities.
+			case *opr.V2Content:
+				obj := o.(*opr.V2Content)
+				obj.Assets[0] = 0
+			default:
+				panic(reflect.TypeOf(o))
+			}
+		}))
+		switch version {
+		case 1, 2:
+			if err != nil {
+				t.Errorf("[%d] expected no error for 0 peg value: %s", version, err.Error())
+			}
+		case 3:
+			if err == nil || err.Error() != NewValidateError("assets must be greater than 0").Error() {
+				t.Errorf("[%d] expected error for 0 peg value", version)
+			}
+		}
+
+	})
+
 }
 
 // TestBaseGradedBlock_Valid tests various valid sets and checks the resulting block
@@ -88,6 +157,9 @@ func TestBaseGradedBlock_Valid(t *testing.T) {
 	})
 	t.Run("V2", func(t *testing.T) {
 		testBaseGradedBlock_valid(t, 2)
+	})
+	t.Run("V3", func(t *testing.T) {
+		testBaseGradedBlock_valid(t, 3)
 	})
 }
 

@@ -61,6 +61,8 @@ func init() {
 	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
 	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
 	RootCmd.PersistentFlags().Bool("testing", false, "Sets all activation heights to 0 so you can run on a local net")
+	RootCmd.PersistentFlags().Int32("testingact", -1, "This is a hidden flag that can be used by QA and developers to set some custom activation heights.")
+	_ = RootCmd.PersistentFlags().MarkHidden("testingact")
 
 	RootCmd.PersistentFlags().StringArrayP("override", "r", []string{}, "Custom config overrides. Can override any setting")
 
@@ -154,8 +156,13 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		// Set all activation heights to 0 and grading to 2
 		common.ActivationHeights[common.MainNetwork] = 0
 		common.ActivationHeights[common.TestNetwork] = 0
-		common.GradingHeights[common.MainNetwork] = func(height int64) uint8 { return 2 }
+		common.V2GradingActivation = 0
 		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
+		common.FloatingPegPriceActivation = 0
+	}
+
+	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
+		common.FloatingPegPriceActivation = int64(testingact)
 	}
 
 	// Config setup

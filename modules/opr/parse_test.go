@@ -23,6 +23,9 @@ func TestParse(t *testing.T) {
 	t.Run("V2 Test Parse", func(t *testing.T) {
 		testParse(t, 2)
 	})
+	t.Run("V3 Test Parse", func(t *testing.T) {
+		testParse(t, 3)
+	})
 }
 
 // testParse checks that an opr can be marshalled into the same content used to create it.
@@ -50,7 +53,9 @@ func testParse(t *testing.T, version uint8) {
 		}
 
 		if uint8(o.GetType()) != version {
-			t.Errorf("different version parsed than expected")
+			if version == 3 && o.GetType() != opr.V2 {
+				t.Errorf("different version parsed than expected")
+			}
 		}
 
 		// Now parsing a second opr from the marshalled data should yield an identical copy of the opr
