@@ -565,6 +565,10 @@ var decodeEblock = &cobra.Command{
 					args[0] = ent.KeyMR
 				}
 			}
+			if len(args[0]) != 64 {
+				// No hash found
+				CmdError(cmd, fmt.Errorf("no eblock found in the opr chain at that height\n"))
+			}
 		}
 
 		eblock, err := factom.GetEBlock(args[0])
