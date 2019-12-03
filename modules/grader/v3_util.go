@@ -47,8 +47,8 @@ func ValidateV3(entryhash []byte, extids [][]byte, height int32, winners []strin
 		}
 	}
 
-	if len(o.Winners) != 10 && len(o.Winners) != 25 {
-		return nil, NewValidateError("must have exactly 10 or 25 previous winning shorthashes")
+	if len(o.Winners) != 25 {
+		return nil, NewValidateError("must have exactly 25 previous winning shorthashes")
 	}
 
 	if err := factoidaddress.Valid(o.Address); err != nil {
@@ -59,7 +59,7 @@ func ValidateV3(entryhash []byte, extids [][]byte, height int32, winners []strin
 		return nil, NewValidateError("only alphanumeric characters and commas are allowed in the identity")
 	}
 
-	if !verifyWinnerFormat(o.GetPreviousWinners(), 10) && !verifyWinnerFormat(o.GetPreviousWinners(), 25) {
+	if !verifyWinnerFormat(o.GetPreviousWinners(), 25) {
 		return nil, NewValidateError("incorrect amount of previous winners")
 	}
 
