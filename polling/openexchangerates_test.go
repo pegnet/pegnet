@@ -6,6 +6,11 @@ import (
 	"testing"
 )
 
+// Need an api key to run this
+//func TestActualOpenExchangeRatesPeggedAssets(t *testing.T) {
+//	ActualDataSourceTest(t, "OpenExchangeRates")
+//}
+
 // TestFixedOpenExchangeRatesPeggedAssets tests all the crypto assets are found on OpenExchangeRates from fixed
 func TestFixedOpenExchangeRatesPeggedAssets(t *testing.T) {
 	FixedDataSourceTest(t, "OpenExchangeRates", []byte(openExchangeRateResponse))

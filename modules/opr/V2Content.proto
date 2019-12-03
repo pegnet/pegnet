@@ -1,0 +1,10 @@
+syntax = "proto3";
+package opr;
+
+message V2Content {
+    string Address = 1;
+    string ID = 2;
+    int32 Height = 3;
+    repeated bytes Winners = 4;
+    repeated uint64 Assets = 5;
+}

@@ -48,8 +48,9 @@ func (d *CoinCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
 
 	peg = make(map[string]PegItem)
 
-	var UnixTimestamp = resp.Timestamp
-	timestamp := time.Unix(resp.Timestamp, 0)
+	// Coincap resp is in milli seconds. Convert to unix
+	var UnixTimestamp = resp.Timestamp / 1000
+	timestamp := time.Unix(UnixTimestamp, 0)
 
 	for _, currency := range resp.Data {
 		switch currency.Symbol {
@@ -95,6 +96,10 @@ func (d *CoinCapDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
 type CoinCapResponse struct {
 	Data      []CoinCapRecord `json:"data"`
 	Timestamp int64           `json:"timestamp"`
+}
+
+func (c CoinCapResponse) UnixTimestamp() int64 {
+	return c.Timestamp / 1000
 }
 
 type CoinCapRecord struct {

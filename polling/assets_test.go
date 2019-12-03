@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	"github.com/pegnet/pegnet/common"
 	. "github.com/pegnet/pegnet/polling"
@@ -19,7 +20,7 @@ func TestBasicPollingSources(t *testing.T) {
 	end := 6
 	// Create the unit test creator
 	NewTestingDataSource = func(config *config.Config, source string) (IDataSource, error) {
-		s := new(testutils.UnitTestDataSource)
+		s, _ := testutils.NewUnitTestDataSource(config)
 		v, err := strconv.Atoi(string(source[8]))
 		if err != nil {
 			panic(err)
@@ -49,15 +50,15 @@ func TestBasicPollingSources(t *testing.T) {
   UnitTest8=8
 `
 
-	c := config.NewConfig([]config.Provider{p})
+	c := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), common.NewDefaultConfigOptionsProvider(), p})
 
 	s := NewDataSources(c)
 
-	pa, err := s.PullAllPEGAssets(1)
+	pa, err := s.PullAllPEGAssets(2)
 	if err != nil {
 		t.Error(err)
 	}
-	for i, asset := range common.AllAssets {
+	for i, asset := range common.AssetsV2 {
 		v, ok := pa[asset]
 		if !ok {
 			t.Errorf("%s is missing", asset)
@@ -100,7 +101,7 @@ func TestBasicPollingSources(t *testing.T) {
   # Specific coin overrides
   USD=UnitTest8
 `
-		c = config.NewConfig([]config.Provider{p})
+		c = config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(), common.NewDefaultConfigOptionsProvider(), p})
 
 		s = NewDataSources(c)
 		pa, err := s.PullAllPEGAssets(1)
@@ -126,6 +127,88 @@ func TestBasicPollingSources(t *testing.T) {
 	})
 }
 
+func TestDataSourceStaleness(t *testing.T) {
+	ds := make([]IDataSource, 20)
+	mapped := make(map[string]IDataSource)
+	var names []string
+
+	reference := time.Now()
+	for i := 0; i < len(ds); i++ {
+		s := new(testutils.UnitTestDataSource)
+		s.Value = float64(i + 1)
+		s.Assets = common.AllAssets
+		s.SourceName = fmt.Sprintf("UnitTest%d", i)
+		s.Timestamp = func() time.Time {
+			return time.Now().Add(time.Duration(int(s.Value)*-1) * time.Minute)
+		}
+
+		ds[i] = s
+		mapped[s.SourceName] = ds[i]
+		names = append(names, s.SourceName)
+	}
+
+	// Set to 10m staleness
+	d := NewDataSources(configWithStaleness("10m"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err := d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 10.0 {
+		t.Error("Expected a value of 10, as the prior were stale")
+	}
+
+	// Make everything stale
+	d = NewDataSources(configWithStaleness("0s"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err = d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 20.0 {
+		t.Error("Expected a value of 20.0, as all are stale, but that is the highest priority")
+	}
+
+	// Make nothing stale
+	d = NewDataSources(configWithStaleness("1h"))
+	d.AssetSources["EUR"] = reverse(names)
+
+	price, err = d.PullBestPrice("EUR", reference, mapped)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if price.Value != 20.0 {
+		t.Error("Expected a value of 20.0, as nothing is stale")
+	}
+
+}
+
+func configWithStaleness(d string) *config.Config {
+	custom := common.NewUnitTestConfigProvider()
+	custom.Data = fmt.Sprintf(`
+[Oracle]
+  StaleQuoteDuration = %s
+`, d)
+	config := config.NewConfig([]config.Provider{common.NewDefaultConfigOptionsProvider(),
+		common.NewUnitTestConfigProvider(),
+		custom})
+
+	return config
+}
+
+func reverse(list []string) []string {
+	rev := make([]string, len(list))
+	for i, v := range list {
+		rev[len(list)-i-1] = v
+	}
+	return rev
+}
+
 func TestTruncate(t *testing.T) {
 	type Vector struct {
 		Vector float64
@@ -145,6 +228,15 @@ func TestTruncate(t *testing.T) {
 		}
 		if r := TruncateTo8(v.Vector); r != v.Exp8 {
 			t.Errorf("t8 exp %f, got %f", v.Exp8, r)
+		}
+	}
+}
+
+// Names should be consistent in the config and returned by the datasource
+func TestDataSourceNames(t *testing.T) {
+	for name, d := range AllDataSources {
+		if d.Name() != name {
+			t.Error("Name user types does not match name returned")
 		}
 	}
 }

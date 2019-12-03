@@ -60,6 +60,9 @@ func init() {
 	RootCmd.PersistentFlags().Bool("profile", false, "GoLang profiling")
 	RootCmd.PersistentFlags().Int("profileport", 7060, "Change profiling port (default 16060)")
 	RootCmd.PersistentFlags().String("network", "", "The pegnet network to target. <MainNet|TestNet>")
+	RootCmd.PersistentFlags().Bool("testing", false, "Sets all activation heights to 0 so you can run on a local net")
+	RootCmd.PersistentFlags().Int32("testingact", -1, "This is a hidden flag that can be used by QA and developers to set some custom activation heights.")
+	_ = RootCmd.PersistentFlags().MarkHidden("testingact")
 
 	RootCmd.PersistentFlags().StringArrayP("override", "r", []string{}, "Custom config overrides. Can override any setting")
 
@@ -76,6 +79,7 @@ var RootCmd = &cobra.Command{
 	Short: "pegnet is the cli tool to run or interact with a PegNet node",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
 		b := balances.NewBalanceTracker()
 
 		ValidateConfig(Config) // Will fatal log if it fails
@@ -148,6 +152,19 @@ func initLogger() {
 //		2: Parse the cmd flags that overwrite the config
 //		3. Launch profiling if we have it enabled
 func rootPreRunSetup(cmd *cobra.Command, args []string) error {
+	if testing, _ := cmd.Flags().GetBool("testing"); testing {
+		// Set all activation heights to 0 and grading to 2
+		common.ActivationHeights[common.MainNetwork] = 0
+		common.ActivationHeights[common.TestNetwork] = 0
+		common.V2GradingActivation = 0
+		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
+		common.FloatingPegPriceActivation = 0
+	}
+
+	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
+		common.FloatingPegPriceActivation = int64(testingact)
+	}
+
 	// Config setup
 	u, err := user.Current()
 	if err != nil {

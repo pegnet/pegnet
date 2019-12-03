@@ -35,6 +35,10 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
 func ActualDataSourceTest(t *testing.T, source string) {
 	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
 
+	polling.NewHTTPClient = func() *http.Client {
+		return &http.Client{}
+	}
+
 	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
 	http.DefaultClient = &http.Client{}
 

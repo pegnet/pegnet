@@ -15,20 +15,30 @@ var (
 	// new grading format.
 	GradingHeights = map[string]func(height int64) uint8{
 		MainNetwork: func(height int64) uint8 {
-			// Version 1 deprecates on block XXXXXX
-			// TODO: Set a real block height activate height
-			if height < 210330 { // V1 ends at 210330 on MainNet
+			// Version 1 deprecates on block 210330
+			if height < V2GradingActivation { // V1 ends at 210330 on MainNet
 				return 1
 			}
-			return 2 // Latest code version
+			if height < FloatingPegPriceActivation {
+				return 2
+			}
+			return 3 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
 				return 1
 			}
+			// TODO: Find v3 act on testnet
 			return 2
 		},
 	}
+
+	// FloatingPegPriceActivation indicates when to place the PEG price into
+	// the opr record from the floating exchange price.
+	// Estimated to be  Dec 9, 2019, 17:00 UTC
+	FloatingPegPriceActivation int64 = 222270
+
+	V2GradingActivation int64 = 210330
 )
 
 // NetworkActive returns true if the network height is above the activation height.

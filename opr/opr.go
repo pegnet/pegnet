@@ -138,18 +138,22 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate there are no 0's
 	for k, v := range opr.Assets {
-		if v == 0 && k != "PEG" { // PEG is exception until we get a value for it
+		if v == 0 {
+			// PEG is exception until v3
+			if opr.Version <= 2 && k == "PEG" {
+				continue
+			}
 			return false
 		}
 	}
 
 	// Only enforce on version 2 and forward
-	if err := common.ValidIdentity(opr.FactomDigitalID); opr.Version == 2 && err != nil {
+	if err := common.ValidIdentity(opr.FactomDigitalID); opr.Version > 1 && err != nil {
 		return false
 	}
 
 	// Only enforce on version 2 and forward, checking valid FCT address
-	if opr.Version == 2 && !ValidFCTAddress(opr.CoinbaseAddress) {
+	if opr.Version > 1 && !ValidFCTAddress(opr.CoinbaseAddress) {
 		return false
 	}
 
@@ -168,7 +172,7 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 			return false
 		}
 		return opr.Assets.ContainsExactly(common.AssetsV1)
-	case 2:
+	case 2, 3:
 		// It can contain 10 winners when it is a transition record
 		return opr.Assets.ContainsExactly(common.AssetsV2)
 	default:
@@ -287,20 +291,15 @@ func (opr *OraclePriceRecord) LogFieldsShort() log.Fields {
 
 // SetPegValues assigns currency polling values to the OPR
 func (opr *OraclePriceRecord) SetPegValues(assets polling.PegAssets) {
-	// TODO: Remove when version 2 is activated
-	switch common.OPRVersion(opr.Network, int64(opr.Dbht)) {
-	case 1:
-		for asset, v := range assets {
-			opr.Assets.SetValue(asset, v.Value)
-		}
-	case 2:
-		for asset, v := range assets {
-			// Skip XPT and XPD
-			if asset == "XPT" || asset == "XPD" {
+	for asset, v := range assets {
+		if asset == "PEG" {
+			if opr.Version <= 2 {
+				// PEG is 0 until v3
+				opr.Assets.SetValueFromUint64(asset, 0)
 				continue
 			}
-			opr.Assets.SetValue(asset, v.Value)
 		}
+		opr.Assets.SetValue(asset, v.Value)
 	}
 }
 
@@ -382,7 +381,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		switch common.OPRVersion(network, int64(dbht)) {
 		case 1:
 			min = 10
-		case 2:
+		case 2, 3:
 			min = 25
 		}
 		opr.WinPreviousOPR = make([]string, min, min)
@@ -494,7 +493,7 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 		opr.Assets["PEG"] = opr.Assets["PNT"]
 		delete(opr.Assets, "PNT")
 		return data, err
-	} else if opr.Version == 2 {
+	} else if opr.Version == 2 || opr.Version == 3 {
 		prices := make([]uint64, len(opr.Assets))
 		for i, asset := range common.AssetsV2 {
 			prices[i] = opr.Assets[asset]
@@ -546,7 +545,7 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
 		}
 		return nil
-	} else if opr.Version == 2 {
+	} else if opr.Version == 2 || opr.Version == 3 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {

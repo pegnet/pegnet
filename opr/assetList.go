@@ -55,7 +55,7 @@ func (o OraclePriceRecordAssetList) Value(asset string) float64 {
 // List returns the list of assets in the global order
 func (o OraclePriceRecordAssetList) List(version uint8) []Token {
 	assets := common.AssetsV1
-	if version == 2 {
+	if version == 2 || version == 3 {
 		assets = common.AssetsV2
 	}
 	tokens := make([]Token, len(assets))
@@ -97,7 +97,7 @@ func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
 		// We need to read the PNT code instead of peg so the hashes match.
 		// When we digest this, we should immediately switch it to PEG
 		assets = common.AssetsV1WithPNT
-	case 2:
+	case 2, 3:
 		assets = common.AssetsV2
 	}
 
