@@ -13,12 +13,16 @@ const (
 )
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
-// per block. This amount is currently set to 5,000 PEG, matching the miner
-// amount per block. (not including the bank)
+// into per block. This amount is currently set to 5,000 PEG, matching
+// matching the miner amount per block. (not including the bank)
 // All amounts for interacting with this struct should be in PEG.
+//
+// All conversion requests are conversions INTO PEG. So if PEG is $0.50,
+// then a conversion request of 10 pUSD -> PEG, would be
+// ConversionRequests[txid] = 20*1e8
 type ConversionSupplySet struct {
 	Bank uint64 // Can be set to any positive number. Set to 0 if negative
-	// Key = txid, Value = PegAmount
+	// Key = txid, Value = PegAmount requested in the conversion
 	ConversionRequests map[string]uint64
 	totalRequested     *big.Int
 }
@@ -35,6 +39,10 @@ func NewConversionSupply(bank uint64) *ConversionSupplySet {
 }
 
 // AddConversion will add a PEG conversion request to the set.
+// All conversion requests will be pXXX -> PEG
+// The `pegAmt` is the amount of PEG the total conversion would yield.
+// Because of the supply limit, this conversion request might not have
+// 100% yield.
 func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	if _, _, err := transactionid.VerifyTransactionHash(txid); err != nil {
 		return err
@@ -48,7 +56,8 @@ func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	return nil
 }
 
-// Payouts returns the amount of PEG to allow each Tx to convert.
+// Payouts returns the amount of PEG to allow each Tx to convert into.
+// This is the actual PEG yield of each conversion request (pXXX -> PEG)
 func (s *ConversionSupplySet) Payouts() map[string]uint64 {
 	payouts := make(map[string]uint64)
 	if len(s.ConversionRequests) == 0 {
@@ -127,4 +136,44 @@ func PayoutBig(requested, bank uint64, totalRequested *big.Int) uint64 {
 func Payout(requested, bank uint64, totalRequested uint64) uint64 {
 	t := new(big.Int).SetUint64(totalRequested)
 	return PayoutBig(requested, bank, t)
+}
+
+// Refund calculates the refund based on the input amount and pegYield.
+// The refund for a pXXX -> PEG conversion is in the original asset units.
+// It takes the yielded peg and the rates to determine how much of the
+// original asset to return.
+// Params:
+//	inputAmount 	Original pXXX asset amount
+//	pegYield		Amount of PEG allocated in the conversion
+//	inputRate		pUSD rate of the original asset
+//	pegRate			pUSD rate of PEG
+//
+// Method:
+// 	maxPEGYield := (input -> PEG)
+// 	refundPEG := maxPEGYield - PEGYield
+// 	refund := (refundPEG -> pXXX)
+//
+// Rationale
+// There is more than 1 way to calculate the refund. We could take the
+// yield, convert it to the original asset and find the difference. However
+// this has the possibility of returning the dust lost in the original conversion.
+// E.g, (assume we are in the fixed point, so 1 pUSD == 0.0000001 pUSD)
+// If it takes 100 pUSD -> 1 PEG, then 199 pUSD -> 1 PEG. 99 pUSD is lost.
+// If we use an alternative method we just described, we get:
+// 	199 pUSD -> 1 PEG, 1 peg yielded
+//	1 PEG -> 100 pUSD
+//	199 pUSD - 100 pUSD = 99 pUSD refund
+// This is a problem. PEG is the only conversion we allow refunds on, so
+// it makes the PEG conversion an exception in the normal operation case.
+// All other conversion pairs "burn" the 99 pUSD. PEG should be no different.
+// The method implemented below does not make PEG an exception.
+// The same example above:
+// 	199 pUSD -> 1 PEG, 1 peg yielded
+// 	1 PEG - 1 PEG yield = 0 PEG -> 0 pUSD.
+// No refund.
+func Refund(inputAmount, pegYield int64, inputRate, pegRate uint64) int64 {
+	maxPEGYield, _ := Convert(inputAmount, inputRate, pegRate)
+	refundPEG := maxPEGYield - pegYield
+	refund, _ := Convert(refundPEG, pegRate, inputRate)
+	return refund
 }
