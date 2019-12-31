@@ -47,13 +47,17 @@ func (b *baseGradedBlock) Graded() []*GradingOPR {
 	return b.oprs
 }
 
+func (b *baseGradedBlock) sortBySelfReportedDifficulty() {
+	sort.SliceStable(b.oprs, func(i, j int) bool {
+		return b.oprs[i].SelfReportedDifficulty > b.oprs[j].SelfReportedDifficulty
+	})
+}
+
 // sortByDifficulty uses an efficient algorithm based on self-reported difficulty
 // to avoid having to LXRhash the entire set.
 // calculates at most `limit + misreported difficulties` hashes
 func (b *baseGradedBlock) sortByDifficulty(limit int) {
-	sort.SliceStable(b.oprs, func(i, j int) bool {
-		return b.oprs[i].SelfReportedDifficulty > b.oprs[j].SelfReportedDifficulty
-	})
+	b.sortBySelfReportedDifficulty()
 
 	topX := make([]*GradingOPR, 0)
 	for _, o := range b.oprs {

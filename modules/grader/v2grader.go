@@ -50,6 +50,7 @@ func (v2 *V2BlockGrader) GradeCustom(cutoff int) GradedBlock {
 	block.cutoff = cutoff
 	block.height = v2.height
 	block.cloneOPRS(v2.oprs)
+	block.sortBySelfReportedDifficulty()
 	block.filterDuplicates()
 	block.sortByDifficulty(cutoff)
 	block.grade()
