@@ -102,6 +102,12 @@ func gradeMinimumVersionTwo(orderedList []*OraclePriceRecord) (graded []*OracleP
 		return nil
 	}
 
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
+
 	// Find the top 50 with the correct difficulties
 	// 1. top50 is the top 50 PoW
 	top50 := make([]*OraclePriceRecord, 0)
@@ -148,11 +154,17 @@ func gradeMinimumVersionTwo(orderedList []*OraclePriceRecord) (graded []*OracleP
 // 1. PoW to top 50
 // 2. Grading to top 10
 // 3. Pay top 10 according to their place
-func gradeMinimumVersionOne(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
-	list := RemoveDuplicateSubmissions(sortedList)
+func gradeMinimumVersionOne(orderedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(orderedList)
 	if len(list) < 10 {
 		return nil
 	}
+
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
 
 	// Find the top 50 with the correct difficulties
 	top50 := make([]*OraclePriceRecord, 0)
