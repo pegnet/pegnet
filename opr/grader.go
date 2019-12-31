@@ -7,22 +7,18 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"sort"
 	"sync"
 	"time"
 
-	"github.com/pegnet/pegnet/balances"
-
-	"github.com/pegnet/pegnet/database"
-
 	"github.com/FactomProject/factom"
-
+	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/database"
 	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 var gLog = log.WithField("id", "grader")
@@ -325,12 +321,6 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 		return nil, nil // Not enough oprs for this block be a valid oprblock
 	}
 
-	// Sort the OPRs by self reported difficulty
-	// We will toss dishonest ones when we grade.
-	sort.SliceStable(oprs, func(i, j int) bool {
-		return binary.BigEndian.Uint64(oprs[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(oprs[j].SelfReportedDifficulty)
-	})
-
 	// GradeMinimum will only grade the first 50 honest records
 	graded := GradeMinimum(oprs, g.Network, block.EntryBlock.Header.DBHeight)
 	if len(graded) < min { // We might lose some when we reject dishonest records
@@ -349,12 +339,14 @@ func (g *QuickGrader) FetchOPRBlock(block *EntryBlockMarker) (*OprBlock, error) 
 }
 
 type OPRWorkRequest struct {
+	order     int
 	entryhash string
 }
 
 type OPRWorkResponse struct {
-	opr *OraclePriceRecord
-	err error
+	order int // The original entry order
+	opr   *OraclePriceRecord
+	err   error
 }
 
 // ParallelFetchOPRsFromEBlock is so we can parallelize our factomd requests.
@@ -380,7 +372,7 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, worke
 	var wg sync.WaitGroup
 	wg.Add(count)
 
-	var oprs []*OraclePriceRecord
+	var oprResponses []*OPRWorkResponse
 	var collectErr error
 	go func() {
 		// Collection routine
@@ -389,7 +381,7 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, worke
 				collectErr = resp.err
 			}
 			if resp.opr != nil {
-				oprs = append(oprs, resp.opr)
+				oprResponses = append(oprResponses, resp)
 			}
 			wg.Done()
 			count--
@@ -400,11 +392,18 @@ func (g *QuickGrader) ParallelFetchOPRsFromEBlock(block *EntryBlockMarker, worke
 		close(work)
 	}()
 
-	for _, entryHash := range block.EntryBlock.EntryList {
-		work <- &OPRWorkRequest{entryhash: entryHash.EntryHash}
+	for i, entryHash := range block.EntryBlock.EntryList {
+		work <- &OPRWorkRequest{entryhash: entryHash.EntryHash, order: i}
 	}
 
 	wg.Wait()
+
+	sort.SliceStable(oprResponses, func(i, j int) bool { return oprResponses[i].order < oprResponses[j].order })
+	// Now grab oprs
+	oprs := make([]*OraclePriceRecord, len(oprResponses))
+	for i := range oprResponses {
+		oprs[i] = oprResponses[i].opr
+	}
 
 	return oprs, collectErr
 }
@@ -419,18 +418,18 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 
 			entry, err := factom.GetEntry(job.entryhash)
 			if err != nil {
-				results <- &OPRWorkResponse{err: fmt.Errorf("entry %s : %s", job.entryhash, err.Error())}
+				results <- &OPRWorkResponse{err: fmt.Errorf("entry %s : %s", job.entryhash, err.Error()), order: job.order}
 				continue
 			}
 			// If the opr is nil, the entry is not an opr. If the err is not nil, then something went wrong
 			// that we need to retry. So the sync failed
 			opr, err := g.ParseOPREntry(entry, dbht)
 			if err != nil {
-				results <- &OPRWorkResponse{err: err}
+				results <- &OPRWorkResponse{err: err, order: job.order}
 				continue
 			}
 			if opr == nil {
-				results <- &OPRWorkResponse{opr: nil} // This entry is not correctly formatted
+				results <- &OPRWorkResponse{opr: nil, order: job.order} // This entry is not correctly formatted
 				continue
 			}
 			if enforceWinners && !VerifyWinners(opr, prevWinners) {
@@ -439,11 +438,11 @@ func (g *QuickGrader) fetchOPRWorker(work chan *OPRWorkRequest, results chan *OP
 					"id":        opr.FactomDigitalID,
 					"dbht":      opr.Dbht,
 				}).Warnf("bad previous winners in opr")
-				results <- &OPRWorkResponse{opr: nil} // This entry does not have the correct previous winners
+				results <- &OPRWorkResponse{opr: nil, order: job.order} // This entry does not have the correct previous winners
 				continue
 			}
 
-			results <- &OPRWorkResponse{opr: opr}
+			results <- &OPRWorkResponse{opr: opr, order: job.order}
 		}
 	}
 }
