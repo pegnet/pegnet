@@ -75,17 +75,17 @@ func ApplyBand(diff float64, band float64) float64 {
 
 // GradeMinimum only grades the top 50 honest records. The input must be the records sorted by
 // self reported difficulty.
-func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (graded []*OraclePriceRecord) {
+func GradeMinimum(orderedList []*OraclePriceRecord, network string, dbht int64) (graded []*OraclePriceRecord) {
 	// No grade algo can handle 0
-	if len(sortedList) == 0 {
+	if len(orderedList) == 0 {
 		return nil
 	}
 
 	switch common.OPRVersion(network, dbht) {
 	case 1:
-		return gradeMinimumVersionOne(sortedList)
+		return gradeMinimumVersionOne(orderedList)
 	case 2, 3:
-		return gradeMinimumVersionTwo(sortedList)
+		return gradeMinimumVersionTwo(orderedList)
 	}
 	panic("Grading version unspecified")
 }
@@ -96,8 +96,8 @@ func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (
 // 3. Pay top 25 equally (not done here)
 // 4. Grade to 1 without any tolerance band
 // 5. Wining price is the last one
-func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
-	list := RemoveDuplicateSubmissions(sortedList)
+func gradeMinimumVersionTwo(orderedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(orderedList)
 	if len(list) < 25 {
 		return nil
 	}
