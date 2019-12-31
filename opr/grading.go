@@ -75,17 +75,17 @@ func ApplyBand(diff float64, band float64) float64 {
 
 // GradeMinimum only grades the top 50 honest records. The input must be the records sorted by
 // self reported difficulty.
-func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (graded []*OraclePriceRecord) {
+func GradeMinimum(orderedList []*OraclePriceRecord, network string, dbht int64) (graded []*OraclePriceRecord) {
 	// No grade algo can handle 0
-	if len(sortedList) == 0 {
+	if len(orderedList) == 0 {
 		return nil
 	}
 
 	switch common.OPRVersion(network, dbht) {
 	case 1:
-		return gradeMinimumVersionOne(sortedList)
+		return gradeMinimumVersionOne(orderedList)
 	case 2, 3:
-		return gradeMinimumVersionTwo(sortedList)
+		return gradeMinimumVersionTwo(orderedList)
 	}
 	panic("Grading version unspecified")
 }
@@ -96,11 +96,17 @@ func GradeMinimum(sortedList []*OraclePriceRecord, network string, dbht int64) (
 // 3. Pay top 25 equally (not done here)
 // 4. Grade to 1 without any tolerance band
 // 5. Wining price is the last one
-func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
-	list := RemoveDuplicateSubmissions(sortedList)
+func gradeMinimumVersionTwo(orderedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(orderedList)
 	if len(list) < 25 {
 		return nil
 	}
+
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
 
 	// Find the top 50 with the correct difficulties
 	// 1. top50 is the top 50 PoW
@@ -148,11 +154,17 @@ func gradeMinimumVersionTwo(sortedList []*OraclePriceRecord) (graded []*OraclePr
 // 1. PoW to top 50
 // 2. Grading to top 10
 // 3. Pay top 10 according to their place
-func gradeMinimumVersionOne(sortedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
-	list := RemoveDuplicateSubmissions(sortedList)
+func gradeMinimumVersionOne(orderedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(orderedList)
 	if len(list) < 10 {
 		return nil
 	}
+
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
 
 	// Find the top 50 with the correct difficulties
 	top50 := make([]*OraclePriceRecord, 0)
