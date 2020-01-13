@@ -129,6 +129,9 @@ var V4Assets = []string{
 	"LINK",
 	"ATOM",
 	"BAT",
+
+	// Reference Tokens
+	"pUSD",
 }
 
 // AssetFloat is an asset holding a float64 value

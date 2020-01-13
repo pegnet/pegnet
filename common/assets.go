@@ -92,14 +92,38 @@ var (
 		"DCR",
 	}
 
-	AllAssets = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
-	AssetsV1  = AllAssets
+	V4CurrencyAdditions = []string{
+		"AUD",
+		"NZD",
+		"SEK",
+		"NOK",
+		"RUB",
+		"ZAR",
+		"TRY",
+	}
+
+	V4CryptoAdditions = []string{
+		"EOS",
+		"LINK",
+		"ATOM",
+		"BAT",
+	}
+
+	V4ReferenceAdditions = []string{
+		"pUSD",
+	}
+
+	AllAssets = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets, V4CurrencyAdditions, V4CryptoAdditions, V4ReferenceAdditions)
+	AssetsV1  = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets)
 	// This is with the PNT instead of PEG. Should never be used unless absolutely necessary.
 	//
 	// Deprecated: Was used for version 1 before PNT -> PEG
 	AssetsV1WithPNT = MergeLists([]string{"PNT"}, SubtractFromSet(AssetsV1, "PEG"))
 	// Version One, subtract 2 assets
 	AssetsV2 = SubtractFromSet(AssetsV1, "XPD", "XPT")
+
+	// Additional assets to V2 set
+	AssetsV4 = MergeLists(AssetsV2, V4CurrencyAdditions, V4CryptoAdditions, V4ReferenceAdditions)
 )
 
 // AssetListContainsCaseInsensitive is for when using user input. It's helpful for the

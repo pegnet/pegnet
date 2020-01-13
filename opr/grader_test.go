@@ -289,7 +289,9 @@ func shuffleList() {
 	rand.Shuffle(len(common.AllAssets), func(i, j int) {
 		common.AllAssets[i], common.AllAssets[j] = common.AllAssets[j], common.AllAssets[i]
 	})
-	common.AssetsV1 = common.AllAssets
+	rand.Shuffle(len(common.AllAssets), func(i, j int) {
+		common.AssetsV1[i], common.AssetsV1[j] = common.AssetsV1[j], common.AssetsV1[i]
+	})
 	// Version One, subtract 2 assets
 	common.AssetsV2 = common.SubtractFromSet(common.AssetsV1, "XPD", "XPT")
 }
