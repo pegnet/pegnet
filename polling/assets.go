@@ -32,8 +32,8 @@ var AllDataSources = map[string]IDataSource{
 	"1Forge":            new(OneForgeDataSource),
 	"AlternativeMe":     new(AlternativeMeDataSource),
 	"PegnetMarketCap":   new(PegnetMarketCapDataSource),
-	"Factoshiio":        new(FactoshiioDataSource),
 	"CoinGecko":         new(CoinGeckoDataSource),
+	//"Factoshiio":        new(FactoshiioDataSource), // This will be deprecated
 }
 
 func AllDataSourcesList() []string {
