@@ -43,12 +43,17 @@ func (d *OneForgeDataSource) Url() string {
 }
 
 func (d *OneForgeDataSource) ApiUrl() string {
-	return "https://forex.1forge.com/1.0.3/"
+	return "https://api.1forge.com/"
 }
 
 func (d *OneForgeDataSource) SupportedPegs() []string {
 	// Does not have all the currencies, commodities, or crypto
-	return common.MergeLists([]string{"EUR", "JPY", "GBP", "CAD", "CHF", "SGD", "HKD", "MXN"}, []string{"XAU", "XAG"})
+	return common.MergeLists(
+		[]string{"EUR", "JPY", "GBP", "CAD", "CHF", "SGD", "HKD", "MXN"}, // Original Currencies
+		[]string{"XAU", "XAG"},
+		[]string{"AUD", "NZD", "SEK", "NOK", "RUB", "ZAR", "TRY"}, // V4 Currencies
+	)
+
 }
 
 // AssetMapping changes some asset symbols to others to match 1forge
