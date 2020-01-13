@@ -70,7 +70,7 @@ func RandomOPRWithFieldsAndModify(version uint8, dbht int32, prevWinners []strin
 		}
 		extids[2] = []byte{1}
 		io = o
-	case 2, 3:
+	case 2, 3, 4:
 		o := new(V2Content)
 		o.Winners = make([][]byte, len(prevWinners))
 		for i := range o.Winners {
@@ -79,8 +79,13 @@ func RandomOPRWithFieldsAndModify(version uint8, dbht int32, prevWinners []strin
 		o.Height = dbht
 		o.Address = coinbase
 		o.ID = fmt.Sprintf("%x", id)
-		o.Assets = make([]uint64, len(V2Assets))
-		for i := range V2Assets {
+		assetList := V2Assets
+		if version == 4 {
+			assetList = V4Assets
+		}
+		o.Assets = make([]uint64, len(assetList))
+
+		for i := range assetList {
 			o.Assets[i] = rand.Uint64() % 100000 * 1e8 // 100K max
 			if o.Assets[i] == 0 {
 				o.Assets[i] = 1e8
@@ -114,7 +119,7 @@ func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
 		return 10
-	case 2, 3:
+	case 2, 3, 4:
 		return 25
 	}
 	return 0

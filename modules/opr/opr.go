@@ -8,7 +8,7 @@ const (
 	// V1 is JSON
 	V1
 	// V2 is Protobuf encoding
-	// V2 is for grading V2 & V3
+	// V2 is for grading V2, V3, & V4
 	V2
 )
 

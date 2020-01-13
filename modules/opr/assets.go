@@ -73,6 +73,64 @@ var V2Assets = []string{
 	"DCR",
 }
 
+// V4Assets contains the following changes to V2:
+//      * Add Currency AUD
+//      * Add Currency NZD
+//      * Add Currency SEK
+//      * Add Currency NOK
+//      * Add Currency RUB
+//      * Add Currency ZAR
+//      * Add Currency TRY
+//      * Add CryptoCurrency EOS
+//      * Add CryptoCurrency LINK
+//      * Add CryptoCurrency ATOM
+//      * Add CryptoCurrency BAT
+var V4Assets = []string{
+	"PEG",
+	"USD",
+	"EUR",
+	"JPY",
+	"GBP",
+	"CAD",
+	"CHF",
+	"INR",
+	"SGD",
+	"CNY",
+	"HKD",
+	"KRW",
+	"BRL",
+	"PHP",
+	"MXN",
+	"XAU",
+	"XAG",
+	"XBT",
+	"ETH",
+	"LTC",
+	"RVN",
+	"XBC",
+	"FCT",
+	"BNB",
+	"XLM",
+	"ADA",
+	"XMR",
+	"DASH",
+	"ZEC",
+	"DCR",
+
+	// New Assets
+	"AUD",
+	"NZD",
+	"SEK",
+	"NOK",
+	"RUB",
+	"ZAR",
+	"TRY",
+	"EOS",
+	"LINK",
+	"ATOM",
+	"BAT",
+}
+
 // AssetFloat is an asset holding a float64 value
 type AssetFloat struct {
 	Name  string
