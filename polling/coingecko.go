@@ -143,6 +143,7 @@ func (d *CoinGeckoDataSource) CurrencyIDMapping() map[string]string {
 		"LINK": "chainlink",
 		"ATOM": "cosmos",
 		"BAT":  "basic-attention-token",
+		"XTZ":  "tezos",
 	}
 }
 

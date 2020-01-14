@@ -9,7 +9,7 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 var dLog = log.WithField("id", "DataSources")
@@ -272,6 +272,9 @@ func (ds *DataSources) AssetPriorityString(asset string) string {
 //		but it might be faster to eager eval all the data sources concurrently.
 func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err error) {
 	assets := common.AssetsV2 // All the assets we are tracking.
+	if oprversion == 4 {
+		assets = common.AssetsV4
+	}
 	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for

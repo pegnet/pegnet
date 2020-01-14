@@ -108,6 +108,23 @@ var coinMarketCapResp = `
                 }
             }
         },
+		"2011": {
+			"id": 2011,
+			"name": "Tezos",
+			"symbol": "XTZ",
+			"slug": "tezos",
+			"quotes": {
+				"USD": {
+					"price": 1.27937022131689,
+                    "volume_24h": 414562947.895995,
+                    "percent_change_1h": 1.74612,
+                    "percent_change_24h": 1.97213,
+                    "percent_change_7d": 19.0273,
+                    "market_cap": 614480796.5071603,
+                    "last_updated": "2020-01-13T17:17:02.000Z"
+				}
+			},
+		},
         "328": {
             "id": 328,
             "name": "Monero",

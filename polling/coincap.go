@@ -14,7 +14,7 @@ import (
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 // CoinCapDataSource is the datasource at https://coincap.io/
@@ -143,6 +143,7 @@ var CoinCapIOCryptoAssetNames = map[string]string{
 	"LINK": "chainlink",
 	"ATOM": "cosmos",
 	"BAT":  "basic-attention-token",
+	"XTZ":  "tezos",
 }
 
 func (d CoinCapDataSource) CallCoinCap(config *config.Config) (CoinCapResponse, error) {
