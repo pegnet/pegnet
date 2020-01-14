@@ -86,6 +86,7 @@ var V2Assets = []string{
 //      * Add CryptoCurrency ATOM
 //      * Add CryptoCurrency BAT
 //      * Add CryptoCurrency XTZ
+//      * Add Pegnet asset pUSD (exchange price for pUSD)
 var V4Assets = []string{
 	"PEG",
 	"USD",
