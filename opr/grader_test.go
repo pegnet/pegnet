@@ -215,8 +215,23 @@ func TestOPRQuery(t *testing.T) {
 // TestGradingOrder for any different ordering and using floats
 func TestGradingOrder(t *testing.T) {
 	cycles := 25
-	orig := make([]string, len(common.AllAssets))
-	copy(orig, common.AllAssets)
+
+	// Set the lists back to their original at the end of the unit test
+	saveList := func(list *[]string) ([]string, *[]string) {
+		orig := make([]string, len(*list))
+		copy(orig, *list)
+		return orig, list
+	}
+
+	returnList := func(orig []string, origP *[]string) {
+		*origP = orig
+	}
+
+	defer returnList(saveList(&common.AllAssets))
+	defer returnList(saveList(&common.AssetsV1))
+	defer returnList(saveList(&common.AssetsV2))
+	defer returnList(saveList(&common.AssetsV4))
+
 	// Version 1
 	t.Run("version 1", func(t *testing.T) {
 		testGradingOrderVersion(t, 1, cycles)
@@ -226,6 +241,9 @@ func TestGradingOrder(t *testing.T) {
 	})
 	t.Run("version 3", func(t *testing.T) {
 		testGradingOrderVersion(t, 3, cycles)
+	})
+	t.Run("version 4", func(t *testing.T) {
+		testGradingOrderVersion(t, 4, cycles)
 	})
 }
 
@@ -292,9 +310,13 @@ func shuffleList() {
 	rand.Shuffle(len(common.AllAssets), func(i, j int) {
 		common.AllAssets[i], common.AllAssets[j] = common.AllAssets[j], common.AllAssets[i]
 	})
-	rand.Shuffle(len(common.AllAssets), func(i, j int) {
+	rand.Shuffle(len(common.AssetsV1), func(i, j int) {
 		common.AssetsV1[i], common.AssetsV1[j] = common.AssetsV1[j], common.AssetsV1[i]
 	})
 	// Version One, subtract 2 assets
 	common.AssetsV2 = common.SubtractFromSet(common.AssetsV1, "XPD", "XPT")
+
+	rand.Shuffle(len(common.AssetsV4), func(i, j int) {
+		common.AssetsV4[i], common.AssetsV4[j] = common.AssetsV4[j], common.AssetsV4[i]
+	})
 }

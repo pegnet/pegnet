@@ -109,6 +109,12 @@ func TestClone(t *testing.T) {
 	t.Run("V2 Test Clone", func(t *testing.T) {
 		testClone(t, 2)
 	})
+	t.Run("V3 Test Clone", func(t *testing.T) {
+		testClone(t, 3)
+	})
+	t.Run("V4 Test Clone", func(t *testing.T) {
+		testClone(t, 4)
+	})
 }
 
 func testClone(t *testing.T, version uint8) {
@@ -132,6 +138,14 @@ func TestUnder1EC(t *testing.T) {
 
 	t.Run("version 2", func(t *testing.T) {
 		test1EC(t, 2)
+	})
+
+	t.Run("version 3", func(t *testing.T) {
+		test1EC(t, 3)
+	})
+
+	t.Run("version 4", func(t *testing.T) {
+		test1EC(t, 4)
 	})
 }
 
