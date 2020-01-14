@@ -2,7 +2,6 @@ package opr
 
 import (
 	"encoding/gob"
-	"fmt"
 	"sort"
 
 	"github.com/pegnet/pegnet/database"
@@ -52,10 +51,6 @@ func (d *OPRBlockStore) WriteOPRBlock(opr *OprBlock) error {
 		DblockHeight:       opr.Dbht,
 		EmptyOPRBlock:      opr.EmptyOPRBlock,
 		TotalNumberRecords: opr.TotalNumberRecords,
-	}
-
-	if len(opr.GradedOPRs) > 0 {
-		fmt.Printf("Winner at %d is %x\n", opr.Dbht, opr.GradedOPRs[0].EntryHash)
 	}
 
 	data, err := database.Encode(obj)

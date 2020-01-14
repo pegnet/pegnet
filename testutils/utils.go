@@ -67,6 +67,8 @@ var lessChecks = map[string]float64{
 	"BAT":  0.01,
 	"FCT":  0.10,
 	"TRY":  0.01,
+	"PEG":  0.0000001,
+	"pUSD": 0.15,
 }
 
 // greaterChecks checks if an asset is greater than the given map value. If it is
@@ -85,6 +87,8 @@ var greaterChecks = map[string]float64{
 	"BAT":  2,
 	"FCT":  25,
 	"TRY":  0.90,
+	"PEG":  0.10,
+	"pUSD": 2,
 }
 
 // PriceCheck checks if the price is "reasonable" to see if we inverted the prices

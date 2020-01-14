@@ -101,6 +101,8 @@ func (o OraclePriceRecordAssetList) MarshalJSON() ([]byte, error) {
 		assets = common.AssetsV1WithPNT
 	case 2, 3:
 		assets = common.AssetsV2
+	case 4:
+		assets = common.AssetsV4
 	}
 
 	s := "{"

@@ -30,12 +30,13 @@ func (d *PegnetMarketCapDataSource) Url() string {
 }
 
 func (d *PegnetMarketCapDataSource) ApiUrl() string {
-	return "https://pegnetmarketcap.com/api/asset/PEG?columns=ticker_symbol,exchange_price,exchange_price_dateline"
+	return "https://pegnetmarketcap.com/api/asset/all?columns=ticker_symbol,exchange_price,exchange_price_dateline"
+	//return "https://pegnetmarketcap.com/api/asset/PEG?columns=ticker_symbol,exchange_price,exchange_price_dateline"
 }
 
 func (d *PegnetMarketCapDataSource) SupportedPegs() []string {
 	// Does not have all the currencies, commodities, or crypto
-	return common.PEGAsset
+	return common.MergeLists(common.PEGAsset, common.V4ReferenceAdditions)
 }
 
 func (d *PegnetMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -46,14 +47,17 @@ func (d *PegnetMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) 
 	var _ = resp
 
 	peg = make(map[string]PegItem)
-	// Only PEG Supported
-	timestamp := time.Unix(resp.ExchangePriceDateline, 0)
-	price, err := strconv.ParseFloat(resp.ExchangePrice, 64)
-	if err != nil {
-		return
+	for _, price := range resp {
+		switch price.TickerSymbol {
+		case "PEG", "pUSD":
+			timestamp := time.Unix(price.ExchangePriceDateline, 0)
+			rate, err := strconv.ParseFloat(price.ExchangePrice, 64)
+			if err != nil {
+				continue
+			}
+			peg[price.TickerSymbol] = PegItem{Value: rate, When: timestamp, WhenUnix: timestamp.Unix()}
+		}
 	}
-
-	peg[d.SupportedPegs()[0]] = PegItem{Value: price, When: timestamp, WhenUnix: timestamp.Unix()}
 
 	return
 }
@@ -62,8 +66,8 @@ func (d *PegnetMarketCapDataSource) FetchPegPrice(peg string) (i PegItem, err er
 	return FetchPegPrice(peg, d.FetchPegPrices)
 }
 
-func (d *PegnetMarketCapDataSource) CallPegnetMarketCap() (*PegnetMarketCapResponse, error) {
-	var resp *PegnetMarketCapResponse
+func (d *PegnetMarketCapDataSource) CallPegnetMarketCap() (map[string]PegnetMarketCapResponse, error) {
+	var resp map[string]PegnetMarketCapResponse
 
 	operation := func() error {
 		data, err := d.FetchPeggedPrices()
@@ -82,13 +86,13 @@ func (d *PegnetMarketCapDataSource) CallPegnetMarketCap() (*PegnetMarketCapRespo
 	return resp, err
 }
 
-func (d *PegnetMarketCapDataSource) ParseFetchedPrices(data []byte) (*PegnetMarketCapResponse, error) {
-	var resp PegnetMarketCapResponse
+func (d *PegnetMarketCapDataSource) ParseFetchedPrices(data []byte) (map[string]PegnetMarketCapResponse, error) {
+	var resp map[string]PegnetMarketCapResponse
 	err := json.Unmarshal(data, &resp)
 	if err != nil {
 		return nil, err
 	}
-	return &resp, nil
+	return resp, nil
 }
 
 func (d *PegnetMarketCapDataSource) FetchPeggedPrices() ([]byte, error) {

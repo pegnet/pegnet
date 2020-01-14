@@ -36,6 +36,8 @@ var (
 		},
 	}
 
+	V2GradingActivation int64 = 210330
+
 	// FloatingPegPriceActivation indicates when to place the PEG price into
 	// the opr record from the floating exchange price.
 	// Estimated to be  Dec 9, 2019, 17:00 UTC
@@ -43,8 +45,6 @@ var (
 
 	// TODO: TBD
 	V4HeightActivation int64 = 999999
-
-	V2GradingActivation int64 = 210330
 )
 
 // NetworkActive returns true if the network height is above the activation height.

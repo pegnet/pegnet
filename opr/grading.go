@@ -240,7 +240,7 @@ func GetRewardFromPlace(place int, network string, height int64) int64 {
 	switch common.OPRVersion(network, height) {
 	case 1:
 		return getRewardFromPlaceVersionOne(place)
-	case 2, 3:
+	case 2, 3, 4:
 		return getRewardFromPlaceVersionTwo(place)
 	}
 	panic("opr version not found")
