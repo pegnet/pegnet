@@ -85,6 +85,7 @@ var V2Assets = []string{
 //      * Add CryptoCurrency LINK
 //      * Add CryptoCurrency ATOM
 //      * Add CryptoCurrency BAT
+//      * Add CryptoCurrency XTZ
 var V4Assets = []string{
 	"PEG",
 	"USD",
@@ -129,6 +130,7 @@ var V4Assets = []string{
 	"LINK",
 	"ATOM",
 	"BAT",
+	"XTZ",
 
 	// Reference Tokens
 	"pUSD",

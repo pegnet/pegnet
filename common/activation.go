@@ -22,7 +22,10 @@ var (
 			if height < FloatingPegPriceActivation {
 				return 2
 			}
-			return 3 // Latest code version
+			if height < V4HeightActivation {
+				return 3
+			}
+			return 4 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
@@ -37,6 +40,9 @@ var (
 	// the opr record from the floating exchange price.
 	// Estimated to be  Dec 9, 2019, 17:00 UTC
 	FloatingPegPriceActivation int64 = 222270
+
+	// TODO: TBD
+	V4HeightActivation int64 = 999999
 
 	V2GradingActivation int64 = 210330
 )

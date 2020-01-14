@@ -202,6 +202,9 @@ func TestOPRMarshaling(t *testing.T) {
 	t.Run("version 3", func(t *testing.T) {
 		testOPRMarshaling(t, 3)
 	})
+	t.Run("version 4", func(t *testing.T) {
+		testOPRMarshaling(t, 4)
+	})
 }
 
 func testOPRMarshaling(t *testing.T, version uint8) {

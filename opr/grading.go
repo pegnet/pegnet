@@ -84,7 +84,7 @@ func GradeMinimum(orderedList []*OraclePriceRecord, network string, dbht int64) 
 	switch common.OPRVersion(network, dbht) {
 	case 1:
 		return gradeMinimumVersionOne(orderedList)
-	case 2, 3:
+	case 2, 3, 4:
 		return gradeMinimumVersionTwo(orderedList)
 	}
 	panic("Grading version unspecified")

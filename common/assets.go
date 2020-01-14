@@ -107,6 +107,7 @@ var (
 		"LINK",
 		"ATOM",
 		"BAT",
+		"XTZ",
 	}
 
 	V4ReferenceAdditions = []string{

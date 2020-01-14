@@ -128,6 +128,9 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	if version > 1 {
 		assets = common.AssetsV2
 	}
+	if version == 4 {
+		assets = common.AssetsV4
+	}
 	tmp.Assets = make(OraclePriceRecordAssetList)
 	for _, asset := range assets {
 		tmp.Assets.SetValue(asset, rand.Float64()*100)
