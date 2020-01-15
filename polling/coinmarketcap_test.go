@@ -124,6 +124,7 @@ var coinMarketCapResp = `
                     "last_updated": "2020-01-13T17:17:02.000Z"
 				}
 			},
+			"last_updated": "2020-01-13T17:17:02.000Z",
 		},
         "328": {
             "id": 328,
