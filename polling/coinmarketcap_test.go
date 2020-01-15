@@ -109,22 +109,32 @@ var coinMarketCapResp = `
             }
         },
 		"2011": {
-			"id": 2011,
-			"name": "Tezos",
-			"symbol": "XTZ",
-			"slug": "tezos",
-			"quotes": {
-				"USD": {
+ 			"id": 2011,
+            "name": "Tezos",
+            "symbol": "XTZ",
+            "slug": "tezos",
+            "num_market_pairs": 125,
+            "date_added": "2014-05-21T00:00:00.000Z",
+            "tags": [
+                "mineable"
+            ],
+            "max_supply": null,
+            "circulating_supply": 17398281.0938049,
+            "total_supply": 17398281.0938049,
+            "platform": null,
+            "cmc_rank": 10,
+            "last_updated": "2020-01-13T17:17:01.000Z",
+            "quote": {
+                "USD": {
 					"price": 1.27937022131689,
                     "volume_24h": 414562947.895995,
-                    "percent_change_1h": 1.74612,
-                    "percent_change_24h": 1.97213,
-                    "percent_change_7d": 19.0273,
-                    "market_cap": 614480796.5071603,
-                    "last_updated": "2020-01-13T17:17:02.000Z"
-				}
-			},
-			"last_updated": "2020-01-13T17:17:02.000Z",
+                    "percent_change_1h": -0.521103,
+                    "percent_change_24h": -2.85593,
+                    "percent_change_7d": 1.80022,
+                    "market_cap": 995090665.470944,
+                    "last_updated": "2020-01-13T17:17:01.000Z"
+                }
+            }
 		},
         "328": {
             "id": 328,
