@@ -56,6 +56,13 @@ func (s *ConversionSupplySet) AddConversion(txid string, pegAmt uint64) error {
 	return nil
 }
 
+// TotalRequested is the total amount of PEG requested for this set.
+// The payouts are limited to the amount in the bank, but the requested
+// amount can far exceed it.
+func (s *ConversionSupplySet) TotalRequested() uint64 {
+	return s.totalRequested.Uint64()
+}
+
 // Payouts returns the amount of PEG to allow each Tx to convert into.
 // This is the actual PEG yield of each conversion request (pXXX -> PEG)
 func (s *ConversionSupplySet) Payouts() map[string]uint64 {
