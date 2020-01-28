@@ -4,15 +4,18 @@ var _ BlockGrader = (*V3BlockGrader)(nil)
 
 // V4BlockGrader implements the V2 grading algorithm but requires PEG to have a price.
 type V4BlockGrader struct {
+	// intentionally v2 and not v3.
+	// v2 implements the correct grading for v3 and v4. The only
+	// difference is validation rules and in v4, some additional currencies.
 	V2BlockGrader
 }
 
-// Version 3
+// Version 4
 func (v4 *V4BlockGrader) Version() uint8 {
 	return 4
 }
 
-// AddOPR verifies and adds a V3 OPR.
+// AddOPR verifies and adds a V4 OPR.
 func (v4 *V4BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byte) error {
 	gopr, err := ValidateV4(entryhash, extids, v4.height, v4.prevWinners, content)
 	if err != nil {

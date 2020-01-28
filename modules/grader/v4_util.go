@@ -50,10 +50,6 @@ func ValidateV4(entryhash []byte, extids [][]byte, height int32, winners []strin
 		}
 	}
 
-	if len(o.Winners) != 25 {
-		return nil, NewValidateError("must have exactly 25 previous winning shorthashes")
-	}
-
 	if err := factoidaddress.Valid(o.Address); err != nil {
 		return nil, NewValidateError(fmt.Sprintf("factoidaddress is invalid : %s", err.Error()))
 	}
