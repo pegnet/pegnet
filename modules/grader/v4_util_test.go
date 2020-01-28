@@ -20,7 +20,7 @@ func TestValidateV4(t *testing.T) {
 	// Test 10 previous winners is not enough
 	ehash, extids, content = testutils.RandomOPRWithFields(version, height, winners[:10])
 	_, err = ValidateV4(ehash, extids, height, winners[:10], content)
-	if err == nil || err.Error() != "must have exactly 25 previous winning shorthashes" {
+	if err == nil || err.Error() != "incorrect amount of previous winners" {
 		t.Errorf("did not get expected error")
 	}
 }
