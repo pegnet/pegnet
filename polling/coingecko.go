@@ -37,7 +37,7 @@ func (d *CoinGeckoDataSource) ApiUrl() string {
 }
 
 func (d *CoinGeckoDataSource) SupportedPegs() []string {
-	return common.MergeLists(common.PEGAsset, common.CryptoAssets)
+	return common.MergeLists(common.PEGAsset, common.CryptoAssets, common.V4CryptoAdditions)
 }
 
 func (d *CoinGeckoDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -138,6 +138,12 @@ func (d *CoinGeckoDataSource) CurrencyIDMapping() map[string]string {
 		"DASH": "dash",
 		"ZEC":  "zcash",
 		"DCR":  "decred",
+		// V4 Adds
+		"EOS":  "eos",
+		"LINK": "chainlink",
+		"ATOM": "cosmos",
+		"BAT":  "basic-attention-token",
+		"XTZ":  "tezos",
 	}
 }
 

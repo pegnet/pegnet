@@ -550,7 +550,7 @@ func (g *QuickGrader) MinRecords(dbht int64) int {
 	switch common.OPRVersion(g.Network, dbht) {
 	case 1:
 		return 10
-	case 2, 3:
+	case 2, 3, 4:
 		return 25
 	default:
 		panic("didn't get a valid opr version")

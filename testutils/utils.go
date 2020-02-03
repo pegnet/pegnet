@@ -54,32 +54,56 @@ func NewHTTPServerWithFixedResp(port int, resp []byte) *http.Server {
 	return &srv
 }
 
+// lessChecks checks if an asset is less than the given map value. If it is
+// found to be less than the map value, then the token price is likely incorrect.
+var lessChecks = map[string]float64{
+	"XBT":  1000, // Bitcoin
+	"XAU":  500,  // Gold
+	"XAG":  5,    // Silver
+	"ETH":  20,
+	"LINK": 0.1,
+	"USD":  0.99,
+	"DCR":  1,
+	"BAT":  0.01,
+	"FCT":  0.10,
+	"TRY":  0.01,
+	"PEG":  0.0000001,
+	"pUSD": 0.15,
+}
+
+// greaterChecks checks if an asset is greater than the given map value. If it is
+// found to be greater than the map value, then the token price is likely incorrect.
+var greaterChecks = map[string]float64{
+	"XBT":  50000, // Bitcoin
+	"XAU":  5000,  // Gold
+	"XAG":  100,   // Silver
+	"ETH":  1000,
+	"LINK": 100,
+	"USD":  1.01,
+	"MXN":  0.30,
+	"INR":  0.30,
+	"JPY":  0.30,
+	"DCR":  500,
+	"BAT":  2,
+	"FCT":  25,
+	"TRY":  0.90,
+	"PEG":  0.10,
+	"pUSD": 2,
+}
+
 // PriceCheck checks if the price is "reasonable" to see if we inverted the prices
 func PriceCheck(asset string, rate float64) error {
-	switch asset {
-	case "XBT":
-		// BTC < $500? That sounds wrong
-		if rate < 500 {
-			return fmt.Errorf("bitcoin(%s) found to be %.2f, less than $500, this seems wrong", asset, rate)
-		}
-	case "XAU":
-		// Gold < $50? That sounds wrong
-		if rate < 50 {
-			return fmt.Errorf("gold(%s) found to be %.2f, less than $50, this seems wrong", asset, rate)
-		}
-	case "XPD":
-		// Silver < $5? That sounds wrong
-		if rate < 5 {
-			return fmt.Errorf("%s found to be %.2f, less than $5, this seems wrong", asset, rate)
-		}
-	case "MXN":
-		if rate > 1 {
-			return fmt.Errorf("the peso(%s) found to be %.2f, greater than $1, this seems wrong", asset, rate)
-		}
-	case "ETH":
-		if rate < 20 {
-			return fmt.Errorf("%s found to be %.2f, less than $20, this seems wrong", asset, rate)
+	if lt, ok := lessChecks[asset]; ok {
+		if rate < lt {
+			return fmt.Errorf("%s found to be $%.2f, less than $%.2f, this seems wrong", asset, rate, lt)
 		}
 	}
+
+	if gt, ok := greaterChecks[asset]; ok {
+		if rate > gt {
+			return fmt.Errorf("%s found to be $%.2f, greater than $%.2f, this seems wrong", asset, rate, gt)
+		}
+	}
+
 	return nil
 }

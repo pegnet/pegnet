@@ -11,7 +11,7 @@ import (
 )
 
 // FixedDataSourceTest will test the parsing of the data source using the fixed response
-func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
+func FixedDataSourceTest(t *testing.T, source string, fixed []byte, exceptions ...string) {
 	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
 
 	c := config.NewConfig([]config.Provider{common.NewUnitTestConfigProvider()})
@@ -32,7 +32,7 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte) {
 }
 
 // ActualDataSourceTest actually fetches the resp over the internet
-func ActualDataSourceTest(t *testing.T, source string) {
+func ActualDataSourceTest(t *testing.T, source string, exceptions ...string) {
 	defer func() { http.DefaultClient = &http.Client{} }() // Don't leave http broken
 
 	polling.NewHTTPClient = func() *http.Client {
@@ -47,18 +47,26 @@ func ActualDataSourceTest(t *testing.T, source string) {
 		t.Error(err)
 	}
 
-	testDataSource(t, s)
+	testDataSource(t, s, exceptions...)
 }
 
-func testDataSource(t *testing.T, s polling.IDataSource) {
+func testDataSource(t *testing.T, s polling.IDataSource, exceptions ...string) {
 	pegs, err := s.FetchPegPrices()
 	if err != nil {
 		t.Error(err)
 	}
 
+	exceptionsMap := make(map[string]interface{})
+	for _, e := range exceptions {
+		exceptionsMap[e] = struct{}{}
+	}
+
 	for _, asset := range s.SupportedPegs() {
 		r, ok := pegs[asset]
 		if !ok {
+			if _, except := exceptionsMap[asset]; except {
+				continue // This asset is an exception from the check
+			}
 			t.Errorf("Missing %s", asset)
 		}
 
