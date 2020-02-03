@@ -66,7 +66,7 @@ func (c *ChainRecorder) WritePriceCSV(db database.IDatabase, height int64) error
 	// Build the csv
 OPRLoop:
 	for i, opr := range all {
-		for asset, _ := range opr.Assets {
+		for asset := range opr.Assets {
 			// Skip bogus
 			if err := testutils.PriceCheck(asset, opr.Assets.Value(asset)); err != nil {
 				continue OPRLoop
