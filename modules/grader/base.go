@@ -74,6 +74,17 @@ func NewGrader(version uint8, height int32, previousWinners []string) (BlockGrad
 		v3.height = height
 		v3.prevWinners = previousWinners
 		return v3, nil
+	case 4:
+		if len(previousWinners) == 0 {
+			previousWinners = make([]string, 25)
+		} else if !verifyWinnerFormat(previousWinners, 25) {
+			// V2 has 25 winners, we can enforce a 25 winner previous rule
+			return nil, fmt.Errorf("invalid previous winners")
+		}
+		v4 := new(V4BlockGrader)
+		v4.height = height
+		v4.prevWinners = previousWinners
+		return v4, nil
 	default:
 		// most likely developer error or outdated package
 		return nil, fmt.Errorf("unsupported version")

@@ -6,8 +6,9 @@ import (
 
 // TestActualFreeForexPeggedAssets tests all the crypto assets are found on exchangerates over the net
 func TestActualFreeForexPeggedAssets(t *testing.T) {
+	return // FreeForex is down right now. Has been for a few days
 	// This sometimes fails because the data source sometimes returns a second variation response.
-	//ActualDataSourceTest(t, "FreeForexAPI")
+	ActualDataSourceTest(t, "FreeForexAPI")
 }
 
 func TestFixedFreeForexPeggedAssets(t *testing.T) {
@@ -17,7 +18,8 @@ func TestFixedFreeForexPeggedAssets(t *testing.T) {
 
 // Yes they have more than 1 type of response... idk why. The docs specify 1, experimentation shows the second as well
 var freeforexRateResponse = `
-{"rates":{"USDUSD":{"rate":1,"timestamp":1565631966},"USDEUR":{"rate":0.891862,"timestamp":1565631966},"USDJPY":{"rate":105.298041,"timestamp":1565631966},"USDGBP":{"rate":0.82809,"timestamp":1565631966},"USDCAD":{"rate":1.32445,"timestamp":1565631966},"USDCHF":{"rate":0.970175,"timestamp":1565631966},"USDINR":{"rate":71.226498,"timestamp":1565631966},"USDSGD":{"rate":1.38682,"timestamp":1565631966},"USDCNY":{"rate":7.058198,"timestamp":1565631966},"USDHKD":{"rate":7.84625,"timestamp":1565631966},"USDKRW":{"rate":1219.764986,"timestamp":1565631966},"USDBRL":{"rate":3.984602,"timestamp":1565631966},"USDPHP":{"rate":52.164963,"timestamp":1565631966},"USDMXN":{"rate":19.586801,"timestamp":1565631966},"USDXAU":{"rate":0.000664,"timestamp":1565631966},"USDXAG":{"rate":0.058587,"timestamp":1565631966}},"code":200}
+{"rates":{"USDUSD":{"rate":1,"timestamp":1578937865},"USDEUR":{"rate":0.897626,"timestamp":1578937865},"USDJPY":{"rate":109.914503,"timestamp":1578937865},"USDGBP":{"rate":0.769495,"timestamp":1578937865},"USDCAD":{"rate":1.30478,"timestamp":1578937865},"USDCHF":{"rate":0.97017,"timestamp":1578937865},"USDINR":{"rate":70.738039,"timestamp":1578937865},"USDSGD":{"rate":1.346605,"timestamp":1578937865},"USDCNY":{"rate":6.893701,"timestamp":1578937865},"USDHKD":{"rate":7.77185,"timestamp":1578937865},"USDKRW":{"rate":1155.57985,"timestamp":1578937865},"USDBRL":{"rate":4.1344,"timestamp":1578937865},"USDPHP":{"rate":50.430424,"timestamp":1578937865},"USDMXN":{"rate":18.79917,"timestamp":1578937865},"USDXAU":{"rate":0.000645,"timestamp":1578937865},"USDXAG":{"rate":0.055539,"timestamp":1578937865},"USDAUD":{"rate":1.446895,"timestamp":1578937865},"USDNZD":{"rate":1.507615,"timestamp":1578937865},"USDSEK":{"rate":9.466102,"timestamp":1578937865},"USDNOK":{"rate":8.894605,"timestamp":1578937865},"USDRUB":{"rate":61.232902,"timestamp":1578937865},"USDZAR":{"rate":14.42291,"timestamp":1578937865},"USDTRY":{"rate":5.866804,"timestamp":1578937865}},"code":200}
+
 `
 
 // The second source is missing gold and silver.

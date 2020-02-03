@@ -27,6 +27,9 @@ func TestBaseGradedBlock_Invalid(t *testing.T) {
 	t.Run("V3", func(t *testing.T) {
 		testBaseGradedBlock_Invalid(t, 3)
 	})
+	t.Run("V4", func(t *testing.T) {
+		testBaseGradedBlock_Invalid(t, 4)
+	})
 }
 
 func testBaseGradedBlock_Invalid(t *testing.T, version uint8) {
@@ -138,7 +141,7 @@ func testBaseGradedBlock_Invalid(t *testing.T, version uint8) {
 			if err != nil {
 				t.Errorf("[%d] expected no error for 0 peg value: %s", version, err.Error())
 			}
-		case 3:
+		case 3, 4:
 			if err == nil || err.Error() != NewValidateError("assets must be greater than 0").Error() {
 				t.Errorf("[%d] expected error for 0 peg value", version)
 			}
@@ -160,6 +163,9 @@ func TestBaseGradedBlock_Valid(t *testing.T) {
 	})
 	t.Run("V3", func(t *testing.T) {
 		testBaseGradedBlock_valid(t, 3)
+	})
+	t.Run("V4", func(t *testing.T) {
+		testBaseGradedBlock_valid(t, 4)
 	})
 }
 

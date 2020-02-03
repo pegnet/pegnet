@@ -22,7 +22,10 @@ var (
 			if height < FloatingPegPriceActivation {
 				return 2
 			}
-			return 3 // Latest code version
+			if height < V4HeightActivation {
+				return 3
+			}
+			return 4 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
@@ -33,12 +36,16 @@ var (
 		},
 	}
 
+	V2GradingActivation int64 = 210330
+
 	// FloatingPegPriceActivation indicates when to place the PEG price into
 	// the opr record from the floating exchange price.
 	// Estimated to be  Dec 9, 2019, 17:00 UTC
 	FloatingPegPriceActivation int64 = 222270
 
-	V2GradingActivation int64 = 210330
+	// V4HeightActivation indicates the activation of additional currencies and ecdsa keys.
+	// Estimated to be  Feb 12, 2020, 18:00 UTC
+	V4HeightActivation int64 = 231620
 )
 
 // NetworkActive returns true if the network height is above the activation height.

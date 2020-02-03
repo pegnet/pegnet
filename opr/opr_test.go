@@ -46,6 +46,16 @@ func TestOPRTokens(t *testing.T) {
 			t.Errorf("exp %s got %s", token.Code, common.AssetsV2[i])
 		}
 	}
+
+	opr.Version = 4
+	if len(opr.GetTokens()) != len(common.AssetsV4) {
+		t.Errorf("exp %d tokens, found %d", len(common.AssetsV4), len(opr.GetTokens()))
+	}
+	for i, token := range opr.GetTokens() {
+		if token.Code != common.AssetsV4[i] {
+			t.Errorf("exp %s got %s", token.Code, common.AssetsV4[i])
+		}
+	}
 }
 
 func TestOPR_JSON_Marshal(t *testing.T) {

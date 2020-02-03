@@ -21,14 +21,14 @@ import (
 func TestVerifyFunction(t *testing.T) {
 	badOrder := `{"PEG":0, "DCR":0, "USD":0,"EUR":0,"JPY":0,"GBP":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"TWD":0,"KRW":0,"ARS":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0}`
 
-	errs := verifyAssetStringOrder(badOrder, common.AllAssets)
+	errs := verifyAssetStringOrder(badOrder, common.AssetsV1)
 	if len(errs) != 1 {
 		t.Errorf("Expected 1 err, found %d", len(errs))
 	}
 
 	badOrder = `{"PEG":0, "GBP":0, "DCR":0, "USD":0,"EUR":0,"JPY":0,"CAD":0,"CHF":0,"INR":0,"SGD":0,"CNY":0,"HKD":0,"TWD":0,"KRW":0,"ARS":0,"BRL":0,"PHP":0,"MXN":0,"XAU":0,"XAG":0,"XPD":0,"XPT":0,"XBT":0,"ETH":0,"LTC":0,"RVN":0,"XBC":0,"FCT":0,"BNB":0,"XLM":0,"ADA":0,"XMR":0,"DASH":0,"ZEC":0}`
 
-	errs = verifyAssetStringOrder(badOrder, common.AllAssets)
+	errs = verifyAssetStringOrder(badOrder, common.AssetsV1)
 	if len(errs) != 2 {
 		t.Errorf("Expected 2 err, found %d", len(errs))
 	}
@@ -201,6 +201,9 @@ func TestOPRMarshaling(t *testing.T) {
 	})
 	t.Run("version 3", func(t *testing.T) {
 		testOPRMarshaling(t, 3)
+	})
+	t.Run("version 4", func(t *testing.T) {
+		testOPRMarshaling(t, 4)
 	})
 }
 

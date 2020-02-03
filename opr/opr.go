@@ -24,7 +24,7 @@ import (
 	"github.com/pegnet/pegnet/opr/oprencoding"
 	"github.com/pegnet/pegnet/polling"
 	log "github.com/sirupsen/logrus"
-	"github.com/zpatrick/go-config"
+	config "github.com/zpatrick/go-config"
 )
 
 // TODO: Do not make this a global.
@@ -175,6 +175,8 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 	case 2, 3:
 		// It can contain 10 winners when it is a transition record
 		return opr.Assets.ContainsExactly(common.AssetsV2)
+	case 4:
+		return opr.Assets.ContainsExactly(common.AssetsV4)
 	default:
 		return false
 	}
@@ -381,7 +383,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		switch common.OPRVersion(network, int64(dbht)) {
 		case 1:
 			min = 10
-		case 2, 3:
+		case 2, 3, 4:
 			min = 25
 		}
 		opr.WinPreviousOPR = make([]string, min, min)
@@ -493,9 +495,13 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 		opr.Assets["PEG"] = opr.Assets["PNT"]
 		delete(opr.Assets, "PNT")
 		return data, err
-	} else if opr.Version == 2 || opr.Version == 3 {
+	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 {
+		assetList := common.AssetsV2
+		if opr.Version == 4 {
+			assetList = common.AssetsV4
+		}
 		prices := make([]uint64, len(opr.Assets))
-		for i, asset := range common.AssetsV2 {
+		for i, asset := range assetList {
 			prices[i] = opr.Assets[asset]
 		}
 
@@ -545,11 +551,16 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
 		}
 		return nil
-	} else if opr.Version == 2 || opr.Version == 3 {
+	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {
 			return err
+		}
+
+		assetList := common.AssetsV2
+		if opr.Version == 4 {
+			assetList = common.AssetsV4
 		}
 
 		opr.Assets = make(OraclePriceRecordAssetList)
@@ -558,12 +569,12 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		opr.FactomDigitalID = protoOPR.ID
 		opr.Dbht = protoOPR.Height
 
-		if len(protoOPR.Assets) != len(common.AssetsV2) {
-			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(common.AssetsV2))
+		if len(protoOPR.Assets) != len(assetList) {
+			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(assetList))
 		}
 
 		// Hard coded list of assets
-		for i, asset := range common.AssetsV2 {
+		for i, asset := range assetList {
 			opr.Assets[asset] = protoOPR.Assets[i]
 		}
 
