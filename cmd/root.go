@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	"github.com/pegnet/pegnet/api"
-
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/balances"
 	"github.com/pegnet/pegnet/common"
@@ -159,6 +158,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.V2GradingActivation = 0
 		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
 		common.FloatingPegPriceActivation = 0
+		common.V4HeightActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {

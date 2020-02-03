@@ -43,8 +43,9 @@ var (
 	// Estimated to be  Dec 9, 2019, 17:00 UTC
 	FloatingPegPriceActivation int64 = 222270
 
-	// TODO: TBD
-	V4HeightActivation int64 = 999999
+	// V4HeightActivation indicates the activation of additional currencies and ecdsa keys.
+	// Estimated to be  Feb 12, 2020, 18:00 UTC
+	V4HeightActivation int64 = 231620
 )
 
 // NetworkActive returns true if the network height is above the activation height.
