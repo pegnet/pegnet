@@ -268,6 +268,7 @@ func (g *QuickGrader) Sync() error {
 				continue
 			}
 
+			g.TrimBlocks()
 			g.oprBlkLock.Lock()
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
 			err = g.BlockStore.WriteOPRBlock(oprblock)
@@ -567,6 +568,16 @@ func (g *QuickGrader) SendToListeners(winners *OPRs) {
 		}
 	}
 	g.alertsMutex.Unlock()
+}
+
+func (g *QuickGrader) TrimBlocks() {
+	g.oprBlkLock.Lock()
+	defer g.oprBlkLock.Unlock()
+	if len(g.oprBlks) > 2 {
+		for i := 1; i < len(g.oprBlks)-1; i++ {
+			g.oprBlks[i] = nil
+		}
+	}
 }
 
 // oprBlockByHeight returns a single OPRBlock
