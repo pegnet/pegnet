@@ -268,7 +268,9 @@ func (g *QuickGrader) Sync() error {
 				continue
 			}
 
-			g.TrimBlocks()
+			if block.EntryBlock.Header.DBHeight%250 == 0 {
+				g.TrimBlocks()
+			}
 			g.oprBlkLock.Lock()
 			// We add the oprs, and the graded blocks. The next iteration of this loop will use these graded oprs.
 			err = g.BlockStore.WriteOPRBlock(oprblock)
