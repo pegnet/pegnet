@@ -177,6 +177,8 @@ func (opr *OraclePriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return opr.Assets.ContainsExactly(common.AssetsV2)
 	case 4:
 		return opr.Assets.ContainsExactly(common.AssetsV4)
+	case 5:
+		return opr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
 	}
@@ -495,10 +497,13 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 		opr.Assets["PEG"] = opr.Assets["PNT"]
 		delete(opr.Assets, "PNT")
 		return data, err
-	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 {
+	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 || opr.Version == 5 {
 		assetList := common.AssetsV2
 		if opr.Version == 4 {
 			assetList = common.AssetsV4
+		}
+		if opr.Version == 5 {
+			assetList = common.AssetsV5
 		}
 		prices := make([]uint64, len(opr.Assets))
 		for i, asset := range assetList {
@@ -551,7 +556,7 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
 		}
 		return nil
-	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 {
+	} else if opr.Version == 2 || opr.Version == 3 || opr.Version == 4 || opr.Version == 5 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {
@@ -561,6 +566,9 @@ func (opr *OraclePriceRecord) SafeUnmarshal(data []byte) error {
 		assetList := common.AssetsV2
 		if opr.Version == 4 {
 			assetList = common.AssetsV4
+		}
+		if opr.Version == 5 {
+			assetList = common.AssetsV5
 		}
 
 		opr.Assets = make(OraclePriceRecordAssetList)
