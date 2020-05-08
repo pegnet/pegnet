@@ -551,6 +551,246 @@ var coinMarketCapResp = `
                     "last_updated": "2020-01-13T17:17:14.000Z"
                 }
             }
+        },
+		"74": {
+            "id": 74,
+            "name": "Dogecoin",
+            "symbol": "DOGE",
+            "slug": "dogecoin",
+            "num_market_pairs": 233,
+            "date_added": "2013-12-15T00:00:00.000Z",
+            "tags": [
+                "mineable"
+            ],
+            "max_supply": null,
+            "circulating_supply": 124481731530.374,
+            "total_supply": 124481731530.374,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 29,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:03.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.00262333753849,
+                    "volume_24h": 293655177.524912,
+                    "percent_change_1h": 0.0291953,
+                    "percent_change_24h": 2.13404,
+                    "percent_change_7d": 4.78736,
+                    "market_cap": 326557599.1798643,
+                    "last_updated": "2020-05-08T15:30:03.000Z"
+                }
+            }
+        },
+        "1321": {
+            "id": 1321,
+            "name": "Ethereum Classic",
+            "symbol": "ETC",
+            "slug": "ethereum-classic",
+            "num_market_pairs": 245,
+            "date_added": "2016-07-24T00:00:00.000Z",
+            "tags": [
+                "mineable"
+            ],
+            "max_supply": 210700000,
+            "circulating_supply": 116313299,
+            "total_supply": 116313299,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 19,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:05.000Z",
+            "quote": {
+                "USD": {
+                    "price": 7.06374667054,
+                    "volume_24h": 2290155738.91049,
+                    "percent_change_1h": 0.27964,
+                    "percent_change_24h": 1.49811,
+                    "percent_change_7d": 6.57505,
+                    "market_cap": 821607678.5507735,
+                    "last_updated": "2020-05-08T15:30:05.000Z"
+                }
+            }
+        },
+        "1376": {
+            "id": 1376,
+            "name": "Neo",
+            "symbol": "NEO",
+            "slug": "neo",
+            "num_market_pairs": 242,
+            "date_added": "2016-09-08T00:00:00.000Z",
+            "tags": [],
+            "max_supply": 100000000,
+            "circulating_supply": 70538831,
+            "total_supply": 100000000,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 22,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:05.000Z",
+            "quote": {
+                "USD": {
+                    "price": 9.97290591759,
+                    "volume_24h": 844903805.85821,
+                    "percent_change_1h": 0.389377,
+                    "percent_change_24h": 5.13224,
+                    "percent_change_7d": 8.50539,
+                    "market_cap": 703477125.0997809,
+                    "last_updated": "2020-05-08T15:30:05.000Z"
+                }
+            }
+        },
+        "2502": {
+            "id": 2502,
+            "name": "Huobi Token",
+            "symbol": "HT",
+            "slug": "huobi-token",
+            "num_market_pairs": 137,
+            "date_added": "2018-02-03T00:00:00.000Z",
+            "tags": [],
+            "max_supply": null,
+            "circulating_supply": 222668092.971921,
+            "total_supply": 500000000,
+            "platform": {
+                "id": 1027,
+                "name": "Ethereum",
+                "symbol": "ETH",
+                "slug": "ethereum",
+                "token_address": "0x6f259637dcd74c767781e37bc6133cd6a68aa161"
+            },
+            "is_active": 1,
+            "cmc_rank": 18,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:08.000Z",
+            "quote": {
+                "USD": {
+                    "price": 4.19968497626,
+                    "volume_24h": 160251274.110309,
+                    "percent_change_1h": -0.0208536,
+                    "percent_change_24h": 1.52108,
+                    "percent_change_7d": -1.3644,
+                    "market_cap": 935135844.7466416,
+                    "last_updated": "2020-05-08T15:30:08.000Z"
+                }
+            }
+        },
+        "2566": {
+            "id": 2566,
+            "name": "Ontology",
+            "symbol": "ONT",
+            "slug": "ontology",
+            "num_market_pairs": 121,
+            "date_added": "2018-03-08T00:00:00.000Z",
+            "tags": [],
+            "max_supply": null,
+            "circulating_supply": 656746573,
+            "total_supply": 1000000000,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 31,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:08.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.484778206767,
+                    "volume_24h": 111281484.808273,
+                    "percent_change_1h": 1.24602,
+                    "percent_change_24h": 4.54492,
+                    "percent_change_7d": -3.71465,
+                    "market_cap": 318376425.9593127,
+                    "last_updated": "2020-05-08T15:30:08.000Z"
+                }
+            }
+        },
+        "3077": {
+            "id": 3077,
+            "name": "VeChain",
+            "symbol": "VET",
+            "slug": "vechain",
+            "num_market_pairs": 99,
+            "date_added": "2017-08-22T00:00:00.000Z",
+            "tags": [],
+            "max_supply": null,
+            "circulating_supply": 55454734800,
+            "total_supply": 86712634466,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 36,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:10.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.00458254973749,
+                    "volume_24h": 207076472.620976,
+                    "percent_change_1h": 0.0871861,
+                    "percent_change_24h": 5.26156,
+                    "percent_change_7d": 1.60808,
+                    "market_cap": 254124080.40031755,
+                    "last_updated": "2020-05-08T15:30:10.000Z"
+                }
+            }
+        },
+        "3635": {
+            "id": 3635,
+            "name": "Crypto.com Coin",
+            "symbol": "CRO",
+            "slug": "crypto-com-coin",
+            "num_market_pairs": 45,
+            "date_added": "2018-12-14T00:00:00.000Z",
+            "tags": [],
+            "max_supply": null,
+            "circulating_supply": 16603196347.032,
+            "total_supply": 100000000000,
+            "platform": {
+                "id": 1027,
+                "name": "Ethereum",
+                "symbol": "ETH",
+                "slug": "ethereum",
+                "token_address": "0xa0b73e1ff0b80914ab6fe0444e65848c4c34450b"
+            },
+            "is_active": 1,
+            "cmc_rank": 14,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:11.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.0685169026857,
+                    "volume_24h": 7612155.78256728,
+                    "percent_change_1h": 0.973498,
+                    "percent_change_24h": 5.81626,
+                    "percent_change_7d": 17.8782,
+                    "market_cap": 1137599588.3811612,
+                    "last_updated": "2020-05-08T15:30:11.000Z"
+                }
+            }
+        },
+        "4642": {
+            "id": 4642,
+            "name": "Hedera Hashgraph",
+            "symbol": "HBAR",
+            "slug": "hedera-hashgraph",
+            "num_market_pairs": 20,
+            "date_added": "2019-09-17T00:00:00.000Z",
+            "tags": [],
+            "max_supply": null,
+            "circulating_supply": 4077684788,
+            "total_supply": 50000000000,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 44,
+            "is_fiat": 0,
+            "last_updated": "2020-05-08T15:30:14.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.0385473143175,
+                    "volume_24h": 9277591.2046873,
+                    "percent_change_1h": -0.35206,
+                    "percent_change_24h": 1.30547,
+                    "percent_change_7d": -4.07461,
+                    "market_cap": 157183797.21072435,
+                    "last_updated": "2020-05-08T15:30:14.000Z"
+                }
+            }
         }
     }
 }
