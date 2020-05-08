@@ -275,6 +275,9 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	if oprversion == 4 {
 		assets = common.AssetsV4
 	}
+	if oprversion == 5 {
+		assets = common.AssetsV5
+	}
 	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for

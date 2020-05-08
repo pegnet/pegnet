@@ -37,7 +37,8 @@ func (d *CoinCapDataSource) Url() string {
 }
 
 func (d *CoinCapDataSource) SupportedPegs() []string {
-	return append(common.CryptoAssets, common.V4CryptoAdditions...)
+	s := append(common.CryptoAssets, common.V4CryptoAdditions...)
+	return append(s, common.V5CryptoAdditions...)
 }
 
 func (d *CoinCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -144,6 +145,13 @@ var CoinCapIOCryptoAssetNames = map[string]string{
 	"ATOM": "cosmos",
 	"BAT":  "basic-attention-token",
 	"XTZ":  "tezos",
+	// V5 Adds
+	"NEO": 	"neo",
+	"ETC": 	"ethereum-classic",
+	"ONT": 	"ontology",
+	"DOGE": "dogecoin",
+	"VET": 	"vechain",
+	"HT": 	"huobi-token",
 }
 
 func (d CoinCapDataSource) CallCoinCap(config *config.Config) (CoinCapResponse, error) {

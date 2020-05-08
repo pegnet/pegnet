@@ -134,6 +134,72 @@ var V4Assets = []string{
 	"XTZ",
 }
 
+// V5Assets contains the following changes to V4:
+//      * Add CryptoCurrency HBAR
+//      * Add CryptoCurrency NEO
+//      * Add CryptoCurrency AED
+//      * Add CryptoCurrency CRO
+//      * Add CryptoCurrency ETC
+//      * Add CryptoCurrency ONT
+//      * Add CryptoCurrency DOGE
+//      * Add CryptoCurrency VET
+//      * Add CryptoCurrency HT
+var V5Assets = []string{
+	"PEG",
+	"USD",
+	"EUR",
+	"JPY",
+	"GBP",
+	"CAD",
+	"CHF",
+	"INR",
+	"SGD",
+	"CNY",
+	"HKD",
+	"KRW",
+	"BRL",
+	"PHP",
+	"MXN",
+	"XAU",
+	"XAG",
+	"XBT",
+	"ETH",
+	"LTC",
+	"RVN",
+	"XBC",
+	"FCT",
+	"BNB",
+	"XLM",
+	"ADA",
+	"XMR",
+	"DASH",
+	"ZEC",
+	"DCR",
+	"AUD",
+	"NZD",
+	"SEK",
+	"NOK",
+	"RUB",
+	"ZAR",
+	"TRY",
+	"EOS",
+	"LINK",
+	"ATOM",
+	"BAT",
+	"XTZ",
+
+	// New Assets
+	"HBAR",
+	"NEO",
+	"AED",
+	"CRO",
+	"ETC",
+	"ONT",
+	"DOGE",
+	"VET",
+	"HT",
+}
+
 // AssetFloat is an asset holding a float64 value
 type AssetFloat struct {
 	Name  string
