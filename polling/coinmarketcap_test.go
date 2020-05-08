@@ -10,7 +10,7 @@ import (
 //}
 
 func TestFixedCoinMarketCapPeggedAssets(t *testing.T) {
-	FixedDataSourceTest(t, "CoinMarketCap", []byte(coinMarketCapResp))
+	FixedDataSourceTest(t, "CoinMarketCap", []byte(coinMarketCapResp), "AED")
 }
 
 var coinMarketCapResp = `
