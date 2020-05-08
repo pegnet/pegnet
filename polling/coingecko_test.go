@@ -10,7 +10,7 @@ func TestCoinGeckoAssets(t *testing.T) {
 
 // TestFixedCoinGeckoAssets tests all the crypto assets are found on CoinGecko from fixed
 func TestFixedCoinGeckoAssets(t *testing.T) {
-	FixedDataSourceTest(t, "CoinGecko", []byte(coinGeckoData))
+	FixedDataSourceTest(t, "CoinGecko", []byte(coinGeckoData), "AED")
 }
 
 var coinGeckoData = `
