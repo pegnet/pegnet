@@ -25,7 +25,10 @@ var (
 			if height < V4HeightActivation {
 				return 3
 			}
-			return 4 // Latest code version
+			if height < V5HeightActivation {
+				return 4
+			}
+			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
@@ -46,6 +49,10 @@ var (
 	// V4HeightActivation indicates the activation of additional currencies and ecdsa keys.
 	// Estimated to be  Feb 12, 2020, 18:00 UTC
 	V4HeightActivation int64 = 231620
+
+	// V5HeightActivation indicates the activation of additional currencies and ecdsa keys.
+	// Estimated to be  May 11, 2020, 18:00 UTC
+	V5HeightActivation int64 = 244970
 )
 
 // NetworkActive returns true if the network height is above the activation height.

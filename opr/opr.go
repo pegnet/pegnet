@@ -385,7 +385,7 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		switch common.OPRVersion(network, int64(dbht)) {
 		case 1:
 			min = 10
-		case 2, 3, 4:
+		case 2, 3, 4, 5:
 			min = 25
 		}
 		opr.WinPreviousOPR = make([]string, min, min)
