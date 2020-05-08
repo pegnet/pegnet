@@ -371,6 +371,111 @@ var alternativeResp = `
 				}
 			},
 			"last_updated": 1565994302
+		},
+		"1376": {
+			"id": 1376,
+			"name": "NEO",
+			"symbol": "NEO",
+			"website_slug": "neo",
+			"rank": 19,
+			"circulating_supply": 70530000,
+			"total_supply": 100000000,
+			"max_supply": 100000000,
+			"quotes": {
+				"USD": {
+					"price": 9.98032133954241,
+					"volume_24h": 40237941.5453281,
+					"market_cap": 703912064.077926,
+					"percentage_change_1h": -0.33,
+					"percentage_change_24h": 6.09,
+					"percentage_change_7d": 5.74
+				}
+			},
+			"last_updated": 1588932302
+		},
+		"1321": {
+			"id": 1321,
+			"name": "Ethereum Classic",
+			"symbol": "ETC",
+			"website_slug": "ethereum-classic",
+			"rank": 17,
+			"circulating_supply": 116319790,
+			"total_supply": 106701439,
+			"max_supply": 0,
+			"quotes": {
+				"USD": {
+					"price": 6.9859070508268,
+					"volume_24h": 160328737.443072,
+					"market_cap": 818623411.139888,
+					"percentage_change_1h": -0.52,
+					"percentage_change_24h": 0.02,
+					"percentage_change_7d": 4.39
+				}
+			},
+			"last_updated": 1588932302
+		},
+		"2566": {
+			"id": 2566,
+			"name": "Ontology",
+			"symbol": "ONT",
+			"website_slug": "ontology",
+			"rank": 26,
+			"circulating_supply": 637351170,
+			"total_supply": 1000000000,
+			"max_supply": 0,
+			"quotes": {
+				"USD": {
+					"price": 0.484139194750351,
+					"volume_24h": 17755333.6578814,
+					"market_cap": 308566682.216994,
+					"percentage_change_1h": -0.15,
+					"percentage_change_24h": 2.36,
+					"percentage_change_7d": -6.88
+				}
+			},
+			"last_updated": 1588932303
+		},
+		"74": {
+			"id": 74,
+			"name": "Dogecoin",
+			"symbol": "DOGE",
+			"website_slug": "dogecoin",
+			"rank": 23,
+			"circulating_supply": 124467938767.802,
+			"total_supply": 117362440844,
+			"max_supply": 0,
+			"quotes": {
+				"USD": {
+					"price": 0.00262815346808794,
+					"volume_24h": 8790749.92236125,
+					"market_cap": 327120844.938356,
+					"percentage_change_1h": -0.41,
+					"percentage_change_24h": 2.08,
+					"percentage_change_7d": 3.41
+				}
+			},
+			"last_updated": 1588932302
+		},
+		"2502": {
+			"id": 2502,
+			"name": "Huobi Token",
+			"symbol": "HT",
+			"website_slug": "huobi-token",
+			"rank": 16,
+			"circulating_supply": 233370544.971921,
+			"total_supply": 500000000,
+			"max_supply": 0,
+			"quotes": {
+				"USD": {
+					"price": 4.24409139562273,
+					"volume_24h": 21699405.8136545,
+					"market_cap": 990445921.907117,
+					"percentage_change_1h": 0,
+					"percentage_change_24h": 1.4,
+					"percentage_change_7d": -1.94
+				}
+			},
+			"last_updated": 1588932303
 		}
 	},
 	"metadata": {
