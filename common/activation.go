@@ -51,8 +51,8 @@ var (
 	V4HeightActivation int64 = 231620
 
 	// V5HeightActivation indicates the activation of additional currencies and ecdsa keys.
-	// Estimated to be  May 11, 2020, 18:00 UTC
-	V5HeightActivation int64 = 244970
+	// TODO: TBD
+	V5HeightActivation int64 = 999999
 )
 
 // NetworkActive returns true if the network height is above the activation height.
