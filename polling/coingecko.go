@@ -37,8 +37,7 @@ func (d *CoinGeckoDataSource) ApiUrl() string {
 }
 
 func (d *CoinGeckoDataSource) SupportedPegs() []string {
-	V5CryptoAdditions := []string{ "HBAR", "NEO", "CRO", "ETC", "ONT", "DOGE", "VET", "HT" }
-	return common.MergeLists(common.PEGAsset, common.CryptoAssets, common.V4CryptoAdditions, V5CryptoAdditions)
+	return common.MergeLists(common.PEGAsset, common.CryptoAssets, common.V4CryptoAdditions, common.V5CryptoAdditions)
 }
 
 func (d *CoinGeckoDataSource) FetchPegPrices() (peg PegAssets, err error) {
