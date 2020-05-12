@@ -50,7 +50,7 @@ func (d *CoinMarketCapDataSource) ApiUrl() string {
 }
 
 func (d *CoinMarketCapDataSource) SupportedPegs() []string {
-	V5CryptoAdditions := []string{ "CRO", "ETC", "ONT", "DOGE", "VET", "HT" }
+	V5CryptoAdditions := []string{ "HBAR", "NEO", "CRO", "ETC", "ONT", "DOGE", "VET", "HT" }
 	return common.MergeLists(common.CryptoAssets, common.V4CryptoAdditions, common.PEGAsset, V5CryptoAdditions)
 }
 
