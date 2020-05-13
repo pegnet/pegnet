@@ -52,6 +52,7 @@ func (d *OneForgeDataSource) SupportedPegs() []string {
 		[]string{"EUR", "JPY", "GBP", "CAD", "CHF", "SGD", "HKD", "MXN"}, // Original Currencies
 		[]string{"XAU", "XAG"},
 		[]string{"AUD", "NZD", "SEK", "NOK", "RUB", "ZAR", "TRY"}, // V4 Currencies
+		[]string{"AED", "ARS", "TWD"}, // V5 Currencies
 	)
 
 }

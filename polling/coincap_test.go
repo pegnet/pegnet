@@ -8,7 +8,7 @@ import (
 
 // TestCoinCapPeggedAssets tests all the crypto assets are found on coinmarket cap
 func TestCoinCapPeggedAssets(t *testing.T) {
-	ActualDataSourceTest(t, "CoinCap", "HBAR", "AED", "CRO")
+	ActualDataSourceTest(t, "CoinCap")
 }
 
 // TestFixedCoinCapRatesPeggedAssets with fixed resp

@@ -119,10 +119,13 @@ var (
 		"DOGE",
 		"VET",
 		"HT",
+		"ALGO",
 	}
 
 	V5CurrencyAdditions = []string{
 		"AED",
+		"ARS",
+		"TWD",
 	}
 
 	AllAssets = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets, V4CurrencyAdditions, V4CryptoAdditions, V5CryptoAdditions, V5CurrencyAdditions)

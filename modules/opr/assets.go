@@ -137,13 +137,16 @@ var V4Assets = []string{
 // V5Assets contains the following changes to V4:
 //      * Add CryptoCurrency HBAR
 //      * Add CryptoCurrency NEO
-//      * Add CryptoCurrency AED
+//      * Add Currency AED
 //      * Add CryptoCurrency CRO
 //      * Add CryptoCurrency ETC
 //      * Add CryptoCurrency ONT
 //      * Add CryptoCurrency DOGE
 //      * Add CryptoCurrency VET
 //      * Add CryptoCurrency HT
+//      * Add CryptoCurrency ALGO
+//      * Add Currency ARS
+//      * Add Currency TWD
 var V5Assets = []string{
 	"PEG",
 	"USD",
@@ -198,6 +201,9 @@ var V5Assets = []string{
 	"DOGE",
 	"VET",
 	"HT",
+	"ALGO",
+	"ARS",
+	"TWD",
 }
 
 // AssetFloat is an asset holding a float64 value

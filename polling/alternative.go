@@ -73,10 +73,6 @@ func (d *AlternativeMeDataSource) AssetMapping() map[string]int {
 		"ONT": 	2566,
 		"DOGE": 74,
 		"HT": 	2502,
-		//"HBAR": NO HBAR,
-		//"AED":  NO AED,
-		//"CRO":  NO CRO,
-		//"VET":  NO VET,
 	}
 }
 

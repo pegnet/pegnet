@@ -38,7 +38,7 @@ func (d *CoinCapDataSource) Url() string {
 
 func (d *CoinCapDataSource) SupportedPegs() []string {
 	s := append(common.CryptoAssets, common.V4CryptoAdditions...)
-	V5CryptoAdditions := []string{ "NEO", "ETC", "ONT", "DOGE", "VET", "HT" }
+	V5CryptoAdditions := []string{ "NEO", "ETC", "ONT", "DOGE", "VET", "HT", "ALGO" }
 	return append(s, V5CryptoAdditions...)
 }
 
@@ -153,6 +153,7 @@ var CoinCapIOCryptoAssetNames = map[string]string{
 	"DOGE": "dogecoin",
 	"VET": 	"vechain",
 	"HT": 	"huobi-token",
+	"ALGO":	"algorand",
 }
 
 func (d CoinCapDataSource) CallCoinCap(config *config.Config) (CoinCapResponse, error) {
