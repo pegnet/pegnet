@@ -95,5 +95,18 @@ var coincapResp = `{"data":[{"id":"bitcoin","rank":"1","symbol":"BTC","name":"Bi
 		"priceUsd": "4.1941023079372525",
 		"changePercent24Hr": "1.8552986021140738",
 		"vwap24Hr": "4.1850297473325675"
+	},
+	{
+		"id": "algorand",
+		"rank": "40",
+		"symbol": "ALGO",
+		"name": "Algorand",
+		"supply": "708514469.8441000000000000",
+		"maxSupply": null,
+		"marketCapUsd": "137059720.9009309905999386",
+		"volumeUsd24Hr": "9817721.4790420683438338",
+		"priceUsd": "0.1934466079868338",
+		"changePercent24Hr": "-2.5180742989796971",
+		"vwap24Hr": "0.1937739322255232"
 	}
 ],"timestamp":1578961769824}`

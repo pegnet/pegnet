@@ -22,6 +22,7 @@ var coinGeckoData = `
 	"ontology":{"usd":0.483145,"last_updated_at":1578961668},
 	"dogecoin":{"usd":0.00266085,"last_updated_at":1578961668},
 	"vechain":{"usd":0.0045895,"last_updated_at":1578961668},
-	"huobi-token":{"usd":4,"last_updated_at":15789616682}
+	"huobi-token":{"usd":4,"last_updated_at":15789616682},
+	"algorand":{"usd":0.19,"last_updated_at":15789616682}
 }
 `

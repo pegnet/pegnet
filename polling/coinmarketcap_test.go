@@ -791,6 +791,36 @@ var coinMarketCapResp = `
                     "last_updated": "2020-05-08T15:30:14.000Z"
                 }
             }
+        },
+		"4030": {
+            "id": 4030,
+            "name": "Algorand",
+            "symbol": "ALGO",
+            "slug": "algorand",
+            "num_market_pairs": 83,
+            "date_added": "2019-06-20T00:00:00.000Z",
+            "tags": [
+                "mineable"
+            ],
+            "max_supply": null,
+            "circulating_supply": 708570138.818224,
+            "total_supply": 3239841981.81822,
+            "is_active": 1,
+            "platform": null,
+            "cmc_rank": 49,
+            "is_fiat": 0,
+            "last_updated": "2020-05-13T19:52:13.000Z",
+            "quote": {
+                "USD": {
+                    "price": 0.194391876846,
+                    "volume_24h": 31300045.720028,
+                    "percent_change_1h": 0.384152,
+                    "percent_change_24h": -0.768105,
+                    "percent_change_7d": -5.3003,
+                    "market_cap": 137740279.16190532,
+                    "last_updated": "2020-05-13T19:52:13.000Z"
+                }
+            }
         }
     }
 }
