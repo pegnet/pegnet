@@ -8,8 +8,30 @@ import (
 )
 
 const (
-	// PEG allocated per block for conversions (not including the bank)
-	PerBlock uint64 = 5000 * 1e8
+
+	// 1. Block reward for current miners
+	PerBlockCurrentMiners = 5000 * 1e8
+
+	// 2 past miners / PIP 14
+	PerBlockPastMiners = 4000 * 1e8
+
+	// 3 pAsset holders as the arb reward / PIP 12
+	PerBlockAssetHolders = 4500 * 1e8
+
+	// 4 PEG Stakers adding oracle prices / PIP 13
+	PerBlockStakers = 4500 * 1e8
+
+	// 5 developers as directed by PEG Stakers / PIP 16.
+	PerBlockDevelopers = 2000 * 1e8
+
+	// Total PEG allocated per block for conversions (not including the bank)
+	// NB: in PegNet v1.0 PerBlock 5000 * 1e8
+	PerBlock uint64 = PerBlockCurrentMiners +
+		          PerBlockPastMiners +
+		          PerBlockAssetHolders +
+		          PerBlockStakers +
+		          PerBlockDevelopers
+
 )
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
