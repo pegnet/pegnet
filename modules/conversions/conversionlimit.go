@@ -27,11 +27,10 @@ const (
 	// Total PEG allocated per block for conversions (not including the bank)
 	// NB: in PegNet v1.0 PerBlock 5000 * 1e8
 	PerBlock uint64 = PerBlockCurrentMiners +
-		          PerBlockPastMiners +
-		          PerBlockAssetHolders +
-		          PerBlockStakers +
-		          PerBlockDevelopers
-
+		PerBlockPastMiners +
+		PerBlockAssetHolders +
+		PerBlockStakers +
+		PerBlockDevelopers
 )
 
 // ConversionSupplySet indicates the total amount of PEG allowed to be converted
