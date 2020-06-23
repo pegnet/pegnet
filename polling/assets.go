@@ -346,25 +346,16 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 
 		if price.Value != 0 {
 			prices = append(prices, price)
-
-			// We can break out if this is a 'good' price
-			//	Is it stale AND the market is open? We can expect stale quotes in a closed market
-			if reference.Sub(price.When) > d.staleDuration && IsMarketOpen(asset, reference) {
-				// This price quote is stale, keep fetching prices
-				continue
-			}
-
-			// This price is acceptable, we can exit
-			pa = price
-			return pa, nil
 		}
 	}
 
-	// If we got here, that means that there might exist some price quotes from
-	// our data sources, but they are all stale. Instead of taking the most recent price
-	// quote, we will take the highest priority quote given our data-source order.
+	// Get trimmed mean from all enabled prices
+	// https://www.investopedia.com/terms/t/trimmed_mean.asp
 	if len(prices) > 0 {
-		pa = prices[0]
+		sort.Slice(prices, func(i, j int) bool {
+			return prices[i].Value < prices[j].Value
+		})
+		pa = prices[len(prices) / 2]
 		return pa, nil
 	}
 
