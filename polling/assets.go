@@ -349,8 +349,10 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		}
 	}
 
-	// Get trimmed mean from all enabled prices
+	// Get the correct price from the idea of trimmed mean among the all enabled prices
 	// https://www.investopedia.com/terms/t/trimmed_mean.asp
+	// Medium price will eliminate the influence of outliers or data points on the tails that
+	// may unfairly affect the traditional mean.
 	if len(prices) > 0 {
 		sort.Slice(prices, func(i, j int) bool {
 			return prices[i].Value < prices[j].Value
