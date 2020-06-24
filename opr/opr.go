@@ -461,7 +461,6 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 
 // SafeMarshal will marshal the json depending on the opr version
 func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
-	fmt.Println("[SafeMarshal]")
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return nil, fmt.Errorf("opr version is 0")

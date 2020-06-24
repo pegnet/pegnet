@@ -159,7 +159,6 @@ MiningLoop:
 				mining = true
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
-				//fmt.Println("[oprTemplate]:", oprTemplate)
 				if err == context.Canceled {
 					mining = false
 					continue MiningLoop // OPR cancelled
