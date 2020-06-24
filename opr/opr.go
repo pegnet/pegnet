@@ -370,6 +370,8 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 		return nil, winners.Error
 	}
 
+	//fmt.Println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!winners:", winners)
+
 	// For the transition, we need to support a 10 winner opr.
 	// The winner's should be correct from our grader, so we will accept it
 	if len(winners.ToBePaid) > 0 {
@@ -423,6 +425,9 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 // GetOPRecord initializes the OPR with polling data and factom entry
 func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
+	fmt.Println("[GetOPRecord]")
+	//return errors.New("Your prices are out of tollerance band. Please switch to another API.")
+
 	InitDataSource(c) // Kinda odd to have this here.
 	//get asset values
 	Peg, err := PollingDataSource.PullAllPEGAssets(opr.Version)
@@ -443,6 +448,7 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 // CreateOPREntry will create the entry from the EXISITING data.
 // It will not set any fields like in `GetOPRecord`
 func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*factom.Entry, error) {
+	fmt.Println("[CreateOPREntry]")
 	var err error
 	e := new(factom.Entry)
 
@@ -460,6 +466,7 @@ func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*
 
 // SafeMarshal will marshal the json depending on the opr version
 func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
+	fmt.Println("[SafeMarshal]")
 	// our opr version must be set before entering this
 	if opr.Version == 0 {
 		return nil, fmt.Errorf("opr version is 0")
@@ -514,6 +521,9 @@ func (opr *OraclePriceRecord) SafeMarshal() ([]byte, error) {
 				return nil, err
 			}
 		}
+
+		//fmt.Println("[Before Encoding...] prices:", prices)
+		//fmt.Println("[Before Encoding...] winners:", winners)
 
 		// Version 2 uses Protobufs for encoding
 		pOpr := &oprencoding.ProtoOPR{

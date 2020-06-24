@@ -153,6 +153,7 @@ GatherListLoop:
 
 // writeMiningRecord writes an opr and it's nonce to the blockchain
 func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
+	//fmt.Println("[writeMiningRecord]")
 	if w.oprTemplate == nil {
 		return fmt.Errorf("no opr template")
 	}

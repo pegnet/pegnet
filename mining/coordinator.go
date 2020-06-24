@@ -121,6 +121,7 @@ func (c *MiningCoordinator) LaunchMiners(ctx context.Context) {
 	first := false
 	mineLog.Info("Miners launched. Waiting for minute 1 to start mining...")
 	mining := false
+	staking := false
 MiningLoop:
 	for {
 		var fds common.MonitorEvent
@@ -158,6 +159,7 @@ MiningLoop:
 				mining = true
 				// Need to get an OPR record
 				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
+				//fmt.Println("[oprTemplate]:", oprTemplate)
 				if err == context.Canceled {
 					mining = false
 					continue MiningLoop // OPR cancelled
@@ -195,6 +197,14 @@ MiningLoop:
 				buf := make([]byte, 8)
 				binary.BigEndian.PutUint64(buf, oprTemplate.MinimumDifficulty)
 				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new OPR")
+
+			}
+
+			if !staking {
+				staking = true
+
+				// Need to get an OPR record
+				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
 
 			}
 		case 9:

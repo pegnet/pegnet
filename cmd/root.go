@@ -94,8 +94,11 @@ var RootCmd = &cobra.Command{
 		// This is a blocking call
 		coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
 
-		// Calling cancel() will cancel the stat tracker collection AND the miners
-		var _, _ = cancel, coord
+		// This is a blocking call
+		coord_s := LaunchStaker(Config, ctx, monitor)
+
+		// Calling cancel() will cancel the stat tracker collection AND the miners, staker
+		var _, _, _ = cancel, coord, coord_s
 	},
 }
 

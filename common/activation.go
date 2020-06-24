@@ -16,15 +16,15 @@ var (
 	GradingHeights = map[string]func(height int64) uint8{
 		MainNetwork: func(height int64) uint8 {
 			// Version 1 deprecates on block 210330
-			if height < V2GradingActivation { // V1 ends at 210330 on MainNet
-				return 1
-			}
-			if height < FloatingPegPriceActivation {
-				return 2
-			}
-			if height < V4HeightActivation {
-				return 3
-			}
+			//if height < V2GradingActivation { // V1 ends at 210330 on MainNet
+			//	return 1
+			//}
+			//if height < FloatingPegPriceActivation {
+			//	return 2
+			//}
+			//if height < V4HeightActivation {
+			//	return 3
+			//}
 			return 4 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
@@ -51,9 +51,9 @@ var (
 // NetworkActive returns true if the network height is above the activation height.
 // If we are below it, the network is not yet active.
 func NetworkActive(network string, height int64) bool {
-	if min, ok := ActivationHeights[network]; ok {
-		return height >= min
-	}
+	//if min, ok := ActivationHeights[network]; ok {
+	//	return height >= min
+	//}
 	// Not a network we know of? Default to active.
 	return true
 }
