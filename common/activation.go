@@ -36,6 +36,16 @@ var (
 		},
 	}
 
+	// StakingHeights indicates the SPR version, which dictates the SPR format.
+	StakingHeights = map[string]func(height int64) uint8{
+		MainNetwork: func(height int64) uint8 {
+			return 0 // Latest code version
+		},
+		TestNetwork: func(height int64) uint8 {
+			return 0
+		},
+	}
+
 	V2GradingActivation int64 = 210330
 
 	// FloatingPegPriceActivation indicates when to place the PEG price into
@@ -46,6 +56,10 @@ var (
 	// V4HeightActivation indicates the activation of additional currencies and ecdsa keys.
 	// Estimated to be  Feb 12, 2020, 18:00 UTC
 	V4HeightActivation int64 = 231620
+
+	// V20HeightActivation indicates the activation of PegNet 2.0.
+	// Estimated to be  XXXX XXXX XXXX
+	V20HeightActivation int64 = 999999
 )
 
 // NetworkActive returns true if the network height is above the activation height.
@@ -54,7 +68,7 @@ func NetworkActive(network string, height int64) bool {
 	if min, ok := ActivationHeights[network]; ok {
 		return height >= min
 	}
-	// Not a network we know of? Default to active.
+	//Not a network we know of? Default to active.
 	return true
 }
 
@@ -63,6 +77,12 @@ func NetworkActive(network string, height int64) bool {
 // algo to use and the OPR format.
 func OPRVersion(network string, height int64) uint8 {
 	return GradingHeights[network](height)
+}
+
+// SPRVersion returns the SPR version for a given height and network.
+// If an SPR has a different version, it is invalid. The version dictates the SPR format.
+func SPRVersion(network string, height int64) uint8 {
+	return StakingHeights[network](height)
 }
 
 // SetTestingHeight is used for unit test
