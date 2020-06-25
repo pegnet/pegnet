@@ -52,7 +52,7 @@ type Token struct {
 // NewSpr collects all the information unique to this staker and its configuration, and also
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this SPR
-func NewSpr(ctx context.Context, dbht int32, c *config.Config, alert chan *SPRs) (spr *StakingPriceRecord, err error) {
+func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPriceRecord, err error) {
 	spr = NewOraclePriceRecord()
 	return spr, nil
 }

@@ -2,6 +2,7 @@ package staking
 
 import (
 	"context"
+	"fmt"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/spr"
 	log "github.com/sirupsen/logrus"
@@ -62,7 +63,58 @@ func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
 	var sprTemplate *spr.StakingPriceRecord
 	var sprHash []byte
 
-	c.Staker.Stake(ctx)
+	// Launch
+	c.Staker.Staker.Stake(ctx)
+
+	first := false
+	stakeLog.Info("Staker launched. Waiting for minute 1 to start staking...")
+	staking := false
+StakingLoop:
+	for {
+		var fds common.MonitorEvent
+		select {
+		case fds = <-alert:
+		case <-ctx.Done(): // If cancelled
+			return
+		}
+
+		hLog := stakeLog.WithFields(log.Fields{
+			"height": fds.Dbht,
+			"minute": fds.Minute,
+		})
+		if !first {
+			// On the first minute log how far away to mining
+			hLog.Infof("On minute %d. %d minutes until minute 1 before staking starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			first = true
+		}
+
+		hLog.Debug("Staker received alert")
+		switch fds.Minute {
+		case 1:
+			// First check if we have the funds to mine
+			bal, err := c.FactomEntryWriter.ECBalance()
+			if err != nil {
+				hLog.WithError(err).WithField("action", "balance-query").Error("failed to stake this block")
+				continue StakingLoop // SPR cancelled
+			}
+			if bal == 0 {
+				hLog.WithError(fmt.Errorf("entry credit balance is 0")).WithField("action", "balance-query").Error("will not stake, out of entry credits")
+				continue StakingLoop // SPR cancelled
+			}
+
+			if !staking {
+				staking = true
+
+				// Need to get an OPR record
+				sprTemplate, err = c.SPRMaker.NewSPR(ctx, fds.Dbht, c.config)
+
+			}
+		case 8:
+			if staking {
+				staking = false
+			}
+		}
+	}
 }
 
 type ControlledStaker struct {

@@ -9,7 +9,7 @@ import (
 )
 
 type ISPRMaker interface {
-	NewSPR(ctx context.Context, dbht int32, config *config.Config, alert chan *spr.SPRs) (*spr.StakingPriceRecord, error)
+	NewSPR(ctx context.Context, dbht int32, config *config.Config) (*spr.StakingPriceRecord, error)
 }
 
 // SPRMaker
@@ -22,8 +22,8 @@ func NewSPRMaker() *SPRMaker {
 	return o
 }
 
-func (SPRMaker) NewSPR(ctx context.Context, dbht int32, config *config.Config, alert chan *spr.SPRs) (*spr.StakingPriceRecord, error) {
-	return spr.NewSpr(ctx, dbht, config, alert)
+func (SPRMaker) NewSPR(ctx context.Context, dbht int32, config *config.Config) (*spr.StakingPriceRecord, error) {
+	return spr.NewSpr(ctx, dbht, config)
 }
 
 type BlockingSPRMaker struct {
