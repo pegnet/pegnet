@@ -128,9 +128,8 @@ StakingLoop:
 
 				command := BuildCommand().
 					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
-					ResetRecords().                  // Reset the miner's stats/difficulty/etc
-					NewSPRHash(sprHash).             // New OPR hash to mine
-					ResumeStaking().                 // Start mining
+					NewSPRHash(sprHash).             // New SPR hash to mine
+					ResumeStaking().                 // Start staking
 					Build()
 
 				c.Staker.SendCommand(command)
@@ -190,11 +189,6 @@ func BuildCommand() *CommandBuilder {
 
 func (b *CommandBuilder) NewSPRHash(sprhash []byte) *CommandBuilder {
 	b.commands = append(b.commands, &StakerCommand{Command: NewSPRHash, Data: sprhash})
-	return b
-}
-
-func (b *CommandBuilder) ResetRecords() *CommandBuilder {
-	b.commands = append(b.commands, &StakerCommand{Command: ResetRecords, Data: nil})
 	return b
 }
 

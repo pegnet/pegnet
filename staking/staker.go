@@ -16,7 +16,6 @@ const (
 	RecordsToKeep
 	RecordAggregator
 
-	ResetRecords
 	PauseStaking
 	ResumeStaking
 )
