@@ -101,6 +101,7 @@ func (w *EntryWriter) CollectAndWrite(blocking bool) {
 
 // collectAndWrite is idempotent
 func (w *EntryWriter) collectAndWrite() {
+	fmt.Println("[collectAndWrite] $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
 	//	var aggregate []*opr.NonceRanking
 	//GatherListLoop:
 	//	for { // Collect all the miner submissions

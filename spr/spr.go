@@ -104,8 +104,6 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false
 	}
 
-	fmt.Println("$$$$$$", spr.Version, spr.Assets)
-
 	// Validate there are no 0's
 	for k, v := range spr.Assets {
 		if v == 0 {
@@ -114,19 +112,19 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 		}
 	}
 
-	// Only enforce on version 2 and forward
-	if err := common.ValidIdentity(spr.FactomDigitalID); err != nil {
-		return false
-	}
+	//// Only enforce on version 2 and forward
+	//if err := common.ValidIdentity(spr.FactomDigitalID); err != nil {
+	//	return false
+	//}
+	//
+	//// Only enforce on version 2 and forward, checking valid FCT address
+	//if !ValidFCTAddress(spr.CoinbaseAddress) {
+	//	return false
+	//}
 
-	// Only enforce on version 2 and forward, checking valid FCT address
-	if !ValidFCTAddress(spr.CoinbaseAddress) {
-		return false
-	}
-
-	if int64(spr.Dbht) != dbht {
-		return false // DBHeight is not reported correctly
-	}
+	//if int64(spr.Dbht) != dbht {
+	//	return false // DBHeight is not reported correctly
+	//}
 
 	// Validate all the Assets exists
 	return spr.Assets.ContainsExactly(common.AssetsV4)

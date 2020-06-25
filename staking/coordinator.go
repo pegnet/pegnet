@@ -143,6 +143,16 @@ StakingLoop:
 			if staking {
 				staking = false
 				fmt.Println("Minute 8 for Staker")
+
+				command := BuildCommand().
+					PauseStaking(). // Pause mining until further notice
+					Build()
+
+				// Need to send to staker
+				c.Staker.SendCommand(command)
+
+				// Write to blockchain (this is non blocking)
+				c.FactomEntryWriter.CollectAndWrite(false)
 			}
 		}
 	}
