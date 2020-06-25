@@ -2,6 +2,7 @@ package staking
 
 import (
 	"context"
+	"encoding/binary"
 	"fmt"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/spr"
@@ -119,6 +120,31 @@ StakingLoop:
 
 				// Get the SPRHash for miners to mine.
 				sprHash = sprTemplate.GetHash()
+
+				// The consolidator that will write to the blockchain
+				c.FactomEntryWriter = c.FactomEntryWriter.NextBlockWriter()
+				c.FactomEntryWriter.SetOPR(sprTemplate)
+
+				// We aggregate mining stats per block
+				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
+
+				command := BuildCommand().
+					Aggregator(c.FactomEntryWriter).                  // New aggregate per block. Writes the top X records
+					StatsAggregator(statsAggregate).                  // Stat collection per block
+					ResetRecords().                                   // Reset the miner's stats/difficulty/etc
+					NewOPRHash(oprHash).                              // New OPR hash to mine
+					MinimumDifficulty(oprTemplate.MinimumDifficulty). // Floor difficulty to use
+					ResumeMining().                                   // Start mining
+					Build()
+
+				// Need to send to our miners
+				for _, m := range c.Miners {
+					m.SendCommand(command)
+				}
+
+				buf := make([]byte, 8)
+				binary.BigEndian.PutUint64(buf, oprTemplate.MinimumDifficulty)
+				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new OPR")
 			}
 		case 8:
 			if staking {

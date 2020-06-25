@@ -3,36 +3,32 @@ package staking
 import (
 	"errors"
 	"fmt"
+	"github.com/pegnet/pegnet/spr"
 	"sync"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr"
-	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
 type IEntryWriter interface {
 	PopulateECAddress() error
 	NextBlockWriter() IEntryWriter
-	AddMiner() chan<- *opr.NonceRanking
-	SetOPR(opr *opr.OraclePriceRecord)
+	SetSPR(spr *spr.StakingPriceRecord)
 	CollectAndWrite(blocking bool)
 	ECBalance() (int64, error)
 }
 
-// EntryWriter writes the best OPRs to factom once all the mining is done
+// EntryWriter writes the best SPRs to factom once all the staking is done
 type EntryWriter struct {
 	Keep int
-	// We need an opr template to make the entries
-	oprTemplate *opr.OraclePriceRecord
+	// We need an spr template to make the entries
+	sprTemplate *spr.StakingPriceRecord
 
 	ec     *factom.ECAddress
 	config *config.Config
-
-	minerLists chan *opr.NonceRanking
-	miners     int
 
 	Next *EntryWriter
 
@@ -45,9 +41,8 @@ type EntryWriter struct {
 func NewEntryWriter(config *config.Config, keep int) *EntryWriter {
 	w := new(EntryWriter)
 	w.Keep = keep
-	w.minerLists = make(chan *opr.NonceRanking, keep)
 	w.config = config
-	w.EntryWritingFunction = w.writeMiningRecord
+	w.EntryWritingFunction = w.writeStakingRecord
 
 	return w
 }
@@ -58,7 +53,7 @@ func (w *EntryWriter) ECBalance() (int64, error) {
 
 // PopulateECAddress only needs to be called once
 func (w *EntryWriter) PopulateECAddress() error {
-	// Get the Entry Credit Address that we need to write our OPR records.
+	// Get the Entry Credit Address that we need to write our SPR records.
 	if ecadrStr, err := w.config.String("Miner.ECAddress"); err != nil {
 		return err
 	} else {
@@ -83,22 +78,12 @@ func (w *EntryWriter) NextBlockWriter() IEntryWriter {
 	return w.Next
 }
 
-// AddMiner will add a miner to listen to for this block, and return the channel they
-// should talk to us on.
-func (w *EntryWriter) AddMiner() chan<- *opr.NonceRanking {
+// SetSPR is here because we need an spr to create the entry.
+func (w *EntryWriter) SetSPR(spr *spr.StakingPriceRecord) {
 	w.Lock()
 	defer w.Unlock()
-
-	w.miners++
-	return w.minerLists
-}
-
-// SetOPR is here because we need an opr to create the entry.
-func (w *EntryWriter) SetOPR(opr *opr.OraclePriceRecord) {
-	w.Lock()
-	defer w.Unlock()
-	if w.oprTemplate == nil {
-		w.oprTemplate = opr.CloneEntryData()
+	if w.sprTemplate == nil {
+		w.sprTemplate = spr.CloneEntryData()
 	}
 }
 
@@ -116,50 +101,50 @@ func (w *EntryWriter) CollectAndWrite(blocking bool) {
 
 // collectAndWrite is idempotent
 func (w *EntryWriter) collectAndWrite() {
-	var aggregate []*opr.NonceRanking
-GatherListLoop:
-	for { // Collect all the miner submissions
-		select {
-		case list := <-w.minerLists:
-			aggregate = append(aggregate, list)
-			if len(aggregate) == w.miners {
-				break GatherListLoop
-			}
-		}
-	}
-
-	// Merge miner submissions
-	final := opr.MergeNonceRankings(w.Keep, aggregate...)
-	nonces := final.GetNonces()
-	for _, u := range nonces {
-		err := w.EntryWritingFunction(u) // Write to blockchain
-		if err != nil {
-			log.WithError(err).Error("Failed to write mining record")
-		}
-	}
-
-	dbht := int32(-1)
-	if w.oprTemplate != nil {
-		dbht = w.oprTemplate.Dbht
-	}
-
-	log.WithFields(log.Fields{
-		"miner_count": w.miners,
-		"height":      dbht,
-		"exp_records": w.Keep,
-		"records":     len(nonces),
-	}).Info("OPR Block Mined")
+	//	var aggregate []*opr.NonceRanking
+	//GatherListLoop:
+	//	for { // Collect all the miner submissions
+	//		select {
+	//		case list := <-w.minerLists:
+	//			aggregate = append(aggregate, list)
+	//			if len(aggregate) == w.miners {
+	//				break GatherListLoop
+	//			}
+	//		}
+	//	}
+	//
+	//	// Merge miner submissions
+	//	final := opr.MergeNonceRankings(w.Keep, aggregate...)
+	//	nonces := final.GetNonces()
+	//	for _, u := range nonces {
+	//		err := w.EntryWritingFunction(u) // Write to blockchain
+	//		if err != nil {
+	//			log.WithError(err).Error("Failed to write mining record")
+	//		}
+	//	}
+	//
+	//	dbht := int32(-1)
+	//	if w.sprTemplate != nil {
+	//		dbht = w.sprTemplate.Dbht
+	//	}
+	//
+	//	log.WithFields(log.Fields{
+	//		"miner_count": w.miners,
+	//		"height":      dbht,
+	//		"exp_records": w.Keep,
+	//		"records":     len(nonces),
+	//	}).Info("OPR Block Mined")
 }
 
-// writeMiningRecord writes an opr and it's nonce to the blockchain
-func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
-	if w.oprTemplate == nil {
-		return fmt.Errorf("no opr template")
+// writeStakingRecord writes an spr and it's nonce to the blockchain
+func (w *EntryWriter) writeStakingRecord(unique *opr.UniqueOPRData) error {
+	if w.sprTemplate == nil {
+		return fmt.Errorf("no spr template")
 	}
 
 	operation := func() error {
 		var err1, err2 error
-		entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce, unique.Difficulty)
+		entry, err := w.sprTemplate.CreateSPREntry(unique.Nonce, unique.Difficulty)
 		if err != nil {
 			return err
 		}
@@ -183,11 +168,11 @@ func (w *EntryWriter) writeMiningRecord(unique *opr.UniqueOPRData) error {
 
 // Cancel will cancel a miner's write. If the miner was stopped, we should not expect his write
 func (w *EntryWriter) Cancel() {
-	w.miners--
-	w.minerLists <- nil
+	//w.miners--
+	//w.minerLists <- nil
 }
 
-// EntryForwarder is a wrapper for network based miners to rely on a coordinator to write entries
+// EntryForwarder is a wrapper for network based stakers to rely on a coordinator to write entries
 type EntryForwarder struct {
 	*EntryWriter
 	Next *EntryForwarder
@@ -199,7 +184,7 @@ func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *facto
 	n := new(EntryForwarder)
 	n.EntryWriter = NewEntryWriter(config, keep)
 	n.entryChannel = entryChannel
-	n.EntryWritingFunction = n.forwardMiningRecord
+	n.EntryWritingFunction = n.forwardStakingRecord
 
 	return n
 
@@ -221,12 +206,12 @@ func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
 	return w.Next
 }
 
-func (w *EntryForwarder) forwardMiningRecord(unique *opr.UniqueOPRData) error {
-	if w.oprTemplate == nil {
-		return fmt.Errorf("no opr template")
+func (w *EntryForwarder) forwardStakingRecord(unique *opr.UniqueOPRData) error {
+	if w.sprTemplate == nil {
+		return fmt.Errorf("no spr template")
 	}
 
-	entry, err := w.oprTemplate.CreateOPREntry(unique.Nonce, unique.Difficulty)
+	entry, err := w.sprTemplate.CreateSPREntry(unique.Nonce, unique.Difficulty)
 	if err != nil {
 		return err
 	}
