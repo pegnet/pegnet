@@ -104,9 +104,12 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false
 	}
 
+	fmt.Println("$$$$$$", spr.Version, spr.Assets)
+
 	// Validate there are no 0's
-	for _, v := range spr.Assets {
+	for k, v := range spr.Assets {
 		if v == 0 {
+			fmt.Println("[error]:", k, v)
 			return false
 		}
 	}
@@ -210,13 +213,6 @@ func (spr *StakingPriceRecord) LogFieldsShort() log.Fields {
 // SetPegValues assigns currency polling values to the SPR
 func (spr *StakingPriceRecord) SetPegValues(assets polling.PegAssets) {
 	for asset, v := range assets {
-		if asset == "PEG" {
-			if spr.Version <= 2 {
-				// PEG is 0 until v3
-				spr.Assets.SetValueFromUint64(asset, 0)
-				continue
-			}
-		}
 		spr.Assets.SetValue(asset, v.Value)
 	}
 }
