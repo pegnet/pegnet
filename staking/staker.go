@@ -14,7 +14,9 @@ const (
 	BatchCommand
 	NewSPRHash
 	RecordsToKeep
+	RecordAggregator
 
+	ResetRecords
 	PauseStaking
 	ResumeStaking
 )

@@ -123,28 +123,20 @@ StakingLoop:
 
 				// The consolidator that will write to the blockchain
 				c.FactomEntryWriter = c.FactomEntryWriter.NextBlockWriter()
-				c.FactomEntryWriter.SetOPR(sprTemplate)
-
-				// We aggregate mining stats per block
-				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
+				c.FactomEntryWriter.SetSPR(sprTemplate)
 
 				command := BuildCommand().
-					Aggregator(c.FactomEntryWriter).                  // New aggregate per block. Writes the top X records
-					StatsAggregator(statsAggregate).                  // Stat collection per block
-					ResetRecords().                                   // Reset the miner's stats/difficulty/etc
-					NewOPRHash(oprHash).                              // New OPR hash to mine
-					MinimumDifficulty(oprTemplate.MinimumDifficulty). // Floor difficulty to use
-					ResumeMining().                                   // Start mining
+					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
+					ResetRecords().                  // Reset the miner's stats/difficulty/etc
+					NewSPRHash(sprHash).             // New OPR hash to mine
+					ResumeStaking().                 // Start mining
 					Build()
 
-				// Need to send to our miners
-				for _, m := range c.Miners {
-					m.SendCommand(command)
-				}
+				c.Staker.SendCommand(command)
 
 				buf := make([]byte, 8)
-				binary.BigEndian.PutUint64(buf, oprTemplate.MinimumDifficulty)
-				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new OPR")
+				binary.BigEndian.PutUint64(buf, sprTemplate.MinimumDifficulty)
+				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new SPR")
 			}
 		case 8:
 			if staking {
@@ -189,6 +181,11 @@ func (b *CommandBuilder) NewSPRHash(sprhash []byte) *CommandBuilder {
 	return b
 }
 
+func (b *CommandBuilder) ResetRecords() *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: ResetRecords, Data: nil})
+	return b
+}
+
 func (b *CommandBuilder) PauseStaking() *CommandBuilder {
 	b.commands = append(b.commands, &StakerCommand{Command: PauseStaking, Data: nil})
 	return b
@@ -197,4 +194,14 @@ func (b *CommandBuilder) PauseStaking() *CommandBuilder {
 func (b *CommandBuilder) ResumeStaking() *CommandBuilder {
 	b.commands = append(b.commands, &StakerCommand{Command: ResumeStaking, Data: nil})
 	return b
+}
+
+func (b *CommandBuilder) Aggregator(w IEntryWriter) *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: RecordAggregator, Data: w})
+	return b
+}
+
+func (b *CommandBuilder) Build() *StakerCommand {
+	b.command.Data = b.commands
+	return b.command
 }
