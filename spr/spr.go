@@ -105,23 +105,19 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 	}
 
 	// Validate there are no 0's
-	for k, v := range spr.Assets {
+	for _, v := range spr.Assets {
 		if v == 0 {
-			// PEG is exception until v3
-			if spr.Version <= 2 && k == "PEG" {
-				continue
-			}
 			return false
 		}
 	}
 
 	// Only enforce on version 2 and forward
-	if err := common.ValidIdentity(spr.FactomDigitalID); spr.Version > 1 && err != nil {
+	if err := common.ValidIdentity(spr.FactomDigitalID); err != nil {
 		return false
 	}
 
 	// Only enforce on version 2 and forward, checking valid FCT address
-	if spr.Version > 1 && !ValidFCTAddress(spr.CoinbaseAddress) {
+	if !ValidFCTAddress(spr.CoinbaseAddress) {
 		return false
 	}
 
@@ -129,25 +125,8 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 		return false // DBHeight is not reported correctly
 	}
 
-	if spr.Version != common.OPRVersion(net, int64(dbht)) {
-		return false // We only support this version
-	}
-
 	// Validate all the Assets exists
-	switch spr.Version {
-	case 1:
-		if len(spr.WinPreviousOPR) != 10 {
-			return false
-		}
-		return spr.Assets.ContainsExactly(common.AssetsV1)
-	case 2, 3:
-		// It can contain 10 winners when it is a transition record
-		return spr.Assets.ContainsExactly(common.AssetsV2)
-	case 4:
-		return spr.Assets.ContainsExactly(common.AssetsV4)
-	default:
-		return false
-	}
+	return spr.Assets.ContainsExactly(common.AssetsV4)
 }
 
 // ValidFCTAddress will be removed in the grading module refactor. This is just temporary to get this
