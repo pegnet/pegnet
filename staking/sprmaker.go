@@ -4,61 +4,61 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/pegnet/pegnet/opr"
+	"github.com/pegnet/pegnet/spr"
 	"github.com/zpatrick/go-config"
 )
 
 type ISPRMaker interface {
-	NewOPR(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *opr.OPRs) (*opr.OraclePriceRecord, error)
+	NewSPR(ctx context.Context, dbht int32, config *config.Config, alert chan *spr.SPRs) (*spr.StakingPriceRecord, error)
 }
 
-// OPRMaker
+// SPRMaker
 // TODO: Should we change this at all?
-type OPRMaker struct {
+type SPRMaker struct {
 }
 
-func NewOPRMaker() *OPRMaker {
-	o := new(OPRMaker)
+func NewSPRMaker() *SPRMaker {
+	o := new(SPRMaker)
 	return o
 }
 
-func (OPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *opr.OPRs) (*opr.OraclePriceRecord, error) {
-	return opr.NewOpr(ctx, minerNumber, dbht, config, alert)
+func (SPRMaker) NewSPR(ctx context.Context, dbht int32, config *config.Config, alert chan *spr.SPRs) (*spr.StakingPriceRecord, error) {
+	return spr.NewSpr(ctx, dbht, config, alert)
 }
 
-type BlockingOPRMaker struct {
-	n chan *opr.OraclePriceRecord
+type BlockingSPRMaker struct {
+	n chan *spr.StakingPriceRecord
 }
 
-func NewBlockingOPRMaker() *BlockingOPRMaker {
-	b := new(BlockingOPRMaker)
-	b.n = make(chan *opr.OraclePriceRecord, 5)
+func NewBlockingSPRMaker() *BlockingSPRMaker {
+	b := new(BlockingSPRMaker)
+	b.n = make(chan *spr.StakingPriceRecord, 5)
 	return b
 }
 
 // Drain everything from the channels
-func (b *BlockingOPRMaker) Drain() {
-ClearOPRChannel:
+func (b *BlockingSPRMaker) Drain() {
+ClearSPRChannel:
 	for { // Drain anything remaining or return the height that matches
 		select {
 		case <-b.n:
 		default:
-			break ClearOPRChannel
+			break ClearSPRChannel
 		}
 	}
 }
 
-func (b *BlockingOPRMaker) RecOPR(opr *opr.OraclePriceRecord) {
-	b.n <- opr
+func (b *BlockingSPRMaker) RecSPR(spr *spr.StakingPriceRecord) {
+	b.n <- spr
 }
 
-func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int32, config *config.Config, alert chan *opr.OPRs) (*opr.OraclePriceRecord, error) {
+func (b *BlockingSPRMaker) NewSPR(ctx context.Context, dbht int32, config *config.Config, alert chan *spr.SPRs) (*spr.StakingPriceRecord, error) {
 	o := <-b.n
 	if o == nil {
-		return nil, fmt.Errorf("opr failed to be created")
+		return nil, fmt.Errorf("spr failed to be created")
 	}
 	if o.Dbht != dbht {
-	DrainOPRLoop:
+	DrainSPRLoop:
 		for { // Drain anything remaining or return the height that matches
 			select {
 			case o := <-b.n:
@@ -66,7 +66,7 @@ func (b *BlockingOPRMaker) NewOPR(ctx context.Context, minerNumber int, dbht int
 					return o, nil
 				}
 			default:
-				break DrainOPRLoop
+				break DrainSPRLoop
 			}
 		}
 		return nil, fmt.Errorf("not the right height, exp %d found %d. %d in queue.", dbht, o.Dbht, len(b.n))
