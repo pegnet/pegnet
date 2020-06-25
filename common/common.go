@@ -53,6 +53,7 @@ const (
 	TransactionChainTag = "Transactions"
 	MinerChainTag       = "Miners"
 	OPRChainTag         = "OraclePriceRecords"
+	SPRChainTag         = "StakingPriceRecords"
 )
 
 var (

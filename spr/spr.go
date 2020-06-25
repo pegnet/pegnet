@@ -3,7 +3,6 @@ package spr
 import (
 	"context"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"sync"
@@ -37,7 +36,7 @@ type StakingPriceRecord struct {
 	Difficulty         uint64  `json:"-"` // The difficulty of the given nonce
 	Grade              float64 `json:"-"` // The grade when OPR records are compared
 	SPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	OPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
+	SPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
 	CoinbasePEGAddress string  `json:"-"` // [base58]  PEG Address to pay PEG
 
 	// This can be attached to an OPR, which indicates how low we should expect a mined
@@ -71,7 +70,7 @@ func NewStakingPriceRecord() *StakingPriceRecord {
 //	This needs to be done because I need to marshal this into my factom entry.
 func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
 	n := NewStakingPriceRecord()
-	n.OPRChainID = c.OPRChainID
+	n.SPRChainID = c.SPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
 	n.WinPreviousOPR = make([]string, len(c.WinPreviousOPR), len(c.WinPreviousOPR))
@@ -220,6 +219,7 @@ func (spr *StakingPriceRecord) SetPegValues(assets polling.PegAssets) {
 // puts their entry hashes (base58) into this SPR
 func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPriceRecord, err error) {
 	spr = NewStakingPriceRecord()
+	spr.SPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{"PegNet", "MainNet", common.SPRChainTag}))
 
 	err = spr.GetSPRecord(c)
 	if err != nil {
@@ -258,18 +258,22 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 
 // CreateSPREntry will create the entry from the EXISITING data.
 // It will not set any fields like in `GetSPRecord`
-func (opr *StakingPriceRecord) CreateSPREntry(nonce []byte, difficulty uint64) (*factom.Entry, error) {
-	fmt.Println("[CreateSPREntry]")
+func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	var err error
 	e := new(factom.Entry)
 
-	buf := make([]byte, 8)
-	binary.BigEndian.PutUint64(buf, difficulty)
+	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
+	fmt.Println("e.ChainID:", e.ChainID)
 
-	e.ChainID = hex.EncodeToString(base58.Decode(opr.OPRChainID))
-	e.ExtIDs = [][]byte{nonce, buf, {opr.Version}}
-	e.Content, err = opr.SafeMarshal()
+	//ExtIDs:
+	//	1) version byte (byte, default 0)
+	//	2) RCD of the payout address
+	//	3) signature covering [ExtID]
+	e.ExtIDs = [][]byte{{}, {}, {spr.Version}}
+
+	e.Content, err = spr.SafeMarshal()
 	if err != nil {
+		fmt.Println("error:", err)
 		return nil, err
 	}
 	return e, nil

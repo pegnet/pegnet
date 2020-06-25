@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"github.com/pegnet/pegnet/spr"
+	log "github.com/sirupsen/logrus"
 	"sync"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
-	"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
 )
 
@@ -21,7 +21,7 @@ type IEntryWriter interface {
 	ECBalance() (int64, error)
 }
 
-// EntryWriter writes the best SPRs to factom once all the staking is done
+// EntryWriter writes the SPRs to factom once the staking is done
 type EntryWriter struct {
 	Keep int
 	// We need an spr template to make the entries
@@ -32,7 +32,7 @@ type EntryWriter struct {
 
 	Next *EntryWriter
 
-	EntryWritingFunction func(unique *opr.UniqueOPRData) error
+	EntryWritingFunction func() error
 
 	sync.Mutex
 	sync.Once
@@ -101,51 +101,32 @@ func (w *EntryWriter) CollectAndWrite(blocking bool) {
 
 // collectAndWrite is idempotent
 func (w *EntryWriter) collectAndWrite() {
-	fmt.Println("[collectAndWrite] $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$")
-	//	var aggregate []*opr.NonceRanking
-	//GatherListLoop:
-	//	for { // Collect all the miner submissions
-	//		select {
-	//		case list := <-w.minerLists:
-	//			aggregate = append(aggregate, list)
-	//			if len(aggregate) == w.miners {
-	//				break GatherListLoop
-	//			}
-	//		}
-	//	}
-	//
-	//	// Merge miner submissions
-	//	final := opr.MergeNonceRankings(w.Keep, aggregate...)
-	//	nonces := final.GetNonces()
-	//	for _, u := range nonces {
-	//		err := w.EntryWritingFunction(u) // Write to blockchain
-	//		if err != nil {
-	//			log.WithError(err).Error("Failed to write mining record")
-	//		}
-	//	}
-	//
-	//	dbht := int32(-1)
-	//	if w.sprTemplate != nil {
-	//		dbht = w.sprTemplate.Dbht
-	//	}
-	//
-	//	log.WithFields(log.Fields{
-	//		"miner_count": w.miners,
-	//		"height":      dbht,
-	//		"exp_records": w.Keep,
-	//		"records":     len(nonces),
-	//	}).Info("OPR Block Mined")
+	err := w.EntryWritingFunction() // Write to blockchain
+	if err != nil {
+		log.WithError(err).Error("Failed to write staking record")
+		return
+	}
+
+	dbht := int32(-1)
+	if w.sprTemplate != nil {
+		dbht = w.sprTemplate.Dbht
+	}
+
+	log.WithFields(log.Fields{
+		"height":      dbht,
+		"exp_records": w.Keep,
+	}).Info("SPR Block Mined")
 }
 
 // writeStakingRecord writes an spr and it's nonce to the blockchain
-func (w *EntryWriter) writeStakingRecord(unique *opr.UniqueOPRData) error {
+func (w *EntryWriter) writeStakingRecord() error {
 	if w.sprTemplate == nil {
 		return fmt.Errorf("no spr template")
 	}
 
 	operation := func() error {
 		var err1, err2 error
-		entry, err := w.sprTemplate.CreateSPREntry(unique.Nonce, unique.Difficulty)
+		entry, err := w.sprTemplate.CreateSPREntry()
 		if err != nil {
 			return err
 		}
@@ -207,12 +188,12 @@ func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
 	return w.Next
 }
 
-func (w *EntryForwarder) forwardStakingRecord(unique *opr.UniqueOPRData) error {
+func (w *EntryForwarder) forwardStakingRecord() error {
 	if w.sprTemplate == nil {
 		return fmt.Errorf("no spr template")
 	}
 
-	entry, err := w.sprTemplate.CreateSPREntry(unique.Nonce, unique.Difficulty)
+	entry, err := w.sprTemplate.CreateSPREntry()
 	if err != nil {
 		return err
 	}
