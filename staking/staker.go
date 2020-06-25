@@ -74,7 +74,7 @@ func (p *PegnetStaker) Stake(ctx context.Context) {
 	for {
 		select {
 		case <-ctx.Done():
-			return // Mining cancelled
+			return // Staking cancelled
 		case c := <-p.commands:
 			p.HandleCommand(c)
 		default:

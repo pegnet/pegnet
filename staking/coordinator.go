@@ -105,9 +105,20 @@ StakingLoop:
 			if !staking {
 				staking = true
 
-				// Need to get an OPR record
+				// Need to get an SPR record
 				sprTemplate, err = c.SPRMaker.NewSPR(ctx, fds.Dbht, c.config)
+				if err == context.Canceled {
+					staking = false
+					continue StakingLoop // SPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to stake this block")
+					staking = false
+					continue StakingLoop // SPR cancelled
+				}
 
+				// Get the SPRHash for miners to mine.
+				sprHash = sprTemplate.GetHash()
 			}
 		case 8:
 			if staking {

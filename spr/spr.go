@@ -36,12 +36,35 @@ type StakingPriceRecord struct {
 	Assets StakingPriceRecordAssetList `json:"assets"`
 }
 
-func NewOraclePriceRecord() *StakingPriceRecord {
+func NewStakingPriceRecord() *StakingPriceRecord {
 	o := new(StakingPriceRecord)
 	o.Assets = make(StakingPriceRecordAssetList)
 
 	return o
 }
+
+// CloneEntryData will clone the SPR data needed to make a factom entry.
+//	This needs to be done because I need to marshal this into my factom entry.
+func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
+	n := NewStakingPriceRecord()
+	n.OPRChainID = c.OPRChainID
+	n.Dbht = c.Dbht
+	n.Version = c.Version
+	n.WinPreviousOPR = make([]string, len(c.WinPreviousOPR), len(c.WinPreviousOPR))
+	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
+	n.CoinbaseAddress = c.CoinbaseAddress
+	n.CoinbasePEGAddress = c.CoinbasePEGAddress
+
+	n.FactomDigitalID = c.FactomDigitalID
+	n.Assets = make(StakingPriceRecordAssetList)
+	for k, v := range c.Assets {
+		n.Assets[k] = v
+	}
+	return n
+}
+
+// SPRChainID is the calculated chain id of the records chain
+var SPRChainID string
 
 // Token is a combination of currency Code and Value
 type Token struct {
@@ -53,6 +76,6 @@ type Token struct {
 // goes and gets the oracle data.  Also collects the winners from the prior block and
 // puts their entry hashes (base58) into this SPR
 func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPriceRecord, err error) {
-	spr = NewOraclePriceRecord()
+	spr = NewStakingPriceRecord()
 	return spr, nil
 }
