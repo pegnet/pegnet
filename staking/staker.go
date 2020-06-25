@@ -9,6 +9,12 @@ import (
 
 const (
 	_ = iota
+	BatchCommand
+	NewSPRHash
+	ResetRecords
+
+	PauseStaking
+	ResumeStaking
 )
 
 type StakerCommand struct {
@@ -50,4 +56,3 @@ func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *Staker
 
 	return p
 }
-

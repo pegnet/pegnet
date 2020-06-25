@@ -56,7 +56,7 @@ func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
 }
 
 type ControlledStaker struct {
-	Staker          *PegnetStaker
+	Staker         *PegnetStaker
 	CommandChannel chan *StakerCommand
 }
 
@@ -66,4 +66,41 @@ func (c *StakingCoordinator) NewStaker(id int) *ControlledStaker {
 	m.Staker = NewPegnetStakerFromConfig(c.config, id, channel)
 	m.CommandChannel = channel
 	return m
+}
+
+func (c *ControlledStaker) SendCommand(command *StakerCommand) {
+	c.CommandChannel <- command
+}
+
+// CommandBuilder just let's me use building syntax to build commands
+type CommandBuilder struct {
+	command  *StakerCommand
+	commands []*StakerCommand
+}
+
+func BuildCommand() *CommandBuilder {
+	c := new(CommandBuilder)
+	c.command = new(StakerCommand)
+	c.command.Command = BatchCommand
+	return c
+}
+
+func (b *CommandBuilder) NewSPRHash(sprhash []byte) *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: NewSPRHash, Data: sprhash})
+	return b
+}
+
+func (b *CommandBuilder) ResetRecords() *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: ResetRecords, Data: nil})
+	return b
+}
+
+func (b *CommandBuilder) PauseStaking() *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: PauseStaking, Data: nil})
+	return b
+}
+
+func (b *CommandBuilder) ResumeStaking() *CommandBuilder {
+	b.commands = append(b.commands, &StakerCommand{Command: ResumeStaking, Data: nil})
+	return b
 }
