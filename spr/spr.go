@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -325,62 +324,32 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 	return proto.Marshal(pOpr)
 }
 
-// SafeMarshal will unmarshal the json depending on the opr version
+// SafeMarshal will unmarshal the json
 func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
-	// our opr version must be set before entering this
-	if spr.Version == 0 {
-		return fmt.Errorf("opr version is 0")
+	protoOPR := oprencoding.ProtoOPR{}
+	err := proto.Unmarshal(data, &protoOPR)
+	if err != nil {
+		return err
 	}
 
-	// If version 1, we need to json unmarshal and swap PNT and PEG
-	if spr.Version == 1 {
-		err := json.Unmarshal(data, spr)
-		if err != nil {
-			return err
-		}
+	assetList := common.AssetsV4
+	spr.Assets = make(StakingPriceRecordAssetList)
+	// Populate the original opr
+	spr.CoinbaseAddress = protoOPR.Address
+	spr.FactomDigitalID = protoOPR.ID
+	spr.Dbht = protoOPR.Height
 
-		if v, ok := spr.Assets["PNT"]; ok {
-			spr.Assets["PEG"] = v
-			delete(spr.Assets, "PNT")
-		} else {
-			return fmt.Errorf("exp version 1 to have 'PNT', but it did not")
-		}
-		return nil
-	} else if spr.Version == 2 || spr.Version == 3 || spr.Version == 4 {
-		protoOPR := oprencoding.ProtoOPR{}
-		err := proto.Unmarshal(data, &protoOPR)
-		if err != nil {
-			return err
-		}
-
-		assetList := common.AssetsV2
-		if spr.Version == 4 {
-			assetList = common.AssetsV4
-		}
-
-		spr.Assets = make(StakingPriceRecordAssetList)
-		// Populate the original opr
-		spr.CoinbaseAddress = protoOPR.Address
-		spr.FactomDigitalID = protoOPR.ID
-		spr.Dbht = protoOPR.Height
-
-		if len(protoOPR.Assets) != len(assetList) {
-			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(assetList))
-		}
-
-		// Hard coded list of assets
-		for i, asset := range assetList {
-			spr.Assets[asset] = protoOPR.Assets[i]
-		}
-
-		// Decode winners
-		spr.WinPreviousOPR = make([]string, len(protoOPR.Winners), len(protoOPR.Winners))
-		for i, winner := range protoOPR.Winners {
-			spr.WinPreviousOPR[i] = hex.EncodeToString(winner)
-		}
-
-		return nil
+	if len(protoOPR.Assets) != len(assetList) {
+		return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(assetList))
 	}
 
-	return fmt.Errorf("opr version %d not supported", spr.Version)
+	// Hard coded list of assets
+	for i, asset := range assetList {
+		spr.Assets[asset] = protoOPR.Assets[i]
+	}
+
+	// Decode winners
+	spr.WinPreviousOPR = nil
+
+	return nil
 }
