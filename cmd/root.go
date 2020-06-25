@@ -92,13 +92,14 @@ var RootCmd = &cobra.Command{
 		var _ = apiserver
 
 		// This is a blocking call
-		coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
+		//coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
 
 		// This is a blocking call
 		coord_s := LaunchStaker(Config, ctx, monitor)
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners, staker
-		var _, _, _ = cancel, coord, coord_s
+		//var _, _, _ = cancel, coord, coord_s
+		var _, _ = cancel, coord_s
 	},
 }
 

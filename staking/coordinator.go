@@ -57,6 +57,7 @@ func (c *StakingCoordinator) InitStaker() error {
 }
 
 func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
+	fmt.Println("[LaunchStaker()]")
 	stakeLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	alert := c.FactomMonitor.NewListener()
@@ -65,7 +66,7 @@ func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
 	var sprHash []byte
 
 	// Launch
-	c.Staker.Staker.Stake(ctx)
+	go c.Staker.Staker.Stake(ctx)
 
 	first := false
 	stakeLog.Info("Staker launched. Waiting for minute 1 to start staking...")
@@ -105,6 +106,7 @@ StakingLoop:
 
 			if !staking {
 				staking = true
+				fmt.Println("Minute 1 for Staker")
 
 				// Need to get an SPR record
 				sprTemplate, err = c.SPRMaker.NewSPR(ctx, fds.Dbht, c.config)
@@ -141,6 +143,7 @@ StakingLoop:
 		case 8:
 			if staking {
 				staking = false
+				fmt.Println("Minute 8 for Staker")
 			}
 		}
 	}
