@@ -16,10 +16,10 @@ type StakingCoordinator struct {
 	FactomMonitor common.IMonitor
 	//OPRGrader     opr.IGrader
 
-	// Staker generates the opr hashes
+	// Staker generates the spr hashes
 	Staker *ControlledStaker
 
-	// FactomEntryWriter writes the oprs to chain
+	// FactomEntryWriter writes the sprs to chain
 	FactomEntryWriter IEntryWriter
 
 	// Used when going over the network
@@ -35,7 +35,7 @@ func NewStakingCoordinatorFromConfig(config *config.Config, monitor common.IMoni
 		panic(err)
 	}
 
-	//c.OPRMaker = NewOPRMaker()
+	c.SPRMaker = NewSPRMaker()
 
 	c.FactomEntryWriter = NewEntryWriter(config, k)
 	err = c.FactomEntryWriter.PopulateECAddress()
