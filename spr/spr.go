@@ -303,74 +303,26 @@ func (opr *StakingPriceRecord) CreateSPREntry(nonce []byte, difficulty uint64) (
 
 // SafeMarshal will marshal the json depending on the opr version
 func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
-	// our opr version must be set before entering this
-	if spr.Version == 0 {
-		return nil, fmt.Errorf("opr version is 0")
-	}
-
-	// This function relies on the assets, so check up front
 	if spr.Assets == nil {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	// When we marshal a version 1 opr, we need to change PEG -> PNT
-	// No opr in the code should ever have 'PNT'. We only use PNT in the marshal
-	// function, no where else.
-	if _, ok := spr.Assets["PNT"]; ok {
-		return nil, fmt.Errorf("this opr has asset 'PNT', it should have 'PEG'")
+	assetList := common.AssetsV4
+	prices := make([]uint64, len(spr.Assets))
+
+	for i, asset := range assetList {
+		prices[i] = spr.Assets[asset]
 	}
 
-	// Version 1 we json marshal and
-	// do the swap of PEG -> PNT
-	if spr.Version == 1 {
-		spr.Assets["PNT"] = spr.Assets["PEG"]
-		delete(spr.Assets, "PEG")
-
-		// This is a known key that will be removed by the marshal json function. It indicates
-		// to the marshaler that it was called from a safe path. This is not the cleanest method,
-		// but to override the json function, and still use the default, it would require an odd
-		// structure nesting and a lot of code changes
-		spr.Assets["version"] = uint64(spr.Version)
-		data, err := json.Marshal(spr)
-		delete(spr.Assets, "version") // Should be deleted by the json.Marshal, but that can error out
-
-		// Revert the swap
-		spr.Assets["PEG"] = spr.Assets["PNT"]
-		delete(spr.Assets, "PNT")
-		return data, err
-	} else if spr.Version == 2 || spr.Version == 3 || spr.Version == 4 {
-		assetList := common.AssetsV2
-		if spr.Version == 4 {
-			assetList = common.AssetsV4
-		}
-		prices := make([]uint64, len(spr.Assets))
-		for i, asset := range assetList {
-			prices[i] = spr.Assets[asset]
-		}
-
-		// Decode winners into byte slice
-		var err error
-		winners := make([][]byte, len(spr.WinPreviousOPR))
-		for i, winner := range spr.WinPreviousOPR {
-			winners[i], err = hex.DecodeString(winner)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		// Version 2 uses Protobufs for encoding
-		pOpr := &oprencoding.ProtoOPR{
-			Address: spr.CoinbaseAddress,
-			ID:      spr.FactomDigitalID,
-			Height:  spr.Dbht,
-			Assets:  prices,
-			Winners: winners,
-		}
-
-		return proto.Marshal(pOpr)
+	pOpr := &oprencoding.ProtoOPR{
+		Address: spr.CoinbaseAddress,
+		ID:      spr.FactomDigitalID,
+		Height:  spr.Dbht,
+		Assets:  prices,
+		Winners: nil,
 	}
 
-	return nil, fmt.Errorf("opr version %d not supported", spr.Version)
+	return proto.Marshal(pOpr)
 }
 
 // SafeMarshal will unmarshal the json depending on the opr version

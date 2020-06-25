@@ -57,7 +57,6 @@ func (c *StakingCoordinator) InitStaker() error {
 }
 
 func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
-	fmt.Println("[LaunchStaker()]")
 	stakeLog := log.WithFields(log.Fields{"id": "coordinator"})
 
 	alert := c.FactomMonitor.NewListener()
