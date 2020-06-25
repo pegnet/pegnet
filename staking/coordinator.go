@@ -3,6 +3,9 @@ package staking
 import (
 	"context"
 	"github.com/pegnet/pegnet/common"
+	"github.com/pegnet/pegnet/spr"
+	log "github.com/sirupsen/logrus"
+
 	//"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
 )
@@ -52,7 +55,14 @@ func (c *StakingCoordinator) InitStaker() error {
 }
 
 func (c *StakingCoordinator) LaunchStaker(ctx context.Context) {
+	stakeLog := log.WithFields(log.Fields{"id": "coordinator"})
 
+	alert := c.FactomMonitor.NewListener()
+
+	var sprTemplate *spr.StakingPriceRecord
+	var sprHash []byte
+
+	c.Staker.Stake(ctx)
 }
 
 type ControlledStaker struct {
@@ -87,11 +97,6 @@ func BuildCommand() *CommandBuilder {
 
 func (b *CommandBuilder) NewSPRHash(sprhash []byte) *CommandBuilder {
 	b.commands = append(b.commands, &StakerCommand{Command: NewSPRHash, Data: sprhash})
-	return b
-}
-
-func (b *CommandBuilder) ResetRecords() *CommandBuilder {
-	b.commands = append(b.commands, &StakerCommand{Command: ResetRecords, Data: nil})
 	return b
 }
 

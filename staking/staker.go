@@ -4,6 +4,8 @@
 package staking
 
 import (
+	"context"
+	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
 
@@ -11,7 +13,7 @@ const (
 	_ = iota
 	BatchCommand
 	NewSPRHash
-	ResetRecords
+	RecordsToKeep
 
 	PauseStaking
 	ResumeStaking
@@ -55,4 +57,67 @@ func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *Staker
 	p.StakingState.keep, _ = p.Config.Int("Staker.RecordsPerBlock")
 
 	return p
+}
+
+func (p *PegnetStaker) Stake(ctx context.Context) {
+	stakeLog := log.WithFields(log.Fields{"staker": p.ID})
+	var _ = stakeLog
+	select {
+	// Wait for the first command to start
+	// We start 'paused'. Any command will knock us out of this init phase
+	case c := <-p.commands:
+		p.HandleCommand(c)
+	case <-ctx.Done():
+		return // Cancelled
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			return // Mining cancelled
+		case c := <-p.commands:
+			p.HandleCommand(c)
+		default:
+		}
+
+		if p.paused {
+			// Waiting on a resume command
+			p.waitForResume(ctx)
+			continue
+		}
+	}
+}
+
+func (p *PegnetStaker) HandleCommand(c *StakerCommand) {
+	switch c.Command {
+	case BatchCommand:
+		commands := c.Data.([]*StakerCommand)
+		for _, c := range commands {
+			p.HandleCommand(c)
+		}
+	case NewSPRHash:
+		p.StakingState.sprhash = c.Data.([]byte)
+	case RecordsToKeep:
+		p.StakingState.keep = c.Data.(int)
+	case PauseStaking:
+		// Pause until we get a new start
+		p.paused = true
+	case ResumeStaking:
+		p.paused = false
+	}
+}
+
+func (p *PegnetStaker) waitForResume(ctx context.Context) {
+	// Pause until we get a new start or are cancelled
+	for {
+		select {
+		case <-ctx.Done(): // Mining cancelled
+			return
+		case c := <-p.commands:
+			p.HandleCommand(c)
+			if !p.paused {
+				return
+			}
+		}
+	}
 }
