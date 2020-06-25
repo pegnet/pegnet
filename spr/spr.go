@@ -265,8 +265,10 @@ func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPric
 // GetSPRecord initializes the SPR with polling data and factom entry
 func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
+
+	oprVersion := 4
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets(spr.Version)
+	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(oprVersion))
 	if err != nil {
 		return err
 	}
