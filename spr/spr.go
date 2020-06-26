@@ -256,10 +256,9 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	var err error
 	e := new(factom.Entry)
-
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
-	fmt.Println("e.ChainID:", e.ChainID)
 
+	//  Todo: verify every options
 	//	ExtIDs:
 	//		version byte (byte, default 0)
 	//		RCD of the payout address

@@ -443,7 +443,6 @@ func (opr *OraclePriceRecord) GetOPRecord(c *config.Config) error {
 // CreateOPREntry will create the entry from the EXISITING data.
 // It will not set any fields like in `GetOPRecord`
 func (opr *OraclePriceRecord) CreateOPREntry(nonce []byte, difficulty uint64) (*factom.Entry, error) {
-	fmt.Println("[CreateOPREntry]")
 	var err error
 	e := new(factom.Entry)
 
