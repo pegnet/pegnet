@@ -227,7 +227,11 @@ func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPric
 func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
 
-	oprVersion := 4
+	oprVersion := 1
+	if spr.Version == 0 {
+		oprVersion = 4
+	}
+
 	//get asset values
 	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(oprVersion))
 	if err != nil {
