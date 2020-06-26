@@ -118,7 +118,7 @@ func (w *EntryWriter) collectAndWrite() {
 	}).Info("SPR Block Staked")
 }
 
-// writeStakingRecord writes an spr and it's nonce to the blockchain
+// writeStakingRecord writes an spr to the blockchain
 func (w *EntryWriter) writeStakingRecord() error {
 	if w.sprTemplate == nil {
 		return fmt.Errorf("no spr template")
@@ -169,7 +169,6 @@ func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *facto
 	n.EntryWritingFunction = n.forwardStakingRecord
 
 	return n
-
 }
 
 // ECBalance is always positive, the coordinator will stop us staking if he runs out

@@ -9,7 +9,7 @@ import (
 	"github.com/pegnet/pegnet/common"
 )
 
-// OraclePriceRecordAssetList is used such that the marshaling of the assets
+// StakingPriceRecordAssetList is used such that the marshaling of the assets
 // is in the same order, and we still can use map access in the code
 type StakingPriceRecordAssetList map[string]uint64
 

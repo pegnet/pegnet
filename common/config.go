@@ -27,6 +27,9 @@ const (
 	ConfigCoinbaseAddress = "Miner.CoinbaseAddress"
 	ConfigPegnetNetwork   = "Miner.Network"
 
+	ConfigCoinbaseStakeAddress = "Staker.CoinbaseAddress"
+	ConfigPegnetStakeNetwork   = "Staker.Network"
+
 	ConfigCoinMarketCapKey = "Oracle.CoinMarketCapKey"
 	Config1ForgeKey        = "Oracle.1ForgeKey"
 

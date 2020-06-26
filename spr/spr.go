@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sync"
 
@@ -30,33 +31,22 @@ func InitDataSource(config *config.Config) {
 
 // StakingPriceRecord is the data used and created by staker
 type StakingPriceRecord struct {
-	// These fields are not part of the OPR, but track values associated with the OPR.
+	// These fields are not part of the SPR, but track values associated with the SPR.
 	Protocol           string  `json:"-"` // The Protocol we are running on (PegNet)
 	Network            string  `json:"-"` // The network we are running on (TestNet vs MainNet)
-	Difficulty         uint64  `json:"-"` // The difficulty of the given nonce
-	Grade              float64 `json:"-"` // The grade when OPR records are compared
-	SPRHash            []byte  `json:"-"` // The hash of the OPR record (used by PegNet Mining)
-	SPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Miners
+	Grade              float64 `json:"-"` // The grade when SPR records are compared
+	SPRHash            []byte  `json:"-"` // The hash of the SPR record (used by PegNet Staking)
+	SPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Stakers
 	CoinbasePEGAddress string  `json:"-"` // [base58]  PEG Address to pay PEG
 
-	// This can be attached to an OPR, which indicates how low we should expect a mined
-	// opr to be. Any OPRs mined below this are not worth submitting to the network.
-	MinimumDifficulty uint64 `json:"-"`
-
 	// Factom Entry data
-	EntryHash              []byte `json:"-"` // Entry to record this record
-	Nonce                  []byte `json:"-"` // Nonce used with OPR
-	SelfReportedDifficulty []byte `json:"-"` // Miners self report their difficulty
-	Version                uint8  `json:"-"`
+	EntryHash []byte `json:"-"` // Entry to record this record
+	Version   uint8  `json:"-"`
 
-	// These values define the context of the OPR, and they go into the PegNet OPR record, and are mined.
-	CoinbaseAddress string   `json:"coinbase"` // [base58]  PEG Address to pay PEG
-	Dbht            int32    `json:"dbht"`     //           The Directory Block Height of the OPR.
-	WinPreviousOPR  []string `json:"winners"`  // First 8 bytes of the Entry Hashes of the previous winners
-	FactomDigitalID string   `json:"minerid"`  // [unicode] Digital Identity of the miner
-
-	// The Oracle values of the OPR, they are the meat of the OPR record, and are mined.
-	Assets StakingPriceRecordAssetList `json:"assets"`
+	// These values define the context of the SPR, and they go into the PegNet SPR record, and are staked.
+	CoinbaseAddress string                      `json:"coinbase"` // [base58]  PEG Address to pay PEG
+	Dbht            int32                       `json:"dbht"`     //           The Directory Block Height of the SPR.
+	Assets          StakingPriceRecordAssetList `json:"assets"`   // The Oracle values of the SPR, they are the meat of the SPR record, and are staked.
 }
 
 func NewStakingPriceRecord() *StakingPriceRecord {
@@ -74,12 +64,9 @@ func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
 	n.SPRChainID = c.SPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
-	n.WinPreviousOPR = make([]string, len(c.WinPreviousOPR), len(c.WinPreviousOPR))
-	copy(n.WinPreviousOPR[:], c.WinPreviousOPR[:])
 	n.CoinbaseAddress = c.CoinbaseAddress
 	n.CoinbasePEGAddress = c.CoinbasePEGAddress
 
-	n.FactomDigitalID = c.FactomDigitalID
 	n.Assets = make(StakingPriceRecordAssetList)
 	for k, v := range c.Assets {
 		n.Assets[k] = v
@@ -97,9 +84,9 @@ type Token struct {
 }
 
 // Validate performs sanity checks of the structure and values of the SPR.
-// It does not validate the winners of the previous block.
 func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
-	//Entries are valid if:
+	// Todo: enable validation here after initialization
+	//	Entries are valid if:
 	//	1) The height matches the block's height
 	//	2) The payout address matches the RCD
 	//	3) The signature is verified
@@ -117,22 +104,14 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 			return false
 		}
 	}
+	// Only enforce on version 2 and forward, checking valid FCT address
+	if !ValidFCTAddress(spr.CoinbaseAddress) {
+		return false
+	}
 
-	// Todo: enable validation here after initialization
-
-	//// Only enforce on version 2 and forward
-	//if err := common.ValidIdentity(spr.FactomDigitalID); err != nil {
-	//	return false
-	//}
-	//
-	//// Only enforce on version 2 and forward, checking valid FCT address
-	//if !ValidFCTAddress(spr.CoinbaseAddress) {
-	//	return false
-	//}
-
-	//if int64(spr.Dbht) != dbht {
-	//	return false // DBHeight is not reported correctly
-	//}
+	if int64(spr.Dbht) != dbht {
+		return false // DBHeight is not reported correctly
+	}
 
 	// Validate all the Assets exists
 	return spr.Assets.ContainsExactly(common.AssetsV4)
@@ -165,42 +144,18 @@ func (spr *StakingPriceRecord) GetHash() []byte {
 
 // ShortString returns a human readable string with select data
 func (opr *StakingPriceRecord) ShortString() string {
-	str := fmt.Sprintf("DID %30x SPRHash %30x Nonce %33x Difficulty %15x Grade %20f",
-		opr.FactomDigitalID,
+	str := fmt.Sprintf("SPRHash %30x Grade %20f",
 		opr.SPRHash,
-		opr.Nonce,
-		opr.Difficulty,
 		opr.Grade)
 	return str
 }
 
 // String returns a human readable string for the Oracle Record
 func (spr *StakingPriceRecord) String() (str string) {
-	str = fmt.Sprintf("Nonce %x\n", spr.Nonce)
-	str = str + fmt.Sprintf("%32s %v\n", "Difficulty", spr.Difficulty)
-	str = str + fmt.Sprintf("%32s %v\n", "Directory Block Height", spr.Dbht)
-	str = str + fmt.Sprintf("%32s %v\n", "WinningPreviousOPRs", "")
-	for i, v := range spr.WinPreviousOPR {
-		str = str + fmt.Sprintf("%32s %2d, %s\n", "", i+1, v)
-	}
+	str = fmt.Sprintf("%32s %v\n", "Directory Block Height", spr.Dbht)
 	str = str + fmt.Sprintf("%32s %s\n", "Coinbase PEG", spr.CoinbasePEGAddress)
-
-	// Make a display string out of the Digital Identity.
-
-	str = str + fmt.Sprintf("%32s %v\n", "FactomDigitalID", spr.FactomDigitalID)
 	for _, asset := range spr.Assets.List(spr.Version) {
 		str = str + fmt.Sprintf("%32s %v\n", "PEG", asset)
-	}
-
-	str = str + fmt.Sprintf("\nWinners\n\n")
-
-	// If there were previous winners, we need to make sure this miner is running
-	// the software to detect them, and that we agree with their conclusions.
-	for i, v := range spr.WinPreviousOPR {
-		str = str + fmt.Sprintf("   %2d\t%16s\n",
-			i,
-			v,
-		)
 	}
 	return str
 }
@@ -208,11 +163,8 @@ func (spr *StakingPriceRecord) String() (str string) {
 // LogFieldsShort returns a set of common fields to be included in logrus
 func (spr *StakingPriceRecord) LogFieldsShort() log.Fields {
 	return log.Fields{
-		"did":        spr.FactomDigitalID,
-		"spr_hash":   hex.EncodeToString(spr.SPRHash),
-		"nonce":      hex.EncodeToString(spr.Nonce),
-		"difficulty": spr.Difficulty,
-		"grade":      spr.Grade,
+		"spr_hash": hex.EncodeToString(spr.SPRHash),
+		"grade":    spr.Grade,
 	}
 }
 
@@ -224,13 +176,47 @@ func (spr *StakingPriceRecord) SetPegValues(assets polling.PegAssets) {
 }
 
 // NewSpr collects all the information unique to this staker and its configuration, and also
-// goes and gets the oracle data.  Also collects the winners from the prior block and
-// puts their entry hashes (base58) into this SPR
+// goes and gets the oracle data.
 func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPriceRecord, err error) {
 	spr = NewStakingPriceRecord()
-	spr.SPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{"PegNet", "MainNet", common.SPRChainTag}))
-	// Todo: Initialize the spr struct
 
+	/**
+	 *	Init SPR with configuration settings
+	 */
+	protocol, err1 := c.String("Staker.Protocol")
+	network, err2 := common.LoadConfigStakerNetwork(c)
+	spr.Network = network
+	spr.Protocol = protocol
+
+	if err1 != nil {
+		return nil, errors.New("config file has no Staker.Protocol specified")
+	}
+	if err2 != nil {
+		return nil, errors.New("config file has no Staker.Network specified")
+	}
+	spr.SPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.SPRChainTag}))
+	spr.Dbht = dbht
+	spr.Version = common.SPRVersion(spr.Network, int64(spr.Dbht))
+
+	if network == common.TestNetwork {
+		fct := common.DebugFCTaddresses[0][1]
+		spr.CoinbaseAddress = fct
+	} else {
+		if str, err := c.String("Staker.CoinbaseAddress"); err != nil {
+			return nil, errors.New("config file has no Coinbase PEG Address")
+		} else {
+			spr.CoinbaseAddress = str
+		}
+	}
+
+	spr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", spr.CoinbaseAddress)
+	if err != nil {
+		log.Errorf("invalid fct address in config file: %v", err)
+	}
+
+	/**
+	 *	Get SPR Record with Assets data (polling)
+	 */
 	err = spr.GetSPRecord(c)
 	if err != nil {
 		return nil, err
@@ -309,7 +295,7 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 
 	pOpr := &oprencoding.ProtoOPR{
 		Address: spr.CoinbaseAddress,
-		ID:      spr.FactomDigitalID,
+		ID:      "",
 		Height:  spr.Dbht,
 		Assets:  prices,
 		Winners: nil,
@@ -330,7 +316,6 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 	spr.Assets = make(StakingPriceRecordAssetList)
 	// Populate the original opr
 	spr.CoinbaseAddress = protoOPR.Address
-	spr.FactomDigitalID = protoOPR.ID
 	spr.Dbht = protoOPR.Height
 
 	if len(protoOPR.Assets) != len(assetList) {
@@ -341,9 +326,6 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 	for i, asset := range assetList {
 		spr.Assets[asset] = protoOPR.Assets[i]
 	}
-
-	// Decode winners
-	spr.WinPreviousOPR = nil
 
 	return nil
 }

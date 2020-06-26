@@ -6,8 +6,6 @@ import (
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/spr"
 	log "github.com/sirupsen/logrus"
-
-	//"github.com/pegnet/pegnet/opr"
 	"github.com/zpatrick/go-config"
 )
 
@@ -18,7 +16,6 @@ type StakingCoordinator struct {
 
 	// Factom blockchain related alerts
 	FactomMonitor common.IMonitor
-	//OPRGrader     opr.IGrader
 
 	// Staker generates the spr hashes
 	Staker *ControlledStaker
