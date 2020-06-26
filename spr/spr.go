@@ -73,9 +73,6 @@ func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
 	return n
 }
 
-// SPRChainID is the calculated chain id of the records chain
-var SPRChainID string
-
 // Token is a combination of currency Code and Value
 type Token struct {
 	Code  string
