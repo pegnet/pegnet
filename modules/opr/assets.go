@@ -204,6 +204,14 @@ var V5Assets = []string{
 	"ALGO",
 	"ARS",
 	"TWD",
+	"RWF",
+	"KES",
+	"UGX",
+	"TZS",
+	"BIF",
+	"ETB",
+	"DGB",
+	"NGN",
 }
 
 // AssetFloat is an asset holding a float64 value

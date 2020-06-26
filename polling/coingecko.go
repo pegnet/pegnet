@@ -154,6 +154,7 @@ func (d *CoinGeckoDataSource) CurrencyIDMapping() map[string]string {
 		"VET": 	"vechain",
 		"HT": 	"huobi-token",
 		"ALGO":	"algorand",
+		"DGB":  "digibyte",
 	}
 }
 

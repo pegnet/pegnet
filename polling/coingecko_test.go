@@ -23,6 +23,7 @@ var coinGeckoData = `
 	"dogecoin":{"usd":0.00266085,"last_updated_at":1578961668},
 	"vechain":{"usd":0.0045895,"last_updated_at":1578961668},
 	"huobi-token":{"usd":4,"last_updated_at":15789616682},
-	"algorand":{"usd":0.19,"last_updated_at":15789616682}
+	"algorand":{"usd":0.19,"last_updated_at":15789616682},
+	"digibyte": {"usd": 0.01868084,"last_updated_at": 1593191599}
 }
 `

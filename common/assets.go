@@ -120,12 +120,20 @@ var (
 		"VET",
 		"HT",
 		"ALGO",
+		"DGB",
 	}
 
 	V5CurrencyAdditions = []string{
 		"AED",
 		"ARS",
 		"TWD",
+		"RWF",
+		"KES",
+		"UGX",
+		"TZS",
+		"BIF",
+		"ETB",
+		"NGN",
 	}
 
 	AllAssets = MergeLists(PEGAsset, CurrencyAssets, CommodityAssets, CryptoAssets, V4CurrencyAdditions, V4CryptoAdditions, V5CryptoAdditions, V5CurrencyAdditions)

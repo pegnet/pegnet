@@ -821,7 +821,37 @@ var coinMarketCapResp = `
                     "last_updated": "2020-05-13T19:52:13.000Z"
                 }
             }
-        }
+        },
+		"109": {
+			"id": 109,
+			"name": "DigiByte",
+			"symbol": "DGB",
+			"slug": "digibyte",
+			"num_market_pairs": 80,
+			"date_added": "2014-02-06T00:00:00.000Z",
+            "tags": [
+                "mineable"
+            ],
+			"max_supply": 21000000000,
+			"circulating_supply": 13282828828.5818,
+			"total_supply": 13282828828.5818,
+            "is_active": 1,
+			"platform": null,
+			"cmc_rank": 36,
+            "is_fiat": 0,
+			"last_updated": "2020-06-26T17:18:03.000Z",
+            "quote": {
+                "USD": {
+					"price": 0.0187815088678
+					"volume_24h": 16192253.827992
+					"percent_change_1h": -0.00931294
+					"percent_change_24h": -5.23887
+					"percent_change_7d": 8.83522
+					"market_cap": 249471567.4334786
+                    "last_updated": "2020-06-26T17:18:03.000Z"
+                }
+            }
+		}
     }
 }
 `

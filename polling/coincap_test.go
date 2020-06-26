@@ -108,5 +108,18 @@ var coincapResp = `{"data":[{"id":"bitcoin","rank":"1","symbol":"BTC","name":"Bi
 		"priceUsd": "0.1934466079868338",
 		"changePercent24Hr": "-2.5180742989796971",
 		"vwap24Hr": "0.1937739322255232"
+	},
+	{
+		"id": "digibyte",
+		"rank": "33",
+		"symbol": "DGB",
+		"name": "DigiByte",
+		"supply": "13282775305.7105000000000000",
+		"maxSupply": "21000000000.0000000000000000",
+		"marketCapUsd": "248029371.3350586018937920",
+		"volumeUsd24Hr": "2334611.0106594491009365",
+		"priceUsd": "0.0186730081347101",
+		"changePercent24Hr": "-7.7960430480711129",
+		"vwap24Hr": "0.0192020828278987"
 	}
 ],"timestamp":1578961769824}`
