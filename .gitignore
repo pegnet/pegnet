@@ -27,3 +27,4 @@ config/pegnetconfig.ini
 # Pycharm
 venv
 .DS_Store
+initialization/initialization
