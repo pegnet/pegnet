@@ -32,19 +32,18 @@ func InitDataSource(config *config.Config) {
 // StakingPriceRecord is the data used and created by staker
 type StakingPriceRecord struct {
 	// These fields are not part of the SPR, but track values associated with the SPR.
-	Protocol           string  `json:"-"` // The Protocol we are running on (PegNet)
-	Network            string  `json:"-"` // The network we are running on (TestNet vs MainNet)
-	Grade              float64 `json:"-"` // The grade when SPR records are compared
-	SPRHash            []byte  `json:"-"` // The hash of the SPR record (used by PegNet Staking)
-	SPRChainID         string  `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Stakers
-	CoinbasePEGAddress string  `json:"-"` // [base58]  PEG Address to pay PEG
+	Protocol           string `json:"-"` // The Protocol we are running on (PegNet)
+	Network            string `json:"-"` // The network we are running on (TestNet vs MainNet)
+	SPRHash            []byte `json:"-"` // The hash of the SPR record (used by PegNet Staking)
+	SPRChainID         string `json:"-"` // [base58]  Chain ID of the chain used by the Oracle Stakers
+	CoinbasePEGAddress string `json:"-"` // [base58]  Payout Address
 
 	// Factom Entry data
 	EntryHash []byte `json:"-"` // Entry to record this record
 	Version   uint8  `json:"-"`
 
 	// These values define the context of the SPR, and they go into the PegNet SPR record, and are staked.
-	CoinbaseAddress string                      `json:"coinbase"` // [base58]  PEG Address to pay PEG
+	CoinbaseAddress string                      `json:"coinbase"` // [base58]  Payout Address
 	Dbht            int32                       `json:"dbht"`     //           The Directory Block Height of the SPR.
 	Assets          StakingPriceRecordAssetList `json:"assets"`   // The Oracle values of the SPR, they are the meat of the SPR record, and are staked.
 }
@@ -140,9 +139,7 @@ func (spr *StakingPriceRecord) GetHash() []byte {
 
 // ShortString returns a human readable string with select data
 func (opr *StakingPriceRecord) ShortString() string {
-	str := fmt.Sprintf("SPRHash %30x Grade %20f",
-		opr.SPRHash,
-		opr.Grade)
+	str := fmt.Sprintf("SPRHash %30x", opr.SPRHash)
 	return str
 }
 
@@ -160,7 +157,6 @@ func (spr *StakingPriceRecord) String() (str string) {
 func (spr *StakingPriceRecord) LogFieldsShort() log.Fields {
 	return log.Fields{
 		"spr_hash": hex.EncodeToString(spr.SPRHash),
-		"grade":    spr.Grade,
 	}
 }
 
