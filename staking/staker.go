@@ -25,7 +25,7 @@ type StakerCommand struct {
 	Data    interface{}
 }
 
-// PegnetStaker mines an SPRhash
+// PegnetStaker stakes an SPRhash
 type PegnetStaker struct {
 	// ID is the staker number, starting with "1".
 	ID     int            `json:"id"`
@@ -112,7 +112,7 @@ func (p *PegnetStaker) waitForResume(ctx context.Context) {
 	// Pause until we get a new start or are cancelled
 	for {
 		select {
-		case <-ctx.Done(): // Mining cancelled
+		case <-ctx.Done(): // Staking cancelled
 			return
 		case c := <-p.commands:
 			p.HandleCommand(c)

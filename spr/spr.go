@@ -70,6 +70,7 @@ func NewStakingPriceRecord() *StakingPriceRecord {
 //	This needs to be done because I need to marshal this into my factom entry.
 func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
 	n := NewStakingPriceRecord()
+	// Todo: Remove unnecessary properties here after initilization
 	n.SPRChainID = c.SPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
@@ -98,6 +99,12 @@ type Token struct {
 // Validate performs sanity checks of the structure and values of the SPR.
 // It does not validate the winners of the previous block.
 func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
+	//Entries are valid if:
+	//	1) The height matches the block's height
+	//	2) The payout address matches the RCD
+	//	3) The signature is verified
+	//	4) It is not a duplicate of an existing (and valid) SPR with the same payout address
+
 	net, _ := common.LoadConfigNetwork(c)
 	if !common.NetworkActive(net, dbht) {
 		return false
@@ -110,6 +117,8 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 			return false
 		}
 	}
+
+	// Todo: enable validation here after initialization
 
 	//// Only enforce on version 2 and forward
 	//if err := common.ValidIdentity(spr.FactomDigitalID); err != nil {
@@ -220,6 +229,7 @@ func (spr *StakingPriceRecord) SetPegValues(assets polling.PegAssets) {
 func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPriceRecord, err error) {
 	spr = NewStakingPriceRecord()
 	spr.SPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{"PegNet", "MainNet", common.SPRChainTag}))
+	// Todo: Initialize the spr struct
 
 	err = spr.GetSPRecord(c)
 	if err != nil {
@@ -265,10 +275,15 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 	fmt.Println("e.ChainID:", e.ChainID)
 
-	//ExtIDs:
-	//	1) version byte (byte, default 0)
-	//	2) RCD of the payout address
-	//	3) signature covering [ExtID]
+	//	ExtIDs:
+	//		version byte (byte, default 0)
+	//		RCD of the payout address
+	//		signature covering [ExtID]
+	//	Content: (protobuf)
+	//		Payout Address (string)
+	//		Height (int32)
+	//		Assets ([]uint64)
+
 	e.ExtIDs = [][]byte{{}, {}, {spr.Version}}
 
 	e.Content, err = spr.SafeMarshal()

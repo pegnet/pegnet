@@ -66,8 +66,8 @@ func (w *EntryWriter) PopulateECAddress() error {
 	return nil
 }
 
-// NextBlockWriter gets the next block writer to use for the miner.
-//	Because all miners will share a block writer, we make this call idempotent
+// NextBlockWriter gets the next block writer to use for the staker.
+//	Because all stakers will share a block writer, we make this call idempotent
 func (w *EntryWriter) NextBlockWriter() IEntryWriter {
 	w.Lock()
 	defer w.Unlock()
@@ -87,7 +87,7 @@ func (w *EntryWriter) SetSPR(spr *spr.StakingPriceRecord) {
 	}
 }
 
-// CollectAndWrite will write the block when we collected all the miner data
+// CollectAndWrite will write the block when we collected all the staker data
 //	The blocking is mainly for unit tests.
 func (w *EntryWriter) CollectAndWrite(blocking bool) {
 	w.Do(func() {
@@ -115,7 +115,7 @@ func (w *EntryWriter) collectAndWrite() {
 	log.WithFields(log.Fields{
 		"height":      dbht,
 		"exp_records": w.Keep,
-	}).Info("SPR Block Mined")
+	}).Info("SPR Block Staked")
 }
 
 // writeStakingRecord writes an spr and it's nonce to the blockchain
@@ -148,7 +148,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 	return nil
 }
 
-// Cancel will cancel a miner's write. If the miner was stopped, we should not expect his write
+// Cancel will cancel a staker's write. If the staker was stopped, we should not expect his write
 func (w *EntryWriter) Cancel() {
 	//w.miners--
 	//w.minerLists <- nil
@@ -172,13 +172,13 @@ func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *facto
 
 }
 
-// ECBalance is always positive, the coordinator will stop us mining if he runs out
+// ECBalance is always positive, the coordinator will stop us staking if he runs out
 func (w *EntryForwarder) ECBalance() (int64, error) {
 	return 1, nil
 }
 
-// NextBlockWriter gets the next block writer to use for the miner.
-//	Because all miners will share a block writer, we make this call idempotent
+// NextBlockWriter gets the next block writer to use for the staker.
+//	Because all stakers will share a block writer, we make this call idempotent
 func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
 	w.Lock()
 	defer w.Unlock()

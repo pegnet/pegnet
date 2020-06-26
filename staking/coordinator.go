@@ -2,7 +2,6 @@ package staking
 
 import (
 	"context"
-	"encoding/binary"
 	"fmt"
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/spr"
@@ -84,7 +83,7 @@ StakingLoop:
 			"minute": fds.Minute,
 		})
 		if !first {
-			// On the first minute log how far away to mining
+			// On the first minute log how far away to staking
 			hLog.Infof("On minute %d. %d minutes until minute 1 before staking starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
 			first = true
 		}
@@ -92,7 +91,7 @@ StakingLoop:
 		hLog.Debug("Staker received alert")
 		switch fds.Minute {
 		case 1:
-			// First check if we have the funds to mine
+			// First check if we have the funds to stake
 			bal, err := c.FactomEntryWriter.ECBalance()
 			if err != nil {
 				hLog.WithError(err).WithField("action", "balance-query").Error("failed to stake this block")
@@ -119,7 +118,7 @@ StakingLoop:
 					continue StakingLoop // SPR cancelled
 				}
 
-				// Get the SPRHash for miners to mine.
+				// Get the SPRHash for stakers to stake.
 				sprHash = sprTemplate.GetHash()
 
 				// The consolidator that will write to the blockchain
@@ -128,15 +127,12 @@ StakingLoop:
 
 				command := BuildCommand().
 					Aggregator(c.FactomEntryWriter). // New aggregate per block. Writes the top X records
-					NewSPRHash(sprHash).             // New SPR hash to mine
+					NewSPRHash(sprHash).             // New SPR hash to stake
 					ResumeStaking().                 // Start staking
 					Build()
-
 				c.Staker.SendCommand(command)
 
-				buf := make([]byte, 8)
-				binary.BigEndian.PutUint64(buf, sprTemplate.MinimumDifficulty)
-				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new SPR")
+				hLog.Debug("Begin staking new SPR")
 			}
 		case 8:
 			if staking {
@@ -144,7 +140,7 @@ StakingLoop:
 				fmt.Println("Minute 8 for Staker")
 
 				command := BuildCommand().
-					PauseStaking(). // Pause mining until further notice
+					PauseStaking(). // Pause staking until further notice
 					Build()
 
 				// Need to send to staker
