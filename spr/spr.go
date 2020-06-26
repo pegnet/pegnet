@@ -60,7 +60,6 @@ func NewStakingPriceRecord() *StakingPriceRecord {
 //	This needs to be done because I need to marshal this into my factom entry.
 func (c *StakingPriceRecord) CloneEntryData() *StakingPriceRecord {
 	n := NewStakingPriceRecord()
-	// Todo: Remove unnecessary properties here after initilization
 	n.SPRChainID = c.SPRChainID
 	n.Dbht = c.Dbht
 	n.Version = c.Version
