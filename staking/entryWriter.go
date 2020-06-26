@@ -23,7 +23,6 @@ type IEntryWriter interface {
 
 // EntryWriter writes the SPRs to factom once the staking is done
 type EntryWriter struct {
-	Keep int
 	// We need an spr template to make the entries
 	sprTemplate *spr.StakingPriceRecord
 
@@ -38,12 +37,10 @@ type EntryWriter struct {
 	sync.Once
 }
 
-func NewEntryWriter(config *config.Config, keep int) *EntryWriter {
+func NewEntryWriter(config *config.Config) *EntryWriter {
 	w := new(EntryWriter)
-	w.Keep = keep
 	w.config = config
 	w.EntryWritingFunction = w.writeStakingRecord
-
 	return w
 }
 
@@ -67,12 +64,11 @@ func (w *EntryWriter) PopulateECAddress() error {
 }
 
 // NextBlockWriter gets the next block writer to use for the staker.
-//	Because all stakers will share a block writer, we make this call idempotent
 func (w *EntryWriter) NextBlockWriter() IEntryWriter {
 	w.Lock()
 	defer w.Unlock()
 	if w.Next == nil {
-		w.Next = NewEntryWriter(w.config, w.Keep)
+		w.Next = NewEntryWriter(w.config)
 		w.Next.ec = w.ec
 	}
 	return w.Next
@@ -113,8 +109,7 @@ func (w *EntryWriter) collectAndWrite() {
 	}
 
 	log.WithFields(log.Fields{
-		"height":      dbht,
-		"exp_records": w.Keep,
+		"height": dbht,
 	}).Info("SPR Block Staked")
 }
 
@@ -162,12 +157,11 @@ type EntryForwarder struct {
 	entryChannel chan *factom.Entry
 }
 
-func NewEntryForwarder(config *config.Config, keep int, entryChannel chan *factom.Entry) *EntryForwarder {
+func NewEntryForwarder(config *config.Config, entryChannel chan *factom.Entry) *EntryForwarder {
 	n := new(EntryForwarder)
-	n.EntryWriter = NewEntryWriter(config, keep)
+	n.EntryWriter = NewEntryWriter(config)
 	n.entryChannel = entryChannel
 	n.EntryWritingFunction = n.forwardStakingRecord
-
 	return n
 }
 
@@ -182,7 +176,7 @@ func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
 	w.Lock()
 	defer w.Unlock()
 	if w.Next == nil {
-		w.Next = NewEntryForwarder(w.config, w.Keep, w.entryChannel)
+		w.Next = NewEntryForwarder(w.config, w.entryChannel)
 	}
 	return w.Next
 }

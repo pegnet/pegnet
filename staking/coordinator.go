@@ -31,15 +31,10 @@ func NewStakingCoordinatorFromConfig(config *config.Config, monitor common.IMoni
 	c := new(StakingCoordinator)
 	c.config = config
 	c.FactomMonitor = monitor
-	k, err := config.Int("Staker.RecordsPerBlock")
-	if err != nil {
-		panic(err)
-	}
-
 	c.SPRMaker = NewSPRMaker()
+	c.FactomEntryWriter = NewEntryWriter(config)
 
-	c.FactomEntryWriter = NewEntryWriter(config, k)
-	err = c.FactomEntryWriter.PopulateECAddress()
+	err := c.FactomEntryWriter.PopulateECAddress()
 	if err != nil {
 		panic(err)
 	}
@@ -101,7 +96,7 @@ StakingLoop:
 
 			if !staking {
 				staking = true
-				fmt.Println("Minute 1 for Staker")
+				hLog.Debug("Minute 1 for Staker")
 
 				// Need to get an SPR record
 				sprTemplate, err = c.SPRMaker.NewSPR(ctx, fds.Dbht, c.config)
@@ -134,7 +129,7 @@ StakingLoop:
 		case 8:
 			if staking {
 				staking = false
-				fmt.Println("Minute 8 for Staker")
+				hLog.Debug("Minute 8 for Staker")
 
 				command := BuildCommand().
 					PauseStaking(). // Pause staking until further notice

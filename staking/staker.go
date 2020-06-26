@@ -13,7 +13,6 @@ const (
 	_ = iota
 	BatchCommand
 	NewSPRHash
-	RecordsToKeep
 	RecordAggregator
 
 	PauseStaking
@@ -45,8 +44,6 @@ type PegnetStaker struct {
 type sprStakingState struct {
 	// Used to compute new hashes
 	sprhash []byte
-
-	keep int
 }
 
 func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *StakerCommand) *PegnetStaker {
@@ -54,9 +51,6 @@ func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *Staker
 	p.Config = c
 	p.ID = id
 	p.commands = commands
-
-	p.StakingState.keep, _ = p.Config.Int("Staker.RecordsPerBlock")
-
 	return p
 }
 
@@ -98,8 +92,6 @@ func (p *PegnetStaker) HandleCommand(c *StakerCommand) {
 		}
 	case NewSPRHash:
 		p.StakingState.sprhash = c.Data.([]byte)
-	case RecordsToKeep:
-		p.StakingState.keep = c.Data.(int)
 	case PauseStaking:
 		// Pause until we get a new start
 		p.paused = true
