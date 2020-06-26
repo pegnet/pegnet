@@ -332,7 +332,7 @@ var staker = &cobra.Command{
 		// This is a blocking call
 		coord_s := LaunchStaker(Config, ctx, monitor)
 
-		// Calling cancel() will cancel the stat tracker collection AND the staker
+		// Calling cancel() will cancel the staker
 		var _, _ = cancel, coord_s
 	},
 }

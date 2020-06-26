@@ -43,7 +43,7 @@ func NewStakingCoordinatorFromConfig(config *config.Config, monitor common.IMoni
 }
 
 func (c *StakingCoordinator) InitStaker() error {
-	c.Staker = c.NewStaker(0)
+	c.Staker = c.NewStaker(1)
 	return nil
 }
 
