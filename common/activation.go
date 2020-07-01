@@ -59,7 +59,7 @@ var (
 
 	// V20HeightActivation indicates the activation of PegNet 2.0.
 	// Estimated to be  XXXX XXXX XXXX
-	V20HeightActivation int64 = 0
+	V20HeightActivation int64 = 999999
 )
 
 // NetworkActive returns true if the network height is above the activation height.
