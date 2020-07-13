@@ -17,7 +17,7 @@ const (
 	// PegNet v2
 	// 1. We reduce default supply to 0 since we have other
 	//    values that builds up total supply
-	PerBlockDefault = 0 * 1e8
+	PerBlockMiners = 5000 * 1e8
 
 	// PegNet v2
 	// 2 past miners / PIP 14
@@ -38,7 +38,7 @@ const (
 	// PegNet v2
 	// Total PEG allocated per block for conversions (not including the bank)
 	// NB: in PegNet v1.0 PerBlock 5000 * 1e8
-	PerBlockPegNet2 uint64 = PerBlockDefault +
+	PerBlockPegNet2 uint64 = PerBlockMiners +
 		PerBlockPastMiners +
 		PerBlockAssetHolders +
 		PerBlockStakers +
