@@ -319,6 +319,23 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	return pa, nil
 }
 
+func TrimmedMean(data []PegItem, p int) float64 {
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Value < data[j].Value
+	})
+
+	length := len(data)
+	if length <= 3 {
+		return data[length/2].Value
+	}
+
+	sum := 0.0
+	for i := p; i < length-p; i++ {
+		sum = sum + data[i].Value
+	}
+	return sum / float64(length-2*p)
+}
+
 // PullBestPrice pulls the best asset price we can find for a given asset.
 // Params:
 //		asset		Asset to pull pricing data
@@ -352,26 +369,23 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 	if oprversion == 5 {
 		pricesClone := prices
 		if len(pricesClone) > 0 {
-			// We calculate the tolerance band here, and
+			// We calculate the tolerance band based on trimmed mean.
 			// If one datasource returns a price out of the defined tolerance band,
 			// it will not allow that source’s price to be included in that block.
-			sort.Slice(pricesClone, func(i, j int) bool {
-				return pricesClone[i].Value < pricesClone[j].Value
-			})
-			middle := pricesClone[len(pricesClone)/2]
+			tMean := TrimmedMean(pricesClone, 1)
 
 			toleranceRate := 0.01
-			if middle.Value >= 100000 {
+			if tMean >= 100000 {
 				toleranceRate = 0.001
 			}
-			if middle.Value >= 1000 {
+			if tMean >= 1000 {
 				toleranceRate = 0.01
 			}
-			if middle.Value < 1000 {
+			if tMean < 1000 {
 				toleranceRate = 0.1
 			}
-			toleranceBandHigh := middle.Value * (1 + toleranceRate)
-			toleranceBandLow := middle.Value * (1 - toleranceRate)
+			toleranceBandHigh := tMean * (1 + toleranceRate)
+			toleranceBandLow := tMean * (1 - toleranceRate)
 
 			// We keep datasource priority order here.
 			for i := 0; i < len(prices); i++ {
