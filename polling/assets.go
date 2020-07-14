@@ -349,15 +349,42 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		}
 	}
 
-	// Get the correct price from the idea of trimmed mean among the all enabled prices
-	// https://www.investopedia.com/terms/t/trimmed_mean.asp
-	// Medium price will eliminate the influence of outliers or data points on the tails that
-	// may unfairly affect the traditional mean.
-	if len(prices) > 0 {
-		sort.Slice(prices, func(i, j int) bool {
-			return prices[i].Value < prices[j].Value
+	pricesClone := prices
+	if len(pricesClone) > 0 {
+		// We calculate the tolerance band here, and
+		// If one datasource returns a price out of the defined tolerance band,
+		// it will not allow that source’s price to be included in that block.
+		sort.Slice(pricesClone, func(i, j int) bool {
+			return pricesClone[i].Value < pricesClone[j].Value
 		})
-		pa = prices[len(prices) / 2]
+		middle := pricesClone[len(pricesClone)/2]
+
+		toleranceRate := 0.01
+		if middle.Value >= 100000 {
+			toleranceRate = 0.001
+		}
+		if middle.Value >= 1000 {
+			toleranceRate = 0.01
+		}
+		if middle.Value < 1000 {
+			toleranceRate = 0.1
+		}
+		toleranceBandHigh := middle.Value * (1 + toleranceRate)
+		toleranceBandLow := middle.Value * (1 - toleranceRate)
+
+		// We keep datasource priority order here.
+		for i := 0; i < len(prices); i++ {
+			currentPrice := prices[i]
+			if currentPrice.Value >= toleranceBandLow && currentPrice.Value <= toleranceBandHigh {
+				return currentPrice, nil
+			}
+		}
+	}
+
+	// If we got here, that means that no price is passed by tolerance band.
+	// We will take the highest priority quote given our data-source order.
+	if len(prices) > 0 {
+		pa = prices[0]
 		return pa, nil
 	}
 
