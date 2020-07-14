@@ -292,7 +292,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	for _, asset := range assets {
 		var price PegItem
 		// For each asset we try and find the best price quote we can.
-		price, err := d.PullBestPrice(asset, start, cacheWrap)
+		price, err := d.PullBestPrice(asset, start, cacheWrap, oprversion)
 		if err != nil { // This will only be the last err in the data source list.
 			// No prices found for a peg, this pull failed
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
@@ -324,7 +324,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 //		asset		Asset to pull pricing data
 //		reference	Time reference to determine 'staleness' from
 //		sources		Map of datasources to pull the price quote from.
-func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource) (pa PegItem, err error) {
+func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource, oprversion uint8) (pa PegItem, err error) {
 	if sources == nil {
 		// If our data sources passed in are nil, then we don't need to do cache wrapping.
 		// We should always have sources passed in, aside from unit tests.
@@ -349,34 +349,36 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 		}
 	}
 
-	pricesClone := prices
-	if len(pricesClone) > 0 {
-		// We calculate the tolerance band here, and
-		// If one datasource returns a price out of the defined tolerance band,
-		// it will not allow that source’s price to be included in that block.
-		sort.Slice(pricesClone, func(i, j int) bool {
-			return pricesClone[i].Value < pricesClone[j].Value
-		})
-		middle := pricesClone[len(pricesClone)/2]
+	if oprversion == 5 {
+		pricesClone := prices
+		if len(pricesClone) > 0 {
+			// We calculate the tolerance band here, and
+			// If one datasource returns a price out of the defined tolerance band,
+			// it will not allow that source’s price to be included in that block.
+			sort.Slice(pricesClone, func(i, j int) bool {
+				return pricesClone[i].Value < pricesClone[j].Value
+			})
+			middle := pricesClone[len(pricesClone)/2]
 
-		toleranceRate := 0.01
-		if middle.Value >= 100000 {
-			toleranceRate = 0.001
-		}
-		if middle.Value >= 1000 {
-			toleranceRate = 0.01
-		}
-		if middle.Value < 1000 {
-			toleranceRate = 0.1
-		}
-		toleranceBandHigh := middle.Value * (1 + toleranceRate)
-		toleranceBandLow := middle.Value * (1 - toleranceRate)
+			toleranceRate := 0.01
+			if middle.Value >= 100000 {
+				toleranceRate = 0.001
+			}
+			if middle.Value >= 1000 {
+				toleranceRate = 0.01
+			}
+			if middle.Value < 1000 {
+				toleranceRate = 0.1
+			}
+			toleranceBandHigh := middle.Value * (1 + toleranceRate)
+			toleranceBandLow := middle.Value * (1 - toleranceRate)
 
-		// We keep datasource priority order here.
-		for i := 0; i < len(prices); i++ {
-			currentPrice := prices[i]
-			if currentPrice.Value >= toleranceBandLow && currentPrice.Value <= toleranceBandHigh {
-				return currentPrice, nil
+			// We keep datasource priority order here.
+			for i := 0; i < len(prices); i++ {
+				currentPrice := prices[i]
+				if currentPrice.Value >= toleranceBandLow && currentPrice.Value <= toleranceBandHigh {
+					return currentPrice, nil
+				}
 			}
 		}
 	}
