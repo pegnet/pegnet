@@ -151,7 +151,7 @@ func TestDataSourceStaleness(t *testing.T) {
 	d := NewDataSources(configWithStaleness("10m"))
 	d.AssetSources["EUR"] = reverse(names)
 
-	price, err := d.PullBestPrice("EUR", reference, mapped)
+	price, err := d.PullBestPrice("EUR", reference, mapped, 4)
 	if err != nil {
 		t.Error(err)
 	}
@@ -164,7 +164,7 @@ func TestDataSourceStaleness(t *testing.T) {
 	d = NewDataSources(configWithStaleness("0s"))
 	d.AssetSources["EUR"] = reverse(names)
 
-	price, err = d.PullBestPrice("EUR", reference, mapped)
+	price, err = d.PullBestPrice("EUR", reference, mapped, 4)
 	if err != nil {
 		t.Error(err)
 	}
@@ -177,7 +177,7 @@ func TestDataSourceStaleness(t *testing.T) {
 	d = NewDataSources(configWithStaleness("1h"))
 	d.AssetSources["EUR"] = reverse(names)
 
-	price, err = d.PullBestPrice("EUR", reference, mapped)
+	price, err = d.PullBestPrice("EUR", reference, mapped, 4)
 	if err != nil {
 		t.Error(err)
 	}
