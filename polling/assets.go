@@ -319,6 +319,8 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	return pa, nil
 }
 
+// Get Trimmed Mean calculation
+// https://www.investopedia.com/terms/t/trimmed_mean.asp
 func TrimmedMean(data []PegItem, p int) float64 {
 	sort.Slice(data, func(i, j int) bool {
 		return data[i].Value < data[j].Value
@@ -341,6 +343,7 @@ func TrimmedMean(data []PegItem, p int) float64 {
 //		asset		Asset to pull pricing data
 //		reference	Time reference to determine 'staleness' from
 //		sources		Map of datasources to pull the price quote from.
+//		oprversion	OPR version
 func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource, oprversion uint8) (pa PegItem, err error) {
 	if sources == nil {
 		// If our data sources passed in are nil, then we don't need to do cache wrapping.
