@@ -172,6 +172,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
 		common.FloatingPegPriceActivation = 0
 		common.V4HeightActivation = 0
+		common.V20HeightActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {

@@ -25,7 +25,10 @@ var (
 			if height < V4HeightActivation {
 				return 3
 			}
-			return 4 // Latest code version
+			if height < V20HeightActivation {
+				return 4
+			}
+			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
