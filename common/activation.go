@@ -25,7 +25,10 @@ var (
 			if height < V4HeightActivation {
 				return 3
 			}
-			return 4 // Latest code version
+			if height < V20HeightActivation {
+				return 4
+			}
+			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < 96145 { // V1 ends at 96145 on community testnet
@@ -58,8 +61,8 @@ var (
 	V4HeightActivation int64 = 231620
 
 	// V20HeightActivation indicates the activation of PegNet 2.0.
-	// Estimated to be  XXXX XXXX XXXX
-	V20HeightActivation int64 = 999999
+	// Estimated to be  July 29th 2020 16:40 UTC
+	V20HeightActivation int64 = 255778
 )
 
 // NetworkActive returns true if the network height is above the activation height.
