@@ -131,6 +131,9 @@ func RandomOPROfVersion(version uint8) *OraclePriceRecord {
 	if version == 4 {
 		assets = common.AssetsV4
 	}
+	if version == 5 {
+		assets = common.AssetsV5
+	}
 	tmp.Assets = make(OraclePriceRecordAssetList)
 	for _, asset := range assets {
 		tmp.Assets.SetValue(asset, rand.Float64()*100)
@@ -231,6 +234,7 @@ func TestGradingOrder(t *testing.T) {
 	defer returnList(saveList(&common.AssetsV1))
 	defer returnList(saveList(&common.AssetsV2))
 	defer returnList(saveList(&common.AssetsV4))
+	defer returnList(saveList(&common.AssetsV5))
 
 	// Version 1
 	t.Run("version 1", func(t *testing.T) {
@@ -244,6 +248,9 @@ func TestGradingOrder(t *testing.T) {
 	})
 	t.Run("version 4", func(t *testing.T) {
 		testGradingOrderVersion(t, 4, cycles)
+	})
+	t.Run("version 5", func(t *testing.T) {
+		testGradingOrderVersion(t, 5, cycles)
 	})
 }
 
@@ -318,5 +325,9 @@ func shuffleList() {
 
 	rand.Shuffle(len(common.AssetsV4), func(i, j int) {
 		common.AssetsV4[i], common.AssetsV4[j] = common.AssetsV4[j], common.AssetsV4[i]
+	})
+
+	rand.Shuffle(len(common.AssetsV5), func(i, j int) {
+		common.AssetsV5[i], common.AssetsV5[j] = common.AssetsV5[j], common.AssetsV5[i]
 	})
 }

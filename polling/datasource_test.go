@@ -28,7 +28,7 @@ func FixedDataSourceTest(t *testing.T, source string, fixed []byte, exceptions .
 		t.Error(err)
 	}
 
-	testDataSource(t, s)
+	testDataSource(t, s, exceptions...)
 }
 
 // ActualDataSourceTest actually fetches the resp over the internet

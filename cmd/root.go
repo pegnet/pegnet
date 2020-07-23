@@ -163,7 +163,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
-		common.V4HeightActivation = int64(testingact)
+		common.V20HeightActivation = int64(testingact)
 	}
 
 	// Config setup

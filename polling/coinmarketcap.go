@@ -50,7 +50,7 @@ func (d *CoinMarketCapDataSource) ApiUrl() string {
 }
 
 func (d *CoinMarketCapDataSource) SupportedPegs() []string {
-	return common.MergeLists(common.CryptoAssets, common.V4CryptoAdditions, common.PEGAsset)
+	return common.MergeLists(common.CryptoAssets, common.V4CryptoAdditions, common.PEGAsset, common.V5CryptoAdditions)
 }
 
 func (d *CoinMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -124,6 +124,16 @@ func (d *CoinMarketCapDataSource) CurrencyIDMapping() map[string]int {
 		"XTZ":  2011,
 		"BAT":  1697,
 		"ATOM": 3794,
+		"HBAR": 4642,
+		"NEO": 	1376,
+		"CRO": 	3635,
+		"ETC": 	1321,
+		"ONT": 	2566,
+		"DOGE": 74,
+		"VET": 	3077,
+		"HT": 	2502,
+		"ALGO": 4030,
+		"DGB": 109,
 	}
 }
 
