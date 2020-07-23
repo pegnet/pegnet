@@ -25,7 +25,7 @@ var (
 			if height < V4HeightActivation {
 				return 3
 			}
-			if height < V5HeightActivation {
+			if height < V20HeightActivation {
 				return 4
 			}
 			return 5 // Latest code version
@@ -50,9 +50,9 @@ var (
 	// Estimated to be  Feb 12, 2020, 18:00 UTC
 	V4HeightActivation int64 = 231620
 
-	// V5HeightActivation indicates the activation of additional currencies and ecdsa keys.
-	// TODO: TBD
-	V5HeightActivation int64 = 999999
+	// V20HeightActivation indicates the activation of PegNet 2.0.
+	// Estimated to be  July 29th 2020 16:40 UTC
+	V20HeightActivation int64 = 255778
 )
 
 // NetworkActive returns true if the network height is above the activation height.
