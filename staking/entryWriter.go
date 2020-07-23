@@ -51,7 +51,7 @@ func (w *EntryWriter) ECBalance() (int64, error) {
 // PopulateECAddress only needs to be called once
 func (w *EntryWriter) PopulateECAddress() error {
 	// Get the Entry Credit Address that we need to write our SPR records.
-	if ecadrStr, err := w.config.String("Miner.ECAddress"); err != nil {
+	if ecadrStr, err := w.config.String("Staker.ECAddress"); err != nil {
 		return err
 	} else {
 		ecAdr, err := factom.FetchECAddress(ecadrStr)
