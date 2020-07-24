@@ -80,13 +80,6 @@ type Token struct {
 
 // Validate performs sanity checks of the structure and values of the SPR.
 func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
-	// Todo: enable validation here after initialization
-	//	Entries are valid if:
-	//	1) The height matches the block's height
-	//	2) The payout address matches the RCD
-	//	3) The signature is verified
-	//	4) It is not a duplicate of an existing (and valid) SPR with the same payout address
-
 	net, _ := common.LoadConfigNetwork(c)
 	if !common.NetworkActive(net, dbht) {
 		return false
@@ -109,7 +102,12 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 	}
 
 	// Validate all the Assets exists
-	return spr.Assets.ContainsExactly(common.AssetsV4)
+	switch spr.Version {
+	case 0:
+		return spr.Assets.ContainsExactly(common.AssetsV4)
+	default:
+		return false
+	}
 }
 
 // ValidFCTAddress will be removed in the grading module refactor. This is just temporary to get this
@@ -123,7 +121,7 @@ func (spr *StakingPriceRecord) GetTokens() (tokens []Token) {
 	return spr.Assets.List(spr.Version)
 }
 
-// GetHash returns the LXHash over the OPR's json representation
+// GetHash returns the LXHash over the SPR's json representation
 func (spr *StakingPriceRecord) GetHash() []byte {
 	if len(spr.SPRHash) > 0 {
 		return spr.SPRHash
@@ -248,28 +246,25 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 	return nil
 }
 
-// CreateSPREntry will create the entry from the EXISITING data.
-// It will not set any fields like in `GetSPRecord`
+//  Staking Price Record (SPR)
+//	ExtIDs:
+//		version byte (byte, default 0)
+//		RCD of the payout address
+//		signature covering [ExtID]
+//	Content: (protobuf)
+//		Payout Address (string)
+//		Height (int32)
+//		Assets ([]uint64)
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
-	var err error
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
-
-	//  Todo: verify every options
-	//	ExtIDs:
-	//		version byte (byte, default 0)
-	//		RCD of the payout address
-	//		signature covering [ExtID]
-	//	Content: (protobuf)
-	//		Payout Address (string)
-	//		Height (int32)
-	//		Assets ([]uint64)
-
-	e.ExtIDs = [][]byte{{}, {}, {spr.Version}}
-
+	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
+	if err != nil {
+		return nil, err
+	}
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
-		fmt.Println("error:", err)
 		return nil, err
 	}
 	return e, nil
