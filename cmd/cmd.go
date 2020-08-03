@@ -40,6 +40,7 @@ func init() {
 	RootCmd.AddCommand(networkCoordinator)
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
+	RootCmd.AddCommand(staker)
 
 	decode.AddCommand(decodeEntry)
 	decode.AddCommand(decodeEblock)
@@ -314,6 +315,25 @@ var grader = &cobra.Command{
 				fmt.Println(a)
 			}
 		}
+	},
+}
+
+var staker = &cobra.Command{
+	Use: "stake ",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
+
+		ValidateStakingConfig(Config) // Will fatal log if it fails
+
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+
+		// This is a blocking call
+		coord_s := LaunchStaker(Config, ctx, monitor)
+
+		// Calling cancel() will cancel the staker
+		var _, _ = cancel, coord_s
 	},
 }
 

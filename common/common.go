@@ -23,6 +23,14 @@ func LoadConfigNetwork(c *config.Config) (string, error) {
 	return GetNetwork(network)
 }
 
+func LoadConfigStakerNetwork(c *config.Config) (string, error) {
+	network, err := c.String(ConfigPegnetStakeNetwork)
+	if err != nil {
+		return "", err
+	}
+	return GetNetwork(network)
+}
+
 func GetNetwork(network string) (string, error) {
 	switch strings.ToLower(network) {
 	case strings.ToLower(MainNetwork):
@@ -53,6 +61,7 @@ const (
 	TransactionChainTag = "Transactions"
 	MinerChainTag       = "Miners"
 	OPRChainTag         = "OraclePriceRecords"
+	SPRChainTag         = "StakingPriceRecords"
 )
 
 var (
