@@ -17,7 +17,7 @@ func V5Payout(index int) int64 {
 	if index >= 25 || index < 0 {
 		return 0
 	}
-	return 200 * 1e8
+	return 360 * 1e8
 }
 
 // ValidateV5 validates the provided data using the specified parameters
