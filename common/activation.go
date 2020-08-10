@@ -61,8 +61,8 @@ var (
 	V4HeightActivation int64 = 231620
 
 	// V20HeightActivation indicates the activation of PegNet 2.0.
-	// Estimated to be  July 29th 2020 16:40 UTC
-	V20HeightActivation int64 = 255778
+	// Estimated to be  Aug 19th 2020 14:00 UTC
+	V20HeightActivation int64 = 258796
 )
 
 // NetworkActive returns true if the network height is above the activation height.
