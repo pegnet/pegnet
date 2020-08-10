@@ -31,13 +31,14 @@ func (v5 *V5BlockGrader) AddOPR(entryhash []byte, extids [][]byte, content []byt
 
 // Grade the OPRs. The V5 algorithm works the following way:
 // 	1. Take the top 50 entries with the best proof of work
-// 	2. Calculate the average of each of the 32 assets
-// 	3. Calculate the distance of each OPR to the average, where distance is the sum of quadratic differences
+// 	2. Remove top and low's 1% band from each of the 32 assets
+// 	3. Calculate the average of each of the 32 assets
+// 	4. Calculate the distance of each OPR to the average, where distance is the sum of quadratic differences
 // 	to the average of each asset. If an asset is within `band`% of the average, that asset's
 //	distance is 0.
-// 	4. Throw out the OPR with the highest distance
-// 	5. Repeat 3-4 until there are only 25 OPRs left
-//	6. Repeat 3 but this time don't apply the band and don't throw out OPRs, just reorder them
+// 	5. Throw out the OPR with the highest distance
+// 	6. Repeat 3-4 until there are only 25 OPRs left
+//	7. Repeat 3 but this time don't apply the band and don't throw out OPRs, just reorder them
 //	until you are left with one
 func (v5 *V5BlockGrader) Grade() GradedBlock {
 	return v5.GradeCustom(50)
