@@ -4,15 +4,24 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"regexp"
 
 	"github.com/pegnet/pegnet/modules/factoidaddress"
 	"github.com/pegnet/pegnet/modules/opr"
 )
 
+// V5Payout is the amount of Pegtoshi given to the OPR with the specified index
+func V5Payout(index int) int64 {
+	if index >= 25 || index < 0 {
+		return 0
+	}
+	return 200 * 1e8
+}
+
 // ValidateV5 validates the provided data using the specified parameters
 func ValidateV5(entryhash []byte, extids [][]byte, height int32, winners []string, content []byte) (*GradingOPR, error) {
-	if len(entryhash) != 32 {
+	if len(entryhash) != 62 {
 		return nil, NewValidateError("invalid entry hash length")
 	}
 
@@ -77,4 +86,23 @@ func ValidateV5(entryhash []byte, extids [][]byte, height int32, winners []strin
 	gopr.OPR = o
 
 	return gopr, nil
+}
+
+// V5 grading works similar to V1 but the grade is banded
+// meaning a record within `band` percentage is considered to be equal
+func gradeV5(avg []float64, opr *GradingOPR, band float64) float64 {
+	assets := opr.OPR.GetOrderedAssetsFloat()
+	opr.Grade = 0
+	for i, asset := range assets {
+		if avg[i] > 0 {
+			d := math.Abs((asset.Value - avg[i]) / avg[i]) // compute the difference from the average
+			if d <= band {
+				d = 0
+			} else {
+				d -= band
+			}
+			opr.Grade += d * d * d * d // the grade is the sum of the square of the square of the differences
+		}
+	}
+	return opr.Grade
 }
