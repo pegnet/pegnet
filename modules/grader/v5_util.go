@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"sort"
 
 	"github.com/pegnet/pegnet/modules/factoidaddress"
 	"github.com/pegnet/pegnet/modules/opr"
@@ -105,4 +106,44 @@ func gradeV5(avg []float64, opr *GradingOPR, band float64) float64 {
 		}
 	}
 	return opr.Grade
+}
+
+func TrimmedMeanFloat(data []float64, p int) float64 {
+	sort.Slice(data, func(i, j int) bool {
+		return data[i] < data[j]
+	})
+
+	length := len(data)
+	if length <= 3 {
+		return data[length/2]
+	}
+
+	sum := 0.0
+	for i := p; i < length-p; i++ {
+		sum = sum + data[i]
+	}
+	return sum / float64(length-2*p)
+}
+
+// calculate the vector of average prices
+func averageV5(oprs []*GradingOPR) []float64 {
+	data := make([][]float64, len(oprs[0].OPR.GetOrderedAssetsFloat()))
+	avg := make([]float64, len(oprs[0].OPR.GetOrderedAssetsFloat()))
+
+	// Sum up all the prices
+	for _, o := range oprs {
+		for i, asset := range o.OPR.GetOrderedAssetsFloat() {
+			data[i] = append(data[i], asset.Value)
+		}
+	}
+	for i := range data {
+		sum := 0.0
+		for j := range data[i] {
+			sum += data[i][j]
+		}
+		noisyRate := 0.1
+		length := int(float64(len(data[i])) * noisyRate)
+		avg[i] = TrimmedMeanFloat(data[i], length+1)
+	}
+	return avg
 }

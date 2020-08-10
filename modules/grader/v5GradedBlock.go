@@ -40,7 +40,7 @@ func (g *V5GradedBlock) grade() {
 	}
 
 	for i := g.cutoff; i >= 1; i-- {
-		avg := averageV1(g.oprs[:i]) // same average as v1
+		avg := averageV5(g.oprs[:i]) // same average as v1
 		band := 0.0
 		if i >= 25 {
 			band = V5Band
