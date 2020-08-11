@@ -117,3 +117,16 @@ func LaunchMiners(config *config.Config, ctx context.Context, monitor common.IMo
 	coord.LaunchMiners(ctx) // Inf loop unless context cancelled
 	return coord
 }
+
+func LaunchMinersBatch(config *config.Config, ctx context.Context, monitor common.IMonitor, grader opr.IGrader, stats *mining.GlobalStatTracker, batchSize int) *mining.MiningCoordinator {
+	coord := mining.NewMiningCoordinatorFromConfig(config, monitor, grader, stats)
+	err := coord.InitMinters()
+	if err != nil {
+		panic(err)
+	}
+
+	// TODO: Make this unblocking
+	//coord.LaunchMiners(ctx) // Inf loop unless context cancelled
+	coord.LaunchMinersBatch(ctx, batchSize)
+	return coord
+}

@@ -10,6 +10,7 @@ require (
 	github.com/FactomProject/btcutil v0.0.0-20160826074221-43986820ccd5
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/FactomProject/dynrsrc v0.3.1 // indirect
+	github.com/FactomProject/ed25519 v0.0.0-20150814230546-38002c4fe7b6 // indirect
 	github.com/FactomProject/factoid v0.3.4
 	github.com/FactomProject/factom v0.0.0-20190712163801-e7717c4ab072
 	github.com/FactomProject/factomd v6.3.2+incompatible // indirect
@@ -33,6 +34,7 @@ require (
 	github.com/cenkalti/backoff v2.1.1+incompatible
 	github.com/cmars/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/dustin/go-humanize v1.0.0
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ini/ini v1.44.0
 	github.com/golang/protobuf v1.3.2
 	github.com/golang/snappy v0.0.1 // indirect
@@ -41,14 +43,15 @@ require (
 	github.com/kr/pretty v0.1.0 // indirect
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
-	github.com/pegnet/LXRHash v0.0.0-20191028162532-138fe8d191a2
+	github.com/pegnet/LXRHash v0.0.0-20200611040256-b33327b51c91
 	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/sirupsen/logrus v1.4.2
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/stretchr/testify v1.3.0
 	github.com/syndtr/goleveldb v1.0.0
-	github.com/zpatrick/go-config v0.0.0-20190509173111-460869022dbd
+	github.com/urfave/cli v1.22.4 // indirect
+	github.com/zpatrick/go-config v0.0.0-20191118215128-80ba6b3e54f6
 	go.uber.org/atomic v1.4.0 // indirect
 	go.uber.org/ratelimit v0.1.0
 	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4 // indirect

@@ -450,7 +450,8 @@ var networkMinerCmd = &cobra.Command{
 			panic(err)
 		}
 
-		coord.LaunchMiners(ctx) // Inf loop unless context cancelled
+		//coord.LaunchMiners(ctx) // Inf loop unless context cancelled
+		coord.LaunchMinersBatch(ctx, BatchSize)
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _ = cancel

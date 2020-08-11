@@ -232,6 +232,140 @@ MiningLoop:
 	}
 }
 
+func (c *MiningCoordinator) LaunchMinersBatch(ctx context.Context, batchSize int) {
+	opr.InitLX()
+	mineLog := log.WithFields(log.Fields{"id": "coordinator"})
+
+	// TODO: Also tell Factom Monitor we are done listening
+	alert := c.FactomMonitor.NewListener()
+	gAlert := c.OPRGrader.GetAlert("coordinator")
+	// Tell OPR grader we are no longer listening
+	defer c.OPRGrader.StopAlert("coordinator")
+
+	var oprTemplate *opr.OraclePriceRecord
+	var oprHash []byte
+	var statsAggregate chan *SingleMinerStats
+
+	// Launch!
+	for _, m := range c.Miners {
+		go m.Miner.MineBatch(ctx, batchSize)
+	}
+
+	first := false
+	mineLog.Infof("Miners launched. Batch size %d . Waiting for minute 1 to start mining...", batchSize)
+	mining := false
+MiningLoop:
+	for {
+		var fds common.MonitorEvent
+		select {
+		case fds = <-alert:
+		case <-ctx.Done(): // If cancelled
+			return
+		}
+
+		hLog := mineLog.WithFields(log.Fields{
+			"height": fds.Dbht,
+			"minute": fds.Minute,
+		})
+		if !first {
+			// On the first minute log how far away to mining
+			hLog.Infof("On minute %d. %d minutes until minute 1 before mining starts.", fds.Minute, common.Abs(int(fds.Minute)-11)%10)
+			first = true
+		}
+
+		hLog.Debug("Miner received alert")
+		switch fds.Minute {
+		case 1:
+			// First check if we have the funds to mine
+			bal, err := c.FactomEntryWriter.ECBalance()
+			if err != nil {
+				hLog.WithError(err).WithField("action", "balance-query").Error("failed to mine this block")
+				continue MiningLoop // OPR cancelled
+			}
+			if bal == 0 {
+				hLog.WithError(fmt.Errorf("entry credit balance is 0")).WithField("action", "balance-query").Error("will not mine, out of entry credits")
+				continue MiningLoop // OPR cancelled
+			}
+
+			if !mining {
+				mining = true
+				// Need to get an OPR record
+				oprTemplate, err = c.OPRMaker.NewOPR(ctx, 0, fds.Dbht, c.config, gAlert)
+				if err == context.Canceled {
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+				if err != nil {
+					hLog.WithError(err).Error("failed to mine this block")
+					mining = false
+					continue MiningLoop // OPR cancelled
+				}
+
+				// Get the OPRHash for miners to mine.
+				oprHash = oprTemplate.GetHash()
+
+				// The consolidator that will write to the blockchain
+				c.FactomEntryWriter = c.FactomEntryWriter.NextBlockWriter()
+				c.FactomEntryWriter.SetOPR(oprTemplate)
+
+				// We aggregate mining stats per block
+				statsAggregate = make(chan *SingleMinerStats, len(c.Miners))
+
+				command := BuildCommand().
+					Aggregator(c.FactomEntryWriter).                  // New aggregate per block. Writes the top X records
+					StatsAggregator(statsAggregate).                  // Stat collection per block
+					ResetRecords().                                   // Reset the miner's stats/difficulty/etc
+					NewOPRHash(oprHash).                              // New OPR hash to mine
+					MinimumDifficulty(oprTemplate.MinimumDifficulty). // Floor difficulty to use
+					ResumeMining().                                   // Start mining
+					Build()
+
+				// Need to send to our miners
+				for _, m := range c.Miners {
+					m.SendCommand(command)
+				}
+
+				buf := make([]byte, 8)
+				binary.BigEndian.PutUint64(buf, oprTemplate.MinimumDifficulty)
+				hLog.WithField("mindiff", fmt.Sprintf("%x", buf)).Info("Begin mining new OPR")
+
+			}
+		case 9:
+			if mining {
+				mining = false
+				command := BuildCommand().
+					SubmitNonces(). // Submit nonces to aggregator
+					PauseMining().  // Pause mining until further notice
+					Build()
+
+				// Need to send to our miners
+				hLog.WithField("=====> %d", len(c.Miners))
+				for _, m := range c.Miners {
+					m.SendCommand(command)
+				}
+
+				// Write to blockchain (this is non blocking)
+				c.FactomEntryWriter.CollectAndWrite(false)
+
+				groupStats := NewGroupMinerStats("main", int(fds.Dbht))
+				// Collect stats
+				cm := 0
+				for s := range statsAggregate {
+					groupStats.Miners[s.ID] = s
+					cm++
+					if cm == len(c.Miners) {
+						break
+					}
+				}
+
+				// groupStats is the stats for all the miners for this block
+				c.StatTracker.MiningStatsChannel <- groupStats
+
+			}
+		}
+	}
+}
+
 type ControlledMiner struct {
 	Miner          *PegnetMiner
 	CommandChannel chan *MinerCommand

@@ -184,6 +184,16 @@ func (g *GroupMinerStats) TotalHashPower() float64 {
 	return acc
 }
 
+// TotalSubmissions
+func (g *GroupMinerStats) TotalSubmissions() int {
+	var total int
+	for _, m := range g.Miners {
+		total += m.TotalSubmissions
+	}
+
+	return total
+}
+
 func (g *GroupMinerStats) AvgHashRatePerMiner() float64 {
 	var totalDur time.Duration
 	var acc float64
@@ -226,11 +236,12 @@ func (g *GroupMinerStats) LogFields() log.Fields {
 
 // SingleMinerStats is the stats of a single miner
 type SingleMinerStats struct {
-	ID             int       `json:"id"`
-	TotalHashes    int64     `json:"totalhashes"`
-	BestDifficulty uint64    `json:"bestdifficulty"`
-	Start          time.Time `json:"start"`
-	Stop           time.Time `json:"stop"`
+	ID               int   `json:"id"`
+	TotalHashes      int64 `json:"totalhashes"`
+	TotalSubmissions int
+	BestDifficulty   uint64    `json:"bestdifficulty"`
+	Start            time.Time `json:"start"`
+	Stop             time.Time `json:"stop"`
 }
 
 func NewSingleMinerStats() *SingleMinerStats {

@@ -5,12 +5,38 @@ package mining
 
 import (
 	"context"
+	"encoding/binary"
+	"encoding/hex"
+	"fmt"
+	"math"
+	"os"
+	"strconv"
+	"sync"
 	"time"
 
+	lxr "github.com/pegnet/LXRHash"
 	"github.com/pegnet/pegnet/opr"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
+
+// LX holds an instance of lxrhash
+var LX lxr.LXRHash
+var lxInitializer sync.Once
+
+// The init function for LX is expensive. So we should explicitly call the init if we intend
+// to use it. Make the init call idempotent
+func InitLX() {
+	lxInitializer.Do(func() {
+		// This code will only be executed ONCE, no matter how often you call it
+		LX.Verbose(true)
+		if size, err := strconv.Atoi(os.Getenv("LXRBITSIZE")); err == nil && size >= 8 && size <= 30 {
+			LX.Init(0xfafaececfafaecec, uint64(size), 256, 5)
+		} else {
+			LX.Init(lxr.Seed, lxr.MapSizeBits, lxr.HashSize, lxr.Passes)
+		}
+	})
+}
 
 const (
 	_ = iota
@@ -32,12 +58,21 @@ type MinerCommand struct {
 	Data    interface{}
 }
 
+type Winner struct {
+	OPRHash string
+	Nonce   string
+	Target  string
+}
+
 // PegnetMiner mines an OPRhash
 type PegnetMiner struct {
 	// ID is the miner number, starting with "1". Every miner launched gets the next
 	// sequential number.
-	ID     int            `json:"id"`
-	Config *config.Config `json:"-"` //  The config of the miner using the record
+	ID         int            `json:"id"`
+	Config     *config.Config `json:"-"` //  The config of the miner using the record
+	PersonalID uint32         // The miner thread id
+
+	successes chan *Winner
 
 	// Miner commands
 	commands <-chan *MinerCommand
@@ -53,9 +88,11 @@ type PegnetMiner struct {
 type oprMiningState struct {
 	// Used to compute new hashes
 	oprhash []byte
+	static  []byte
 
 	// Used to track noncing
 	*NonceIncrementer
+	start uint32 // For batch mining
 
 	// Used to return hashes
 	minimumDifficulty uint64
@@ -111,6 +148,7 @@ func (p *PegnetMiner) ResetNonce() {
 
 func NewPegnetMinerFromConfig(c *config.Config, id int, commands <-chan *MinerCommand) *PegnetMiner {
 	p := new(PegnetMiner)
+	InitLX()
 	p.Config = c
 	p.ID = id
 	p.commands = commands
@@ -168,6 +206,88 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 
 }
 
+func (p *PegnetMiner) MineBatch(ctx context.Context, batchsize int) {
+	limit := uint32(math.MaxUint32) - uint32(batchsize)
+	mineLog := log.WithFields(log.Fields{"miner": p.ID,
+		"pid": p.PersonalID})
+
+	select {
+	// Wait for the first command to start
+	// We start 'paused'. Any command will knock us out of this init phase
+	case c := <-p.commands:
+		p.HandleCommand(c)
+	case <-ctx.Done():
+		mineLog.Debugf("Mining init cancelled for miner %d\n", p.ID)
+		return // Cancelled
+	}
+
+	for {
+		select {
+		case <-ctx.Done():
+			mineLog.Debugf("Mining cancelled for miner: %d\n", p.ID)
+			return // Mining cancelled
+		case c := <-p.commands:
+			p.HandleCommand(c)
+		default:
+		}
+
+		if len(p.MiningState.oprhash) == 0 {
+			p.paused = true
+		}
+
+		if p.paused {
+			// Waiting on a resume command
+			p.waitForResume(ctx)
+			continue
+		}
+
+		batch := make([][]byte, batchsize)
+
+		for i := range batch {
+			batch[i] = make([]byte, 4)
+			binary.BigEndian.PutUint32(batch[i], p.MiningState.start+uint32(i))
+		}
+		p.MiningState.start += uint32(batchsize)
+		if p.MiningState.start > limit {
+			mineLog.Warnf("repeating nonces, hit the cycle's limit")
+		}
+
+		var results [][]byte
+		results = LX.HashParallel(p.MiningState.static, batch)
+		for i := range results {
+			// do something with the result here
+			// nonce = batch[i]
+			// input = append(base, batch[i]...)
+			// hash = results[i]
+			h := results[i]
+
+			diff := ComputeHashDifficulty(h)
+			p.MiningState.stats.NewDifficulty(diff)
+			p.MiningState.stats.TotalHashes++
+
+			if diff > p.MiningState.minimumDifficulty {
+				success := &Winner{
+					OPRHash: hex.EncodeToString(p.MiningState.oprhash),
+					Nonce:   hex.EncodeToString(append(p.MiningState.static[32:], batch[i]...)),
+					Target:  fmt.Sprintf("%x", diff),
+				}
+				p.MiningState.stats.TotalSubmissions++
+				select {
+				case p.successes <- success:
+					mineLog.WithFields(log.Fields{
+						"nonce":        batch[i],
+						"id":           p.ID,
+						"staticPrefix": p.MiningState.static[32:],
+						"target":       success.Target,
+					}).Trace("Submitted share")
+				default:
+					mineLog.WithField("channel", fmt.Sprintf("%p", p.successes)).Errorf("failed to submit, %d/%d", len(p.successes), cap(p.successes))
+				}
+			}
+		}
+	}
+}
+
 func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 	switch c.Command {
 	case BatchCommand:
@@ -220,4 +340,13 @@ func (p *PegnetMiner) waitForResume(ctx context.Context) {
 			}
 		}
 	}
+}
+
+func ComputeHashDifficulty(b []byte) (difficulty uint64) {
+	// The high eight bytes of the hash(hash(entry.Content) + nonce) is the difficulty.
+	// Because we don't have a difficulty bar, we can define difficulty as the greatest
+	// value, rather than the minimum value.  Our bar is the greatest difficulty found
+	// within a 10 minute period.  We compute difficulty as Big Endian.
+	return uint64(b[7]) | uint64(b[6])<<8 | uint64(b[5])<<16 | uint64(b[4])<<24 |
+		uint64(b[3])<<32 | uint64(b[2])<<40 | uint64(b[1])<<48 | uint64(b[0])<<56
 }

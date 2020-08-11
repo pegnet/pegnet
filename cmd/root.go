@@ -31,6 +31,7 @@ var (
 	WalletdUser     string
 	WalletdPass     string
 	Timeout         uint
+	BatchSize       int
 )
 
 func init() {
@@ -45,6 +46,7 @@ func init() {
 	RootCmd.PersistentFlags().StringVarP(&WalletdPass, "walletdpass", "p", "", "The RPC Password of Walletd, if enabled")
 	RootCmd.PersistentFlags().StringVarP(&api.APIHost, "pegnethost", "g", "localhost:8099", "IPAddr:port# of the api host to send requests too.")
 	RootCmd.PersistentFlags().UintVar(&Timeout, "timeout", 90, "The time (in seconds) that the miner tolerates the downtime of the factomd API before shutting down")
+	RootCmd.PersistentFlags().IntVar(&BatchSize, "batch", 256, "Batch size (int number) for miner to run in parallel")
 
 	// Flags that affect the config file. Should not be loaded into globals
 	RootCmd.PersistentFlags().Int("miners", -1, "Change the number of miners being run (default to config file)")
@@ -91,8 +93,10 @@ var RootCmd = &cobra.Command{
 		LaunchControlPanel(Config, ctx, monitor, statTracker, b)
 		var _ = apiserver
 
+
 		// This is a blocking call
-		coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
+		//coord := LaunchMiners(Config, ctx, monitor, grader, statTracker)
+		coord := LaunchMinersBatch(Config, ctx, monitor, grader, statTracker, BatchSize)
 
 		// Calling cancel() will cancel the stat tracker collection AND the miners
 		var _, _ = cancel, coord
@@ -247,7 +251,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 var completionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "!EXPERIMENTAL! Generates bash completion scripts.",
-	Long: `!EXPERIMENTAL! Generates bash completion scripts. You can store something like this in your bashrc: 
+	Long: `!EXPERIMENTAL! Generates bash completion scripts. You can store something like this in your bashrc:
 pegnet completion > /tmp/ntc && source /tmp/ntc`,
 	Run: func(cmd *cobra.Command, args []string) {
 		addGetEncodingCommands()
