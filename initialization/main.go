@@ -111,6 +111,7 @@ func main() {
 		"TransactionChain":       {[]byte(protocol), []byte(network), []byte(common.TransactionChainTag)},
 		"MinerChain":             {[]byte(protocol), []byte(network), []byte(common.MinerChainTag)},
 		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte(common.OPRChainTag)},
+		"StakingPriceRecordChain": {[]byte(protocol), []byte(network), []byte(common.SPRChainTag)},
 	}
 	for tag, chainName := range chainNames {
 		chainID, txID, err := CreateChain(ecAddress, chainName)
