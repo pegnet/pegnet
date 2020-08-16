@@ -41,6 +41,7 @@ func InitLX() {
 const (
 	_ = iota
 	BatchCommand
+	NewNoncePrefix
 	NewOPRHash
 	ResetRecords
 	MinimumAccept
@@ -68,7 +69,7 @@ type Winner struct {
 type PegnetMiner struct {
 	// ID is the miner number, starting with "1". Every miner launched gets the next
 	// sequential number.
-	ID         int            `json:"id"`
+	ID         uint32         `json:"id"`
 	Config     *config.Config `json:"-"` //  The config of the miner using the record
 	PersonalID uint32         // The miner thread id
 
@@ -108,15 +109,26 @@ type oprMiningState struct {
 	keep int
 }
 
-// NonceIncrementer is just simple to increment nonces
-type NonceIncrementer struct {
-	Nonce         []byte
-	lastNonceByte int
+func (i *NonceIncrementer) Prefix() []byte {
+	return i.Nonce[:i.lastPrefixByte+1]
 }
 
-func NewNonceIncrementer(id int) *NonceIncrementer {
+// NonceIncrementer is just simple to increment nonces
+type NonceIncrementer struct {
+	Nonce          []byte
+	lastNonceByte  int
+	lastPrefixByte int
+}
+
+func NewNonceIncrementer(id uint32, personalid uint32) *NonceIncrementer {
 	n := new(NonceIncrementer)
-	n.Nonce = []byte{byte(id), 0}
+
+	buf := make([]byte, 4)
+	binary.BigEndian.PutUint32(buf, id)
+	buf = append(buf, byte(personalid))
+
+	n.lastPrefixByte = len(buf) - 1
+	n.Nonce = append(buf, 0)
 	n.lastNonceByte = 1
 	return n
 }
@@ -125,28 +137,28 @@ func NewNonceIncrementer(id int) *NonceIncrementer {
 // the first byte, as that is our ID and give us our nonce space
 //	So []byte(ID, 255) -> []byte(ID, 1, 0) -> []byte(ID, 1, 1)
 func (i *NonceIncrementer) NextNonce() {
-	idx := len(i.Nonce) - 1
+	idx := len(i.Nonce) - i.lastNonceByte
 	for {
 		i.Nonce[idx]++
 		if i.Nonce[idx] == 0 {
 			idx--
-			if idx == 0 { // This is my prefix, don't touch it!
-				rest := append([]byte{1}, i.Nonce[1:]...)
-				i.Nonce = append([]byte{i.Nonce[0]}, rest...)
+			if idx == i.lastPrefixByte { // This is my prefix, don't touch it!
+				rest := append([]byte{1}, i.Nonce[i.lastPrefixByte+1:]...)
+				i.Nonce = append(i.Nonce[:i.lastPrefixByte+1], rest...)
 				break
 			}
 		} else {
 			break
 		}
 	}
-
 }
 
 func (p *PegnetMiner) ResetNonce() {
-	p.MiningState.NonceIncrementer = NewNonceIncrementer(p.ID)
+	p.MiningState.NonceIncrementer = NewNonceIncrementer(p.ID, p.PersonalID)
+	p.resetStatic()
 }
 
-func NewPegnetMinerFromConfig(c *config.Config, id int, commands <-chan *MinerCommand) *PegnetMiner {
+func NewPegnetMinerFromConfig(c *config.Config, id uint32, commands <-chan *MinerCommand) *PegnetMiner {
 	p := new(PegnetMiner)
 	InitLX()
 	p.Config = c
@@ -156,7 +168,7 @@ func NewPegnetMinerFromConfig(c *config.Config, id int, commands <-chan *MinerCo
 	p.MiningState.keep, _ = p.Config.Int("Miner.RecordsPerBlock")
 
 	// Some inits
-	p.MiningState.NonceIncrementer = NewNonceIncrementer(p.ID)
+	p.MiningState.NonceIncrementer = NewNonceIncrementer(p.ID, p.PersonalID)
 	p.ResetNonce()
 	p.MiningState.rankings = opr.NewNonceRanking(p.MiningState.keep)
 
@@ -205,6 +217,13 @@ func (p *PegnetMiner) Mine(ctx context.Context) {
 	}
 
 }
+
+func (p *PegnetMiner) resetStatic() {
+	p.MiningState.static = make([]byte, len(p.MiningState.oprhash)+len(p.MiningState.Prefix()))
+	i := copy(p.MiningState.static, p.MiningState.oprhash)
+	copy(p.MiningState.static[i:], p.MiningState.Prefix())
+}
+
 
 func (p *PegnetMiner) MineBatch(ctx context.Context, batchsize int) {
 	limit := uint32(math.MaxUint32) - uint32(batchsize)
@@ -295,8 +314,12 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 		for _, c := range commands {
 			p.HandleCommand(c)
 		}
+	case NewNoncePrefix:
+		p.ID = c.Data.(uint32)
+		p.ResetNonce()
 	case NewOPRHash:
 		p.MiningState.oprhash = c.Data.([]byte)
+		p.resetStatic()
 	case ResetRecords:
 		p.ResetNonce()
 		p.MiningState.rankings = opr.NewNonceRanking(p.MiningState.keep)

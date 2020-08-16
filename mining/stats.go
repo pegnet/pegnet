@@ -153,7 +153,7 @@ func (t *GlobalStatTracker) fetch(height int) *StatisticBucket {
 // GroupMinerStats has the stats for all miners running from a
 // coordinator. It will do aggregation for simple global stats
 type GroupMinerStats struct {
-	Miners      map[int]*SingleMinerStats `json:"miners"`
+	Miners      map[uint32]*SingleMinerStats `json:"miners"`
 	BlockHeight int                       `json:"blockheight"`
 	ID          string                    `json:"id"`
 
@@ -162,7 +162,7 @@ type GroupMinerStats struct {
 
 func NewGroupMinerStats(id string, height int) *GroupMinerStats {
 	g := new(GroupMinerStats)
-	g.Miners = make(map[int]*SingleMinerStats)
+	g.Miners = make(map[uint32]*SingleMinerStats)
 	g.ID = id
 	g.BlockHeight = height
 	g.Tags = make(map[string]string)
@@ -236,8 +236,8 @@ func (g *GroupMinerStats) LogFields() log.Fields {
 
 // SingleMinerStats is the stats of a single miner
 type SingleMinerStats struct {
-	ID               int   `json:"id"`
-	TotalHashes      int64 `json:"totalhashes"`
+	ID               uint32    `json:"id"`
+	TotalHashes      int64     `json:"totalhashes"`
 	TotalSubmissions int
 	BestDifficulty   uint64    `json:"bestdifficulty"`
 	Start            time.Time `json:"start"`

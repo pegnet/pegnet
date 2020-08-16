@@ -26,6 +26,7 @@ type MiningCoordinator struct {
 
 	// Miners mine the opr hashes
 	Miners []*ControlledMiner
+
 	// FactomEntryWriter writes the oprs to chain
 	FactomEntryWriter IEntryWriter
 
@@ -93,7 +94,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 	c.Miners = make([]*ControlledMiner, numMiners)
 	for i := range c.Miners {
-		c.Miners[i] = c.NewMiner(i)
+		c.Miners[i] = c.NewMiner(uint32(i))
 	}
 
 	return nil
@@ -247,8 +248,10 @@ func (c *MiningCoordinator) LaunchMinersBatch(ctx context.Context, batchSize int
 	var statsAggregate chan *SingleMinerStats
 
 	// Launch!
-	for _, m := range c.Miners {
-		go m.Miner.MineBatch(ctx, batchSize)
+	if len(c.Miners) > 0 {
+		for _, m := range c.Miners {
+			go m.Miner.MineBatch(ctx, batchSize)
+		}
 	}
 
 	first := false
@@ -371,7 +374,7 @@ type ControlledMiner struct {
 	CommandChannel chan *MinerCommand
 }
 
-func (c *MiningCoordinator) NewMiner(id int) *ControlledMiner {
+func (c *MiningCoordinator) NewMiner(id uint32) *ControlledMiner {
 	m := new(ControlledMiner)
 	channel := make(chan *MinerCommand, 10)
 	m.Miner = NewPegnetMinerFromConfig(c.config, id, channel)
