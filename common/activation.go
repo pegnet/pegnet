@@ -42,10 +42,10 @@ var (
 	// StakingHeights indicates the SPR version, which dictates the SPR format.
 	StakingHeights = map[string]func(height int64) uint8{
 		MainNetwork: func(height int64) uint8 {
-			return 0 // Latest code version
+			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			return 0
+			return 5
 		},
 	}
 

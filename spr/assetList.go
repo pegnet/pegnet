@@ -54,7 +54,10 @@ func (o StakingPriceRecordAssetList) Value(asset string) float64 {
 
 // List returns the list of assets in the global order
 func (o StakingPriceRecordAssetList) List(version uint8) []Token {
-	assets := common.AssetsV4
+	assets := common.AssetsV5
+	if version == 5 {
+		assets = common.AssetsV5
+	}
 	tokens := make([]Token, len(assets))
 	for i, asset := range assets {
 		tokens[i].Code = asset
@@ -98,6 +101,8 @@ func (o StakingPriceRecordAssetList) MarshalJSON() ([]byte, error) {
 		assets = common.AssetsV2
 	case 4:
 		assets = common.AssetsV4
+	case 5:
+		assets = common.AssetsV5
 	}
 
 	s := "{"

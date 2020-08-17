@@ -103,8 +103,8 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate all the Assets exists
 	switch spr.Version {
-	case 0:
-		return spr.Assets.ContainsExactly(common.AssetsV4)
+	case 5:
+		return spr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
 	}
@@ -224,14 +224,8 @@ func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPric
 // GetSPRecord initializes the SPR with polling data and factom entry
 func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
-
-	oprVersion := 1
-	if spr.Version == 0 {
-		oprVersion = 4
-	}
-
 	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(oprVersion))
+	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(spr.Version))
 	if err != nil {
 		return err
 	}
@@ -248,7 +242,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 
 //  Staking Price Record (SPR)
 //	ExtIDs:
-//		version byte (byte, default 0)
+//		version byte (byte, default 5)
 //		RCD of the payout address
 //		signature covering [ExtID]
 //	Content: (protobuf)
@@ -272,50 +266,68 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 
 // SafeMarshal will marshal the json depending on the opr version
 func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
+	// our opr version must be set before entering this
+	if spr.Version < 5 {
+		return nil, fmt.Errorf("spr version is not set")
+	}
+
 	if spr.Assets == nil {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	assetList := common.AssetsV4
-	prices := make([]uint64, len(spr.Assets))
+	if spr.Version == 5 {
+		assetList := common.AssetsV5
+		prices := make([]uint64, len(spr.Assets))
 
-	for i, asset := range assetList {
-		prices[i] = spr.Assets[asset]
+		for i, asset := range assetList {
+			prices[i] = spr.Assets[asset]
+		}
+
+		pOpr := &oprencoding.ProtoOPR{
+			Address: spr.CoinbaseAddress,
+			ID:      "",
+			Height:  spr.Dbht,
+			Assets:  prices,
+			Winners: nil,
+		}
+
+		return proto.Marshal(pOpr)
 	}
 
-	pOpr := &oprencoding.ProtoOPR{
-		Address: spr.CoinbaseAddress,
-		ID:      "",
-		Height:  spr.Dbht,
-		Assets:  prices,
-		Winners: nil,
-	}
-
-	return proto.Marshal(pOpr)
+	return nil, fmt.Errorf("spr version %d not supported", spr.Version)
 }
 
 // SafeMarshal will unmarshal the json
 func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
-	protoOPR := oprencoding.ProtoOPR{}
-	err := proto.Unmarshal(data, &protoOPR)
-	if err != nil {
-		return err
+	// our opr version must be set before entering this
+	if spr.Version < 5 {
+		return fmt.Errorf("opr version is 0")
 	}
 
-	assetList := common.AssetsV4
-	spr.Assets = make(StakingPriceRecordAssetList)
-	// Populate the original opr
-	spr.CoinbaseAddress = protoOPR.Address
-	spr.Dbht = protoOPR.Height
+	if spr.Version == 5 {
+		protoOPR := oprencoding.ProtoOPR{}
+		err := proto.Unmarshal(data, &protoOPR)
+		if err != nil {
+			return err
+		}
 
-	if len(protoOPR.Assets) != len(assetList) {
-		return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(assetList))
+		assetList := common.AssetsV5
+		spr.Assets = make(StakingPriceRecordAssetList)
+		// Populate the original opr
+		spr.CoinbaseAddress = protoOPR.Address
+		spr.Dbht = protoOPR.Height
+
+		if len(protoOPR.Assets) != len(assetList) {
+			return fmt.Errorf("found %d assets, expected %d", len(protoOPR.Assets), len(assetList))
+		}
+
+		// Hard coded list of assets
+		for i, asset := range assetList {
+			spr.Assets[asset] = protoOPR.Assets[i]
+		}
+
+		return nil
 	}
 
-	// Hard coded list of assets
-	for i, asset := range assetList {
-		spr.Assets[asset] = protoOPR.Assets[i]
-	}
-
-	return nil
+	return fmt.Errorf("spr version %d not supported", spr.Version)
 }
