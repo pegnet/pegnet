@@ -69,7 +69,7 @@ type Winner struct {
 type PegnetMiner struct {
 	// ID is the miner number, starting with "1". Every miner launched gets the next
 	// sequential number.
-	ID         uint32         `json:"id"`
+	ID         int            `json:"id"`
 	Config     *config.Config `json:"-"` //  The config of the miner using the record
 	PersonalID uint32         // The miner thread id
 
@@ -120,11 +120,11 @@ type NonceIncrementer struct {
 	lastPrefixByte int
 }
 
-func NewNonceIncrementer(id uint32, personalid uint32) *NonceIncrementer {
+func NewNonceIncrementer(id int, personalid uint32) *NonceIncrementer {
 	n := new(NonceIncrementer)
 
 	buf := make([]byte, 4)
-	binary.BigEndian.PutUint32(buf, id)
+	binary.BigEndian.PutUint32(buf, uint32(id))
 	buf = append(buf, byte(personalid))
 
 	n.lastPrefixByte = len(buf) - 1
@@ -158,7 +158,7 @@ func (p *PegnetMiner) ResetNonce() {
 	p.resetStatic()
 }
 
-func NewPegnetMinerFromConfig(c *config.Config, id uint32, commands <-chan *MinerCommand) *PegnetMiner {
+func NewPegnetMinerFromConfig(c *config.Config, id int, commands <-chan *MinerCommand) *PegnetMiner {
 	p := new(PegnetMiner)
 	InitLX()
 	p.Config = c
@@ -315,7 +315,7 @@ func (p *PegnetMiner) HandleCommand(c *MinerCommand) {
 			p.HandleCommand(c)
 		}
 	case NewNoncePrefix:
-		p.ID = c.Data.(uint32)
+		p.ID = c.Data.(int)
 		p.ResetNonce()
 	case NewOPRHash:
 		p.MiningState.oprhash = c.Data.([]byte)

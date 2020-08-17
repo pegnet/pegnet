@@ -129,7 +129,7 @@ func (c *MiningClient) Forwarder() {
 			if err != nil {
 				fLog.WithField("evt", "entry").WithError(err).Error("failed to send stats")
 			} else {
-				fLog.WithField("evt", "entry").Debugf("sent entry")
+				fLog.WithField("evt", "entry").Debugf("sent entry upstream")
 			}
 		}
 	}

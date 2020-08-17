@@ -94,7 +94,7 @@ func (c *MiningCoordinator) InitMinters() error {
 
 	c.Miners = make([]*ControlledMiner, numMiners)
 	for i := range c.Miners {
-		c.Miners[i] = c.NewMiner(uint32(i))
+		c.Miners[i] = c.NewMiner(i)
 	}
 
 	return nil
@@ -350,6 +350,7 @@ MiningLoop:
 				// Write to blockchain (this is non blocking)
 				c.FactomEntryWriter.CollectAndWrite(false)
 
+				hLog.Info("group stats")
 				groupStats := NewGroupMinerStats("main", int(fds.Dbht))
 				// Collect stats
 				cm := 0
@@ -361,6 +362,7 @@ MiningLoop:
 					}
 				}
 
+				hLog.Info("group stats2")
 				// groupStats is the stats for all the miners for this block
 				c.StatTracker.MiningStatsChannel <- groupStats
 
@@ -374,7 +376,7 @@ type ControlledMiner struct {
 	CommandChannel chan *MinerCommand
 }
 
-func (c *MiningCoordinator) NewMiner(id uint32) *ControlledMiner {
+func (c *MiningCoordinator) NewMiner(id int) *ControlledMiner {
 	m := new(ControlledMiner)
 	channel := make(chan *MinerCommand, 10)
 	m.Miner = NewPegnetMinerFromConfig(c.config, id, channel)
