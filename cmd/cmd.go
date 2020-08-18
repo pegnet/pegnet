@@ -40,6 +40,7 @@ func init() {
 	RootCmd.AddCommand(networkCoordinator)
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
+	RootCmd.AddCommand(staker)
 
 	decode.AddCommand(decodeEntry)
 	decode.AddCommand(decodeEblock)
@@ -230,13 +231,13 @@ var datasources = &cobra.Command{
 		"opposite; given an asset what datasources include it.",
 	Example:   "pegnet datasources FCT\npegnet datasources CoinMarketCap",
 	Args:      CombineCobraArgs(CustomArgOrderValidationBuilder(false, ArgValidatorAssetOrExchange)),
-	ValidArgs: append(common.AssetsV4, polling.AllDataSourcesList()...),
+	ValidArgs: append(common.AssetsV5, polling.AllDataSourcesList()...),
 	Run: func(cmd *cobra.Command, args []string) {
 		ValidateConfig(Config) // Will fatal log if it fails
 
 		// User selected a data source or asset
 		if len(args) == 1 {
-			if common.AssetListContainsCaseInsensitive(common.AssetsV4, args[0]) {
+			if common.AssetListContainsCaseInsensitive(common.AssetsV5, args[0]) {
 				// Specified an asset
 				asset := strings.ToUpper(args[0])
 
@@ -280,7 +281,7 @@ var datasources = &cobra.Command{
 
 		fmt.Println()
 		fmt.Println("Assets and their data source order. The order left to right is the fallback order.")
-		for _, asset := range common.AssetsV4 {
+		for _, asset := range common.AssetsV5 {
 			str := d.AssetPriorityString(asset)
 			fmt.Printf("\t%4s (%d) : %s\n", asset, len(d.AssetSources[asset]), str)
 		}
@@ -314,6 +315,25 @@ var grader = &cobra.Command{
 				fmt.Println(a)
 			}
 		}
+	},
+}
+
+var staker = &cobra.Command{
+	Use: "stake ",
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
+
+		ValidateStakingConfig(Config) // Will fatal log if it fails
+
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+
+		// This is a blocking call
+		coord_s := LaunchStaker(Config, ctx, monitor)
+
+		// Calling cancel() will cancel the staker
+		var _, _ = cancel, coord_s
 	},
 }
 

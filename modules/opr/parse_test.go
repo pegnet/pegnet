@@ -29,6 +29,9 @@ func TestParse(t *testing.T) {
 	t.Run("V4 Test Parse", func(t *testing.T) {
 		testParse(t, 4)
 	})
+	t.Run("V5 Test Parse", func(t *testing.T) {
+		testParse(t, 5)
+	})
 }
 
 // testParse checks that an opr can be marshalled into the same content used to create it.
@@ -57,7 +60,7 @@ func testParse(t *testing.T, version uint8) {
 
 		if uint8(o.GetType()) != version {
 			// V3 and V4 both use the same content type as V2
-			if (version == 3 || version == 4) && o.GetType() != opr.V2 {
+			if (version == 3 || version == 4 || version == 5) && o.GetType() != opr.V2 {
 				t.Errorf("different version parsed than expected")
 			}
 		}
@@ -115,6 +118,9 @@ func TestClone(t *testing.T) {
 	t.Run("V4 Test Clone", func(t *testing.T) {
 		testClone(t, 4)
 	})
+	t.Run("V5 Test Clone", func(t *testing.T) {
+		testClone(t, 5)
+	})
 }
 
 func testClone(t *testing.T, version uint8) {
@@ -146,6 +152,10 @@ func TestUnder1EC(t *testing.T) {
 
 	t.Run("version 4", func(t *testing.T) {
 		test1EC(t, 4)
+	})
+
+	t.Run("version 5", func(t *testing.T) {
+		test1EC(t, 5)
 	})
 }
 

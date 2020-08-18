@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	config "github.com/zpatrick/go-config"
@@ -37,7 +36,9 @@ func (d *CoinCapDataSource) Url() string {
 }
 
 func (d *CoinCapDataSource) SupportedPegs() []string {
-	return append(common.CryptoAssets, common.V4CryptoAdditions...)
+	s := append(common.CryptoAssets, common.V4CryptoAdditions...)
+	V5CryptoAdditions := []string{"NEO", "ETC", "ONT", "DOGE", "VET", "HT", "ALGO", "DGB"}
+	return append(s, V5CryptoAdditions...)
 }
 
 func (d *CoinCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -144,10 +145,20 @@ var CoinCapIOCryptoAssetNames = map[string]string{
 	"ATOM": "cosmos",
 	"BAT":  "basic-attention-token",
 	"XTZ":  "tezos",
+	// V5 Adds
+	"NEO":  "neo",
+	"ETC":  "ethereum-classic",
+	"ONT":  "ontology",
+	"DOGE": "dogecoin",
+	"VET":  "vechain",
+	"HT":   "huobi-token",
+	"ALGO": "algorand",
+	"DGB":  "digibyte",
 }
 
 func (d CoinCapDataSource) CallCoinCap(config *config.Config) (CoinCapResponse, error) {
-	var CoinCapResponse CoinCapResponse
+	var coinCapResponse CoinCapResponse
+	var emptyResponse CoinCapResponse
 
 	var ids []string
 	// Need to append all the ids we care about for the call
@@ -155,23 +166,19 @@ func (d CoinCapDataSource) CallCoinCap(config *config.Config) (CoinCapResponse, 
 		ids = append(ids, CoinCapIOCryptoAssetNames[a])
 	}
 
-	operation := func() error {
-		url := "http://api.coincap.io/v2/assets?ids=" + strings.Join(ids, ",")
-		resp, err := http.Get(url)
-		if err != nil {
-			log.WithError(err).Warning("Failed to get response from CoinCap")
-			return err
-		}
-
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else if err = json.Unmarshal(body, &CoinCapResponse); err != nil {
-			return err
-		}
-		return nil
+	url := "http://api.coincap.io/v2/assets?ids=" + strings.Join(ids, ",")
+	resp, err := http.Get(url)
+	if err != nil {
+		log.WithError(err).Warning("Failed to get response from CoinCap")
+		return emptyResponse, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
-	return CoinCapResponse, err
+	defer resp.Body.Close()
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return emptyResponse, err
+	} else if err = json.Unmarshal(body, &coinCapResponse); err != nil {
+		return emptyResponse, err
+	}
+
+	return coinCapResponse, err
 }

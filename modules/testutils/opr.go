@@ -70,7 +70,7 @@ func RandomOPRWithFieldsAndModify(version uint8, dbht int32, prevWinners []strin
 		}
 		extids[2] = []byte{1}
 		io = o
-	case 2, 3, 4:
+	case 2, 3, 4, 5:
 		o := new(V2Content)
 		o.Winners = make([][]byte, len(prevWinners))
 		for i := range o.Winners {
@@ -82,6 +82,9 @@ func RandomOPRWithFieldsAndModify(version uint8, dbht int32, prevWinners []strin
 		assetList := V2Assets
 		if version == 4 {
 			assetList = V4Assets
+		}
+		if version == 5 {
+			assetList = V5Assets
 		}
 		o.Assets = make([]uint64, len(assetList))
 
@@ -119,7 +122,7 @@ func WinnerAmt(version uint8) int {
 	switch version {
 	case 1:
 		return 10
-	case 2, 3, 4:
+	case 2, 3, 4, 5:
 		return 25
 	}
 	return 0

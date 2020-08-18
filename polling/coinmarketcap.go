@@ -12,7 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	config "github.com/zpatrick/go-config"
 )
@@ -50,7 +49,7 @@ func (d *CoinMarketCapDataSource) ApiUrl() string {
 }
 
 func (d *CoinMarketCapDataSource) SupportedPegs() []string {
-	return common.MergeLists(common.CryptoAssets, common.V4CryptoAdditions, common.PEGAsset)
+	return common.MergeLists(common.CryptoAssets, common.V4CryptoAdditions, common.PEGAsset, common.V5CryptoAdditions)
 }
 
 func (d *CoinMarketCapDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -124,26 +123,32 @@ func (d *CoinMarketCapDataSource) CurrencyIDMapping() map[string]int {
 		"XTZ":  2011,
 		"BAT":  1697,
 		"ATOM": 3794,
+		"HBAR": 4642,
+		"NEO":  1376,
+		"CRO":  3635,
+		"ETC":  1321,
+		"ONT":  2566,
+		"DOGE": 74,
+		"VET":  3077,
+		"HT":   2502,
+		"ALGO": 4030,
+		"DGB":  109,
 	}
 }
 
 func (d *CoinMarketCapDataSource) CallCoinMarketCap() (*CoinMarketCapResponse, error) {
 	var resp *CoinMarketCapResponse
 
-	operation := func() error {
-		data, err := d.FetchPeggedPrices()
-		if err != nil {
-			return err
-		}
-
-		resp, err = d.ParseFetchedPrices(data)
-		if err != nil {
-			return err
-		}
-		return nil
+	data, err := d.FetchPeggedPrices()
+	if err != nil {
+		return nil, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
+	resp, err = d.ParseFetchedPrices(data)
+	if err != nil {
+		return nil, err
+	}
+
 	return resp, err
 }
 

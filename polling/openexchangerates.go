@@ -11,7 +11,6 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 
-	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -36,7 +35,7 @@ func (d *OpenExchangeRatesDataSource) Url() string {
 }
 
 func (d *OpenExchangeRatesDataSource) SupportedPegs() []string {
-	return common.MergeLists(common.CurrencyAssets, common.CommodityAssets, []string{"XBT"}, common.V4CurrencyAdditions)
+	return common.MergeLists(common.CurrencyAssets, common.CommodityAssets, []string{"XBT"}, common.V4CurrencyAdditions, common.V5CurrencyAdditions)
 }
 
 func (d *OpenExchangeRatesDataSource) FetchPegPrices() (peg PegAssets, err error) {
@@ -84,7 +83,8 @@ type OpenExchangeRatesResponse struct {
 }
 
 func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse, err error) {
-	var OpenExchangeRatesResponse OpenExchangeRatesResponse
+	var openExchangeRatesResponse OpenExchangeRatesResponse
+	var emptyResponse OpenExchangeRatesResponse
 
 	var apikey string
 	{
@@ -92,28 +92,24 @@ func CallOpenExchangeRates(c *config.Config) (response OpenExchangeRatesResponse
 		check(err)
 	}
 
-	operation := func() error {
-		resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=" + apikey)
-		if err != nil {
-			log.WithError(err).Warning("Failed to get response from OpenExchangeRates")
-			return err
-		}
-
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else if err = json.Unmarshal(body, &OpenExchangeRatesResponse); err != nil {
-			return err
-		}
-		return nil
+	resp, err := http.Get("https://openexchangerates.org/api/latest.json?app_id=" + apikey)
+	if err != nil {
+		log.WithError(err).Warning("Failed to get response from OpenExchangeRates")
+		return emptyResponse, err
 	}
 
-	err = backoff.Retry(operation, PollingExponentialBackOff())
+	defer resp.Body.Close()
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return emptyResponse, err
+	} else if err = json.Unmarshal(body, &openExchangeRatesResponse); err != nil {
+		return emptyResponse, err
+	}
+
 	// Price is inverted
 	if err == nil {
-		for k, v := range OpenExchangeRatesResponse.Rates {
-			OpenExchangeRatesResponse.Rates[k] = v
+		for k, v := range openExchangeRatesResponse.Rates {
+			openExchangeRatesResponse.Rates[k] = v
 		}
 	}
-	return OpenExchangeRatesResponse, err
+	return openExchangeRatesResponse, err
 }

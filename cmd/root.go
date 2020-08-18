@@ -126,7 +126,20 @@ func ValidateConfig(config *config.Config) {
 	if err := common.ValidIdentity(identity); err != nil {
 		log.WithError(err).Fatal("invalid identity")
 	}
+}
 
+// ValidateStakingConfig will validate the config is up to snuff.
+// Do w/e config validation we want. Will fatal if it fails
+func ValidateStakingConfig(config *config.Config) {
+	_, err := config.String("Staker.Protocol")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker protocol from config")
+	}
+
+	_, err = config.String("Staker.Network")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker network from config")
+	}
 }
 
 func initLogger() {
@@ -159,10 +172,11 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
 		common.FloatingPegPriceActivation = 0
 		common.V4HeightActivation = 0
+		common.V20HeightActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
-		common.V4HeightActivation = int64(testingact)
+		common.V20HeightActivation = int64(testingact)
 	}
 
 	// Config setup

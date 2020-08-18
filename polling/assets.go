@@ -275,6 +275,9 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	if oprversion == 4 {
 		assets = common.AssetsV4
 	}
+	if oprversion == 5 {
+		assets = common.AssetsV5
+	}
 	start := time.Now()
 
 	// Wrap all the data sources with a quick caching layer for
@@ -292,7 +295,7 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	for _, asset := range assets {
 		var price PegItem
 		// For each asset we try and find the best price quote we can.
-		price, err := d.PullBestPrice(asset, start, cacheWrap)
+		price, err := d.PullBestPrice(asset, start, cacheWrap, oprversion)
 		if err != nil { // This will only be the last err in the data source list.
 			// No prices found for a peg, this pull failed
 			return nil, fmt.Errorf("no price found for %s : %s", asset, err.Error())
@@ -319,12 +322,32 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 	return pa, nil
 }
 
+// Get Trimmed Mean calculation
+// https://www.investopedia.com/terms/t/trimmed_mean.asp
+func TrimmedMean(data []PegItem, p int) float64 {
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Value < data[j].Value
+	})
+
+	length := len(data)
+	if length <= 3 {
+		return data[length/2].Value
+	}
+
+	sum := 0.0
+	for i := p; i < length-p; i++ {
+		sum = sum + data[i].Value
+	}
+	return sum / float64(length-2*p)
+}
+
 // PullBestPrice pulls the best asset price we can find for a given asset.
 // Params:
 //		asset		Asset to pull pricing data
 //		reference	Time reference to determine 'staleness' from
 //		sources		Map of datasources to pull the price quote from.
-func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource) (pa PegItem, err error) {
+//		oprversion	OPR version
+func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources map[string]IDataSource, oprversion uint8) (pa PegItem, err error) {
 	if sources == nil {
 		// If our data sources passed in are nil, then we don't need to do cache wrapping.
 		// We should always have sources passed in, aside from unit tests.
@@ -346,23 +369,42 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 
 		if price.Value != 0 {
 			prices = append(prices, price)
-
-			// We can break out if this is a 'good' price
-			//	Is it stale AND the market is open? We can expect stale quotes in a closed market
-			if reference.Sub(price.When) > d.staleDuration && IsMarketOpen(asset, reference) {
-				// This price quote is stale, keep fetching prices
-				continue
-			}
-
-			// This price is acceptable, we can exit
-			pa = price
-			return pa, nil
 		}
 	}
 
-	// If we got here, that means that there might exist some price quotes from
-	// our data sources, but they are all stale. Instead of taking the most recent price
-	// quote, we will take the highest priority quote given our data-source order.
+	if oprversion == 5 {
+		pricesClone := prices
+		if len(pricesClone) > 0 {
+			// We calculate the tolerance band based on trimmed mean.
+			// If one datasource returns a price out of the defined tolerance band,
+			// it will not allow that source’s price to be included in that block.
+			tMean := TrimmedMean(pricesClone, 1)
+
+			toleranceRate := 0.01
+			if tMean >= 100000 {
+				toleranceRate = 0.001
+			}
+			if tMean >= 1000 {
+				toleranceRate = 0.01
+			}
+			if tMean < 1000 {
+				toleranceRate = 0.1
+			}
+			toleranceBandHigh := tMean * (1 + toleranceRate)
+			toleranceBandLow := tMean * (1 - toleranceRate)
+
+			// We keep datasource priority order here.
+			for i := 0; i < len(prices); i++ {
+				currentPrice := prices[i]
+				if currentPrice.Value >= toleranceBandLow && currentPrice.Value <= toleranceBandHigh {
+					return currentPrice, nil
+				}
+			}
+		}
+	}
+
+	// If we got here, that means that no price is passed by tolerance band.
+	// We will take the highest priority quote given our data-source order.
 	if len(prices) > 0 {
 		pa = prices[0]
 		return pa, nil

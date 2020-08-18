@@ -88,6 +88,21 @@ func TestNewGrader(t *testing.T) {
 		{"v4 badly formatted hex winner 25", args{version: 4, height: 1, previousWinners: append(winners[:24:24], "fffffffffffffff")}, true},
 		{"v4 hex too long winner 10", args{version: 4, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffffffff")}, true},
 		{"v4 hex too long winner 25", args{version: 4, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffffffff")}, true},
+
+		{"v5 incorrect 10 (not allowed 10 prev winner)", args{version: 5, height: 1, previousWinners: winners[:10]}, true},
+		{"v5 correct 25", args{version: 5, height: 1, previousWinners: winners[:25]}, false},
+		{"v5 empty winners", args{version: 5, height: 1, previousWinners: nil}, false},
+		{"v5 too few winners", args{version: 5, height: 1, previousWinners: winners[:5]}, true},
+		{"v5 between 10 and 25 winners", args{version: 5, height: 1, previousWinners: winners[:15]}, true},
+		{"v5 too many winners", args{version: 5, height: 1, previousWinners: winners[:26]}, true},
+		{"v5 non hex winner 10", args{version: 5, height: 1, previousWinners: append(winners[:9:9], "not a hex string")}, true},
+		{"v5 non hex winner 25", args{version: 5, height: 1, previousWinners: append(winners[:24:24], "not a hex string")}, true},
+		{"v5 hex too short winner 10", args{version: 5, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffff")}, true},
+		{"v5 hex too short winner 25", args{version: 5, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffff")}, true},
+		{"v5 badly formatted hex winner 10", args{version: 5, height: 1, previousWinners: append(winners[:9:9], "fffffffffffffff")}, true},
+		{"v5 badly formatted hex winner 25", args{version: 5, height: 1, previousWinners: append(winners[:24:24], "fffffffffffffff")}, true},
+		{"v5 hex too long winner 10", args{version: 5, height: 1, previousWinners: append(winners[:9:9], "ffffffffffffffffff")}, true},
+		{"v5 hex too long winner 25", args{version: 5, height: 1, previousWinners: append(winners[:24:24], "ffffffffffffffffff")}, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -147,6 +162,9 @@ func TestBlockGrader_AddOPR(t *testing.T) {
 	})
 	t.Run("V4 AddOPR", func(t *testing.T) {
 		testBlockGrader_AddOPR(t, 4)
+	})
+	t.Run("V5 AddOPR", func(t *testing.T) {
+		testBlockGrader_AddOPR(t, 5)
 	})
 }
 
