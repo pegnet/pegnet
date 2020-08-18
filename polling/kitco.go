@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -117,41 +116,38 @@ type KitcoRecord struct {
 
 func CallKitcoWeb() (KitcoData, error) {
 	var kData KitcoData
+	var emptyData KitcoData
 
-	operation := func() error {
-		resp, err := http.Get("https://www.kitco.com/market/")
-		if err != nil {
-			log.WithError(err).Warning("Failed to get response from Kitco")
-			return err
-		}
-
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else {
-			matchStart := "<table class=\"world_spot_price\">"
-			matchStop := "</table>"
-			strResp := string(body)
-			start := strings.Index(strResp, matchStart)
-			if start < 0 {
-				err = errors.New("No Response")
-				log.WithError(err).Warning("Failed to get response from Kitco")
-				return err
-			}
-			strResp = strResp[start:]
-			stop := strings.Index(strResp, matchStop)
-			strResp = strResp[0 : stop+9]
-			rows := strings.Split(strResp, "\n")
-			for _, r := range rows {
-				if strings.Index(r, "wsp-") > 0 {
-					ParseKitco(r, &kData)
-				}
-			}
-		}
-		return nil
+	resp, err := http.Get("https://www.kitco.com/market/")
+	if err != nil {
+		log.WithError(err).Warning("Failed to get response from Kitco")
+		return emptyData, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
+	defer resp.Body.Close()
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return emptyData, err
+	} else {
+		matchStart := "<table class=\"world_spot_price\">"
+		matchStop := "</table>"
+		strResp := string(body)
+		start := strings.Index(strResp, matchStart)
+		if start < 0 {
+			err = errors.New("No Response")
+			log.WithError(err).Warning("Failed to get response from Kitco")
+			return emptyData, err
+		}
+		strResp = strResp[start:]
+		stop := strings.Index(strResp, matchStop)
+		strResp = strResp[0 : stop+9]
+		rows := strings.Split(strResp, "\n")
+		for _, r := range rows {
+			if strings.Index(r, "wsp-") > 0 {
+				ParseKitco(r, &kData)
+			}
+		}
+	}
+
 	return kData, err
 }
 

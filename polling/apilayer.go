@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
@@ -86,7 +85,8 @@ func check(e error) {
 }
 
 func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
-	var APILayerResponse APILayerResponse
+	var apiLayerResponse APILayerResponse
+	var emptyResponse APILayerResponse
 
 	var apikey string
 	{
@@ -94,21 +94,17 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 		check(err)
 	}
 
-	operation := func() error {
-		resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
-		if err != nil {
-			log.WithError(err).Warning("Failed to get response from API Layer")
-		}
-
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else if err = json.Unmarshal(body, &APILayerResponse); err != nil {
-			return err
-		}
-		return err
+	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
+	if err != nil {
+		log.WithError(err).Warning("Failed to get response from API Layer")
 	}
 
-	err = backoff.Retry(operation, PollingExponentialBackOff())
-	return APILayerResponse, err
+	defer resp.Body.Close()
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return emptyResponse, err
+	} else if err = json.Unmarshal(body, &apiLayerResponse); err != nil {
+		return emptyResponse, err
+	}
+
+	return apiLayerResponse, err
 }
