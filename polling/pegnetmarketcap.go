@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 )
 
@@ -69,20 +68,16 @@ func (d *PegnetMarketCapDataSource) FetchPegPrice(peg string) (i PegItem, err er
 func (d *PegnetMarketCapDataSource) CallPegnetMarketCap() (map[string]PegnetMarketCapResponse, error) {
 	var resp map[string]PegnetMarketCapResponse
 
-	operation := func() error {
-		data, err := d.FetchPeggedPrices()
-		if err != nil {
-			return err
-		}
-
-		resp, err = d.ParseFetchedPrices(data)
-		if err != nil {
-			return err
-		}
-		return nil
+	data, err := d.FetchPeggedPrices()
+	if err != nil {
+		return nil, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
+	resp, err = d.ParseFetchedPrices(data)
+	if err != nil {
+		return nil, err
+	}
+
 	return resp, err
 }
 

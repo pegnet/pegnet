@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 )
 
@@ -66,20 +65,16 @@ func (d *CoinGeckoDataSource) FetchPegPrice(peg string) (i PegItem, err error) {
 func (d *CoinGeckoDataSource) CallCoinGecko() (map[string]CoinGeckoDataSourceResponse, error) {
 	resp := make(map[string]CoinGeckoDataSourceResponse)
 
-	operation := func() error {
-		data, err := d.FetchPeggedPrices()
-		if err != nil {
-			return err
-		}
-
-		resp, err = d.ParseFetchedPrices(data)
-		if err != nil {
-			return err
-		}
-		return nil
+	data, err := d.FetchPeggedPrices()
+	if err != nil {
+		return nil, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
+	resp, err = d.ParseFetchedPrices(data)
+	if err != nil {
+		return nil, err
+	}
+
 	return resp, err
 }
 
@@ -146,14 +141,14 @@ func (d *CoinGeckoDataSource) CurrencyIDMapping() map[string]string {
 		"XTZ":  "tezos",
 		// V5 Adds
 		"HBAR": "hedera-hashgraph",
-		"NEO": 	"neo",
-		"CRO": 	"crypto-com-chain",
-		"ETC": 	"ethereum-classic",
-		"ONT": 	"ontology",
+		"NEO":  "neo",
+		"CRO":  "crypto-com-chain",
+		"ETC":  "ethereum-classic",
+		"ONT":  "ontology",
 		"DOGE": "dogecoin",
-		"VET": 	"vechain",
-		"HT": 	"huobi-token",
-		"ALGO":	"algorand",
+		"VET":  "vechain",
+		"HT":   "huobi-token",
+		"ALGO": "algorand",
 		"DGB":  "digibyte",
 	}
 }

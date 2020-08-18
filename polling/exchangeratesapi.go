@@ -11,7 +11,6 @@ import (
 
 	"github.com/pegnet/pegnet/common"
 
-	"github.com/cenkalti/backoff"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -74,24 +73,21 @@ type ExchangeRatesAPIResponse struct {
 }
 
 func CallExchangeRatesAPI(c *config.Config) (ExchangeRatesAPIResponse, error) {
-	var ExchangeRatesAPIResponse ExchangeRatesAPIResponse
+	var exchangeRatesAPIResponse ExchangeRatesAPIResponse
+	var emptyAPIResponse ExchangeRatesAPIResponse
 
-	operation := func() error {
-		resp, err := http.Get("https://api.exchangeratesapi.io/latest?base=USD")
-		if err != nil {
-			log.WithError(err).Warning("Failed to get response from ExchangeRatesAPI")
-			return err
-		}
-
-		defer resp.Body.Close()
-		if body, err := ioutil.ReadAll(resp.Body); err != nil {
-			return err
-		} else if err = json.Unmarshal(body, &ExchangeRatesAPIResponse); err != nil {
-			return err
-		}
-		return nil
+	resp, err := http.Get("https://api.exchangeratesapi.io/latest?base=USD")
+	if err != nil {
+		log.WithError(err).Warning("Failed to get response from ExchangeRatesAPI")
+		return emptyAPIResponse, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
-	return ExchangeRatesAPIResponse, err
+	defer resp.Body.Close()
+	if body, err := ioutil.ReadAll(resp.Body); err != nil {
+		return emptyAPIResponse, err
+	} else if err = json.Unmarshal(body, &exchangeRatesAPIResponse); err != nil {
+		return emptyAPIResponse, err
+	}
+
+	return exchangeRatesAPIResponse, err
 }

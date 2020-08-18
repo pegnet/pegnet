@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/cenkalti/backoff"
-
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -77,21 +75,17 @@ func (d *FreeForexAPIDataSource) FetchPegPrice(peg string) (i PegItem, err error
 func (d *FreeForexAPIDataSource) CallFreeForexAPI() (*FreeForexAPIDataSourceResponse, error) {
 	var resp *FreeForexAPIDataSourceResponse
 
-	operation := func() error {
-		data, err := d.FetchPeggedPrices()
-		if err != nil {
-			return err
-		}
-
-		resp, err = d.ParseFetchedPrices(data)
-		if err != nil {
-			// Try the other variation
-			return err
-		}
-		return nil
+	data, err := d.FetchPeggedPrices()
+	if err != nil {
+		return nil, err
 	}
 
-	err := backoff.Retry(operation, PollingExponentialBackOff())
+	resp, err = d.ParseFetchedPrices(data)
+	if err != nil {
+		// Try the other variation
+		return nil, err
+	}
+
 	return resp, err
 }
 
