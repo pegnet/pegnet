@@ -139,7 +139,7 @@ func TestDataSourceStaleness(t *testing.T) {
 		s.Assets = common.AllAssets
 		s.SourceName = fmt.Sprintf("UnitTest%d", i)
 		s.Timestamp = func() time.Time {
-			return reference.Add(time.Duration(int(s.Value)*-1) * time.Minute)
+			return time.Now().Add(time.Duration(int(s.Value)*-1) * time.Minute)
 		}
 
 		ds[i] = s
