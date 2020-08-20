@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/pegnet/pegnet/common"
 	"github.com/zpatrick/go-config"
 )
@@ -113,16 +114,20 @@ func (d *AlternativeMeDataSource) FetchPegPrice(peg string) (i PegItem, err erro
 func (d *AlternativeMeDataSource) CallAlternativeMe() (*AlternativeMeDataSourceResponse, error) {
 	var resp *AlternativeMeDataSourceResponse
 
-	data, err := d.FetchPeggedPrices()
-	if err != nil {
-		return nil, err
+	operation := func() error {
+		data, err := d.FetchPeggedPrices()
+		if err != nil {
+			return err
+		}
+
+		resp, err = d.ParseFetchedPrices(data)
+		if err != nil {
+			return err
+		}
+		return nil
 	}
 
-	resp, err = d.ParseFetchedPrices(data)
-	if err != nil {
-		return nil, err
-	}
-
+	err := backoff.Retry(operation, PollingExponentialBackOff())
 	return resp, err
 }
 
