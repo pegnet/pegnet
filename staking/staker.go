@@ -5,6 +5,8 @@ package staking
 
 import (
 	"context"
+	"time"
+
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -73,6 +75,7 @@ func (p *PegnetStaker) Stake(ctx context.Context) {
 		case c := <-p.commands:
 			p.HandleCommand(c)
 		default:
+			time.Sleep(100 * time.Millisecond)
 		}
 
 		if p.paused {
