@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pegnet/pegnet/spr"
 	log "github.com/sirupsen/logrus"
@@ -127,6 +128,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 	}
 	fctAddrs := strings.Split(fctAddresses, ",")
 	for _, addr := range fctAddrs {
+		time.Sleep(100 * time.Millisecond) // sleep a bit to prevent factomd from dropping submissions
 		operation := func() error {
 			var err1, err2 error
 
@@ -143,6 +145,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 				return err
 			}
 			_, err1 = factom.CommitEntry(entry, w.ec)
+			time.Sleep(100 * time.Millisecond) // sleep a bit to prevent factomd from dropping submissions
 			_, err2 = factom.RevealEntry(entry)
 			if err1 == nil && err2 == nil {
 				return nil
