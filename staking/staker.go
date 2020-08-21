@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -131,6 +132,7 @@ func (p *PegnetStaker) Stake(ctx context.Context) {
 		case c := <-p.commands:
 			p.HandleCommand(c)
 		default:
+			time.Sleep(100 * time.Millisecond)
 		}
 
 		if p.paused {

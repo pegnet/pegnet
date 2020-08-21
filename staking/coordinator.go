@@ -3,6 +3,8 @@ package staking
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/spr"
 	log "github.com/sirupsen/logrus"
@@ -141,6 +143,8 @@ StakingLoop:
 				// Write to blockchain (this is non blocking)
 				c.FactomEntryWriter.CollectAndWrite(false)
 			}
+		default:
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }

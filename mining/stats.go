@@ -87,6 +87,7 @@ func (t *GlobalStatTracker) Collect(ctx context.Context) {
 				select {
 				case up <- g:
 				default:
+					time.Sleep(100 * time.Millisecond)
 				}
 			}
 		}
