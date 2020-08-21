@@ -339,7 +339,26 @@ func NewOpr(ctx context.Context, minerNumber int, dbht int32, c *config.Config, 
 
 	opr.Dbht = dbht
 	opr.Version = common.OPRVersion(opr.Network, int64(opr.Dbht))
+	// If this is a test network, then give multiple miners their own tPEG address
+	// because that is way more useful debugging than giving all miners the same
+	// PEG address.  Otherwise, give all miners the same PEG address because most
+	// users really doing mining will mostly be happen sending rewards to a single
+	// address.
+	if network == common.TestNetwork && minerNumber != 0 {
+		fct := common.DebugFCTaddresses[minerNumber][1]
+		opr.CoinbaseAddress = fct
+	} else {
+		if str, err := c.String("Miner.CoinbaseAddress"); err != nil {
+			return nil, errors.New("config file has no Coinbase PEG Address")
+		} else {
+			opr.CoinbaseAddress = str
+		}
+	}
 
+	opr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", opr.CoinbaseAddress)
+	if err != nil {
+		log.Errorf("invalid fct address in config file: %v", err)
+	}
 	var winners *OPRs
 	select {
 	case winners = <-alert: // Wait for winner
