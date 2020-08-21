@@ -83,8 +83,9 @@ func CheckStakingAddresses(config *config.Config) {
 	}
 
 	io.WriteString(os.Stderr, fmt.Sprintf("============================\n"+
+		"    %s\n"+
 		"    EC Balance is %d\n"+
-		"============================\n", bal))
+		"============================\n", ecAddress, bal))
 }
 
 func (p *PegnetStaker) Stake(ctx context.Context) {
