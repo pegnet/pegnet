@@ -145,8 +145,13 @@ func (w *EntryWriter) writeStakingRecord() error {
 			_, err1 = factom.CommitEntry(entry, w.ec)
 			_, err2 = factom.RevealEntry(entry)
 			if err1 == nil && err2 == nil {
+				log.WithFields(log.Fields{
+					"FCT":       addr,
+					"EntryHash": fmt.Sprintf("%x", entry.Hash()),
+				}).Info("SPR submitted")
 				return nil
 			}
+
 			return errors.New("failed to write SPR Entry")
 		}
 		err = backoff.Retry(operation, common.PegExponentialBackOff())
