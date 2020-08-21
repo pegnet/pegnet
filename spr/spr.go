@@ -92,10 +92,6 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 			return false
 		}
 	}
-	// Only enforce on version 2 and forward, checking valid FCT address
-	if !ValidFCTAddress(spr.CoinbaseAddress) {
-		return false
-	}
 
 	if int64(spr.Dbht) != dbht {
 		return false // DBHeight is not reported correctly
@@ -187,22 +183,6 @@ func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPric
 	spr.SPRChainID = base58.Encode(common.ComputeChainIDFromStrings([]string{protocol, network, common.SPRChainTag}))
 	spr.Dbht = dbht
 	spr.Version = common.SPRVersion(spr.Network, int64(spr.Dbht))
-
-	if network == common.TestNetwork {
-		fct := common.DebugFCTaddresses[0][1]
-		spr.CoinbaseAddress = fct
-	} else {
-		if str, err := c.String("Staker.CoinbaseAddress"); err != nil {
-			return nil, errors.New("config file has no Coinbase PEG Address")
-		} else {
-			spr.CoinbaseAddress = str
-		}
-	}
-
-	spr.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", spr.CoinbaseAddress)
-	if err != nil {
-		log.Errorf("invalid fct address in config file: %v", err)
-	}
 
 	/**
 	 *	Get SPR Record with Assets data (polling)

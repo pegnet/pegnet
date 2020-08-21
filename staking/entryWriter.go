@@ -3,9 +3,11 @@ package staking
 import (
 	"errors"
 	"fmt"
+	"strings"
+	"sync"
+
 	"github.com/pegnet/pegnet/spr"
 	log "github.com/sirupsen/logrus"
-	"sync"
 
 	"github.com/FactomProject/factom"
 	"github.com/cenkalti/backoff"
@@ -119,26 +121,38 @@ func (w *EntryWriter) writeStakingRecord() error {
 		return fmt.Errorf("no spr template")
 	}
 
-	operation := func() error {
-		var err1, err2 error
-		entry, err := w.sprTemplate.CreateSPREntry()
+	fctAddresses, err := w.config.String("Staker.CoinbaseAddress")
+	if err != nil { // Not likely to happen since we
+		return errors.New("No fctAddress found") // check for bad addresses earlier
+	}
+	fctAddrs := strings.Split(fctAddresses, ",")
+	for _, addr := range fctAddrs {
+		operation := func() error {
+			var err1, err2 error
+
+			network, _ := common.LoadConfigNetwork(w.config)
+			w.sprTemplate.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", addr)
+			if err != nil {
+				log.Errorf("invalid fct address in config file: %v", err)
+			}
+
+			w.sprTemplate.CoinbaseAddress = addr
+
+			entry, err := w.sprTemplate.CreateSPREntry()
+			if err != nil {
+				return err
+			}
+			_, err1 = factom.CommitEntry(entry, w.ec)
+			_, err2 = factom.RevealEntry(entry)
+			if err1 == nil && err2 == nil {
+				return nil
+			}
+			return errors.New("failed to write SPR Entry")
+		}
+		err = backoff.Retry(operation, common.PegExponentialBackOff())
 		if err != nil {
 			return err
 		}
-
-		_, err1 = factom.CommitEntry(entry, w.ec)
-		_, err2 = factom.RevealEntry(entry)
-		if err1 == nil && err2 == nil {
-			return nil
-		}
-
-		return errors.New("Unable to commit entry to factom")
-	}
-
-	err := backoff.Retry(operation, common.PegExponentialBackOff())
-	if err != nil {
-		// TODO: Handle error in retry
-		return err
 	}
 	return nil
 }
