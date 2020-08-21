@@ -19,6 +19,23 @@ const (
 	GradeBand float64 = 0.01
 )
 
+func TrimmedMeanFloat(data []float64, p int) float64 {
+	sort.Slice(data, func(i, j int) bool {
+		return data[i] < data[j]
+	})
+
+	length := len(data)
+	if length <= 3 {
+		return data[length/2]
+	}
+
+	sum := 0.0
+	for i := p; i < length-p; i++ {
+		sum = sum + data[i]
+	}
+	return sum / float64(length-2*p)
+}
+
 // Avg computes the average answer for the price of each token reported
 //	The list has to be in sorted in difficulty order before calling this function
 func Avg(list []*OraclePriceRecord) (avg []float64) {
@@ -46,6 +63,31 @@ func Avg(list []*OraclePriceRecord) (avg []float64) {
 	}
 	return
 }
+
+// calculate the vector of average prices
+func Avg5(list []*OraclePriceRecord) []float64 {
+	data := make([][]float64, len(list[0].GetTokens()))
+	avg := make([]float64, len(list[0].GetTokens()))
+
+	// Sum up all the prices
+	for _, opr := range list {
+		tokens := opr.GetTokens()
+		for i, token := range tokens {
+			data[i] = append(data[i], token.Value)
+		}
+	}
+	for i := range data {
+		sum := 0.0
+		for j := range data[i] {
+			sum += data[i][j]
+		}
+		noisyRate := 0.1
+		length := int(float64(len(data[i])) * noisyRate)
+		avg[i] = TrimmedMeanFloat(data[i], length+1)
+	}
+	return avg
+}
+
 
 // CalculateGrade takes the averages and grades the individual OPRs
 func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64 {
@@ -84,10 +126,72 @@ func GradeMinimum(orderedList []*OraclePriceRecord, network string, dbht int64) 
 	switch common.OPRVersion(network, dbht) {
 	case 1:
 		return gradeMinimumVersionOne(orderedList)
-	case 2, 3, 4, 5:
+	case 2, 3, 4:
 		return gradeMinimumVersionTwo(orderedList)
+	case 5:
+		return gradeMinimumVersionThree(orderedList)
 	}
 	panic("Grading version unspecified")
+}
+
+// gradeMinimumVersionTwo is version 2 grading algo
+// 1. PoW to top 50
+// 2. Grade with 1% tolerance band to top 25
+// 3. Pay top 25 equally (not done here)
+// 4. Grade to 1 without any tolerance band
+// 5. Wining price is the last one
+func gradeMinimumVersionThree(orderedList []*OraclePriceRecord) (graded []*OraclePriceRecord) {
+	list := RemoveDuplicateSubmissions(orderedList)
+	if len(list) < 25 {
+		return nil
+	}
+
+	// Sort the OPRs by self reported difficulty
+	// We will toss dishonest ones when we grade.
+	sort.SliceStable(list, func(i, j int) bool {
+		return binary.BigEndian.Uint64(list[i].SelfReportedDifficulty) > binary.BigEndian.Uint64(list[j].SelfReportedDifficulty)
+	})
+
+	// Find the top 50 with the correct difficulties
+	// 1. top50 is the top 50 PoW
+	top50 := make([]*OraclePriceRecord, 0)
+	for i, opr := range list {
+		opr.Difficulty = opr.ComputeDifficulty(opr.Nonce)
+		f := binary.BigEndian.Uint64(opr.SelfReportedDifficulty)
+		if f != opr.Difficulty {
+			log.WithFields(log.Fields{
+				"place":     i,
+				"entryhash": fmt.Sprintf("%x", opr.EntryHash),
+				"id":        opr.FactomDigitalID,
+				"dbtht":     opr.Dbht,
+			}).Warnf("Self reported difficulty incorrect Exp %x, found %x", opr.Difficulty, opr.SelfReportedDifficulty)
+			continue
+		}
+		// Honest record
+		top50 = append(top50, opr)
+		if len(top50) == 50 {
+			break // We have enough to grade
+		}
+	}
+
+	// 2. Grade with 1% tolerance Band to top 25
+	// 3. Pay top 25 (does not happen here)
+	// 4. Grade to 1 without any tolerance band
+	for i := len(top50); i >= 1; i-- {
+		avg := Avg5(top50[:i])
+		for j := 0; j < i; j++ {
+			band := 0.0
+			if i >= 25 { // Use the band until we hit the 25
+				band = GradeBand
+			}
+			CalculateGrade(avg, top50[j], band)
+		}
+
+		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Difficulty > top50[j].Difficulty })
+		sort.SliceStable(top50[:i], func(i, j int) bool { return top50[i].Grade < top50[j].Grade })
+	}
+	return top50
 }
 
 // gradeMinimumVersionTwo is version 2 grading algo
@@ -240,10 +344,20 @@ func GetRewardFromPlace(place int, network string, height int64) int64 {
 	switch common.OPRVersion(network, height) {
 	case 1:
 		return getRewardFromPlaceVersionOne(place)
-	case 2, 3, 4, 5:
+	case 2, 3, 4:
 		return getRewardFromPlaceVersionTwo(place)
+	case 5:
+		return getRewardFromPlaceVersionThree(place)
 	}
 	panic("opr version not found")
+}
+
+// getRewardFromPlaceVersionThree pays top 25 evenly
+func getRewardFromPlaceVersionThree(place int) int64 {
+	if place >= 25 {
+		return 0 // There's no participation trophy. Return zero.
+	}
+	return 360 * 1e8
 }
 
 // getRewardFromPlaceVersionTwo pays top 25 evenly
