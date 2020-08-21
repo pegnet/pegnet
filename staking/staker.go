@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/FactomProject/factom"
 	"github.com/pegnet/pegnet/common"
@@ -62,14 +63,34 @@ func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *Staker
 }
 
 func CheckStakingAddresses(config *config.Config) {
-	fctAddress, err := config.String("Staker.CoinbaseAddress")
+	fctList, err := config.String("Staker.CoinbaseAddress")
 	if err != nil {
-		panic(fmt.Sprintf("coinbase address is invalid: %s", fctAddress, err.Error()))
+		panic(fmt.Sprintf("could not extract the CoinbaseAddress: %s ", err.Error()))
 	}
-	_, err = common.ConvertFCTtoRaw(fctAddress)
-	if err != nil {
-		panic(fmt.Sprintf("coinbase address [%s] is invalid: %s", fctAddress, err.Error()))
+
+	// Make sure no addresses are duplicted in the CoinbaseAddress list.
+	fctSlice := strings.Split(fctList, ",")
+	for i, fctAddress1 := range fctSlice {
+		for j, fctAddress2 := range fctSlice {
+			if i == j {
+				continue
+			}
+			if fctAddress1 == fctAddress2 {
+				panic(fmt.Sprintf("CoinbaseAddress %s is duplicated in the config file for pegnet"))
+			}
+		}
 	}
+
+	// Check the validity of each address in CoinbaseAddress list
+	for i, fctAddress := range fctSlice {
+		_, err = common.ConvertFCTtoRaw(fctAddress)
+		if err != nil {
+			panic(fmt.Sprintf("coinbase address %d [%s] is invalid: %s", i+1, fctAddress, err.Error()))
+		}
+	}
+
+	// Check the EC address and its balance.  We are failing at zero, but maybe we should require 144?
+	// At least a day's worth of ECs?
 	ecAddress, err := config.String("Staker.ECAddress")
 	if err != nil {
 		panic("entry credit address is invalid: " + err.Error())
@@ -82,10 +103,13 @@ func CheckStakingAddresses(config *config.Config) {
 		panic("EC Balance is zero for " + ecAddress)
 	}
 
-	io.WriteString(os.Stderr, fmt.Sprintf("============================\n"+
-		"    %s\n"+
-		"    EC Balance is %d\n"+
-		"============================\n", ecAddress, bal))
+	days := float64(bal) / 144
+	eqs := "==============================================================\n"
+	io.WriteString(os.Stderr, fmt.Sprintf("\n%s", eqs))
+	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", ecAddress))
+	io.WriteString(os.Stderr, fmt.Sprintf("ECBalance is %d\n", bal))
+	io.WriteString(os.Stderr, fmt.Sprintf("Staking can run with this balance for ~%7.3f days\n", days))
+	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", eqs))
 }
 
 func (p *PegnetStaker) Stake(ctx context.Context) {
