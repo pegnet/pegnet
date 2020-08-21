@@ -5,6 +5,12 @@ package staking
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"os"
+
+	"github.com/FactomProject/factom"
+	"github.com/pegnet/pegnet/common"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -47,11 +53,38 @@ type sprStakingState struct {
 }
 
 func NewPegnetStakerFromConfig(c *config.Config, id int, commands <-chan *StakerCommand) *PegnetStaker {
+	CheckStakingAddresses(c)
 	p := new(PegnetStaker)
 	p.Config = c
 	p.ID = id
 	p.commands = commands
 	return p
+}
+
+func CheckStakingAddresses(config *config.Config) {
+	fctAddress, err := config.String("Staker.CoinbaseAddress")
+	if err != nil {
+		panic(fmt.Sprintf("coinbase address is invalid: %s", fctAddress, err.Error()))
+	}
+	_, err = common.ConvertFCTtoRaw(fctAddress)
+	if err != nil {
+		panic(fmt.Sprintf("coinbase address [%s] is invalid: %s", fctAddress, err.Error()))
+	}
+	ecAddress, err := config.String("Staker.ECAddress")
+	if err != nil {
+		panic("entry credit address is invalid: " + err.Error())
+	}
+	bal, err := factom.GetECBalance(ecAddress)
+	if err != nil {
+		panic(fmt.Sprintf("entry credit address [%s] is invalid: %s", ecAddress, err.Error()))
+	}
+	if bal == 0 {
+		panic("EC Balance is zero for " + ecAddress)
+	}
+
+	io.WriteString(os.Stderr, fmt.Sprintf("============================\n"+
+		"    EC Balance is %d\n"+
+		"============================\n", bal))
 }
 
 func (p *PegnetStaker) Stake(ctx context.Context) {
