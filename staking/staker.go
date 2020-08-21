@@ -76,7 +76,7 @@ func CheckStakingAddresses(config *config.Config) {
 				continue
 			}
 			if fctAddress1 == fctAddress2 {
-				panic(fmt.Sprintf("CoinbaseAddress %s is duplicated in the config file for pegnet"))
+				panic(fmt.Sprintf("CoinbaseAddress %s is duplicated in position %d and %d in the config file for pegnet", fctAddress1, i+1, j+1))
 			}
 		}
 	}
