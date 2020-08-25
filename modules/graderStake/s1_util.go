@@ -42,7 +42,7 @@ func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte)
 	}
 	o := &spr.S1Content{V2Content: *o2}
 
-	if exids[0][0] == 6 {
+	if extids[0][0] == 6 {
 		err := primitives.VerifySignature(content, []byte(o.Address), extids[2])
 		if err != nil {
 			return nil, NewValidateError("invalid signature")
