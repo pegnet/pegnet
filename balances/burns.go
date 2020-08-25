@@ -48,7 +48,7 @@ func (b *BurnTracking) UpdateBurns(c *config.Config, startBlock int64) error {
 		}
 
 		for _, txid := range fc.Transactions {
-			txInterface, err := factom.GetTransaction(txid.TxID)
+			txInterface, err := factom.GetTransaction(string(txid))
 			if err != nil {
 				return err
 			}

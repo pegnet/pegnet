@@ -42,7 +42,10 @@ var (
 	// StakingHeights indicates the SPR version, which dictates the SPR format.
 	StakingHeights = map[string]func(height int64) uint8{
 		MainNetwork: func(height int64) uint8 {
-			return 5 // Latest code version
+			if height < SprSignatureActivation {
+				return 5
+			}
+			return 6 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			return 5
@@ -63,6 +66,8 @@ var (
 	// V20HeightActivation indicates the activation of PegNet 2.0.
 	// Estimated to be  Aug 19th 2020 14:00 UTC
 	V20HeightActivation int64 = 258796
+
+	SprSignatureActivation int64 = 259572
 )
 
 // NetworkActive returns true if the network height is above the activation height.

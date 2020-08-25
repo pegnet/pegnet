@@ -3,7 +3,7 @@ module github.com/pegnet/pegnet
 go 1.12
 
 require (
-	github.com/FactomProject/FactomCode v0.3.5 // indirect
+	github.com/FactomProject/FactomCode v0.3.5
 	github.com/FactomProject/basen v0.0.0-20150613233007-fe3947df716e // indirect
 	github.com/FactomProject/bolt v1.1.0 // indirect
 	github.com/FactomProject/btcd v0.3.5 // indirect
@@ -11,8 +11,8 @@ require (
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/FactomProject/dynrsrc v0.3.1 // indirect
 	github.com/FactomProject/factoid v0.3.4
-	github.com/FactomProject/factom v0.0.0-20190712163801-e7717c4ab072
-	github.com/FactomProject/factomd v6.3.2+incompatible // indirect
+	github.com/FactomProject/factom v0.3.6-0.20191211155613-15b4a020e839
+	github.com/FactomProject/factomd v6.3.2+incompatible
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
 	github.com/FactomProject/go-bip32 v0.3.5 // indirect

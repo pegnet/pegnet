@@ -41,10 +41,11 @@ type StakingPriceRecord struct {
 	// Factom Entry data
 	EntryHash []byte `json:"-"` // Entry to record this record
 	Version   uint8  `json:"-"`
+	Signature []byte `json:"-"` // Signature of entry content that proves ownership of the Coinbase address
 
 	// These values define the context of the SPR, and they go into the PegNet SPR record, and are staked.
 	CoinbaseAddress string                      `json:"coinbase"` // [base58]  Payout Address
-	Dbht            int32                       `json:"dbht"`     //           The Directory Block Height of the SPR.
+	Dbht            int32                       `json:"dbht"`     // The Directory Block Height of the SPR.
 	Assets          StakingPriceRecordAssetList `json:"assets"`   // The Oracle values of the SPR, they are the meat of the SPR record, and are staked.
 }
 
@@ -236,11 +237,21 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
+
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
+
+	signature, err := factom.SignData(spr.CoinbaseAddress, e.Content)
+	if err != nil {
+		return nil, err
+	}
+	spr.Signature = signature.Signature
+
+	// e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.Signature}
+
 	return e, nil
 }
 
