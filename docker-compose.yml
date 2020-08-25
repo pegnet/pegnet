@@ -18,7 +18,7 @@ services:
 
   walletd:
     container_name: walletd_container
-    image: factominc/factom-walletd:alpine
+    image: factominc/factom-walletd:v2.2.14-alpine
     restart: unless-stopped
     ports:
       - "8089:8089"

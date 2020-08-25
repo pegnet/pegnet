@@ -243,11 +243,11 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 		return nil, err
 	}
 
-	signature, err := factom.SignData(spr.CoinbaseAddress, e.Content)
-	if err != nil {
-		return nil, err
-	}
-	spr.Signature = signature.Signature
+	// signature, err := factom.SignData(spr.CoinbaseAddress, e.Content)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// spr.Signature = signature.Signature
 
 	// e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
 	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.Signature}

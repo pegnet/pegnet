@@ -11,7 +11,7 @@ require (
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/FactomProject/dynrsrc v0.3.1 // indirect
 	github.com/FactomProject/factoid v0.3.4
-	github.com/FactomProject/factom v0.3.6-0.20191211155613-15b4a020e839
+	github.com/FactomProject/factom v0.0.0-20190712163801-e7717c4ab072
 	github.com/FactomProject/factomd v6.3.2+incompatible
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
@@ -25,6 +25,7 @@ require (
 	github.com/FactomProject/logrustash v0.0.0-20171005151533-9c7278ede46e // indirect
 	github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66 // indirect
 	github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb // indirect
+	github.com/FactomProject/snappy-go v0.0.0-20170202213131-f2f83b22c29e // indirect
 	github.com/FactomProject/web v0.1.0 // indirect
 	github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
