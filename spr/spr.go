@@ -41,10 +41,11 @@ type StakingPriceRecord struct {
 	// Factom Entry data
 	EntryHash []byte `json:"-"` // Entry to record this record
 	Version   uint8  `json:"-"`
+	Signature []byte `json:"-"` // Signature of entry content that proves ownership of the Coinbase address
 
 	// These values define the context of the SPR, and they go into the PegNet SPR record, and are staked.
 	CoinbaseAddress string                      `json:"coinbase"` // [base58]  Payout Address
-	Dbht            int32                       `json:"dbht"`     //           The Directory Block Height of the SPR.
+	Dbht            int32                       `json:"dbht"`     // The Directory Block Height of the SPR.
 	Assets          StakingPriceRecordAssetList `json:"assets"`   // The Oracle values of the SPR, they are the meat of the SPR record, and are staked.
 }
 
@@ -99,7 +100,7 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate all the Assets exists
 	switch spr.Version {
-	case 5:
+	case 5, 6:
 		return spr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
@@ -223,7 +224,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //  Staking Price Record (SPR)
 //	ExtIDs:
 //		version byte (byte, default 5)
-//		RCD of the payout address
+//		Pub Address
 //		signature covering [ExtID]
 //	Content: (protobuf)
 //		Payout Address (string)
@@ -232,15 +233,19 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
-	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
-	if err != nil {
-		return nil, err
-	}
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
+
+	var err error
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
+
+	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
+	if errS != nil {
+		return nil, err
+	}
+	e.ExtIDs = [][]byte{{spr.Version}, signature.PubKey, signature.Signature}
+
 	return e, nil
 }
 
@@ -255,7 +260,7 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	if spr.Version == 5 {
+	if spr.Version == 5 || spr.Version == 6 {
 		assetList := common.AssetsV5
 		prices := make([]uint64, len(spr.Assets))
 
@@ -284,7 +289,7 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	if spr.Version == 5 {
+	if spr.Version == 5 || spr.Version == 6 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {

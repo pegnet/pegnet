@@ -22,6 +22,10 @@ func NewGrader(version uint8, height int32) (BlockGrader, error) {
 		s1 := new(S1BlockGrader)
 		s1.height = height
 		return s1, nil
+	case 6:
+		s2 := new(S2BlockGrader)
+		s2.height = height
+		return s2, nil
 	default:
 		// most likely developer error or outdated package
 		return nil, fmt.Errorf("unsupported version")

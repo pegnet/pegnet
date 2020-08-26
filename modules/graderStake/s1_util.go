@@ -3,11 +3,12 @@ package graderStake
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
+	"sort"
+
 	"github.com/pegnet/pegnet/modules/factoidaddress"
 	"github.com/pegnet/pegnet/modules/opr"
 	"github.com/pegnet/pegnet/modules/spr"
-	"math"
-	"sort"
 )
 
 // S1Payout is the amount of Pegtoshi given to the SPR with the specified index
