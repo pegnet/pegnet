@@ -13,7 +13,7 @@ const S2Band = float64(0.01) // 1%
 
 // Version returns the underlying grader's version
 func (g *S2GradedBlock) Version() uint8 {
-	return 5
+	return 6
 }
 
 // WinnerAmount returns the version specific amount of winners.
