@@ -43,16 +43,11 @@ func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte)
 	o := &spr.S1Content{V2Content: *o2}
 
 	if extids[0][0] == 6 {
-		fmt.Println("Verifying signature")
-		fmt.Printf("RCD: %v \n", extids[1])
-		fmt.Printf("Signature: %v \n", extids[2])
-		fmt.Printf("Content: %v \n", content)
 		err2 := primitives.VerifySignature(content, extids[1], extids[2])
 		if err2 != nil {
 			fmt.Printf("%v \n", err2)
 			return nil, NewValidateError("invalid signature")
 		}
-		fmt.Println("Signature valid")
 	}
 
 	if o.Height != height {
