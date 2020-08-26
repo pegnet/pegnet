@@ -22,6 +22,7 @@ func S1Payout(index int) int64 {
 
 // ValidateS1 validates the provided data using the specified parameters
 func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte) (*GradingSPR, error) {
+	fmt.Println("In ValidateS1")
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")
 	}
@@ -43,10 +44,13 @@ func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte)
 	o := &spr.S1Content{V2Content: *o2}
 
 	if extids[0][0] == 6 {
+		fmt.Println("Verifying signature")
 		err := primitives.VerifySignature(content, []byte(o.Address), extids[2])
 		if err != nil {
 			return nil, NewValidateError("invalid signature")
 		}
+	} else {
+		fmt.Printf("Not verifying signature: %s ", extids[0][0])
 	}
 
 	if o.Height != height {
