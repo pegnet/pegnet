@@ -6,7 +6,6 @@ import (
 	"math"
 	"sort"
 
-	"github.com/FactomProject/factomd/common/primitives"
 	"github.com/pegnet/pegnet/modules/factoidaddress"
 	"github.com/pegnet/pegnet/modules/opr"
 	"github.com/pegnet/pegnet/modules/spr"
