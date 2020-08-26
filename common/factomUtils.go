@@ -35,3 +35,10 @@ func ComputeChainIDFromStrings(fields []string) []byte {
 	}
 	return ComputeChainIDFromFields(binary)
 }
+
+// ComputeRCDFromPubkey.
+func ComputeRCDFromPubkey(pubKey []byte) [32]byte {
+	data := append([]byte{0x01}, pubKey[:]...)
+	hash := sha256.Sum256(data)
+	return sha256.Sum256(hash[:])
+}

@@ -224,7 +224,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //  Staking Price Record (SPR)
 //	ExtIDs:
 //		version byte (byte, default 5)
-//		RCD of the payout address
+//		Pub Address
 //		signature covering [ExtID]
 //	Content: (protobuf)
 //		Payout Address (string)
@@ -233,27 +233,18 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
-	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
-	if err != nil {
-		return nil, err
-	}
 
+	var err error
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
 
-	signature, err := factom.SignData(spr.CoinbaseAddress, e.Content)
-	if err != nil {
+	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
+	if errS != nil {
 		return nil, err
 	}
-	fmt.Printf("RCD: %v \n", rcd)
-	fmt.Printf("Signature: %v \n", signature.Signature)
-	fmt.Printf("Content: %v \n", e.Content)
-	spr.Signature = signature.Signature // spr.Signature isn't used directly, since the signature is stored in the ExtIDs. Remove?
-
-	// e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, signature.Signature}
+	e.ExtIDs = [][]byte{{spr.Version}, signature.PubKey, signature.Signature}
 
 	return e, nil
 }
