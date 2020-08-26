@@ -68,11 +68,11 @@ var (
 
 	// V20HeightActivation indicates the activation of PegNet 2.0.
 	// Estimated to be  Aug 19th 2020 14:00 UTC
-	V20HeightActivation int64 = 258796
+	V20HeightActivation int64 = 260118
 
 	// SprSignatureActivation indicates the activation of SPR signature in PegNet 2.0.
-	// Estimated to be  Aug 27th 2020
-	SprSignatureActivation int64 = 259968
+	// Estimated to be  Aug 28th 2020
+	SprSignatureActivation int64 = 260118
 )
 
 // NetworkActive returns true if the network height is above the activation height.
