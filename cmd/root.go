@@ -173,7 +173,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.FloatingPegPriceActivation = 0
 		common.V4HeightActivation = 0
 		common.V20HeightActivation = 0
-		common.SprSignatureActivation = 5
+		common.SprSignatureActivation = 6
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
