@@ -11,8 +11,8 @@ require (
 	github.com/FactomProject/btcutilecc v0.0.0-20130527213604-d3a63a5752ec // indirect
 	github.com/FactomProject/dynrsrc v0.3.1 // indirect
 	github.com/FactomProject/factoid v0.3.4
-	github.com/FactomProject/factom v0.0.0-20190712163801-e7717c4ab072
-	github.com/FactomProject/factomd v6.3.2+incompatible // indirect
+	github.com/FactomProject/factom v0.3.6-0.20200826003247-4751d0f52dda
+	github.com/FactomProject/factomd v6.3.2+incompatible
 	github.com/FactomProject/fastsha256 v0.2.1 // indirect
 	github.com/FactomProject/fsnotify v0.9.0 // indirect
 	github.com/FactomProject/go-bip32 v0.3.5 // indirect
@@ -61,4 +61,5 @@ require (
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
+	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )

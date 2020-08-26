@@ -3,11 +3,13 @@ package graderStake
 import (
 	"crypto/sha256"
 	"fmt"
+	"math"
+	"sort"
+
+	"github.com/FactomProject/factomd/common/primitives"
 	"github.com/pegnet/pegnet/modules/factoidaddress"
 	"github.com/pegnet/pegnet/modules/opr"
 	"github.com/pegnet/pegnet/modules/spr"
-	"math"
-	"sort"
 )
 
 // S1Payout is the amount of Pegtoshi given to the SPR with the specified index
@@ -20,6 +22,7 @@ func S1Payout(index int) int64 {
 
 // ValidateS1 validates the provided data using the specified parameters
 func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte) (*GradingSPR, error) {
+	fmt.Println("In ValidateS1")
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")
 	}
@@ -28,7 +31,7 @@ func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte)
 		return nil, NewValidateError("invalid extid count")
 	}
 
-	if len(extids[0]) != 1 || extids[0][0] != 5 {
+	if len(extids[0]) != 1 || extids[0][0] < 5 || extids[0][0] > 6 {
 		return nil, NewValidateError("invalid version")
 	}
 
@@ -39,6 +42,16 @@ func ValidateS1(entryhash []byte, extids [][]byte, height int32, content []byte)
 		return nil, NewDecodeError(err.Error())
 	}
 	o := &spr.S1Content{V2Content: *o2}
+
+	if extids[0][0] == 6 {
+		fmt.Println("Verifying signature")
+		err := primitives.VerifySignature(content, []byte(o.Address), extids[2])
+		if err != nil {
+			return nil, NewValidateError("invalid signature")
+		}
+	} else {
+		fmt.Printf("Not verifying signature: %s ", extids[0][0])
+	}
 
 	if o.Height != height {
 		return nil, NewValidateError("invalid height")

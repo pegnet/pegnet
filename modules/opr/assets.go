@@ -194,7 +194,6 @@ var V5Assets = []string{
 	// New Assets
 	"HBAR",
 	"NEO",
-	"AED",
 	"CRO",
 	"ETC",
 	"ONT",
@@ -202,6 +201,8 @@ var V5Assets = []string{
 	"VET",
 	"HT",
 	"ALGO",
+	"DGB",
+	"AED",
 	"ARS",
 	"TWD",
 	"RWF",
@@ -210,7 +211,6 @@ var V5Assets = []string{
 	"TZS",
 	"BIF",
 	"ETB",
-	"DGB",
 	"NGN",
 }
 
