@@ -18,7 +18,7 @@ func NewGrader(version uint8, height int32) (BlockGrader, error) {
 		return nil, fmt.Errorf("height must be > 0")
 	}
 	switch version {
-	case 5:
+	case 5, 6:
 		s1 := new(S1BlockGrader)
 		s1.height = height
 		return s1, nil

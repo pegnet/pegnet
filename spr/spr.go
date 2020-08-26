@@ -100,7 +100,7 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate all the Assets exists
 	switch spr.Version {
-	case 5:
+	case 5, 6:
 		return spr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
@@ -247,10 +247,13 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-	spr.Signature = signature.Signature
+	fmt.Printf("RCD: %v \n", rcd)
+	fmt.Printf("Signature: %v \n", signature.Signature)
+	fmt.Printf("Content: %v \n", e.Content)
+	spr.Signature = signature.Signature // spr.Signature isn't used directly, since the signature is stored in the ExtIDs. Remove?
 
 	// e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.Signature}
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, signature.Signature}
 
 	return e, nil
 }
@@ -266,7 +269,7 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	if spr.Version == 5 {
+	if spr.Version == 5 || spr.Version == 6 {
 		assetList := common.AssetsV5
 		prices := make([]uint64, len(spr.Assets))
 
@@ -295,7 +298,7 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	if spr.Version == 5 {
+	if spr.Version == 5 || spr.Version == 6 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {

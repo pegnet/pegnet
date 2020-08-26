@@ -21,10 +21,11 @@ require (
 	github.com/FactomProject/go-simplejson v0.5.0 // indirect
 	github.com/FactomProject/go-spew v0.0.0-20160301052117-ddfaec9b42f5 // indirect
 	github.com/FactomProject/gocoding v0.0.0-20150814232539-59666ce39524 // indirect
-	github.com/FactomProject/goleveldb v0.2.1 // indirect
+	github.com/FactomProject/goleveldb v0.2.2-0.20170418171130-e7800c6976c5 // indirect
 	github.com/FactomProject/logrustash v0.0.0-20171005151533-9c7278ede46e // indirect
 	github.com/FactomProject/netki-go-partner-client v0.0.0-20160324224126-426acb535e66 // indirect
 	github.com/FactomProject/serveridentity v0.0.0-20180611231115-cf42d2aa8deb // indirect
+	github.com/FactomProject/snappy-go v0.0.0-20170202213131-f2f83b22c29e // indirect
 	github.com/FactomProject/web v0.1.0 // indirect
 	github.com/alexandrevicenzi/go-sse v0.0.0-20190531224209-805eefa457e7
 	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
@@ -61,5 +62,4 @@ require (
 	gopkg.in/gcfg.v1 v1.2.3 // indirect
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	launchpad.net/gocheck v0.0.0-20140225173054-000000000087 // indirect
 )

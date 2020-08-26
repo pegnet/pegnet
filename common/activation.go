@@ -48,7 +48,10 @@ var (
 			return 6 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			return 5
+			if height < SprSignatureActivation {
+				return 5
+			}
+			return 6 // Latest code version
 		},
 	}
 
