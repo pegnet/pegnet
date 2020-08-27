@@ -32,7 +32,7 @@ func ValidateS2(entryhash []byte, extids [][]byte, height int32, content []byte)
 	o := &spr.S1Content{V2Content: *o2}
 
 	// Verify Signature
-	if len(extids[2]) != 64 {
+	if len(extids[2]) != 96 {
 		return nil, NewValidateError("invalid signature length")
 	}
 	pubKey := extids[2][:32]
