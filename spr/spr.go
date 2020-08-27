@@ -234,7 +234,11 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
-	var err error
+	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
+	if err != nil {
+		return nil, err
+	}
+
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
 		return nil, err
@@ -244,7 +248,11 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	if errS != nil {
 		return nil, err
 	}
-	e.ExtIDs = [][]byte{{spr.Version}, signature.PubKey, signature.Signature}
+	pubKey := signature.PubKey
+	sign := signature.Signature
+	signData := append(pubKey, sign...)
+
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData}
 
 	return e, nil
 }
