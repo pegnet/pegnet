@@ -224,7 +224,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //  Staking Price Record (SPR)
 //	ExtIDs:
 //		version byte (byte, default 5)
-//		Pub Address
+//		RCD of the payout address
 //		signature covering [ExtID]
 //	Content: (protobuf)
 //		Payout Address (string)
@@ -233,27 +233,15 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
-
 	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
 	if err != nil {
 		return nil, err
 	}
-
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, spr.GetHash()}
 	e.Content, err = spr.SafeMarshal()
 	if err != nil {
 		return nil, err
 	}
-
-	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
-	if errS != nil {
-		return nil, err
-	}
-	pubKey := signature.PubKey
-	sign := signature.Signature
-	signData := append(pubKey, sign...)
-
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData}
-
 	return e, nil
 }
 
