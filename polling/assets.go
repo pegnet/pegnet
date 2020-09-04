@@ -360,7 +360,8 @@ func (d *DataSources) PullBestPrice(asset string, reference time.Time, sources m
 	var prices []PegItem
 
 	// Eval all datasources from the reference time
-	for _, source := range sourceList {
+	for i := 0; i < len(sourceList); i++ {
+		source := sourceList[i]
 		var price PegItem
 		price, err = sources[source].FetchPegPrice(asset)
 		if err != nil {
