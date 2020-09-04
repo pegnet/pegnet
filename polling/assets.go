@@ -330,8 +330,8 @@ func TrimmedMean(data []PegItem, p int) float64 {
 	})
 
 	length := len(data)
-	if length <= 3 {
-		return data[length/2].Value
+	if length < 3 {
+		return data[0].Value // keep top priority from config
 	}
 
 	sum := 0.0
