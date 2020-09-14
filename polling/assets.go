@@ -325,14 +325,14 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 // Get Trimmed Mean calculation
 // https://www.investopedia.com/terms/t/trimmed_mean.asp
 func TrimmedMean(data []PegItem, p int) float64 {
-	sort.Slice(data, func(i, j int) bool {
-		return data[i].Value < data[j].Value
-	})
-
 	length := len(data)
 	if length < 3 {
 		return data[0].Value // keep top priority from config
 	}
+
+	sort.Slice(data, func(i, j int) bool {
+		return data[i].Value < data[j].Value
+	})
 
 	sum := 0.0
 	for i := p; i < length-p; i++ {
