@@ -51,6 +51,7 @@ func (s3 *S3BlockGrader) GradeCustom(cutoff int) GradedBlock {
 	block.height = s3.height
 	block.cloneSPRS(s3.sprs)
 	block.filterDuplicates()
+	block.shuffleSPRs()
 	block.grade()
 	return block
 }

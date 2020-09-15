@@ -1,5 +1,10 @@
 package graderStake
 
+import (
+	"math/rand"
+	"time"
+)
+
 // baseGradedBlock is an spr set that has been graded
 type baseGradedBlock struct {
 	sprs   []*GradingSPR
@@ -57,6 +62,19 @@ func (b *baseGradedBlock) filterDuplicates() {
 	}
 
 	b.sprs = filtered
+}
+
+// randomize the SPRs order.
+func (b *baseGradedBlock) shuffleSPRs() {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+	ret := make([]*GradingSPR, len(b.sprs))
+	n := len(b.sprs)
+	for i := 0; i < n; i++ {
+		randIndex := r.Intn(len(b.sprs))
+		ret[i] = b.sprs[randIndex]
+		b.sprs = append(b.sprs[:randIndex], b.sprs[randIndex+1:]...)
+	}
+	b.sprs = ret
 }
 
 func (b *baseGradedBlock) Cutoff() int { return b.cutoff }
