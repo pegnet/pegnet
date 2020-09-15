@@ -13,7 +13,7 @@ const S3Band = float64(0.01) // 1%
 
 // Version returns the underlying grader's version
 func (g *S3GradedBlock) Version() uint8 {
-	return 6
+	return 7
 }
 
 // WinnerAmount returns the version specific amount of winners.

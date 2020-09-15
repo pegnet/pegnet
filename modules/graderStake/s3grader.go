@@ -9,9 +9,9 @@ type S3BlockGrader struct {
 	baseGrader
 }
 
-// Version 6
+// Version 7
 func (s3 *S3BlockGrader) Version() uint8 {
-	return 6
+	return 7
 }
 
 // WinnerAmount is the number of SPRs that receive a payout

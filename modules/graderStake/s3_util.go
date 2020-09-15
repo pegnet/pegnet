@@ -19,7 +19,7 @@ func ValidateS3(entryhash []byte, extids [][]byte, height int32, content []byte)
 		return nil, NewValidateError("invalid extid count")
 	}
 
-	if len(extids[0]) != 1 || extids[0][0] != 6 {
+	if len(extids[0]) != 1 || extids[0][0] != 7 {
 		return nil, NewValidateError("invalid version")
 	}
 
