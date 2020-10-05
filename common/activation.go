@@ -35,7 +35,7 @@ var (
 				return 1
 			}
 			// TODO: Find v3 act on testnet
-			return 2
+			return 5
 		},
 	}
 
