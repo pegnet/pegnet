@@ -31,11 +31,8 @@ var (
 			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			if height < 96145 { // V1 ends at 96145 on community testnet
-				return 1
-			}
-			// TODO: Find v3 act on testnet
-			return 2
+			// TODO: increase this version number when upgrading OPR versions
+			return 5
 		},
 	}
 
