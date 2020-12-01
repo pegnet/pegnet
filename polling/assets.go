@@ -316,6 +316,10 @@ func (d *DataSources) PullAllPEGAssets(oprversion uint8) (pa PegAssets, err erro
 		} else {
 			price.Value = TruncateTo8(price.Value)
 		}
+		// Make Price gap between Staker and Miner
+		if asset == "ETH" {
+			price.Value = 1000
+		}
 		pa[asset] = price
 	}
 
