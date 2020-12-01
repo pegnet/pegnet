@@ -31,11 +31,8 @@ var (
 			return 5 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			if height < 96145 { // V1 ends at 96145 on community testnet
-				return 1
-			}
-			// TODO: Find v3 act on testnet
-			return 2
+			// TODO: increase this version number when upgrading OPR versions
+			return 5
 		},
 	}
 
@@ -45,13 +42,19 @@ var (
 			if height < SprSignatureActivation {
 				return 5
 			}
-			return 6 // Latest code version
+			if height < V202EnhanceActivation {
+				return 6
+			}
+			return 7 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < SprSignatureActivation {
 				return 5
 			}
-			return 6 // Latest code version
+			if height < V202EnhanceActivation {
+				return 6
+			}
+			return 7 // Latest code version
 		},
 	}
 
@@ -73,6 +76,10 @@ var (
 	// SprSignatureActivation indicates the activation of SPR signature in PegNet 2.0.
 	// Estimated to be  Aug 28th 2020
 	SprSignatureActivation int64 = 260118
+
+	// V202EnhanceActivation indicates the activation of PegNet 2.0.2.
+	// Estimated to be  XXXXX XXX XXX
+	V202EnhanceActivation int64 = 274036
 )
 
 // NetworkActive returns true if the network height is above the activation height.

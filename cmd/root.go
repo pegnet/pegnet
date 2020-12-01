@@ -165,15 +165,16 @@ func initLogger() {
 //		3. Launch profiling if we have it enabled
 func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 	if testing, _ := cmd.Flags().GetBool("testing"); testing {
-		// Set all activation heights to 0 and grading to 2
+		// Set all activation heights to 0 and grading to 5
 		common.ActivationHeights[common.MainNetwork] = 0
 		common.ActivationHeights[common.TestNetwork] = 0
 		common.V2GradingActivation = 0
-		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 2 }
+		common.GradingHeights[common.TestNetwork] = func(height int64) uint8 { return 5 }
 		common.FloatingPegPriceActivation = 0
 		common.V4HeightActivation = 0
 		common.V20HeightActivation = 0
 		common.SprSignatureActivation = 0
+		common.V202EnhanceActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
