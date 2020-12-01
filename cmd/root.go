@@ -174,6 +174,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.V4HeightActivation = 0
 		common.V20HeightActivation = 0
 		common.SprSignatureActivation = 0
+		common.V202EnhanceActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {
