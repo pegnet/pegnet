@@ -28,6 +28,7 @@ type EntryWriter struct {
 	// We need an spr template to make the entries
 	sprTemplate *spr.StakingPriceRecord
 
+	ecUser string
 	ec     *factom.ECAddress
 	config *config.Config
 
@@ -61,6 +62,7 @@ func (w *EntryWriter) PopulateECAddress() error {
 			return err
 		}
 		w.ec = ecAdr
+		w.ecUser = ecadrStr
 	}
 	return nil
 }
@@ -71,6 +73,7 @@ func (w *EntryWriter) NextBlockWriter() IEntryWriter {
 	defer w.Unlock()
 	if w.Next == nil {
 		w.Next = NewEntryWriter(w.config)
+		w.Next.ecUser = w.ecUser
 		w.Next.ec = w.ec
 	}
 	return w.Next
@@ -112,7 +115,7 @@ func (w *EntryWriter) collectAndWrite() {
 
 	log.WithFields(log.Fields{
 		"height": dbht,
-	}).Info("SPR Block Staked")
+	}).Info("SPR(s) Staked")
 }
 
 // writeStakingRecord writes an spr to the blockchain
@@ -126,34 +129,75 @@ func (w *EntryWriter) writeStakingRecord() error {
 		return errors.New("No fctAddress found") // check for bad addresses earlier
 	}
 	fctAddrs := strings.Split(fctAddresses, ",")
+	countOfRecords := 0
 	for _, addr := range fctAddrs {
 		operation := func() error {
 			var err1, err2 error
 
 			network, _ := common.LoadConfigNetwork(w.config)
-			w.sprTemplate.CoinbasePEGAddress, err = common.ConvertFCTtoPegNetAsset(network, "PEG", addr)
-			if err != nil {
+
+			if w.sprTemplate.CoinbasePEGAddress, err =
+				common.ConvertFCTtoPegNetAsset(network, "PEG", addr); err != nil {
 				log.Errorf("invalid fct address in config file: %v", err)
 			}
 
 			w.sprTemplate.CoinbaseAddress = addr
 
 			entry, err := w.sprTemplate.CreateSPREntry()
-			if err != nil {
+			switch {
+			case err != nil:
 				return err
-			}
-			_, err1 = factom.CommitEntry(entry, w.ec)
-			_, err2 = factom.RevealEntry(entry)
-			if err1 == nil && err2 == nil {
-				return nil
+			case entry == nil:
+				return errors.New("w.sprTemplate.CreateSPREntry returned a nil entry")
+			case len(w.sprTemplate.CoinbaseAddress) == 0:
+				return errors.New("w.sprTemplate.CoinbaseAddress is missing")
+			case entry.Content == nil:
+				return errors.New("entry.Content is nil")
+			case entry.ExtIDs == nil:
+				return errors.New("entry.ExtIDs is nil")
+			case len(entry.ChainID) == 0:
+				return errors.New("entry.ChainID is missing")
+			default:
+				_, err1 = factom.CommitEntry(entry, w.ec)
+				_, err2 = factom.RevealEntry(entry)
+				if err1 == nil && err2 == nil {
+					return nil
+				}
 			}
 			return errors.New("failed to write SPR Entry")
 		}
 		err = backoff.Retry(operation, common.PegExponentialBackOff())
 		if err != nil {
-			return err
+			log.WithFields(log.Fields{
+				"error":   err,
+				"address": addr,
+			}).Error("error encountered while attempting create an SPR")
+		} else {
+			countOfRecords++
 		}
 	}
+	ecAddress := w.ecUser
+	if err != nil {
+		panic("entry credit address is invalid: " + err.Error())
+	}
+	bal, err := factom.GetECBalance(ecAddress)
+	if err != nil {
+		panic(fmt.Sprintf("entry credit address [%s] is invalid: %s", ecAddress, err.Error()))
+	}
+	if bal == 0 {
+		panic("EC Balance is zero for " + ecAddress)
+	}
+
+	timeLeft := float64(bal) / 144 / float64(countOfRecords)
+	days := int64(timeLeft)
+	hours := int64((timeLeft - float64(days)) * 24)
+	minutes := int64(((timeLeft-float64(days))*24 - float64(hours)) * 60)
+	log.WithFields(log.Fields{
+		"ecAddress": ecAddress,
+		"balance":   bal,
+		"will_last": fmt.Sprintf("%02d:%02d:%02d dday/hr/min", days, hours, minutes),
+	}).Info("entry credit status")
+
 	return nil
 }
 

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/FactomProject/btcutil/base58"
 	"github.com/FactomProject/factom"
@@ -205,11 +206,20 @@ func NewSpr(ctx context.Context, dbht int32, c *config.Config) (spr *StakingPric
 // GetSPRecord initializes the SPR with polling data and factom entry
 func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 	InitDataSource(c) // Kinda odd to have this here.
-	//get asset values
-	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(spr.Version))
-	if err != nil {
-		return err
+
+	// Get Asset Prices, but give it a few tries
+	Peg, err := PollingDataSource.PullAllPEGAssets(uint8(spr.Version)) // Try and get my assets
+	for i := 0; i < 3 && err != nil; i++ {                             // If it failed, try two more times
+		time.Sleep(time.Second * 5)                                       //pause a bit before each try
+		Peg, err = PollingDataSource.PullAllPEGAssets(uint8(spr.Version)) // and try again.
+		log.WithFields(log.Fields{
+			"RetryCount": i + 1,
+		}).Info("Polling Data Sources Failed. Retry")
 	}
+	if err != nil { // If all the attempts to get the asset prices fail, return
+		return err // the last error
+	}
+
 	spr.SetPegValues(Peg)
 
 	data, err := spr.SafeMarshal()
@@ -243,10 +253,9 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
 	if errS != nil {
-		return nil, err
+		return nil, errS
 	}
 	pubKey := signature.PubKey
 	sign := signature.Signature

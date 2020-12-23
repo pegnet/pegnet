@@ -6,8 +6,6 @@ package staking
 import (
 	"context"
 	"fmt"
-	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -84,10 +82,23 @@ func CheckStakingAddresses(config *config.Config) {
 
 	// Check the validity of each address in CoinbaseAddress list
 	for i, fctAddress := range fctSlice {
+		// First check if the address is well formed.
 		_, err = common.ConvertFCTtoRaw(fctAddress)
 		if err != nil {
+			// Blowup if the address is not well formed.
 			panic(fmt.Sprintf("coinbase address %d [%s] is invalid: %s", i+1, fctAddress, err.Error()))
 		}
+		// Now check to make sure the address is in the wallet.  We can't sign SPRs if it isn't
+		_, err = factom.SignData(fctAddress, []byte(fctAddress))
+		if err != nil {
+			// Blowup if the address isn't in the wallet.  Better now than later.
+			panic(fmt.Sprintf("address %s has triggered an error %s", fctAddress, err))
+		}
+		// We can't call pegnetd to get the balance on the staked address, so instead
+		// we print the command that will allow the user to execute as a script to check
+		// the PEG balance.  If we refactor the code, we could create a module to get the
+		// minimum richlist value and make sure it is worth staking the fctaddress.
+		fmt.Printf("pegnetd balance PEG %s\n", fctAddress)
 	}
 
 	// Check the EC address and its balance.  We are failing at zero, but maybe we should require 144?
@@ -103,14 +114,18 @@ func CheckStakingAddresses(config *config.Config) {
 	if bal == 0 {
 		panic("EC Balance is zero for " + ecAddress)
 	}
+	fmt.Println()
 
-	days := float64(bal) / 144
-	eqs := "==============================================================\n"
-	io.WriteString(os.Stderr, fmt.Sprintf("\n%s", eqs))
-	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", ecAddress))
-	io.WriteString(os.Stderr, fmt.Sprintf("ECBalance is %d\n", bal))
-	io.WriteString(os.Stderr, fmt.Sprintf("Staking can run with this balance for ~%7.3f days\n", days))
-	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", eqs))
+	timeLeft := float64(bal) / 144 / float64(len(fctSlice))
+	days := int64(timeLeft)
+	hours := int64((timeLeft - float64(days)) * 24)
+	minutes := int64(((timeLeft-float64(days))*24 - float64(hours)) * 60)
+	log.WithFields(log.Fields{
+		"ecAddress": ecAddress,
+		"balance":   bal,
+		"will_last": fmt.Sprintf("%02d:%02d:%02d day/hr/min", days, hours, minutes),
+	}).Info("entry credit status")
+
 }
 
 func (p *PegnetStaker) Stake(ctx context.Context) {
