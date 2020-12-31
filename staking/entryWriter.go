@@ -193,10 +193,10 @@ func (w *EntryWriter) writeStakingRecord() error {
 	hours := int64((timeLeft - float64(days)) * 24)
 	minutes := int64(((timeLeft-float64(days))*24 - float64(hours)) * 60)
 	log.WithFields(log.Fields{
-		"ecAddress": ecAddress,
-		"balance":   bal,
-		"will_last": fmt.Sprintf("%02d:%02d:%02d dday/hr/min", days, hours, minutes),
-	}).Info("entry credit status")
+		"ecAddress":  ecAddress[:8],
+		"balance":    bal,
+		"day:hr:min": fmt.Sprintf("%4d:%02d:%02d", days, hours, minutes),
+	}).Info("EC (balance) (can stake for day:hr:min)")
 
 	return nil
 }
