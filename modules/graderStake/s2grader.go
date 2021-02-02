@@ -9,9 +9,9 @@ type S2BlockGrader struct {
 	baseGrader
 }
 
-// Version 6
+// Version 5
 func (s2 *S2BlockGrader) Version() uint8 {
-	return 6
+	return 5
 }
 
 // WinnerAmount is the number of SPRs that receive a payout
