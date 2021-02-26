@@ -3,6 +3,8 @@ package staking
 import (
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"sync"
 
@@ -185,7 +187,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 		panic(fmt.Sprintf("entry credit address [%s] is invalid: %s", ecAddress, err.Error()))
 	}
 	if bal == 0 {
-		panic("EC Balance is zero for " + ecAddress)
+		io.WriteString(os.Stderr, "EC Balance is zero for "+ecAddress)
 	}
 
 	timeLeft := float64(bal) / 144 / float64(countOfRecords)

@@ -6,6 +6,8 @@ package staking
 import (
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 	"time"
 
@@ -112,7 +114,7 @@ func CheckStakingAddresses(config *config.Config) {
 		panic(fmt.Sprintf("entry credit address [%s] is invalid: %s", ecAddress, err.Error()))
 	}
 	if bal == 0 {
-		panic("EC Balance is zero for " + ecAddress)
+		io.WriteString(os.Stderr, "EC Balance is zero for "+ecAddress)
 	}
 	fmt.Println()
 

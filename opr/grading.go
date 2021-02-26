@@ -88,6 +88,7 @@ func Avg5(list []*OraclePriceRecord) []float64 {
 	return avg
 }
 
+
 // CalculateGrade takes the averages and grades the individual OPRs
 func CalculateGrade(avg []float64, opr *OraclePriceRecord, band float64) float64 {
 	tokens := opr.GetTokens()
