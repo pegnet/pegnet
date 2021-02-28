@@ -104,12 +104,11 @@ func CheckStakingAddresses(config *config.Config) {
 		panic("EC Balance is zero for " + ecAddress)
 	}
 
-	days := float64(bal) / 144
-	eqs := "==============================================================\n"
+	days := float64(bal) / 144 / float64(len(fctSlice))
+	eqs := "==================================================================================\n"
 	io.WriteString(os.Stderr, fmt.Sprintf("\n%s", eqs))
-	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", ecAddress))
-	io.WriteString(os.Stderr, fmt.Sprintf("ECBalance is %d\n", bal))
-	io.WriteString(os.Stderr, fmt.Sprintf("Staking can run with this balance for ~%7.3f days\n", days))
+	io.WriteString(os.Stderr, fmt.Sprintf("   %s balance is %d\n", ecAddress, bal))
+	io.WriteString(os.Stderr, fmt.Sprintf("   Staking of %d addresses will run out of funds in ~%7.3f days\n", len(fctSlice), days))
 	io.WriteString(os.Stderr, fmt.Sprintf("%s\n", eqs))
 }
 
