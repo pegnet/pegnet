@@ -121,12 +121,12 @@ func (w *EntryWriter) writeStakingRecord() error {
 		return fmt.Errorf("no spr template")
 	}
 
-	fctAddresses, err := w.config.String("Staker.CoinbaseAddress")
+	fctCommaList, err := w.config.String("Staker.CoinbaseAddress")
 	if err != nil { // Not likely to happen since we
 		return errors.New("No fctAddress found") // check for bad addresses earlier
 	}
-	fctAddrs := strings.Split(fctAddresses, ",")
-	for _, addr := range fctAddrs {
+	fctSlice := strings.Split(fctCommaList, ",")
+	for _, addr := range fctSlice {
 		operation := func() error {
 			var err1, err2 error
 
@@ -145,14 +145,30 @@ func (w *EntryWriter) writeStakingRecord() error {
 			_, err1 = factom.CommitEntry(entry, w.ec)
 			_, err2 = factom.RevealEntry(entry)
 			if err1 == nil && err2 == nil {
+				log.WithFields(log.Fields{
+					"FCT":       addr,
+					"EntryHash": fmt.Sprintf("%x", entry.Hash()),
+				}).Info("SPR submitted")
 				return nil
 			}
+
 			return errors.New("failed to write SPR Entry")
 		}
 		err = backoff.Retry(operation, common.PegExponentialBackOff())
 		if err != nil {
 			return err
 		}
+	}
+	ecAdr, _ := w.config.String("Staker.ECAddress")
+	bal, err := factom.GetECBalance(ecAdr)
+	if err == nil { // we wont worry about this failing since we have tested it many times before now.
+		days := float64(bal) / 144 / float64(len(fctSlice))
+		log.WithFields(log.Fields{
+			"ECAddress":      ecAdr,
+			"Balance":        bal,
+			"NumberOfStakes": len(fctSlice),
+			"DaysLeft":       days,
+		}).Info("ECAddress Status")
 	}
 	return nil
 }
