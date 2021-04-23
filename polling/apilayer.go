@@ -97,6 +97,7 @@ func CallAPILayer(c *config.Config) (response APILayerResponse, err error) {
 	resp, err := http.Get("http://www.apilayer.net/api/live?access_key=" + apikey)
 	if err != nil {
 		log.WithError(err).Warning("Failed to get response from API Layer")
+		return emptyResponse, err
 	}
 
 	defer resp.Body.Close()
