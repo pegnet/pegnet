@@ -14,6 +14,7 @@ import (
 	"github.com/pegnet/pegnet/common"
 	"github.com/pegnet/pegnet/opr/oprencoding"
 	"github.com/pegnet/pegnet/polling"
+	"github.com/pegnet/pegnet/staking"
 	log "github.com/sirupsen/logrus"
 	"github.com/zpatrick/go-config"
 )
@@ -245,7 +246,11 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	}
 
 	// Todo: PIP18 - Staking records are signed by a Staking Identity instead of a FCT address
-	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
+	stakingIdentity, errI := staking.GetStakingIdentity(spr.Dbht)
+	if errI != nil {
+		return nil, err
+	}
+	signature, errS := factom.SignData(stakingIdentity, e.Content)
 	if errS != nil {
 		return nil, err
 	}

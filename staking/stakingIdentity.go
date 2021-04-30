@@ -9,7 +9,10 @@ var (
 	SIRChain = factom.NewBytes32("f44c503def6b0c0e1fcac40f360cba434195321def4e9ca33d3b583d3a0dff62")
 )
 
-func getStakingIdentity(height int32) (string, error) {
+func GetStakingIdentity(height int32) (string, error) {
+	cl := factom.NewClient()
+	cl.FactomdServer = "https://api.factomd.net/v2" // Todo: replace server url from config
+
 	heights := new(factom.Heights)
 	err := heights.Get(nil, cl)
 	if err != nil {
