@@ -49,7 +49,7 @@ type PegnetStaker struct {
 	paused bool
 }
 
-type sprStakingState struct {
+type sprStakingIdentityState struct {
 	// Used to compute new hashes
 	sprhash []byte
 }
