@@ -107,11 +107,12 @@ func main() {
 
 	// Try to create the network chains
 	chainNames := map[string][][]byte{
-		"ProtocolChain":          {[]byte(protocol), []byte(network)},
-		"TransactionChain":       {[]byte(protocol), []byte(network), []byte(common.TransactionChainTag)},
-		"MinerChain":             {[]byte(protocol), []byte(network), []byte(common.MinerChainTag)},
-		"OraclePriceRecordChain": {[]byte(protocol), []byte(network), []byte(common.OPRChainTag)},
-		"StakingPriceRecordChain": {[]byte(protocol), []byte(network), []byte(common.SPRChainTag)},
+		"ProtocolChain":              {[]byte(protocol), []byte(network)},
+		"TransactionChain":           {[]byte(protocol), []byte(network), []byte(common.TransactionChainTag)},
+		"MinerChain":                 {[]byte(protocol), []byte(network), []byte(common.MinerChainTag)},
+		"OraclePriceRecordChain":     {[]byte(protocol), []byte(network), []byte(common.OPRChainTag)},
+		"StakingPriceRecordChain":    {[]byte(protocol), []byte(network), []byte(common.SPRChainTag)},
+		"StakingIdentityRecordChain": {[]byte(protocol), []byte(network), []byte(common.SIRChainTag)},
 	}
 	for tag, chainName := range chainNames {
 		chainID, txID, err := CreateChain(ecAddress, chainName)
