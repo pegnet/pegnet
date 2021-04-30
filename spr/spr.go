@@ -244,6 +244,7 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 		return nil, err
 	}
 
+	// Todo: PIP18 - Staking records are signed by a Staking Identity instead of a FCT address
 	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
 	if errS != nil {
 		return nil, err
