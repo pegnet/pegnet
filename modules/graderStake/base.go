@@ -30,6 +30,10 @@ func NewGrader(version uint8, height int32) (BlockGrader, error) {
 		s3 := new(S3BlockGrader)
 		s3.height = height
 		return s3, nil
+	case 8:
+		s4 := new(S4BlockGrader)
+		s4.height = height
+		return s4, nil
 	default:
 		// most likely developer error or outdated package
 		return nil, fmt.Errorf("unsupported version")
