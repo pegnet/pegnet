@@ -3,7 +3,7 @@ package graderStake
 var _ BlockGrader = (*S4BlockGrader)(nil)
 
 // S4BlockGrader implements the S4 grading algorithm.
-// Entries are encoded in Protobuf with 25 winners each block.
+// Entries are encoded in Protobuf with 100 winners each block.
 // Valid assets can be found in ´opr.V5Assets´
 type S4BlockGrader struct {
 	baseGrader
@@ -16,7 +16,7 @@ func (s4 *S4BlockGrader) Version() uint8 {
 
 // WinnerAmount is the number of SPRs that receive a payout
 func (s4 *S4BlockGrader) WinnerAmount() int {
-	return 25
+	return 100
 }
 
 // AddSPR verifies and adds a s4 SPR.
@@ -37,7 +37,7 @@ func (s4 *S4BlockGrader) AddSPR(entryhash []byte, extids [][]byte, content []byt
 //	to the average of each asset. If an asset is within `band`% of the average, that asset's
 //	distance is 0.
 //	5. Throw out the SPR with the highest distance
-//	6. Repeat 3-4 until there are only 25 SPRs left
+//	6. Repeat 3-4 until there are only 100 SPRs left
 //	7. Repeat 3 but this time don't apply the band and don't throw out SPRs, just reorder them
 //	until you are left with one
 func (s4 *S4BlockGrader) Grade() GradedBlock {

@@ -18,20 +18,20 @@ func (g *S4GradedBlock) Version() uint8 {
 
 // WinnerAmount returns the version specific amount of winners.
 func (g *S4GradedBlock) WinnerAmount() int {
-	return 25
+	return 100
 }
 
 // Winners returns the winning SPRs
 func (g *S4GradedBlock) Winners() []*GradingSPR {
-	if len(g.sprs) < 25 {
+	if len(g.sprs) < 100 {
 		return nil
 	}
 
-	return g.sprs[:25]
+	return g.sprs[:100]
 }
 
 func (g *S4GradedBlock) grade() {
-	if len(g.sprs) < 25 {
+	if len(g.sprs) < 100 {
 		return
 	}
 
@@ -42,7 +42,7 @@ func (g *S4GradedBlock) grade() {
 	for i := g.cutoff; i >= 1; i-- {
 		avg := averageS1(g.sprs[:i]) // same average as v1
 		band := 0.0
-		if i >= 25 {
+		if i >= 100 {
 			band = S4Band
 		}
 		for j := 0; j < i; j++ {
