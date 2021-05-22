@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <title>PegNet ControlPanel</title>
+    <link rel="stylesheet" href="/styles/styles.css">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.1.3/css/bootstrap.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap4.min.css">
+  </head>
+  <body>
+    <nav class="navbar navbar-light bg-light flex-md-nowrap p-0 pt-4 pb-4">
+        <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="/"><img src="/img/logo.png" alt="PegNet" title="PegNet" class="img-fluid" /></a>
+    </nav>
+    <div class="container-fluid">
+        <div class="row">
+            <main role="main" class="col px-4">
+              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h2 class="h2">Stats</h2>
+              </div>
+              
+              <div class="form-group row">
+                <label for="block_height" class="col-sm-3 col-form-label">Your Block Height:</label>
+                <div class="col-sm-9">
+                  <input type="text" readonly class="form-control-plaintext" id="block_height" value="0">
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="current_minute" class="col-sm-3 col-form-label">Your Current Minute:</label>
+                <div class="col-sm-9">
+                  <input type="text" readonly class="form-control-plaintext" id="current_minute" value="0">
+                </div>
+              </div>
+              <div class="form-group row" style="display: none;">
+                <label for="hash_rate" class="col-sm-3 col-form-label">Hash Rate:</label>
+                <div class="col-sm-9">
+                  <input type="text" readonly class="form-control-plaintext" id="hash_rate" value="0">
+                </div>
+              </div>
+              <div class="form-group row" style="display: none;">
+                <label for="difficulty" class="col-sm-3 col-form-label">Difficulty:</label>
+                <div class="col-sm-9">
+                  <input type="text" readonly class="form-control-plaintext" id="difficulty" value="0">
+                </div>
+              </div>
+              <div class="form-group row">
+                <label for="balance" class="col-sm-3 col-form-label">Balance:</label>
+                <div class="col-sm-9">
+                  <input type="text" readonly class="form-control-plaintext" id="balance" value="0">
+                </div>
+              </div>
+
+              <!-- Hide this section for now -->
+              <section id="statistics" >
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                  <h2 class="h3">Miner Statistics</h2>
+                </div>
+                <div class="form-group row container-fluid">
+                  <table id="mining-statistics" class="table table-striped table-bordered" style="width:100%">
+                  </table>
+                </div>
+              </section>
+              
+              <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h2 class="h3">Get Address Balance</h2>
+              </div>
+              
+              <form class="address-balance-form-js">
+                <div class="form-row align-items-center">
+                  <div class="col col-lg-5">
+                    <label class="sr-only" for="tpeg_address">address</label>
+                    <input type="text" class="form-control mb-2" id="tpeg_address" placeholder="E.g. tPEG_abc.........">
+                  </div>
+                  <div class="col-auto">
+                    <button type="submit" class="btn btn-primary mb-2">Submit</button>
+                  </div>
+                </div>
+              </form>
+
+              <div class="table-responsive">
+                <table class="table d-none address-balance-table-js">
+                  <thead class="thead-light">
+                    <tr>
+                      <th scope="col">Address</th>
+                      <th scope="col">Balance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+              </div>
+
+            </main>
+        </div>
+    </div>
+    <script src="/scripts/app.js"></script>
+  </body>
+</html>

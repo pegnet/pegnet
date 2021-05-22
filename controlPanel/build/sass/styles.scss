@@ -1,0 +1,25 @@
+@import "variables";
+@import "./node_modules/bootstrap/scss/bootstrap";
+@import "./node_modules/@fortawesome/fontawesome-free/scss/fontawesome.scss";
+@import "./node_modules/@fortawesome/fontawesome-free/scss/solid.scss";
+//@import "./node_modules/@fortawesome/fontawesome-free/scss/regular.scss";
+//@import "./node_modules/@fortawesome/fontawesome-free/scss/brands.scss";
+
+
+@mixin font-size($sizeValue) {
+  font-size: $sizeValue + px;
+  font-size: ($sizeValue / 16) + em;
+}
+
+
+.paginate_button {
+    padding: 5px;
+}
+
+.dataTables_wrapper {
+    width: 100%;
+}
+
+tbody .mono-space {
+    font-family: monospace;
+}

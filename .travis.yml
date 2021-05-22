@@ -1,0 +1,74 @@
+language: go
+
+# Use latest go version
+go:
+- 1.x
+
+os: 
+  - osx
+  - windows
+
+# Run gofmt only on linux
+matrix:
+  fast_finish: true
+  include:
+    - os: linux
+      script:
+        - ./.gofmt.sh
+        - go test -covermode=count -coverprofile=profile.cov -v -timeout 45m ./...
+        - goveralls -coverprofile=profile.cov -service=travis-ci
+  allow_failures:
+    - os: windows
+
+#before_cache:
+#  - mkdir $HOME/.lxrhash
+#  - chmod -R -v 555 $HOME/.lxrhash
+#
+#cache:
+#  directories:
+#    - $HOME/.lxrhash/
+#    - $HOME/.cache/go-build
+#    - $HOME/gopath/pkg/mod
+
+script:
+  - go test -v -timeout 45m ./...
+
+# GO111MODULE will force Go modules
+# This will be unnecessary when Go 1.13 lands.
+# Also set the bit size to 10 so we can build the hashtable quick
+env:
+  - GO111MODULE=on LXRBITSIZE=10
+
+# Coveralls testing
+before_install:
+  - go get github.com/mattn/goveralls
+
+# Modifies go get flags
+# Can be removed when factom@v1-rollup is merged into master 
+install: true
+
+# No spam
+notifications:
+  email: false
+
+# Build with gox
+before_deploy:
+  - go get github.com/mitchellh/gox
+  - gox -os="linux darwin windows freebsd" -arch="amd64"
+  - gox -os="linux" -arch="arm arm64"
+
+# Build and deploy for any tagged commit.
+deploy:
+  provider: releases
+  api_key:
+    secure: KB3i1eBDUn2AsWDKXqcH9BNM3UmWNxlujHCXk9OZdHMShvIguKc4vhhdiyYh8hyBTZsqkNvAjc+z/1/NO7e4IoJmYxQU8lzF9tQ9gtXCI3yC5Nz6TktJ4qs+IPgNIRaIG9GZ6phlpLz04VBStk2F12OUIrMTUYBsJWOPOmo1y4N+nEMkwIF9YvbwJp83KQ3POb8LkzvafDjh06KebZErsijos1WJsRYcIAWoZmybHcZ78KvnF3RYjCBSsIuTFtJN7urzq6Shg21mQySWA9QYxZAaGSckrshwzsZFZC40q1DzTQOcWVQR5hF6f8DX8GGDLdE3gDv5jW64tzRst98sMF0qwyrybNhWYhk5KbeC7mnnSOEWyfoZNT28sG9+80cnzWOq+eI6mOWKlCM7GKHrBgc/enTP6PsY1V7lpLRiBeq+v5pMgzZZQxlWCEBx+4BZNIw0dSrfJPjmlmmudQFsJXUX8ursneBO/Kp/3jdEzC3xXzfMGntXQhFz6d7SG9wNB5QtOK0Ykcm8E5Zk9GsdzgyjepxS0H7ztuQEyOvui7wozZIHtr0FHHpHZtVGcc8DkmO9lV7MZVOS1Gy50SPfFuT6nMl7p9LQXnmccEhToPz47NvBaIpC1CqToT4QnkfA70xKdxA5+GVJVKKEsMdfSB3vGlkExquA/PTmpA7SyNc=
+  file:
+    - pegnet_windows_amd64.exe
+    - pegnet_darwin_amd64
+    - pegnet_linux_amd64
+    - pegnet_linux_arm
+    - pegnet_linux_arm64
+    - pegnet_freebsd_amd64
+  skip_cleanup: true
+  on:
+    tags: true

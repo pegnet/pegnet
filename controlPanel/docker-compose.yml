@@ -1,0 +1,9 @@
+version: '3'
+services:
+  gulp:
+    image: node:10.16.0
+    command: bash -c "npm install && npm start"
+    volumes:
+     - .:/src
+     - /src/node_modules
+    working_dir: /src
