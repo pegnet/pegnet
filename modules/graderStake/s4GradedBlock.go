@@ -13,7 +13,7 @@ const S4Band = float64(0.01) // 1%
 
 // Version returns the underlying grader's version
 func (g *S4GradedBlock) Version() uint8 {
-	return 7
+	return 8
 }
 
 // WinnerAmount returns the version specific amount of winners.
