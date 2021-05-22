@@ -45,7 +45,10 @@ var (
 			if height < V202EnhanceActivation {
 				return 6
 			}
-			return 7 // Latest code version
+			if height < PIP18DelegateStakingActivation {
+				return 7
+			}
+			return 8 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < SprSignatureActivation {
@@ -54,7 +57,10 @@ var (
 			if height < V202EnhanceActivation {
 				return 6
 			}
-			return 7 // Latest code version
+			if height < PIP18DelegateStakingActivation {
+				return 7
+			}
+			return 8 // Latest code version
 		},
 	}
 
@@ -80,6 +86,12 @@ var (
 	// V202EnhanceActivation indicates the activation of PegNet 2.0.2.
 	// Estimated to be  XXXXX XXX XXX
 	V202EnhanceActivation int64 = 274036
+
+	// PIP18DelegateStakingActivation implements delegate staking by using PEG addresses.
+	//	1. Balances of PEG for each address is more complicated.  It is the balance of PEG for the address (assuming it has not be delegated)
+	//	2. We quit looking at the rich list, and just consider the top 100 submissions with the highest stake
+	//	3. We pay out with the ratio of the total PEG staked. (Removes old top 100 PEG addresses staking reward and give staking opportunity to all PEG holders)
+	PIP18DelegateStakingActivation int64 = 999999
 )
 
 // NetworkActive returns true if the network height is above the activation height.
