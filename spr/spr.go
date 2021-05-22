@@ -100,7 +100,7 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate all the Assets exists
 	switch spr.Version {
-	case 5, 6, 7:
+	case 5, 6, 7, 8:
 		return spr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
@@ -268,7 +268,7 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 {
+	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 || spr.Version == 8 {
 		assetList := common.AssetsV5
 		prices := make([]uint64, len(spr.Assets))
 
@@ -297,7 +297,7 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 {
+	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 || spr.Version == 8 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {
