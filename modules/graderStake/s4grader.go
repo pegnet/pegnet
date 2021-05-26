@@ -1,6 +1,6 @@
 package graderStake
 
-var _ BlockGrader = (*S4BlockGrader)(nil)
+var _ BlockGraderV4 = (*S4BlockGrader)(nil)
 
 // S4BlockGrader implements the S4 grading algorithm.
 // Entries are encoded in Protobuf with 100 winners each block.
@@ -16,12 +16,12 @@ func (s4 *S4BlockGrader) Version() uint8 {
 
 // WinnerAmount is the number of SPRs that receive a payout
 func (s4 *S4BlockGrader) WinnerAmount() int {
-	return 100
+	return 25
 }
 
-// AddSPR verifies and adds a s4 SPR.
-func (s4 *S4BlockGrader) AddSPR(entryhash []byte, extids [][]byte, content []byte) error {
-	gspr, err := ValidateS4(entryhash, extids, s4.height, content)
+// AddSPRV4 verifies and adds a s4 SPR.
+func (s4 *S4BlockGrader) AddSPRV4(entryhash []byte, extids [][]byte, content []byte, pegBalance uint64) error {
+	gspr, err := ValidateS4(entryhash, extids, s4.height, content, pegBalance)
 	if err != nil {
 		return err
 	}
@@ -57,5 +57,5 @@ func (s4 *S4BlockGrader) GradeCustom(cutoff int) GradedBlock {
 
 // Payout returns the amount of Pegtoshi awarded to the SPR at the specified index
 func (s4 *S4BlockGrader) Payout(index int) int64 {
-	return S1Payout(index)
+	return s4.sprs[index].payout
 }

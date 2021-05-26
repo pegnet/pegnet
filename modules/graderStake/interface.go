@@ -57,3 +57,34 @@ type GradedBlock interface {
 	// WinnerAmount returns the version specific amount of winners.
 	WinnerAmount() int
 }
+
+// BlockGraderV4 allows you to grade a single block. Each version has its own struct, which must be instantiated
+// with the height and set of previous winners.
+type BlockGraderV4 interface {
+	// Height returns the height the block grader is set to
+	Height() int32
+	// Version returns the version of the underlying grader
+	Version() uint8
+	// GetPreviousWinners returns the set of previous winners the grader was initialized with
+	GetPreviousWinners() []string
+
+	// AddSPRV4 adds an spr to the set to be graded. The content is decoded using the underlying version's format
+	// and validated based on the specified height and set of previous winners.
+	//
+	// Returns an error if an entry could not be validated.
+	AddSPRV4(entryhash []byte, extids [][]byte, content []byte, pegBalance uint64) error
+
+	// Grade grades the block using the default settings for that version.
+	// For more details, see each version's Grade() function.
+	// If the result is empty, there are no winners.
+	Grade() GradedBlock
+
+	// GradeCustom grades the SPRs using that version's algorithm and a custom cutoff for the top X
+	GradeCustom(cutoff int) GradedBlock
+
+	// Count returns the number of SPRs that have been added
+	Count() int
+
+	// Payout returns the amount of Pegtoshi awarded to the SPR at the specified index
+	Payout(index int) int64
+}

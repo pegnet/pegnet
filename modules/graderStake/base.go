@@ -30,6 +30,18 @@ func NewGrader(version uint8, height int32) (BlockGrader, error) {
 		s3 := new(S3BlockGrader)
 		s3.height = height
 		return s3, nil
+	default:
+		// most likely developer error or outdated package
+		return nil, fmt.Errorf("unsupported version")
+	}
+}
+
+// NewGraderV4 instantiates a IBlockGrader Grader for a specific version.
+func NewGraderV4(version uint8, height int32) (BlockGraderV4, error) {
+	if height < 0 {
+		return nil, fmt.Errorf("height must be > 0")
+	}
+	switch version {
 	case 8:
 		s4 := new(S4BlockGrader)
 		s4.height = height

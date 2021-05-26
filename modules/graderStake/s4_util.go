@@ -10,7 +10,7 @@ import (
 )
 
 // ValidateS4 validates the provided data using the specified parameters
-func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte) (*GradingSPR, error) {
+func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte, pegBalance uint64) (*GradingSPR, error) {
 	if len(entryhash) != 32 {
 		return nil, NewValidateError("invalid entry hash length")
 	}
@@ -66,6 +66,7 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte)
 	gspr.CoinbaseAddress = o.Address
 	sha := sha256.Sum256(content)
 	gspr.SPRHash = sha[:]
+	gspr.pegBalance = pegBalance
 
 	gspr.SPR = o
 	return gspr, nil

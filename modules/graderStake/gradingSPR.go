@@ -13,10 +13,11 @@ type GradingSPR struct {
 	CoinbaseAddress string
 
 	// Grading Variables
-	Grade    float64
-	SPRHash  []byte
-	position int
-	payout   int64
+	Grade      float64
+	SPRHash    []byte
+	position   int
+	payout     int64
+	pegBalance uint64
 
 	// Decoded SPR
 	SPR spr.SPR
@@ -31,6 +32,7 @@ func (o *GradingSPR) Clone() *GradingSPR {
 	clone.SPRHash = append(o.SPRHash[:0:0], o.SPRHash...)
 	clone.SPR = o.SPR.Clone()
 	clone.payout = o.payout
+	clone.pegBalance = o.pegBalance
 	clone.position = o.position
 	return clone
 }
@@ -50,4 +52,10 @@ func (o *GradingSPR) Payout() int64 {
 // Only valid for GradingSPRs coming from a GradedBlock
 func (o *GradingSPR) Position() int {
 	return o.position
+}
+
+// PegBalance is the amount of Pegtoshi this SPR has got.
+// Only valid for GradingSPRs coming from a GradedBlock
+func (o *GradingSPR) PegBalance() uint64 {
+	return o.pegBalance
 }

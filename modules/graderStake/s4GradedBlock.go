@@ -18,20 +18,22 @@ func (g *S4GradedBlock) Version() uint8 {
 
 // WinnerAmount returns the version specific amount of winners.
 func (g *S4GradedBlock) WinnerAmount() int {
-	return 100
+	return 25
 }
 
 // Winners returns the winning SPRs
 func (g *S4GradedBlock) Winners() []*GradingSPR {
-	if len(g.sprs) < 100 {
+	if len(g.sprs) < 25 {
 		return nil
 	}
-
-	return g.sprs[:100]
+	if len(g.sprs) > 100 {
+		return g.sprs[:100]
+	}
+	return g.sprs
 }
 
 func (g *S4GradedBlock) grade() {
-	if len(g.sprs) < 100 {
+	if len(g.sprs) < 25 {
 		return
 	}
 
@@ -42,7 +44,7 @@ func (g *S4GradedBlock) grade() {
 	for i := g.cutoff; i >= 1; i-- {
 		avg := averageS1(g.sprs[:i]) // same average as v1
 		band := 0.0
-		if i >= 100 {
+		if i >= 25 {
 			band = S4Band
 		}
 		for j := 0; j < i; j++ {
@@ -52,9 +54,14 @@ func (g *S4GradedBlock) grade() {
 		sort.SliceStable(g.sprs[:i], func(i, j int) bool { return g.sprs[i].Grade < g.sprs[j].Grade })
 	}
 
+	var totalPegAmount uint64 = 0
+	for i := range g.sprs {
+		totalPegAmount += g.sprs[i].pegBalance
+	}
+
 	for i := range g.sprs {
 		g.sprs[i].position = i
-		g.sprs[i].payout = S1Payout(i)
+		g.sprs[i].payout = int64(float64(g.sprs[i].pegBalance) / float64(totalPegAmount) * 4500 * 1e8)
 	}
 }
 
