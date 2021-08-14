@@ -41,6 +41,7 @@ func init() {
 	RootCmd.AddCommand(networkMinerCmd)
 	RootCmd.AddCommand(datasources)
 	RootCmd.AddCommand(staker)
+	RootCmd.AddCommand(delegateStaker)
 
 	decode.AddCommand(decodeEntry)
 	decode.AddCommand(decodeEblock)
@@ -325,6 +326,26 @@ var staker = &cobra.Command{
 		common.GlobalExitHandler.AddCancel(cancel)
 
 		ValidateStakingConfig(Config) // Will fatal log if it fails
+
+		// Services
+		monitor := LaunchFactomMonitor(Config)
+
+		// This is a blocking call
+		coord_s := LaunchStaker(Config, ctx, monitor)
+
+		// Calling cancel() will cancel the staker
+		var _, _ = cancel, coord_s
+	},
+}
+
+var delegateStaker = &cobra.Command{
+	Use: "dstake ",
+	Run: func(cmd *cobra.Command, args []string) {
+		fmt.Println("This is delegate staking...")
+		ctx, cancel := context.WithCancel(context.Background())
+		common.GlobalExitHandler.AddCancel(cancel)
+
+		ValidateDelegateStakingConfig(Config) // Will fatal log if it fails
 
 		// Services
 		monitor := LaunchFactomMonitor(Config)

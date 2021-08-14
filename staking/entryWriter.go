@@ -126,6 +126,11 @@ func (w *EntryWriter) writeStakingRecord() error {
 		return errors.New("No fctAddress found") // check for bad addresses earlier
 	}
 	fctAddrs := strings.Split(fctAddresses, ",")
+
+	// Todo: let's read if staking is delegating or not.
+	// if it is delegating, then read delegators' signatures from the file.
+	// and send that signatures to CreateSPREntry() to set as ExtIds[3]
+
 	for _, addr := range fctAddrs {
 		operation := func() error {
 			var err1, err2 error

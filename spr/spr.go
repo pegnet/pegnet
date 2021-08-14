@@ -252,6 +252,8 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	sign := signature.Signature
 	signData := append(pubKey, sign...)
 
+	// Todo: Add signatures
+
 	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData}
 
 	return e, nil

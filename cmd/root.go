@@ -142,6 +142,25 @@ func ValidateStakingConfig(config *config.Config) {
 	}
 }
 
+// ValidateDelegateStakingConfig will validate the config is up to snuff.
+// Do w/e config validation we want. Will fatal if it fails
+func ValidateDelegateStakingConfig(config *config.Config) {
+	_, err := config.String("Staker.Protocol")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker protocol from config")
+	}
+
+	_, err = config.String("Staker.Network")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker network from config")
+	}
+
+	_, err = config.String("Staker.DelegatorsList")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read delegators list from config")
+	}
+}
+
 func initLogger() {
 	switch strings.ToLower(LogLevel) {
 	case "trace":
