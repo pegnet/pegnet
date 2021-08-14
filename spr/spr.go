@@ -230,7 +230,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //		Payout Address (string)
 //		Height (int32)
 //		Assets ([]uint64)
-func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
+func (spr *StakingPriceRecord) CreateSPREntry(delegatorSignatures DelegatorSignature) (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
@@ -252,7 +252,7 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	sign := signature.Signature
 	signData := append(pubKey, sign...)
 
-	// Todo: Add signatures
+	// Todo: Add delegatorSignatures to ExtIDs
 
 	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData}
 
