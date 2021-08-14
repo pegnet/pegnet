@@ -36,7 +36,22 @@ func LoadDelegatorsSignatures(c *config.Config, delegatee string) []byte {
 	if err != nil {
 		return nil
 	}
+	delegatorList, err := c.String("DelegateStaker.DelegatorList")
+	if err != nil {
+		return nil
+	}
 	delegateeAddrs := strings.Split(delegateeAddresses, ",")
+	delegatorsPaths := strings.Split(delegatorList, ",")
+
+	var dPath = ""
+	for i := 0; i < len(delegateeAddrs); i++ {
+		if delegateeAddrs[i] == delegatee {
+			dPath = delegatorsPaths[i]
+			break
+		}
+	}
+	fmt.Println(dPath)
+	// Todo: read signature data from dPath file
 
 	return nil
 }
