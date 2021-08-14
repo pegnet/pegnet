@@ -155,9 +155,14 @@ func ValidateDelegateStakingConfig(config *config.Config) {
 		log.WithError(err).Fatal("failed to read staker network from config")
 	}
 
-	StakingMode, err := config.String("Staker.StakingMode")
+	StakingMode, err := config.String("DelegateStaker.StakingMode")
 	if err != nil || StakingMode != "DelegatingStake" {
-		log.WithError(err).Fatal("failed to read delegator info from config")
+		log.WithError(err).Fatal("please set StakingMode in config")
+	}
+
+	_, err = config.String("DelegateStaker.DelagateeAddress01")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read delegatee info from config")
 	}
 }
 
