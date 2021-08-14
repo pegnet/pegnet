@@ -230,7 +230,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //		Payout Address (string)
 //		Height (int32)
 //		Assets ([]uint64)
-func (spr *StakingPriceRecord) CreateSPREntry(delegatorSignatures DelegatorSignature) (*factom.Entry, error) {
+func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
@@ -252,9 +252,44 @@ func (spr *StakingPriceRecord) CreateSPREntry(delegatorSignatures DelegatorSigna
 	sign := signature.Signature
 	signData := append(pubKey, sign...)
 
-	// Todo: Add delegatorSignatures to ExtIDs
-
 	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData}
+
+	return e, nil
+}
+
+//  Staking Price Record (SPR)
+//	ExtIDs:
+//		version byte (byte, default 5)
+//		Pub Address
+//		signature covering
+//		signatures for Delegators
+//	Content: (protobuf)
+//		Payout Address (string)
+//		Height (int32)
+//		Assets ([]uint64)
+func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorSignatures []byte) (*factom.Entry, error) {
+	e := new(factom.Entry)
+	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
+
+	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	e.Content, err = spr.SafeMarshal()
+	if err != nil {
+		return nil, err
+	}
+
+	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
+	if errS != nil {
+		return nil, err
+	}
+	pubKey := signature.PubKey
+	sign := signature.Signature
+	signData := append(pubKey, sign...)
+
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData, delegatorSignatures}
 
 	return e, nil
 }

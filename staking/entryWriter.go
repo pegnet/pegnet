@@ -127,8 +127,8 @@ func (w *EntryWriter) writeStakingRecord() error {
 	}
 	fctAddrs := strings.Split(fctAddresses, ",")
 
-	// Todo: let's read if staking is delegating or not.
-	// if it is delegating, then read delegators' signatures from the file.
+	// Check if staking is delegating or not.
+	// if it is delegating, then read delegators' signatures from the configuration.
 	// and send that signatures to CreateSPREntry() to set as ExtIds[3]
 	StakingMode, err := w.config.String("Staker.StakingMode")
 	if err != nil {
@@ -147,14 +147,19 @@ func (w *EntryWriter) writeStakingRecord() error {
 
 			w.sprTemplate.CoinbaseAddress = addr
 
-			var delegatorSignatures = ""
+			var entry *factom.Entry
+			var delegatorSignatures []byte
 			if StakingMode == "DelegateStaking" {
-				delegatorSignatures, _ = common.LoadDelegatorsSignatures(w.config, addr)
-			}
-
-			entry, err := w.sprTemplate.CreateSPREntry(delegatorSignatures)
-			if err != nil {
-				return err
+				delegatorSignatures = common.LoadDelegatorsSignatures(w.config, addr)
+				entry, err = w.sprTemplate.CreateDelegateSPREntry(delegatorSignatures)
+				if err != nil {
+					return err
+				}
+			} else {
+				entry, err = w.sprTemplate.CreateSPREntry()
+				if err != nil {
+					return err
+				}
 			}
 			_, err1 = factom.CommitEntry(entry, w.ec)
 			_, err2 = factom.RevealEntry(entry)

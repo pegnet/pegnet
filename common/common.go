@@ -31,6 +31,11 @@ func LoadConfigStakerNetwork(c *config.Config) (string, error) {
 	return GetNetwork(network)
 }
 
+func LoadDelegatorsSignatures(c *config.Config, delegatee string) []byte {
+	// Todo: Read delegators data from config
+	return nil
+}
+
 func GetNetwork(network string) (string, error) {
 	switch strings.ToLower(network) {
 	case strings.ToLower(MainNetwork):
