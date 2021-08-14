@@ -171,9 +171,14 @@ func ValidateDelegateStakingConfig(config *config.Config) {
 		log.WithError(err).Fatal("please set StakingMode correctly in the config")
 	}
 
-	_, err = config.String("DelegateStaker.DelagateeAddress01")
+	_, err = config.String("DelegateStaker.DelagateeAddress")
 	if err != nil {
-		log.WithError(err).Fatal("failed to read delegatee info from config")
+		log.WithError(err).Fatal("failed to read DelagateeAddress info from config")
+	}
+
+	_, err = config.String("DelegateStaker.DelegatorList")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read DelegatorList info from config")
 	}
 }
 

@@ -32,7 +32,12 @@ func LoadConfigStakerNetwork(c *config.Config) (string, error) {
 }
 
 func LoadDelegatorsSignatures(c *config.Config, delegatee string) []byte {
-	// Todo: Read delegators data from config
+	delegateeAddresses, err := c.String("DelegateStaker.DelagateeAddress")
+	if err != nil {
+		return nil
+	}
+	delegateeAddrs := strings.Split(delegateeAddresses, ",")
+
 	return nil
 }
 
