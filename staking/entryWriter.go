@@ -130,6 +130,10 @@ func (w *EntryWriter) writeStakingRecord() error {
 	// Todo: let's read if staking is delegating or not.
 	// if it is delegating, then read delegators' signatures from the file.
 	// and send that signatures to CreateSPREntry() to set as ExtIds[3]
+	StakingMode, err := w.config.String("Staker.StakingMode")
+	if err != nil {
+		StakingMode = "SoleStake"
+	}
 
 	for _, addr := range fctAddrs {
 		operation := func() error {
@@ -143,7 +147,12 @@ func (w *EntryWriter) writeStakingRecord() error {
 
 			w.sprTemplate.CoinbaseAddress = addr
 
-			entry, err := w.sprTemplate.CreateSPREntry()
+			var delegatorSignatures = ""
+			if StakingMode == "DelegateStaking" {
+				delegatorSignatures, _ = common.LoadDelegatorsSignatures(w.config, addr)
+			}
+
+			entry, err := w.sprTemplate.CreateSPREntry(delegatorSignatures)
 			if err != nil {
 				return err
 			}
