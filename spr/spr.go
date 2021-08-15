@@ -231,6 +231,7 @@ func (spr *StakingPriceRecord) GetSPRecord(c *config.Config) error {
 //		Height (int32)
 //		Assets ([]uint64)
 func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
+	fmt.Println("============================ [CreateSPREntry]")
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
