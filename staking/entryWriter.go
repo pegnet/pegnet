@@ -153,7 +153,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 
 			var entry *factom.Entry
 			var delegatorSignatures []byte
-			if StakingMode == "DelegateStaking" {
+			if StakingMode == "DelegatingStake" {
 				delegatorSignatures = common.LoadDelegatorsSignatures(w.config, addr)
 				entry, err = w.sprTemplate.CreateDelegateSPREntry(delegatorSignatures)
 				if err != nil {
