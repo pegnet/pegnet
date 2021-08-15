@@ -117,6 +117,7 @@ func (w *EntryWriter) collectAndWrite() {
 
 // writeStakingRecord writes an spr to the blockchain
 func (w *EntryWriter) writeStakingRecord() error {
+	fmt.Println("======== [writeStakingRecord]")
 	if w.sprTemplate == nil {
 		return fmt.Errorf("no spr template")
 	}
@@ -134,6 +135,7 @@ func (w *EntryWriter) writeStakingRecord() error {
 	if err != nil {
 		StakingMode = "SoleStake"
 	}
+	fmt.Println("===> StakingMode:", StakingMode)
 
 	for _, addr := range fctAddrs {
 		operation := func() error {
