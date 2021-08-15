@@ -268,6 +268,7 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 //		Height (int32)
 //		Assets ([]uint64)
 func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorSignatures []byte) (*factom.Entry, error) {
+	fmt.Println("============================ [CreateDelegateSPREntry] delegatorSignatures:", delegatorSignatures)
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
