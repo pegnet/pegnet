@@ -88,6 +88,7 @@ func (w *EntryWriter) SetSPR(spr *spr.StakingPriceRecord) {
 // CollectAndWrite will write the block when we collected all the staker data
 //	The blocking is mainly for unit tests.
 func (w *EntryWriter) CollectAndWrite(blocking bool) {
+	fmt.Println("[CollectAndWrite]", blocking)
 	w.Do(func() {
 		if blocking {
 			w.collectAndWrite()
@@ -99,6 +100,7 @@ func (w *EntryWriter) CollectAndWrite(blocking bool) {
 
 // collectAndWrite is idempotent
 func (w *EntryWriter) collectAndWrite() {
+	fmt.Println("[collectAndWrite]")
 	err := w.EntryWritingFunction() // Write to blockchain
 	if err != nil {
 		log.WithError(err).Error("Failed to write staking record")
@@ -217,6 +219,7 @@ func (w *EntryForwarder) NextBlockWriter() IEntryWriter {
 }
 
 func (w *EntryForwarder) forwardStakingRecord() error {
+	fmt.Println("[forwardStakingRecord]", w.sprTemplate)
 	if w.sprTemplate == nil {
 		return fmt.Errorf("no spr template")
 	}
