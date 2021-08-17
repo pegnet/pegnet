@@ -1,12 +1,12 @@
 package graderStake
 
-var _ BlockGrader = (*S4BlockGrader)(nil)
+//var _ BlockGrader = (*S4BlockGrader)(nil)
 
 // S4BlockGrader implements the S4 grading algorithm.
 // Entries are encoded in Protobuf with 25 winners each block.
 // Valid assets can be found in ´opr.V5Assets´
 type S4BlockGrader struct {
-	baseGrader
+	baseGraderV2
 }
 
 // Version 8
@@ -40,12 +40,12 @@ func (s4 *S4BlockGrader) AddSPR(entryhash []byte, extids [][]byte, content []byt
 //	6. Repeat 3-4 until there are only 25 SPRs left
 //	7. Repeat 3 but this time don't apply the band and don't throw out SPRs, just reorder them
 //	until you are left with one
-func (s4 *S4BlockGrader) Grade() GradedBlock {
+func (s4 *S4BlockGrader) Grade() *S4GradedBlock {
 	return s4.GradeCustom(50)
 }
 
 // GradeCustom grades the block using a custom cutoff for the top X
-func (s4 *S4BlockGrader) GradeCustom(cutoff int) GradedBlock {
+func (s4 *S4BlockGrader) GradeCustom(cutoff int) *S4GradedBlock {
 	block := new(S4GradedBlock)
 	block.cutoff = cutoff
 	block.height = s4.height

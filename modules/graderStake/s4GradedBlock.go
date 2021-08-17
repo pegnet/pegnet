@@ -2,10 +2,10 @@ package graderStake
 
 import "sort"
 
-// S1GradedBlock is an spr set that has been graded. The set should be read only through it's interface
+// S4GradedBlock is an spr set that has been graded. The set should be read only through it's interface
 // implementation.
 type S4GradedBlock struct {
-	baseGradedBlock
+	baseGradedBlockV2
 }
 
 // S4Band is the size of the band employed in the grading algorithm, specified as percentage
@@ -22,7 +22,7 @@ func (g *S4GradedBlock) WinnerAmount() int {
 }
 
 // Winners returns the winning SPRs
-func (g *S4GradedBlock) Winners() []*GradingSPR {
+func (g *S4GradedBlock) Winners() []*GradingSPRV2 {
 	if len(g.sprs) < 25 {
 		return nil
 	}
@@ -40,13 +40,13 @@ func (g *S4GradedBlock) grade() {
 	}
 
 	for i := g.cutoff; i >= 1; i-- {
-		avg := averageS1(g.sprs[:i]) // same average as v1
+		avg := averageS4(g.sprs[:i]) // same average as v1
 		band := 0.0
 		if i >= 25 {
 			band = S4Band
 		}
 		for j := 0; j < i; j++ {
-			gradeS1(avg, g.sprs[j], band)
+			gradeS4(avg, g.sprs[j], band)
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
 		sort.SliceStable(g.sprs[:i], func(i, j int) bool { return g.sprs[i].Grade < g.sprs[j].Grade })
@@ -54,7 +54,7 @@ func (g *S4GradedBlock) grade() {
 
 	for i := range g.sprs {
 		g.sprs[i].position = i
-		g.sprs[i].payout = S1Payout(i)
+		g.sprs[i].payout = S4Payout(i)
 	}
 }
 
