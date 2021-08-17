@@ -36,6 +36,22 @@ func NewGraderV2(version uint8, height int32) (BlockGrader, error) {
 	}
 }
 
+// NewGraderV4 instantiates a IBlockGrader Grader for a delegated staking version.
+func NewGraderV4(version uint8, height int32) (*S4BlockGrader, error) {
+	if height < 0 {
+		return nil, fmt.Errorf("height must be > 0")
+	}
+	switch version {
+	case 8:
+		s4 := new(S4BlockGrader)
+		s4.height = height
+		return s4, nil
+	default:
+		// most likely developer error or outdated package
+		return nil, fmt.Errorf("unsupported version")
+	}
+}
+
 // Count will return the total number of SPRs stored in the block.
 // If the set has been graded, this number may be less than the amount of SPRs added
 // due to duplicate filter and self reported difficulty checks
