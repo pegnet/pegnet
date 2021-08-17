@@ -299,7 +299,7 @@ func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorsSignaturesConten
 	dSignData := append(dPubKey, dSign...)
 	fmt.Println("============================ dSignData:", dSignData)
 
-	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData, dSignData}
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData, delegatorsSignaturesContents, dSignData}
 
 	return e, nil
 }
