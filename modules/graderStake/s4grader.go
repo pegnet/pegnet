@@ -57,5 +57,5 @@ func (s4 *S4BlockGrader) GradeCustom(cutoff int) *S4GradedBlock {
 
 // Payout returns the amount of Pegtoshi awarded to the SPR at the specified index
 func (s4 *S4BlockGrader) Payout(index int) int64 {
-	return S1Payout(index)
+	return S4Payout(index)
 }
