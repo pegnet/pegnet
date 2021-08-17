@@ -262,13 +262,13 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 //		version byte (byte, default 5)
 //		Pub Address
 //		signature covering
-//		signatures for Delegators
+//		signature contents for Delegators
+//		signatures of contents for Delegators
 //	Content: (protobuf)
 //		Payout Address (string)
 //		Height (int32)
 //		Assets ([]uint64)
 func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorsSignaturesContents []byte) (*factom.Entry, error) {
-	fmt.Println("============================ [CreateDelegateSPREntry] delegatorsSignaturesContents:", delegatorsSignaturesContents)
 	e := new(factom.Entry)
 	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
 
@@ -297,7 +297,6 @@ func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorsSignaturesConten
 	dPubKey := delegatorsSignatures.PubKey
 	dSign := delegatorsSignatures.Signature
 	dSignData := append(dPubKey, dSign...)
-	fmt.Println("============================ dSignData:", dSignData)
 
 	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData, delegatorsSignaturesContents, dSignData}
 
