@@ -45,7 +45,10 @@ var (
 			if height < V202EnhanceActivation {
 				return 6
 			}
-			return 7 // Latest code version
+			if height < PIP18DelegateStakingActivation {
+				return 7
+			}
+			return 8 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
 			if height < SprSignatureActivation {
@@ -54,7 +57,10 @@ var (
 			if height < V202EnhanceActivation {
 				return 6
 			}
-			return 7 // Latest code version
+			if height < PIP18DelegateStakingActivation {
+				return 7
+			}
+			return 8 // Latest code version
 		},
 	}
 
@@ -80,6 +86,9 @@ var (
 	// V202EnhanceActivation indicates the activation of PegNet 2.0.2.
 	// Estimated to be  XXXXX XXX XXX
 	V202EnhanceActivation int64 = 274036
+
+	// PIP18DelegateStakingActivation implements delegate staking.
+	PIP18DelegateStakingActivation int64 = 999999
 )
 
 // NetworkActive returns true if the network height is above the activation height.
