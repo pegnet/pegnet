@@ -90,7 +90,6 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte)
 	var listOfDelegatorsAddress []string
 	for bI := 0; bI < len(dSignatureContents); bI += 148 {
 		delegator := dSignatureContents[bI : bI+148]
-		fmt.Println(delegator)
 		addressOfDelegator := delegator[:52]
 		signDataOfDelegator := delegator[52:116]
 		pubKeyOfDelegator := delegator[116:]
