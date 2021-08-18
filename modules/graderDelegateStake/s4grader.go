@@ -1,12 +1,21 @@
-package graderStake
+package graderDelegateStake
 
-//var _ BlockGrader = (*S4BlockGrader)(nil)
+var _ DelegateBlockGrader = (*S4BlockGrader)(nil)
 
 // S4BlockGrader implements the S4 grading algorithm.
 // Entries are encoded in Protobuf with 25 winners each block.
 // Valid assets can be found in ´opr.V5Assets´
 type S4BlockGrader struct {
-	baseGraderV2
+	baseDelegatedGrader
+}
+
+func (s4 *S4BlockGrader) AddSPRV4(entryhash []byte, extids [][]byte, content []byte, balanceOfPEG uint64) error {
+	gspr, err := ValidateS4(entryhash, extids, s4.height, content, balanceOfPEG)
+	if err != nil {
+		return err
+	}
+	s4.sprs = append(s4.sprs, gspr)
+	return nil
 }
 
 // Version 8
@@ -17,16 +26,6 @@ func (s4 *S4BlockGrader) Version() uint8 {
 // WinnerAmount is the number of SPRs that receive a payout
 func (s4 *S4BlockGrader) WinnerAmount() int {
 	return 25
-}
-
-// AddSPR verifies and adds a s4 SPR.
-func (s4 *S4BlockGrader) AddSPR(entryhash []byte, extids [][]byte, content []byte) error {
-	gspr, err := ValidateS4(entryhash, extids, s4.height, content)
-	if err != nil {
-		return err
-	}
-	s4.sprs = append(s4.sprs, gspr)
-	return nil
 }
 
 func (s4 *S4BlockGrader) GetDelegatorsAddress(delegatorData []byte, signature []byte, signer string) ([]string, error) {
@@ -44,12 +43,12 @@ func (s4 *S4BlockGrader) GetDelegatorsAddress(delegatorData []byte, signature []
 //	6. Repeat 3-4 until there are only 25 SPRs left
 //	7. Repeat 3 but this time don't apply the band and don't throw out SPRs, just reorder them
 //	until you are left with one
-func (s4 *S4BlockGrader) Grade() *S4GradedBlock {
+func (s4 *S4BlockGrader) Grade() DelegatedGradedBlock {
 	return s4.GradeCustom(50)
 }
 
 // GradeCustom grades the block using a custom cutoff for the top X
-func (s4 *S4BlockGrader) GradeCustom(cutoff int) *S4GradedBlock {
+func (s4 *S4BlockGrader) GradeCustom(cutoff int) DelegatedGradedBlock {
 	block := new(S4GradedBlock)
 	block.cutoff = cutoff
 	block.height = s4.height

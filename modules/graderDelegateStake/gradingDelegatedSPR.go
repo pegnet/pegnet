@@ -1,4 +1,4 @@
-package graderStake
+package graderDelegateStake
 
 import (
 	"encoding/hex"
@@ -6,8 +6,8 @@ import (
 	"github.com/pegnet/pegnet/modules/spr"
 )
 
-// GradingSPRV2 holds the temporary variables used during the grading process
-type GradingSPRV2 struct {
+// GradingDelegatedSPR holds the temporary variables used during the grading process
+type GradingDelegatedSPR struct {
 	// Factom Entry variables
 	EntryHash       []byte
 	CoinbaseAddress string
@@ -21,13 +21,12 @@ type GradingSPRV2 struct {
 	// Decoded SPR
 	SPR spr.SPR
 
-	// Delegation SPR
-	DelegatorsAddress []string
+	balanceOfPEG uint64
 }
 
-// Clone the GradingSPRV2
-func (o *GradingSPRV2) Clone() *GradingSPRV2 {
-	clone := new(GradingSPRV2)
+// Clone the GradingDelegatedSPR
+func (o *GradingDelegatedSPR) Clone() *GradingDelegatedSPR {
+	clone := new(GradingDelegatedSPR)
 	clone.EntryHash = append(o.EntryHash[:0:0], o.EntryHash...)
 	clone.Grade = o.Grade
 	clone.CoinbaseAddress = o.CoinbaseAddress
@@ -35,22 +34,23 @@ func (o *GradingSPRV2) Clone() *GradingSPRV2 {
 	clone.SPR = o.SPR.Clone()
 	clone.payout = o.payout
 	clone.position = o.position
+	clone.balanceOfPEG = o.balanceOfPEG
 	return clone
 }
 
 // Shorthash is the hex-encoded first 8 bytes of the entry hash
-func (o *GradingSPRV2) Shorthash() string {
+func (o *GradingDelegatedSPR) Shorthash() string {
 	return hex.EncodeToString(o.EntryHash[:8])
 }
 
 // Payout is the amount of Pegtoshi this SPR would be rewarded with.
-// Only valid for GradingSPRs coming from a GradedBlock
-func (o *GradingSPRV2) Payout() int64 {
+// Only valid for GradingDelegatedSPRs coming from a GradedBlock
+func (o *GradingDelegatedSPR) Payout() int64 {
 	return o.payout
 }
 
 // Position is the index of the SPR in the Graded set. Position 0 is the winner.
-// Only valid for GradingSPRs coming from a GradedBlock
-func (o *GradingSPRV2) Position() int {
+// Only valid for GradingDelegatedSPRs coming from a GradedBlock
+func (o *GradingDelegatedSPR) Position() int {
 	return o.position
 }

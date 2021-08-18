@@ -1,4 +1,4 @@
-package graderStake
+package graderDelegateStake
 
 import "sort"
 
@@ -22,7 +22,7 @@ func (g *S4GradedBlock) WinnerAmount() int {
 }
 
 // Winners returns the winning SPRs
-func (g *S4GradedBlock) Winners() []*GradingSPRV2 {
+func (g *S4GradedBlock) Winners() []*GradingDelegatedSPR {
 	if len(g.sprs) < 25 {
 		return nil
 	}

@@ -1,8 +1,8 @@
-package graderStake
+package graderDelegateStake
 
 // baseGradedBlockV2 is an spr set that has been graded
 type baseGradedBlockV2 struct {
-	sprs   []*GradingSPRV2
+	sprs   []*GradingDelegatedSPR
 	cutoff int
 	height int32
 	count  int
@@ -10,7 +10,7 @@ type baseGradedBlockV2 struct {
 	shorthashes []string
 }
 
-func (b *baseGradedBlockV2) cloneSPRS(sprs []*GradingSPRV2) {
+func (b *baseGradedBlockV2) cloneSPRS(sprs []*GradingDelegatedSPR) {
 	b.sprs = nil
 	for _, o := range sprs {
 		b.sprs = append(b.sprs, o.Clone())
@@ -38,14 +38,14 @@ func (b *baseGradedBlockV2) createShortHashes(count int) {
 }
 
 // Graded returns the SPRs that made it into the cutoff
-func (b *baseGradedBlockV2) Graded() []*GradingSPRV2 {
+func (b *baseGradedBlockV2) Graded() []*GradingDelegatedSPR {
 	return b.sprs
 }
 
 // filter out duplicate GradingSPRs. an SPR is a duplicate when both
 // nonce and sprhash are the same
 func (b *baseGradedBlockV2) filterDuplicates() {
-	filtered := make([]*GradingSPRV2, 0)
+	filtered := make([]*GradingDelegatedSPR, 0)
 
 	added := make(map[string]bool)
 	for _, v := range b.sprs {

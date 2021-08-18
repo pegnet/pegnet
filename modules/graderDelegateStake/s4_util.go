@@ -1,10 +1,11 @@
-package graderStake
+package graderDelegateStake
 
 import (
 	"crypto/sha256"
 	"fmt"
 	"github.com/FactomProject/factomd/common/primitives"
 	"github.com/pegnet/pegnet/modules/factoidaddress"
+	"github.com/pegnet/pegnet/modules/graderStake"
 	"github.com/pegnet/pegnet/modules/opr"
 	"github.com/pegnet/pegnet/modules/spr"
 	"math"
@@ -20,14 +21,14 @@ func S4Payout(index int) int64 {
 
 func getDelegatorsAddress(delegatorData []byte, signature []byte, signer string) ([]string, error) {
 	if len(signature) != 96 {
-		return nil, NewValidateError("Invalid signature length")
+		return nil, graderStake.NewValidateError("Invalid signature length")
 	}
 	dPubKey := signature[:32]
 	dSignData := signature[32:]
 
 	err3 := primitives.VerifySignature(delegatorData, dPubKey[:], dSignData[:])
 	if err3 != nil {
-		return nil, NewValidateError("Invalid signature")
+		return nil, graderStake.NewValidateError("Invalid signature")
 	}
 
 	var listOfDelegatorsAddress []string
@@ -47,24 +48,24 @@ func getDelegatorsAddress(delegatorData []byte, signature []byte, signer string)
 }
 
 // ValidateS4 validates the provided data using the specified parameters
-func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte) (*GradingSPRV2, error) {
+func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte, balanceOfPEG uint64) (*GradingDelegatedSPR, error) {
 	if len(entryhash) != 32 {
-		return nil, NewValidateError("invalid entry hash length")
+		return nil, graderStake.NewValidateError("invalid entry hash length")
 	}
 
 	if len(extids) != 5 {
-		return nil, NewValidateError("invalid extid count")
+		return nil, graderStake.NewValidateError("invalid extid count")
 	}
 
 	if len(extids[0]) != 1 || extids[0][0] != 8 {
-		return nil, NewValidateError("invalid version")
+		return nil, graderStake.NewValidateError("invalid version")
 	}
 
 	// ParseS1Content parses the V2 proto format
 	// S1 is just the proto format with some more assets.
 	o2, err := spr.ParseS1Content(content)
 	if err != nil {
-		return nil, NewDecodeError(err.Error())
+		return nil, graderStake.NewDecodeError(err.Error())
 	}
 	o := &spr.S1Content{V2Content: *o2}
 
@@ -72,59 +73,51 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte)
 	 *  Verify Signature of Oracle Price Data
 	 */
 	if len(extids[2]) != 96 {
-		return nil, NewValidateError("invalid signature length")
+		return nil, graderStake.NewValidateError("invalid signature length")
 	}
 	pubKey := extids[2][:32]
 	signData := extids[2][32:]
 	err2 := primitives.VerifySignature(content, pubKey, signData)
 	if err2 != nil {
 		fmt.Printf("%v \n", err2)
-		return nil, NewValidateError("invalid signature")
+		return nil, graderStake.NewValidateError("invalid signature")
 	}
 
 	if o.Height != height {
-		return nil, NewValidateError("invalid height")
+		return nil, graderStake.NewValidateError("invalid height")
 	}
 
 	// verify assets
 	if len(o.Assets) != len(opr.V5Assets) {
-		return nil, NewValidateError("invalid assets")
+		return nil, graderStake.NewValidateError("invalid assets")
 	}
 	for _, val := range o.Assets {
 		if val == 0 {
-			return nil, NewValidateError("assets must be greater than 0")
+			return nil, graderStake.NewValidateError("assets must be greater than 0")
 		}
 	}
 
 	if err := factoidaddress.Valid(o.Address); err != nil {
-		return nil, NewValidateError(fmt.Sprintf("factoidaddress is invalid : %s", err.Error()))
+		return nil, graderStake.NewValidateError(fmt.Sprintf("factoidaddress is invalid : %s", err.Error()))
 	}
 
 	/**
-	 *	Verify delegators' signatures
+	 *  Set GradingDelegatedSPR object
 	 */
-	listOfDelegatorsAddress, err := getDelegatorsAddress(extids[3], extids[4], o2.Address)
-	if err != nil {
-		return nil, err
-	}
-
-	/**
-	 *  Set GradingSPRV2 object
-	 */
-	gspr := new(GradingSPRV2)
+	gspr := new(GradingDelegatedSPR)
 	gspr.EntryHash = entryhash
 	gspr.CoinbaseAddress = o.Address
 	sha := sha256.Sum256(content)
 	gspr.SPRHash = sha[:]
 	gspr.SPR = o
-	gspr.DelegatorsAddress = listOfDelegatorsAddress
+	gspr.balanceOfPEG = balanceOfPEG
 
 	return gspr, nil
 }
 
 // S4 grading works similar to V1 but the grade is banded
 // meaning a record within `band` percentage is considered to be equal
-func gradeS4(avg []float64, spr *GradingSPRV2, band float64) float64 {
+func gradeS4(avg []float64, spr *GradingDelegatedSPR, band float64) float64 {
 	assets := spr.SPR.GetOrderedAssetsFloat()
 	spr.Grade = 0
 	for i, asset := range assets {
@@ -142,7 +135,7 @@ func gradeS4(avg []float64, spr *GradingSPRV2, band float64) float64 {
 }
 
 // calculate the vector of average prices
-func averageS4(sprs []*GradingSPRV2) []float64 {
+func averageS4(sprs []*GradingDelegatedSPR) []float64 {
 	data := make([][]float64, len(sprs[0].SPR.GetOrderedAssetsFloat()))
 	avg := make([]float64, len(sprs[0].SPR.GetOrderedAssetsFloat()))
 
@@ -159,7 +152,7 @@ func averageS4(sprs []*GradingSPRV2) []float64 {
 		}
 		noisyRate := 0.1
 		length := int(float64(len(data[i])) * noisyRate)
-		avg[i] = TrimmedMeanFloat(data[i], length+1)
+		avg[i] = graderStake.TrimmedMeanFloat(data[i], length+1)
 	}
 	return avg
 }
