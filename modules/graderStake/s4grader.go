@@ -29,6 +29,10 @@ func (s4 *S4BlockGrader) AddSPR(entryhash []byte, extids [][]byte, content []byt
 	return nil
 }
 
+func (s4 *S4BlockGrader) GetDelegatorsAddress(delegatorData []byte, signature []byte, signer string) ([]string, error) {
+	return getDelegatorsAddress(delegatorData, signature, signer)
+}
+
 // Grade the SPRs. The S1 algorithm works the following way:
 //	1. Take the top 50 entries with the best proof of work
 //	2. Remove top and low's 1% band from each of the 32 assets
