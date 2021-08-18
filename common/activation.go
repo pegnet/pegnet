@@ -51,15 +51,15 @@ var (
 			return 8 // Latest code version
 		},
 		TestNetwork: func(height int64) uint8 {
-			if height < SprSignatureActivation {
-				return 5
-			}
-			if height < V202EnhanceActivation {
-				return 6
-			}
-			if height < PIP18DelegateStakingActivation {
-				return 7
-			}
+			//if height < SprSignatureActivation {
+			//	return 5
+			//}
+			//if height < V202EnhanceActivation {
+			//	return 6
+			//}
+			//if height < PIP18DelegateStakingActivation {
+			//	return 7
+			//}
 			return 8 // Latest code version
 		},
 	}
