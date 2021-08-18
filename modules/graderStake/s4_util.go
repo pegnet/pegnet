@@ -18,6 +18,34 @@ func S4Payout(index int) int64 {
 	return 180 * 1e8
 }
 
+func getDelegatorsAddress(delegatorData []byte, signature []byte, signer []byte) ([]string, error) {
+	if len(signature) != 96 {
+		return nil, NewValidateError("Invalid signature length")
+	}
+	dPubKey := signature[:32]
+	dSignData := signature[32:]
+
+	err3 := primitives.VerifySignature(delegatorData, dPubKey[:], dSignData[:])
+	if err3 != nil {
+		return nil, NewValidateError("Invalid signature")
+	}
+
+	var listOfDelegatorsAddress []string
+	for bI := 0; bI < len(delegatorData); bI += 148 {
+		delegator := delegatorData[bI : bI+148]
+		addressOfDelegator := delegator[:52]
+		signDataOfDelegator := delegator[52:116]
+		pubKeyOfDelegator := delegator[116:]
+
+		err2 := primitives.VerifySignature([]byte(signer), pubKeyOfDelegator[:], signDataOfDelegator[:])
+		if err2 != nil {
+			continue
+		}
+		listOfDelegatorsAddress = append(listOfDelegatorsAddress, string(addressOfDelegator[:]))
+	}
+	return listOfDelegatorsAddress, nil
+}
+
 // ValidateS4 validates the provided data using the specified parameters
 func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte) (*GradingSPRV2, error) {
 	if len(entryhash) != 32 {
@@ -75,30 +103,9 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte)
 	/**
 	 *	Verify delegators' signatures
 	 */
-	dSignatureContents := extids[3]
-	if len(extids[4]) != 96 {
-		return nil, NewValidateError("Invalid signature length")
-	}
-	dPubKey := extids[4][:32]
-	dSignData := extids[4][32:]
-
-	err3 := primitives.VerifySignature(dSignatureContents, dPubKey[:], dSignData[:])
-	if err3 != nil {
-		return nil, NewValidateError("Invalid signature")
-	}
-
-	var listOfDelegatorsAddress []string
-	for bI := 0; bI < len(dSignatureContents); bI += 148 {
-		delegator := dSignatureContents[bI : bI+148]
-		addressOfDelegator := delegator[:52]
-		signDataOfDelegator := delegator[52:116]
-		pubKeyOfDelegator := delegator[116:]
-
-		err2 := primitives.VerifySignature([]byte(o2.Address), pubKeyOfDelegator[:], signDataOfDelegator[:])
-		if err2 != nil {
-			continue
-		}
-		listOfDelegatorsAddress = append(listOfDelegatorsAddress, string(addressOfDelegator[:]))
+	listOfDelegatorsAddress, err := getDelegatorsAddress(extids[3], extids[4], []byte(o2.Address))
+	if err != nil {
+		return nil, err
 	}
 
 	/**
