@@ -18,7 +18,7 @@ func S4Payout(index int) int64 {
 	return 180 * 1e8
 }
 
-func getDelegatorsAddress(delegatorData []byte, signature []byte, signer []byte) ([]string, error) {
+func getDelegatorsAddress(delegatorData []byte, signature []byte, signer string) ([]string, error) {
 	if len(signature) != 96 {
 		return nil, NewValidateError("Invalid signature length")
 	}
@@ -103,7 +103,7 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte)
 	/**
 	 *	Verify delegators' signatures
 	 */
-	listOfDelegatorsAddress, err := getDelegatorsAddress(extids[3], extids[4], []byte(o2.Address))
+	listOfDelegatorsAddress, err := getDelegatorsAddress(extids[3], extids[4], o2.Address)
 	if err != nil {
 		return nil, err
 	}
