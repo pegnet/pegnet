@@ -19,6 +19,19 @@ func S4Payout(index int) int64 {
 	return 180 * 1e8
 }
 
+func removeDuplicateValues(inputSlice []string) []string {
+	keys := make(map[string]bool)
+	list := []string{}
+
+	for _, entry := range inputSlice {
+		if _, value := keys[entry]; !value {
+			keys[entry] = true
+			list = append(list, entry)
+		}
+	}
+	return list
+}
+
 func getDelegatorsAddress(delegatorData []byte, signature []byte, signer string) ([]string, error) {
 	if len(signature) != 96 {
 		return nil, graderStake.NewValidateError("Invalid signature length")
@@ -44,7 +57,8 @@ func getDelegatorsAddress(delegatorData []byte, signature []byte, signer string)
 		}
 		listOfDelegatorsAddress = append(listOfDelegatorsAddress, string(addressOfDelegator[:]))
 	}
-	return listOfDelegatorsAddress, nil
+	removeDuplicateValuesSlice := removeDuplicateValues(listOfDelegatorsAddress)
+	return removeDuplicateValuesSlice, nil
 }
 
 // ValidateS4 validates the provided data using the specified parameters
