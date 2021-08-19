@@ -1,5 +1,7 @@
 package graderDelegateStake
 
+import "sort"
+
 // baseGradedBlockV2 is an spr set that has been graded
 type baseGradedBlockV2 struct {
 	sprs   []*GradingDelegatedSPR
@@ -57,6 +59,16 @@ func (b *baseGradedBlockV2) filterDuplicates() {
 	}
 
 	b.sprs = filtered
+}
+
+func (b *baseGradedBlockV2) sortByBalance(limit int) {
+	sort.SliceStable(b.sprs, func(i, j int) bool {
+		return b.sprs[i].balanceOfPEG > b.sprs[j].balanceOfPEG
+	})
+	if limit > len(b.sprs) {
+		limit = len(b.sprs)
+	}
+	b.sprs = b.sprs[:limit]
 }
 
 func (b *baseGradedBlockV2) Cutoff() int { return b.cutoff }

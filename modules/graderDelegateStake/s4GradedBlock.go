@@ -49,6 +49,7 @@ func (g *S4GradedBlock) grade() {
 			gradeS4(avg, g.sprs[j], band)
 		}
 		// Because this process can scramble the sorted fields, we have to resort with each pass.
+		sort.SliceStable(g.sprs[:i], func(i, j int) bool { return g.sprs[i].balanceOfPEG > g.sprs[j].balanceOfPEG })
 		sort.SliceStable(g.sprs[:i], func(i, j int) bool { return g.sprs[i].Grade < g.sprs[j].Grade })
 	}
 

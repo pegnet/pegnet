@@ -44,7 +44,7 @@ func (s4 *S4BlockGrader) GetDelegatorsAddress(delegatorData []byte, signature []
 //	7. Repeat 3 but this time don't apply the band and don't throw out SPRs, just reorder them
 //	until you are left with one
 func (s4 *S4BlockGrader) Grade() DelegatedGradedBlock {
-	return s4.GradeCustom(50)
+	return s4.GradeCustom(100)
 }
 
 // GradeCustom grades the block using a custom cutoff for the top X
@@ -54,6 +54,7 @@ func (s4 *S4BlockGrader) GradeCustom(cutoff int) DelegatedGradedBlock {
 	block.height = s4.height
 	block.cloneSPRS(s4.sprs)
 	block.filterDuplicates()
+	block.sortByBalance(cutoff)
 	block.grade()
 	return block
 }
