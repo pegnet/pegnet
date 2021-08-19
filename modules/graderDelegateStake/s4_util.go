@@ -75,6 +75,14 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte,
 		return nil, graderStake.NewValidateError("invalid version")
 	}
 
+	if len(extids[4]) != 96 {
+		return nil, graderStake.NewValidateError("Invalid delegate data signature length")
+	}
+
+	if balanceOfPEG == 0 {
+		return nil, graderStake.NewValidateError("0 balance staker can not do staking")
+	}
+
 	// ParseS1Content parses the V2 proto format
 	// S1 is just the proto format with some more assets.
 	o2, err := spr.ParseS1Content(content)
@@ -84,7 +92,7 @@ func ValidateS4(entryhash []byte, extids [][]byte, height int32, content []byte,
 	o := &spr.S1Content{V2Content: *o2}
 
 	/**
-	 *  Verify Signature of Oracle Price Data
+	 *  Verify Signature of Oracle Price Record
 	 */
 	if len(extids[2]) != 96 {
 		return nil, graderStake.NewValidateError("invalid signature length")
