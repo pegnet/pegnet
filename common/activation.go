@@ -88,7 +88,7 @@ var (
 	V202EnhanceActivation int64 = 274036
 
 	// PIP18DelegateStakingActivation implements delegate staking.
-	PIP18DelegateStakingActivation int64 = 999999
+	PIP18DelegateStakingActivation int64 = 313042
 )
 
 // NetworkActive returns true if the network height is above the activation height.
