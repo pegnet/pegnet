@@ -140,6 +140,46 @@ func ValidateStakingConfig(config *config.Config) {
 	if err != nil {
 		log.WithError(err).Fatal("failed to read staker network from config")
 	}
+
+	StakingMode, err := config.String("Staker.StakingMode")
+	if err != nil {
+		log.WithError(err).Fatal("failed to StakingMode from config")
+	}
+	if StakingMode != "SoleStake" {
+		log.WithError(err).Fatal("please set StakingMode correctly in the config")
+	}
+}
+
+// ValidateDelegateStakingConfig will validate the config is up to snuff.
+// Do w/e config validation we want. Will fatal if it fails
+func ValidateDelegateStakingConfig(config *config.Config) {
+	_, err := config.String("Staker.Protocol")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker protocol from config")
+	}
+
+	_, err = config.String("Staker.Network")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read staker network from config")
+	}
+
+	StakingMode, err := config.String("Staker.StakingMode")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read StakingMode from config")
+	}
+	if StakingMode != "DelegatingStake" {
+		log.WithError(err).Fatal("please set StakingMode correctly in the config")
+	}
+
+	_, err = config.String("DelegateStaker.DelagateeAddress")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read DelagateeAddress info from config")
+	}
+
+	_, err = config.String("DelegateStaker.DelegatorList")
+	if err != nil {
+		log.WithError(err).Fatal("failed to read DelegatorList info from config")
+	}
 }
 
 func initLogger() {
@@ -175,6 +215,7 @@ func rootPreRunSetup(cmd *cobra.Command, args []string) error {
 		common.V20HeightActivation = 0
 		common.SprSignatureActivation = 0
 		common.V202EnhanceActivation = 0
+		common.PIP18DelegateStakingActivation = 0
 	}
 
 	if testingact, _ := cmd.Flags().GetInt32("testingact"); testingact != -1 {

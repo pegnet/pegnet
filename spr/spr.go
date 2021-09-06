@@ -100,7 +100,7 @@ func (spr *StakingPriceRecord) Validate(c *config.Config, dbht int64) bool {
 
 	// Validate all the Assets exists
 	switch spr.Version {
-	case 5, 6, 7:
+	case 5, 6, 7, 8:
 		return spr.Assets.ContainsExactly(common.AssetsV5)
 	default:
 		return false
@@ -257,6 +257,52 @@ func (spr *StakingPriceRecord) CreateSPREntry() (*factom.Entry, error) {
 	return e, nil
 }
 
+//  Staking Price Record (SPR)
+//	ExtIDs:
+//		version byte (byte, default 5)
+//		Pub Address
+//		signature covering
+//		signature contents for Delegators
+//		signatures of contents for Delegators
+//	Content: (protobuf)
+//		Payout Address (string)
+//		Height (int32)
+//		Assets ([]uint64)
+func (spr *StakingPriceRecord) CreateDelegateSPREntry(delegatorsSignaturesContents []byte) (*factom.Entry, error) {
+	e := new(factom.Entry)
+	e.ChainID = hex.EncodeToString(base58.Decode(spr.SPRChainID))
+
+	rcd, err := common.ConvertFCTtoRaw(spr.CoinbaseAddress)
+	if err != nil {
+		return nil, err
+	}
+
+	e.Content, err = spr.SafeMarshal()
+	if err != nil {
+		return nil, err
+	}
+
+	signature, errS := factom.SignData(spr.CoinbaseAddress, e.Content)
+	if errS != nil {
+		return nil, err
+	}
+	pubKey := signature.PubKey
+	sign := signature.Signature
+	signData := append(pubKey, sign...)
+
+	delegatorsSignatures, errDS := factom.SignData(spr.CoinbaseAddress, delegatorsSignaturesContents)
+	if errDS != nil {
+		return nil, err
+	}
+	dPubKey := delegatorsSignatures.PubKey
+	dSign := delegatorsSignatures.Signature
+	dSignData := append(dPubKey, dSign...)
+
+	e.ExtIDs = [][]byte{{spr.Version}, rcd, signData, delegatorsSignaturesContents, dSignData}
+
+	return e, nil
+}
+
 // SafeMarshal will marshal the json depending on the opr version
 func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 	// our opr version must be set before entering this
@@ -268,7 +314,7 @@ func (spr *StakingPriceRecord) SafeMarshal() ([]byte, error) {
 		return nil, fmt.Errorf("assets is nil, cannot marshal")
 	}
 
-	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 {
+	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 || spr.Version == 8 {
 		assetList := common.AssetsV5
 		prices := make([]uint64, len(spr.Assets))
 
@@ -297,7 +343,7 @@ func (spr *StakingPriceRecord) SafeUnmarshal(data []byte) error {
 		return fmt.Errorf("opr version is 0")
 	}
 
-	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 {
+	if spr.Version == 5 || spr.Version == 6 || spr.Version == 7 || spr.Version == 8 {
 		protoOPR := oprencoding.ProtoOPR{}
 		err := proto.Unmarshal(data, &protoOPR)
 		if err != nil {

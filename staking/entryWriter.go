@@ -126,6 +126,15 @@ func (w *EntryWriter) writeStakingRecord() error {
 		return errors.New("No fctAddress found") // check for bad addresses earlier
 	}
 	fctAddrs := strings.Split(fctAddresses, ",")
+
+	// Check if staking is delegating or not.
+	// if it is delegating, then read delegators' signatures from the configuration.
+	// and send that signatures to CreateSPREntry() to set as ExtIds[3]
+	StakingMode, err := w.config.String("Staker.StakingMode")
+	if err != nil {
+		StakingMode = "SoleStake"
+	}
+
 	for _, addr := range fctAddrs {
 		operation := func() error {
 			var err1, err2 error
@@ -138,9 +147,19 @@ func (w *EntryWriter) writeStakingRecord() error {
 
 			w.sprTemplate.CoinbaseAddress = addr
 
-			entry, err := w.sprTemplate.CreateSPREntry()
-			if err != nil {
-				return err
+			var entry *factom.Entry
+			var delegatorsSignaturesContents []byte
+			if StakingMode == "DelegatingStake" {
+				delegatorsSignaturesContents = common.LoadDelegatorsSignatures(w.config, addr)
+				entry, err = w.sprTemplate.CreateDelegateSPREntry(delegatorsSignaturesContents)
+				if err != nil {
+					return err
+				}
+			} else {
+				entry, err = w.sprTemplate.CreateSPREntry()
+				if err != nil {
+					return err
+				}
 			}
 			_, err1 = factom.CommitEntry(entry, w.ec)
 			_, err2 = factom.RevealEntry(entry)

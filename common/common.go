@@ -3,7 +3,10 @@
 package common
 
 import (
+	"bufio"
 	"fmt"
+	"os"
+	"strconv"
 	"strings"
 
 	"github.com/zpatrick/go-config"
@@ -29,6 +32,57 @@ func LoadConfigStakerNetwork(c *config.Config) (string, error) {
 		return "", err
 	}
 	return GetNetwork(network)
+}
+
+func LoadDelegatorsSignatures(c *config.Config, delegatee string) []byte {
+	delegateeAddresses, err := c.String("DelegateStaker.DelagateeAddress")
+	if err != nil {
+		return nil
+	}
+	delegatorList, err := c.String("DelegateStaker.DelegatorList")
+	if err != nil {
+		return nil
+	}
+
+	delegateeAddrs := strings.Split(delegateeAddresses, ",")
+	delegatorsPaths := strings.Split(delegatorList, ",")
+
+	var dPath = ""
+	for i := 0; i < len(delegateeAddrs); i++ {
+		if delegateeAddrs[i] == delegatee {
+			dPath = delegatorsPaths[i]
+			break
+		}
+	}
+
+	// Read signature data from file
+	path := os.ExpandEnv(dPath)
+	f, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+
+	var delegatorsSigResult []byte
+	for scanner.Scan() {
+		sigData := scanner.Text()
+		sigDataStr := strings.Split(sigData, " ")
+		var byteArray []byte
+		for i := 0; i < len(sigDataStr); i++ {
+			i, _ := strconv.Atoi(sigDataStr[i])
+			byteArray = append(byteArray, byte(i))
+		}
+		fmt.Println(byteArray)
+		delegatorsSigResult = append(delegatorsSigResult[:], byteArray[:]...)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil
+	}
+
+	return delegatorsSigResult
 }
 
 func GetNetwork(network string) (string, error) {
