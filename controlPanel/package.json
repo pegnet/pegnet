@@ -29,6 +29,6 @@
   },
   "dependencies": {
     "datatables": "^1.10.18",
-    "moment": "^2.24.0"
+    "moment": "^2.29.2"
   }
 }
